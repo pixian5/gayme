@@ -276,6 +276,15 @@
         Saves.addPersonality(dim, node.personality[dim]);
       }
     }
+    // v0.6.0 回声：保存玩家说过的重要台词
+    if (node.echoSave) {
+      const list = Array.isArray(node.echoSave) ? node.echoSave : [node.echoSave];
+      list.forEach(e => {
+        if (Saves.saveEcho(e.id, e.text, e.ctx)) {
+          // 静默保存，不打扰流程
+        }
+      });
+    }
 
     // 循环文本：根据 loopCount 显示不同文本
     let displayNode = node;
@@ -360,6 +369,36 @@
       return;
     }
 
+    // v0.6.0 拼贴诗节点
+    if (node.collage) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runCollage(node.collage, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.6.0 摄影构图节点
+    if (node.photo) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPhoto(node.photo, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.6.0 节奏敲击节点
+    if (node.rhythm) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runRhythm(node.rhythm, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -374,14 +413,22 @@
     // 视角切换支持：节点定义了 perspective 时显示切换按钮
     renderPerspectiveButton(node);
 
+    // v0.6.0 回声触发：节点定义 echo 时，在文本完成后弹出回声
+    if (node.echo) {
+      typewriter(displayNode.text || "", () => {
+        onTextComplete(node);
+        setTimeout(() => triggerEcho(node.echo, nodeId), 600);
+      });
+    } else {
+      typewriter(displayNode.text || "", () => onTextComplete(node));
+    }
+
     if (speakerName && displayNode.text) pushHistory(speakerName, displayNode.text, nodeId);
     else if (displayNode.text) pushHistory("旁白", displayNode.text, nodeId);
 
     updateDayBar(node);
     updateHeartBar();
     updateLoopBadge();
-
-    typewriter(displayNode.text || "", () => onTextComplete(node));
   }
 
   /* ============ 视角切换 ============ */
@@ -1574,6 +1621,499 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v0.6.0 拼贴诗系统 runCollage
+     —— 把已解锁关键词拖到画布，按意象密度判定走向
+     node.collage = {
+       prompt, minWords, maxWords,
+       words (可选: 自定义词表；不填则用已解锁关键词+合成词),
+       tag (评分维度阈值，{good:5,bad:2}),
+       scoreBonus: { good:{...}, normal:{...}, bad:{...} },
+       scoreJump:  { good:"nodeId", normal:"nodeId", bad:"nodeId" }
+     }
+     ============================================================ */
+  function runCollage(collage, currentNodeId) {
+    const layer = document.createElement("div");
+    layer.className = "collage-layer";
+
+    const prompt = document.createElement("div");
+    prompt.className = "collage-prompt";
+    prompt.textContent = collage.prompt || "拖动词语到画布上，拼成一句诗";
+    layer.appendChild(prompt);
+
+    const canvas = document.createElement("div");
+    canvas.className = "collage-canvas";
+    const canvasHint = document.createElement("div");
+    canvasHint.className = "collage-hint";
+    canvasHint.textContent = "— 把词语拖到这里 —";
+    canvas.appendChild(canvasHint);
+    layer.appendChild(canvas);
+
+    const pool = document.createElement("div");
+    pool.className = "collage-pool";
+    layer.appendChild(pool);
+
+    // 词库：自定义 or 已解锁关键词+合成词
+    let words = collage.words;
+    if (!words) {
+      const unlocked = Saves.getKeywords();
+      const composed = Saves.getComposed();
+      words = unlocked.concat(composed);
+    }
+    if (!Array.isArray(words)) words = [];
+    // 加点装饰词
+    const decoWords = ["花瓣", "回声", "指尖", "夜晚", "空", "熄灭", "重新"];
+    words = words.concat(decoWords.filter(w => !words.includes(w)));
+
+    const placed = [];
+    function makeWordChip(word) {
+      const chip = document.createElement("div");
+      chip.className = "collage-chip";
+      chip.textContent = word;
+      chip.draggable = true;
+      chip.dataset.word = word;
+      chip.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", word);
+        chip.classList.add("dragging");
+      });
+      chip.addEventListener("dragend", () => chip.classList.remove("dragging"));
+      // 点击也能放置（移动端友好）
+      chip.addEventListener("click", () => placeWord(chip));
+      return chip;
+    }
+    words.forEach(w => pool.appendChild(makeWordChip(w)));
+
+    function placeWord(chip) {
+      if (chip.parentElement === canvas) return;
+      canvasHint.style.display = "none";
+      const placedChip = chip.cloneNode(true);
+      placedChip.classList.add("placed");
+      placedChip.addEventListener("click", () => {
+        placedChip.remove();
+        const i = placed.indexOf(placedChip.dataset.word);
+        if (i >= 0) placed.splice(i, 1);
+        if (!canvas.querySelector(".collage-chip.placed")) canvasHint.style.display = "";
+      });
+      canvas.appendChild(placedChip);
+      placed.push(placedChip.dataset.word);
+    }
+
+    canvas.addEventListener("dragover", (e) => { e.preventDefault(); canvas.classList.add("drag-over"); });
+    canvas.addEventListener("dragleave", () => canvas.classList.remove("drag-over"));
+    canvas.addEventListener("drop", (e) => {
+      e.preventDefault();
+      canvas.classList.remove("drag-over");
+      const word = e.dataTransfer.getData("text/plain");
+      const chip = pool.querySelector(`.collage-chip[data-word="${word}"]`);
+      if (chip) placeWord(chip);
+    });
+
+    const controls = document.createElement("div");
+    controls.className = "collage-controls";
+    const clear = document.createElement("button");
+    clear.textContent = "✕ 清空";
+    clear.onclick = () => {
+      canvas.querySelectorAll(".collage-chip.placed").forEach(c => c.remove());
+      placed.length = 0;
+      canvasHint.style.display = "";
+    };
+    const submit = document.createElement("button");
+    submit.className = "collage-submit";
+    submit.textContent = "✦ 完成";
+    submit.onclick = () => {
+      if (placed.length === 0) { flashHint("画布是空的"); return; }
+      const poem = placed.join(" · ");
+      // 评分：意象密度 = 词数 × 唯一词比例
+      const unique = new Set(placed).size;
+      const density = placed.length * (unique / Math.max(1, placed.length));
+      let tag = "normal";
+      const thresholds = collage.tag || { good: 5, bad: 2 };
+      if (density >= thresholds.good) tag = "good";
+      else if (density <= thresholds.bad) tag = "bad";
+      Saves.saveCollage(currentNodeId, placed.slice(), poem, parseFloat(density.toFixed(2)), tag);
+      if (collage.scoreBonus && collage.scoreBonus[tag]) {
+        applyAdd(collage.scoreBonus[tag]);
+        updateHeartBar();
+      }
+      flashHint(`✦ 你拼出的诗：${poem}（${tag === "good" ? "意象丰沛" : tag === "bad" ? "克制简素" : "恰到好处"}）`);
+      if (collage.scoreJump && collage.scoreJump[tag]) {
+        layer.remove();
+        gotoNode(collage.scoreJump[tag]);
+        return;
+      }
+      layer.remove();
+      const node = SCRIPT[currentNodeId];
+      if (node && node.next) gotoNode(node.next);
+    };
+    controls.appendChild(clear);
+    controls.appendChild(submit);
+    layer.appendChild(controls);
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.6.0 回声系统 triggerEcho
+     —— 玩家说过的重要台词在关键节点复现，可选择承认/否认
+     node.echo = {
+       id (回声 ID), text (复现的台词), ctx (出处),
+       choices: [
+         { text:"承认", value:"admit", add:{...}, personality:{...}, next:"nodeId", memory:{...} },
+         { text:"否认", value:"deny",  add:{...}, personality:{...}, next:"nodeId", memory:{...} },
+         { text:"沉默", value:"silent", add:{...}, personality:{...}, next:"nodeId", memory:{...} }
+       ]
+     }
+     ============================================================ */
+  function triggerEcho(echo, currentNodeId) {
+    const layer = document.createElement("div");
+    layer.className = "echo-layer";
+    layer.id = "echo-layer";
+
+    const head = document.createElement("div");
+    head.className = "echo-head";
+    head.innerHTML = `<span class="echo-icon">❝</span> 回 声 <span class="echo-icon">❞</span>`;
+    layer.appendChild(head);
+
+    const quote = document.createElement("div");
+    quote.className = "echo-quote";
+    quote.textContent = echo.text || "";
+    layer.appendChild(quote);
+
+    const ctx = document.createElement("div");
+    ctx.className = "echo-ctx";
+    ctx.textContent = echo.ctx ? `—— ${echo.ctx}` : "—— 你曾经说过";
+    layer.appendChild(ctx);
+
+    // 检查是否已保存为回声
+    const saved = Saves.getEcho(echo.id);
+    if (saved && saved.acknowledged) {
+      const ack = document.createElement("div");
+      ack.className = "echo-acknowledged";
+      ack.textContent = `（你已选择：${saved.acknowledged === "admit" ? "承认" : saved.acknowledged === "deny" ? "否认" : "沉默"}）`;
+      layer.appendChild(ack);
+      const close = document.createElement("button");
+      close.className = "echo-close";
+      close.textContent = "✕ 继续";
+      close.onclick = () => { layer.remove(); };
+      layer.appendChild(close);
+      document.getElementById("game").appendChild(layer);
+      return;
+    }
+
+    const choices = echo.choices || [];
+    const btns = document.createElement("div");
+    btns.className = "echo-choices";
+    choices.forEach(c => {
+      const b = document.createElement("button");
+      b.className = "echo-choice";
+      b.textContent = c.text;
+      b.onclick = () => {
+        Saves.acknowledgeEcho(echo.id, c.value);
+        if (c.add) { applyAdd(c.add); updateHeartBar(); }
+        if (c.personality) for (const dim in c.personality) Saves.addPersonality(dim, c.personality[dim]);
+        if (c.memory && !Saves.isMemoryUnlocked(c.memory.id)) {
+          Saves.saveMemory(c.memory.id, c.memory.text);
+          flashHint(`✦ 记忆片段：${c.memory.id}`);
+        }
+        layer.remove();
+        if (c.next) gotoNode(c.next);
+      };
+      btns.appendChild(b);
+    });
+    layer.appendChild(btns);
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.6.0 摄影构图系统 runPhoto
+     —— 场景内拖动取景框，按构图规则评分
+     node.photo = {
+       prompt, scene (可选: 自定义场景图，不填用当前 bg),
+       rules: ["thirds","center","diagonal"], // 评分规则
+       targets: [{x,y,w,h, label}],           // 取景目标（可点击的高价值区）
+       scoreBonus: { high:{...}, mid:{...}, low:{...} },
+       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
+     }
+     ============================================================ */
+  function runPhoto(photo, currentNodeId) {
+    const layer = document.createElement("div");
+    layer.className = "photo-layer";
+
+    const prompt = document.createElement("div");
+    prompt.className = "photo-prompt";
+    prompt.textContent = photo.prompt || "拖动取景框，按下快门";
+    layer.appendChild(prompt);
+
+    const scene = document.createElement("div");
+    scene.className = "photo-scene";
+    // 用当前背景作为取景画面
+    const bgClass = state.currentBg ? `bg-scene scene-${state.currentBg}` : "bg-scene scene-cherry_full";
+    scene.className += " " + bgClass;
+
+    // 取景目标（高价值区）
+    const targets = photo.targets || [];
+    targets.forEach(t => {
+      const tg = document.createElement("div");
+      tg.className = "photo-target";
+      tg.style.left = t.x + "%";
+      tg.style.top = t.y + "%";
+      tg.style.width = (t.w || 10) + "%";
+      tg.style.height = (t.h || 10) + "%";
+      tg.dataset.label = t.label || "目标";
+      scene.appendChild(tg);
+    });
+
+    // 取景框
+    const frame = document.createElement("div");
+    frame.className = "photo-frame";
+    frame.style.left = "35%";
+    frame.style.top = "35%";
+    frame.style.width = "30%";
+    frame.style.height = "30%";
+    // 三分线
+    const grid = document.createElement("div");
+    grid.className = "photo-grid";
+    frame.appendChild(grid);
+    scene.appendChild(frame);
+
+    let dragging = false, startX = 0, startY = 0, startLeft = 35, startTop = 35;
+    frame.addEventListener("mousedown", (e) => {
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      startLeft = parseFloat(frame.style.left);
+      startTop = parseFloat(frame.style.top);
+      e.preventDefault();
+    });
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    function onMove(e) {
+      if (!dragging) return;
+      const r = scene.getBoundingClientRect();
+      const dx = (e.clientX - startX) / r.width * 100;
+      const dy = (e.clientY - startY) / r.height * 100;
+      let nl = Math.max(0, Math.min(70, startLeft + dx));
+      let nt = Math.max(0, Math.min(70, startTop + dy));
+      frame.style.left = nl + "%";
+      frame.style.top = nt + "%";
+    }
+    function onUp() { dragging = false; }
+
+    layer.appendChild(scene);
+
+    const controls = document.createElement("div");
+    controls.className = "photo-controls";
+    const submit = document.createElement("button");
+    submit.className = "photo-submit";
+    submit.textContent = "📸 按下快门";
+    submit.onclick = () => {
+      const fl = parseFloat(frame.style.left);
+      const ft = parseFloat(frame.style.top);
+      const fw = parseFloat(frame.style.width);
+      const fh = parseFloat(frame.style.height);
+      const fcx = fl + fw / 2;
+      const fcy = ft + fh / 2;
+      // 评分：取景框中心是否靠近目标中心
+      let score = 0;
+      let hitTarget = null;
+      targets.forEach(t => {
+        const tcx = t.x + (t.w || 10) / 2;
+        const tcy = t.y + (t.h || 10) / 2;
+        const d = Math.sqrt((fcx - tcx) ** 2 + (fcy - tcy) ** 2);
+        if (d < 15) {
+          score = Math.max(score, 100 - d * 5);
+          hitTarget = t;
+        }
+      });
+      // 三分法加分：取景框中心靠近三分之一线
+      const thirds = [33.3, 66.7];
+      const distToThird = Math.min(
+        Math.abs(fcx - thirds[0]), Math.abs(fcx - thirds[1]),
+        Math.abs(fcy - thirds[0]), Math.abs(fcy - thirds[1])
+      );
+      score += Math.max(0, 20 - distToThird * 1.5);
+      score = Math.min(100, Math.round(score));
+
+      let tag = "low";
+      if (score >= 70) tag = "high";
+      else if (score >= 40) tag = "mid";
+
+      const composition = hitTarget ? hitTarget.label : "自由构图";
+      Saves.savePhoto(currentNodeId, composition, score, tag);
+
+      if (photo.scoreBonus && photo.scoreBonus[tag]) {
+        applyAdd(photo.scoreBonus[tag]);
+        updateHeartBar();
+      }
+      flashHint(`📸 构图：${composition}（${score} 分）`);
+      if (photo.scoreJump && photo.scoreJump[tag]) {
+        layer.remove();
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        gotoNode(photo.scoreJump[tag]);
+        return;
+      }
+      layer.remove();
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      const node = SCRIPT[currentNodeId];
+      if (node && node.next) gotoNode(node.next);
+    };
+    controls.appendChild(submit);
+    layer.appendChild(controls);
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.6.0 节奏敲击系统 runRhythm
+     —— 对话中按节奏点击，模拟心跳/呼吸同步
+     node.rhythm = {
+       prompt,
+       bpm (节拍速度，60-180),
+       beats (总节拍数，8-32),
+       pattern (可选：自定义强弱拍 [1,0,1,0,...])
+       scoreBonus: { high:{...}, mid:{...}, low:{...} },
+       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
+     }
+     ============================================================ */
+  function runRhythm(rhythm, currentNodeId) {
+    const layer = document.createElement("div");
+    layer.className = "rhythm-layer";
+
+    const prompt = document.createElement("div");
+    prompt.className = "rhythm-prompt";
+    prompt.textContent = rhythm.prompt || "按下节拍，让心跳同步";
+    layer.appendChild(prompt);
+
+    const track = document.createElement("div");
+    track.className = "rhythm-track";
+    layer.appendChild(track);
+
+    const beats = rhythm.beats || 16;
+    const bpm = rhythm.bpm || 80;
+    const interval = 60000 / bpm; // ms per beat
+    const pattern = rhythm.pattern || Array.from({length: beats}, (_, i) => i % 2);
+    const beatEls = [];
+    for (let i = 0; i < beats; i++) {
+      const b = document.createElement("div");
+      b.className = "rhythm-beat" + (pattern[i] ? " strong" : "");
+      b.dataset.idx = i;
+      track.appendChild(b);
+      beatEls.push(b);
+    }
+
+    const hitArea = document.createElement("div");
+    hitArea.className = "rhythm-hit";
+    hitArea.textContent = "点击此处 / 按 空格";
+    layer.appendChild(hitArea);
+
+    const stats = document.createElement("div");
+    stats.className = "rhythm-stats";
+    stats.textContent = "准备…";
+    layer.appendChild(stats);
+
+    let idx = 0;
+    let hits = [];
+    let timer = null;
+    let started = false;
+
+    function nextBeat() {
+      if (idx >= beats) {
+        finish();
+        return;
+      }
+      beatEls.forEach(b => b.classList.remove("current"));
+      const cur = beatEls[idx];
+      cur.classList.add("current");
+      cur.dataset.t0 = Date.now();
+      idx++;
+      timer = setTimeout(nextBeat, interval);
+    }
+
+    function hit() {
+      if (!started || idx === 0 || idx > beats) return;
+      const curIdx = idx - 1;
+      const cur = beatEls[curIdx];
+      if (!cur) return;
+      const t0 = parseInt(cur.dataset.t0 || 0);
+      const dt = Date.now() - t0;
+      // 偏差越小越准
+      const offset = Math.abs(dt - interval / 2);
+      let grade = "miss";
+      if (offset < interval * 0.15) grade = "perfect";
+      else if (offset < interval * 0.3) grade = "good";
+      else if (offset < interval * 0.5) grade = "ok";
+      cur.classList.add("hit-" + grade);
+      hits.push({ idx: curIdx, dt, grade });
+      stats.textContent = `命中：${hits.filter(h => h.grade !== "miss").length} / ${idx}（最近：${grade}）`;
+    }
+
+    function finish() {
+      const total = beats;
+      const hitCount = hits.filter(h => h.grade !== "miss").length;
+      const perfectCount = hits.filter(h => h.grade === "perfect").length;
+      const accuracy = Math.round(hitCount / total * 100);
+      let tag = "low";
+      if (accuracy >= 80 && perfectCount >= beats * 0.3) tag = "high";
+      else if (accuracy >= 50) tag = "mid";
+      Saves.saveRhythm(currentNodeId, hits.slice(), accuracy, tag);
+      if (rhythm.scoreBonus && rhythm.scoreBonus[tag]) {
+        applyAdd(rhythm.scoreBonus[tag]);
+        updateHeartBar();
+      }
+      stats.textContent = `完成！命中率 ${accuracy}% · ${perfectCount} 次完美`;
+      flashHint(`♪ 命中率 ${accuracy}%（${tag === "high" ? "心跳同步" : tag === "mid" ? "勉强跟上" : "完全乱了"}）`);
+      if (rhythm.scoreJump && rhythm.scoreJump[tag]) {
+        layer.remove();
+        gotoNode(rhythm.scoreJump[tag]);
+        return;
+      }
+      setTimeout(() => {
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        if (node && node.next) gotoNode(node.next);
+      }, 1200);
+    }
+
+    function start() {
+      if (started) return;
+      started = true;
+      stats.textContent = "开始！";
+      nextBeat();
+    }
+
+    hitArea.addEventListener("click", () => {
+      if (!started) { start(); return; }
+      hit();
+    });
+    document.addEventListener("keydown", rhythmKeyHandler);
+    function rhythmKeyHandler(e) {
+      if (e.code !== "Space") return;
+      e.preventDefault();
+      if (!started) { start(); return; }
+      hit();
+    }
+
+    // 退出时清理
+    const observer = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        clearTimeout(timer);
+        document.removeEventListener("keydown", rhythmKeyHandler);
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true });
+
+    const startBtn = document.createElement("button");
+    startBtn.className = "rhythm-start";
+    startBtn.textContent = "▶ 开始";
+    startBtn.onclick = start;
+    layer.appendChild(startBtn);
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -1615,6 +2155,15 @@
     if (doodleLayer) doodleLayer.remove();
     const inboxReply = document.getElementById("inbox-reply-layer");
     if (inboxReply) inboxReply.remove();
+    // 清理 v0.6.0 浮层
+    const collageLayer = document.querySelector(".collage-layer");
+    if (collageLayer) collageLayer.remove();
+    const echoLayer = document.getElementById("echo-layer");
+    if (echoLayer) echoLayer.remove();
+    const photoLayer = document.querySelector(".photo-layer");
+    if (photoLayer) photoLayer.remove();
+    const rhythmLayer = document.querySelector(".rhythm-layer");
+    if (rhythmLayer) rhythmLayer.remove();
     if (el.clueLayer) el.clueLayer.innerHTML = "";
     el.titleScreen.classList.remove("hidden");
     el.endingScreen.classList.add("hidden");

@@ -415,7 +415,7 @@ const SCRIPT = {
     }
   },
   // 涂鸦后的两个分支汇合回主线
-  d2_library_encourage: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这一笔这么用力。原来推开门也可以是这种姿势。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔，她照着写下了开场。" } },
+  d2_library_encourage: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这一笔这么用力。原来推开门也可以是这种姿势。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔，她照着写下了开场。" }, echoSave: { id: "echo_brave", text: "敢", ctx: "图书馆·帮林诗雨画开场" } },
   d2_library_calm: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……很安静的一笔。原来她推开门时也可以不害怕。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔很安静，她跟着写下了开场。" } },
   d2_library_9: { day: 2, time: "morning", bg: "library", speaker: "", text: "窗外的樱花被风吹进图书馆，落在她摊开的稿纸上。她没去拂，只是看着它。", next: "d2_noon" },
 
@@ -513,7 +513,31 @@ const SCRIPT = {
   d3_noon_4: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "夏织", text: "……没事。没事！只是崴了一下。", next: "d3_noon_5" },
   d3_noon_5: { day: 3, time: "noon", bg: "sportsmeet", chars: [{id:"shiyu", pos:"left"}, {id:"sunian", pos:"right"}], speaker: "", text: "我看到林诗雨和苏念都站在场边。林诗雨手里攥着冰袋，苏念抱着画本，谁都没说话。", next: "d3_noon_6" },
   d3_noon_6: { day: 3, time: "noon", bg: "sportsmeet", speaker: "", text: "夏织抬头看到她们，愣了一下，然后笑得眼睛弯成月亮：「都来啦？」", next: "d3_evening" },
-  d3_evening: { day: 3, time: "evening", bg: "home_room", char: null, speaker: "", text: "回宿舍。我打开抽屉，匿名信旁边又多了一封。", next: "letter_1" },
+  d3_evening: {
+    day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "回宿舍。我打开抽屉，匿名信旁边又多了一封。我忽然想起白天画在林诗雨稿纸上的那一笔——一个字，从指尖跑了出去。",
+    next: "letter_1",
+    // v0.6.0 回声：玩家画过的"敢"在夜里复现
+    echo: {
+      id: "echo_brave",
+      text: "敢",
+      ctx: "图书馆·帮林诗雨画开场",
+      choices: [
+        { text: "承认：是我说的。", value: "admit",
+          add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 2 },
+          memory: { id: "回声·敢", title: "夜里承认", text: "夜里我承认了——是我写的「敢」。她没说，但她听见了。" },
+          next: "letter_1" },
+        { text: "否认：那不是我说的。", value: "deny",
+          add: { affection: { shiyu: -1 } }, personality: { honest: -2 },
+          memory: { id: "回声·敢", title: "夜里否认", text: "夜里我否认了。但那个字，确实是我写的。" },
+          next: "letter_1" },
+        { text: "沉默：不回答。", value: "silent",
+          add: { affection: { shiyu: 0 } }, personality: { kind: 1 },
+          memory: { id: "回声·敢", title: "夜里沉默", text: "夜里我沉默了。沉默也是一种回答。" },
+          next: "letter_1" },
+      ]
+    }
+  },
 
   /* —— 信件系统 1 —— */
   letter_1: {
@@ -592,11 +616,56 @@ const SCRIPT = {
     text: "——打字写出一句开场。",
     minigame: "writing",
     scoreBonus: { affection: { shiyu: 1 } },
-    next: "d4_noon"
+    next: "d4_shiyu_collage"
   },
+  /* v0.6.0 拼贴诗：写完开场后，林诗雨让玩家用已解锁的词拼一首小诗 */
+  d4_shiyu_collage: {
+    day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨",
+    text: "……开场写完了。再来——你帮我把这几个词拼成一首小诗？我想用它做章末的题记。",
+    next: "d4_noon",
+    collage: {
+      prompt: "拖动词语拼成一首小诗",
+      tag: { good: 5, bad: 2 },
+      scoreBonus: {
+        good: { affection: { shiyu: 2 } },
+        normal: { affection: { shiyu: 1 } },
+        bad: { affection: { shiyu: 0 } }
+      },
+      scoreJump: {
+        good: "d4_shiyu_poem_good",
+        normal: "d4_noon",
+        bad: "d4_shiyu_poem_spare"
+      }
+    }
+  },
+  d4_shiyu_poem_good: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……意象这么多。你写的不是诗，是一整片春天。", next: "d4_noon", memory: { id: "诗雨·题记", title: "丰沛的诗", text: "你拼的诗意象丰沛。她把它写进了章末。" } },
+  d4_shiyu_poem_spare: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这么少。可诗里最美的就是省略号。", next: "d4_noon", memory: { id: "诗雨·题记", title: "省略的诗", text: "你拼的诗只有寥寥几个字。她说，省略也是诗。" } },
   d4_xiazhi_1: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "田径社要办一个「奔跑接力」展，让来宾体验短跑。你帮我搭跑道。", next: "d4_xiazhi_2" },
   d4_xiazhi_2: { day: 4, time: "morning", bg: "field", speaker: "", text: "我们搬了一上午的桩和彩带。她左脚踝贴着膏药，但没说。", next: "d4_xiazhi_3" },
-  d4_xiazhi_3: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……沈屿，你说跑下去，真的能跑出去吗？", next: "d4_noon" },
+  d4_xiazhi_3: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……沈屿，你说跑下去，真的能跑出去吗？", next: "d4_xiazhi_rhythm" },
+  /* v0.6.0 节奏敲击：和夏织一起热身，按节奏同步呼吸 */
+  d4_xiazhi_rhythm: {
+    day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织",
+    text: "——来，跟我一起热身。你说跑得出去跑不出去，先把呼吸跟上我。",
+    next: "d4_noon",
+    rhythm: {
+      prompt: "跟着夏织的节奏，按下空格 / 点击",
+      bpm: 90,
+      beats: 16,
+      scoreBonus: {
+        high: { affection: { xiazhi: 3 } },
+        mid:  { affection: { xiazhi: 1 } },
+        low:  { affection: { xiazhi: 0 } }
+      },
+      scoreJump: {
+        high: "d4_xiazhi_sync",
+        mid: "d4_noon",
+        low: "d4_xiazhi_lost"
+      }
+    }
+  },
+  d4_xiazhi_sync: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……你跟上了。很少人跟得上我。她说这话时没看我，看的是跑道尽头。", next: "d4_noon", memory: { id: "夏织·同步", title: "跟上她的呼吸", text: "你跟上了夏织的节奏。她没说，但她记住了。" } },
+  d4_xiazhi_lost: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……乱了？没关系。节奏这东西，乱了再找回来就行。", next: "d4_noon", memory: { id: "夏织·同步", title: "乱了的呼吸", text: "你没跟上夏织的节奏。她说，乱了再找回来就行。" } },
   d4_sunian_1: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……美术社要办画展。我得交一幅。", next: "d4_sunian_2" },
   d4_sunian_2: { day: 4, time: "morning", bg: "art_room", speaker: "沈屿", text: "你不是卡了三年吗？", next: "d4_sunian_3" },
   d4_sunian_3: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……但我必须交。否则省展邀请会作废。帮我搬旧画，看看有没有能改的。", next: "d4_sunian_4" },
@@ -606,8 +675,33 @@ const SCRIPT = {
     text: "——把颜色匹配到对应的目标框。",
     minigame: "painting",
     scoreBonus: { affection: { sunian: 1 } },
-    next: "d4_noon"
+    next: "d4_sunian_photo"
   },
+  /* v0.6.0 摄影构图：苏念要给完成的画拍一张海报照片 */
+  d4_sunian_photo: {
+    day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "……画完了。沈屿，帮我拍一张海报——把那束紫光取进去，别的不重要。",
+    next: "d4_noon",
+    photo: {
+      prompt: "拖动取景框，把紫色光斑取进去，按下快门",
+      targets: [
+        { x: 60, y: 35, w: 14, h: 22, label: "紫光斑" },
+        { x: 20, y: 60, w: 10, h: 16, label: "画角" }
+      ],
+      scoreBonus: {
+        high: { affection: { sunian: 3 } },
+        mid:  { affection: { sunian: 1 } },
+        low:  { affection: { sunian: 0 } }
+      },
+      scoreJump: {
+        high: "d4_sunian_shot_good",
+        mid: "d4_noon",
+        low: "d4_sunian_shot_bad"
+      }
+    }
+  },
+  d4_sunian_shot_good: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这张。你看，紫在里面活着。", next: "d4_noon", memory: { id: "苏念·海报", title: "取景里的紫", text: "你取的景把紫光斑拍了进去。她说，紫在里面活着。" } },
+  d4_sunian_shot_bad: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……没取到。但没关系，画本身就在。", next: "d4_noon", memory: { id: "苏念·海报", title: "没取到的紫", text: "你没把紫光斑取进去。她说，画本身就在。" } },
   d4_noon: { day: 4, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。", next: "d4_noon_2" },
   d4_noon_2: { day: 4, time: "noon", bg: "cafeteria", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "夏织", text: "我提议——学园祭那天，我们三个一起出节目。诗雨写本子，我跑展，苏念画海报。", next: "d4_noon_3" },
   d4_noon_3: { day: 4, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……可以。", next: "d4_noon_4" },

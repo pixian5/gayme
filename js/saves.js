@@ -24,6 +24,11 @@ const MOMENT_COMMENTS_KEY = "sakura_letters_moment_comments_v2";
 const DREAM_KEY        = "sakura_letters_dream_v2";       // 梦境碎片
 const PERSONALITY_KEY  = "sakura_letters_personality_v2"; // 性格画像
 const DOODLE_KEY       = "sakura_letters_doodle_v2";     // 涂鸦记录
+/* v0.6.0 新玩法存储 */
+const COLLAGE_KEY      = "sakura_letters_collage_v2";    // 拼贴诗
+const ECHO_KEY         = "sakura_letters_echo_v2";       // 回声台词
+const PHOTO_KEY        = "sakura_letters_photo_v2";      // 摄影构图
+const RHYTHM_KEY       = "sakura_letters_rhythm_v2";     // 节奏敲击
 
 const Saves = {
   data: { slots: [], lastSlot: null },
@@ -391,6 +396,76 @@ const Saves = {
   },
   getDoodle(nodeId) { return this.getDoodles()[nodeId]; },
 
+  /* ============ 拼贴诗 ============ */
+  getCollages() {
+    try {
+      const raw = localStorage.getItem(COLLAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveCollage(nodeId, words, poem, score, tag) {
+    const all = this.getCollages();
+    all[nodeId] = { words, poem, score, tag, ts: Date.now() };
+    localStorage.setItem(COLLAGE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getCollage(nodeId) { return this.getCollages()[nodeId]; },
+
+  /* ============ 回声台词（玩家说过的重要台词） ============ */
+  getEchoes() {
+    try {
+      const raw = localStorage.getItem(ECHO_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  },
+  saveEcho(echoId, text, ctx) {
+    const list = this.getEchoes();
+    if (!list.find(e => e.id === echoId)) {
+      list.push({ id: echoId, text, ctx: ctx || "", ts: Date.now() });
+      localStorage.setItem(ECHO_KEY, JSON.stringify(list));
+      return true;
+    }
+    return false;
+  },
+  isEchoSaved(echoId) { return this.getEchoes().some(e => e.id === echoId); },
+  getEcho(echoId) { return this.getEchoes().find(e => e.id === echoId); },
+  acknowledgeEcho(echoId, choice) {
+    const list = this.getEchoes();
+    const e = list.find(x => x.id === echoId);
+    if (e) { e.acknowledged = choice; localStorage.setItem(ECHO_KEY, JSON.stringify(list)); return true; }
+    return false;
+  },
+
+  /* ============ 摄影构图 ============ */
+  getPhotos() {
+    try {
+      const raw = localStorage.getItem(PHOTO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  savePhoto(nodeId, composition, score, tag) {
+    const all = this.getPhotos();
+    all[nodeId] = { composition, score, tag, ts: Date.now() };
+    localStorage.setItem(PHOTO_KEY, JSON.stringify(all));
+    return true;
+  },
+  getPhoto(nodeId) { return this.getPhotos()[nodeId]; },
+
+  /* ============ 节奏敲击 ============ */
+  getRhythms() {
+    try {
+      const raw = localStorage.getItem(RHYTHM_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveRhythm(nodeId, hits, accuracy, tag) {
+    const all = this.getRhythms();
+    all[nodeId] = { hits, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(RHYTHM_KEY, JSON.stringify(all));
+    return true;
+  },
+  getRhythm(nodeId) { return this.getRhythms()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -409,7 +484,8 @@ const Saves = {
     localStorage.removeItem(COMPOSED_KEY);
     localStorage.removeItem(MEMORIES_KEY);
     [CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
-     DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY].forEach(k => localStorage.removeItem(k));
+     DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
+     COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
