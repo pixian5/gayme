@@ -2852,6 +2852,410 @@ body {
   font-family: inherit; font-size: 15px; letter-spacing: 3px; cursor: pointer;
 }
 
+/* ============ v1.1.0 光影描绘 ============ */
+.lightdraw-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(8,10,20,0.96), rgba(0,0,5,0.99));
+  backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ld-prompt {
+  font-size: 17px; color: #ffe0a0;
+  letter-spacing: 3px; text-align: center;
+}
+.ld-stage {
+  position: relative;
+  width: min(95%, 720px); height: min(60vh, 480px);
+  background: linear-gradient(180deg, #0a0c18 0%, #050810 100%);
+  border: 1px solid rgba(255,220,140,0.15);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: crosshair;
+  touch-action: none;
+}
+.ld-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.ld-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.ld-target-core {
+  width: 30%; height: 30%;
+  border-radius: 50%;
+  background: rgba(120,100,60,0.3);
+  border: 1px dashed rgba(255,200,100,0.25);
+  transition: all 0.4s ease;
+}
+.ld-target.lit .ld-target-core {
+  background: radial-gradient(circle, #fff5d0, rgba(255,200,100,0.7));
+  border-color: #fff5d0;
+  box-shadow: 0 0 30px rgba(255,220,140,0.9), 0 0 60px rgba(255,200,100,0.6);
+  width: 60%; height: 60%;
+}
+.ld-target-label {
+  position: absolute;
+  bottom: -22px;
+  font-size: 12px; color: rgba(255,220,140,0.5);
+  white-space: nowrap;
+  letter-spacing: 2px;
+  transition: color 0.3s ease;
+}
+.ld-target.lit .ld-target-label {
+  color: #ffe0a0;
+}
+.ld-info {
+  font-size: 14px; color: rgba(255,220,140,0.7);
+  letter-spacing: 2px;
+}
+.ld-actions {
+  display: flex; gap: 14px;
+}
+.ld-actions button {
+  padding: 9px 24px;
+  background: rgba(255,200,100,0.15);
+  border: 1px solid rgba(255,220,140,0.3);
+  border-radius: 18px;
+  color: #ffe0a0;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.ld-actions button:hover:not(:disabled) {
+  background: rgba(255,200,100,0.3);
+  border-color: rgba(255,220,140,0.6);
+}
+.ld-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.ld-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,15,0.85);
+  border: 1px solid rgba(255,220,140,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ld-reading-title {
+  font-size: 18px; color: #ffe0a0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ld-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+.ld-reading-close {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, rgba(255,200,100,0.5), rgba(220,160,80,0.4));
+  border: 1px solid rgba(255,220,140,0.5);
+  border-radius: 18px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+
+/* ============ v1.1.0 声音模仿 ============ */
+.mimic-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,25,35,0.92), rgba(10,5,10,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.mm-prompt {
+  font-size: 18px; color: #ffd8e4;
+  letter-spacing: 3px; text-align: center;
+}
+.mm-target {
+  font-size: 13px; color: rgba(255,200,220,0.6);
+  letter-spacing: 2px;
+}
+.mm-wave {
+  width: min(90%, 480px); height: 80px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,200,220,0.2);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.mm-wave svg {
+  width: 100%; height: 100%;
+}
+.mm-controls {
+  width: min(90%, 480px);
+  display: flex; flex-direction: column;
+  gap: 12px;
+}
+.mm-row {
+  display: flex; align-items: center; gap: 14px;
+}
+.mm-row label {
+  width: 50px; font-size: 14px; color: #ffd8e4;
+  letter-spacing: 2px;
+}
+.mm-row input[type="range"] {
+  flex: 1;
+  accent-color: #d87090;
+}
+.mm-row span {
+  width: 36px; text-align: right;
+  font-size: 13px; color: rgba(255,200,220,0.7);
+}
+.mm-info {
+  font-size: 14px; color: rgba(255,200,220,0.7);
+  letter-spacing: 2px;
+}
+.mm-actions button {
+  padding: 10px 28px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(180,80,120,0.5));
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.mm-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,30,0.85);
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.mm-reading-title {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.mm-reading-text {
+  font-size: 15px; color: #e8d0d8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+.mm-reading-close {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.5), rgba(180,80,120,0.4));
+  border: 1px solid rgba(255,200,220,0.5);
+  border-radius: 18px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+
+/* ============ v1.1.0 季节切换 ============ */
+.season-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(20,25,35,0.92), rgba(5,8,15,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sn-prompt {
+  font-size: 18px; color: #c8e0f0;
+  letter-spacing: 3px; text-align: center;
+}
+.sn-stage {
+  position: relative;
+  width: min(90%, 540px); height: 320px;
+  border: 1px solid rgba(200,220,255,0.2);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.sn-scene {
+  position: absolute; inset: 0;
+  transition: background 0.6s ease;
+}
+.sn-scene.sn-spring {
+  background: linear-gradient(180deg, #ffc0d0 0%, #ffe0e8 50%, #fff5f8 100%);
+}
+.sn-scene.sn-summer {
+  background: linear-gradient(180deg, #5fb8e8 0%, #a8e0f0 50%, #f0e8a0 100%);
+}
+.sn-scene.sn-autumn {
+  background: linear-gradient(180deg, #d88040 0%, #e8a060 50%, #c06030 100%);
+}
+.sn-scene.sn-winter {
+  background: linear-gradient(180deg, #b8c8d8 0%, #e0e8f0 50%, #f0f4f8 100%);
+}
+.sn-cherry, .sn-sun, .sn-leaf, .sn-snow {
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.sn-cherry::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(6px 6px at 20% 30%, rgba(255,200,220,0.8), transparent),
+    radial-gradient(5px 5px at 60% 60%, rgba(255,200,220,0.7), transparent),
+    radial-gradient(7px 7px at 80% 40%, rgba(255,200,220,0.8), transparent),
+    radial-gradient(4px 4px at 35% 70%, rgba(255,200,220,0.6), transparent);
+}
+.sn-sun::before {
+  content: ""; position: absolute;
+  top: 30px; right: 40px;
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffe890, rgba(255,200,80,0.4));
+  box-shadow: 0 0 60px rgba(255,220,120,0.7);
+}
+.sn-leaf::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(8px 4px at 30% 40%, rgba(180,80,40,0.7), transparent),
+    radial-gradient(7px 3px at 70% 60%, rgba(200,100,50,0.7), transparent),
+    radial-gradient(6px 3px at 50% 80%, rgba(160,70,30,0.7), transparent);
+}
+.sn-snow::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(4px 4px at 20% 30%, #fff, transparent),
+    radial-gradient(3px 3px at 50% 50%, #fff, transparent),
+    radial-gradient(5px 5px at 80% 70%, #fff, transparent),
+    radial-gradient(3px 3px at 35% 80%, #fff, transparent);
+}
+.sn-clue {
+  position: absolute;
+  bottom: 20px; left: 20px; right: 20px;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 10px;
+  font-size: 14px; color: #ffe0a0;
+  letter-spacing: 2px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.sn-clue.show {
+  opacity: 1; transform: translateY(0);
+}
+.sn-slider-wrap {
+  width: min(90%, 540px);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+}
+.sn-slider-wrap input[type="range"] {
+  width: 100%;
+  accent-color: #88aacc;
+}
+.sn-labels {
+  display: flex; justify-content: space-between;
+  width: 100%;
+  font-size: 13px; color: rgba(200,220,255,0.6);
+  letter-spacing: 4px;
+}
+.sn-info {
+  font-size: 14px; color: rgba(200,220,255,0.7);
+  letter-spacing: 3px;
+}
+.sn-actions button {
+  padding: 10px 28px;
+  background: linear-gradient(135deg, rgba(120,160,220,0.6), rgba(80,120,180,0.5));
+  border: 1px solid rgba(200,220,255,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.sn-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,30,50,0.85);
+  border: 1px solid rgba(200,220,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.sn-reading-title {
+  font-size: 17px; color: #c8e0f0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.sn-reading-text {
+  font-size: 15px; color: #d0d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+.sn-reading-close {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, rgba(120,160,220,0.5), rgba(80,120,180,0.4));
+  border: 1px solid rgba(200,220,255,0.5);
+  border-radius: 18px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+
+/* ============ v1.1.0 脉搏同步 ============ */
+.pulse-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(35,15,25,0.92), rgba(10,5,8,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.pl-prompt {
+  font-size: 18px; color: #ffb8c8;
+  letter-spacing: 3px; text-align: center;
+}
+.pl-stage {
+  position: relative;
+  width: min(95%, 720px); height: 280px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,180,200,0.3);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pl-canvas {
+  width: 100%; height: 100%;
+  cursor: pointer;
+  touch-action: none;
+}
+.pl-info {
+  position: absolute;
+  bottom: 10px; left: 0; right: 0;
+  text-align: center;
+  font-size: 13px; color: rgba(255,200,220,0.7);
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+.pl-actions button {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(180,80,120,0.5));
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.pl-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.pl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,30,0.85);
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.pl-reading-title {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.pl-reading-text {
+  font-size: 15px; color: #e8d0d8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+.pl-reading-close {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.5), rgba(180,80,120,0.4));
+  border: 1px solid rgba(255,200,220,0.5);
+  border-radius: 18px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }
@@ -2877,4 +3281,11 @@ body {
   .pf-blends { gap: 10px; }
   .pf-slot { width: 100px; padding: 12px; }
   .pf-ingredients { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  /* v1.1.0 适配 */
+  .ld-stage { width: 95%; height: 50vh; }
+  .ld-actions button { padding: 8px 18px; font-size: 13px; }
+  .mm-wave { height: 60px; }
+  .mm-row label { width: 40px; font-size: 13px; }
+  .sn-stage { width: 95%; height: 260px; }
+  .pl-stage { height: 200px; }
 }

@@ -836,7 +836,34 @@ const SCRIPT = {
       ]
     }
   },
-  letter_1_after: { day: 3, time: "evening", bg: "home_room", speaker: "沈屿", text: "我把信封好，放在窗台上。明天它就会不见。", next: "dream_night_1" },
+  letter_1_after: { day: 3, time: "evening", bg: "home_room", speaker: "沈屿", text: "我把信封好，放在窗台上。明天它就会不见。", next: "d3_season" },
+
+  /* v1.1.0 季节切换 */
+  d3_season: {
+    day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "睡前我看着窗外的樱花树发呆——它一年四季都不一样。哪个季节里，藏着你想说的那句话？",
+    next: "dream_night_1",
+    season: {
+      prompt: "滑动切换四季——找出那个藏着话的季节",
+      seasons: ["spring", "summer", "autumn", "winter"],
+      target: "autumn",
+      clue: "落叶里夹着一张字条：「等你来捡。」",
+      thresholds: [
+        { isTarget: true, tag: "found",
+          label: "——找到了",
+          text: "秋天的落叶里，你捡起那张字条。上面只有一行字：「等你来捡。」——你不知道是谁写的，但你笑了一下：原来一句话可以藏一整个季节。",
+          add: { affection: { shiyu: 1, sunian: 1, shen: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "季节·秋", title: "藏在秋天的字条", text: "你在秋天的落叶里捡到一张字条，写着「等你来捡」。" },
+          next: "dream_night_1" },
+        { isTarget: false, tag: "miss",
+          label: "——选错了",
+          text: "你选了别的季节——什么也没找到。也许那张字条是写给别人的。也行——不是所有的字条都该你捡。",
+          next: "dream_night_1" }
+      ],
+      fallback: { tag: "miss", next: "dream_night_1" }
+    }
+  },
 
   /* —— v0.5.0 梦境碎片：第3日夜晚 —— */
   dream_night_1: {
@@ -1241,7 +1268,7 @@ const SCRIPT = {
   d4_timecapsule: {
     day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "回到房间。窗台上有一张空白的纸——给未来的自己写一句话吧。明天醒来之前，它会到。",
-    next: "common_day5_morning",
+    next: "d4_lightdraw",
     timecapsule: {
       prompt: "给明天的自己写一句话——",
       placeholder: "（最多 60 字）",
@@ -1253,6 +1280,108 @@ const SCRIPT = {
         add: { affection: { shen: 1 } },
         personality: { brave: 2, honest: 1 },
         memory: { id: "时光·胶囊", title: "给明天的自己", text: "你给明天的自己写了一句话，封进了信封。" },
+        next: "d4_lightdraw" }
+    }
+  },
+
+  /* ============ v1.1.0 新玩法触发节点 ============ */
+  // 光影描绘
+  d4_lightdraw: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "夜里停电了。窗台上一片漆黑。你拿出一根没点燃的蜡烛——用手指在桌上拖一拖，假装是光。",
+    next: "d5_mimic",
+    lightdraw: {
+      prompt: "用手指在黑暗里拖出光路——照亮窗台上的东西",
+      targets: [
+        { id: "letter",  x: 20, y: 50, r: 5, label: "信封",
+          memory: { id: "光·信封", title: "夜里照亮的信", text: "你在黑暗里照亮了那封信。它静静躺在窗台上。" } },
+        { id: "cherry",  x: 50, y: 30, r: 4, label: "窗外的樱花" },
+        { id: "photo",   x: 75, y: 60, r: 5, label: "旧照片" },
+        { id: "phone",   x: 35, y: 75, r: 4, label: "手机",
+          memory: { id: "光·手机", title: "夜里照亮的手机", text: "你在黑暗里照亮了手机。屏幕上有三条未读消息。" } }
+      ],
+      min: 2,
+      thresholds: [
+        { min: 0.75, tag: "lit_all",
+          label: "——照亮了一切",
+          text: "你拖出的光把整个窗台都照亮了。信、樱花、照片、手机——它们都在那里，等你明天去回应。你第一次觉得：黑暗不可怕，可怕的是不肯把光照过去。",
+          add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1, shen: 1 } },
+          personality: { brave: 2, honest: 2 },
+          memory: { id: "光影·全亮", title: "照亮一切", text: "你在黑暗里拖出光，把窗台照亮了。" },
+          next: "d5_mimic" },
+        { min: 0.4, tag: "lit_some",
+          label: "——只照亮了一半",
+          text: "你只照亮了窗台的一半。另一半还埋在黑里——也行，有些事可以留到明天再看。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "lit_none",
+        label: "——没拖出光",
+        text: "你拖了几下，光没成形状。算了——黑暗就黑暗吧。明天的太阳总会出来的。",
+        next: "d5_mimic" }
+    }
+  },
+
+  // 声音模仿
+  d5_mimic: {
+    day: 5, time: "morning", bg: "rooftop", char: "shiyu", speaker: "林诗雨",
+    text: "她从背后叫住你。「喂——」尾音往上扬了一下。学她这一声？",
+    next: "d5_pulse",
+    mimic: {
+      prompt: "学她叫你那声「喂」——",
+      target: { pitch: 0.7, tempo: 0.4 },
+      tolerance: 0.15,
+      thresholds: [
+        { min: 0.85, tag: "alike",
+          label: "——学得像",
+          text: "你学得几乎一模一样。林诗雨愣了一下，然后笑出声：「……你这样学我，我会以为你也想被人这样叫。」",
+          add: { affection: { shiyu: 2 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "模仿·像", title: "学她那声喂", text: "你学林诗雨叫你的语气，她笑出声。" },
+          next: "d5_pulse" },
+        { min: 0.55, tag: "ok",
+          label: "——差一点",
+          text: "你学得不太像，但她听见了。「……声音可以骗人，但你不是。我认得你的声音。」",
+          add: { affection: { shiyu: 1 } },
+          personality: { honest: 1 },
+          next: "d5_pulse" }
+      ],
+      fallback: { tag: "miss",
+        label: "——不像",
+        text: "你学得完全不像。林诗雨摇摇头：「算了——你学不来。每个人有每个人的声音。」",
+        next: "d5_pulse" }
+    }
+  },
+
+  // 脉搏同步
+  d5_pulse: {
+    day: 5, time: "morning", bg: "rooftop", char: "shiyu", speaker: "林诗雨",
+    text: "她把手腕伸过来——你也伸过去。「……试试看，能不能跟上我的脉搏。」她的心跳不快。",
+    next: "common_day5_morning",
+    pulse: {
+      prompt: "点击让心跳跟上她——",
+      bpm: 68,
+      beats: 8,
+      tolerance: 0.18,
+      thresholds: [
+        { min: 0.7, tag: "synced",
+          label: "——对上了",
+          text: "你的心跳一拍一拍跟上她。她轻声说：「……跟上了。沈屿——你也能听见我，是不是。」你没有回答。但她的脉搏告诉你，她已经知道答案。",
+          add: { affection: { shiyu: 2 } },
+          personality: { kind: 2, honest: 2 },
+          memory: { id: "脉搏·对上", title: "天台上的脉搏", text: "你在天台上让心跳跟上林诗雨。" },
+          next: "common_day5_morning" },
+        { min: 0.4, tag: "ok",
+          label: "——半对上",
+          text: "你的心跳只对上了几拍。她笑了一下：「……没关系。听不见也是真的——你不必每次都跟得上。」",
+          add: { affection: { shiyu: 1 } },
+          personality: { honest: 1 },
+          next: "common_day5_morning" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "你的心跳完全跟不上。她抽回手，没生气：「你的心跳是你的。别为了跟谁，把它丢掉。」",
         next: "common_day5_morning" }
     }
   },

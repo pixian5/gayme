@@ -54,6 +54,12 @@ const TIMECAPSULE_KEY   = "sakura_letters_timecapsule_v2";   // 时光胶囊
 const FOLD_KEY          = "sakura_letters_fold_v2";         // 信纸折痕
 const REFLECTION_KEY    = "sakura_letters_reflection_v2";    // 倒影对齐
 
+/* v1.1.0 新玩法存储 */
+const LIGHTDRAW_KEY = "sakura_letters_lightdraw_v2";   // 光影描绘
+const MIMIC_KEY     = "sakura_letters_mimic_v2";       // 声音模仿
+const SEASON_KEY    = "sakura_letters_season_v2";      // 季节切换
+const PULSE_KEY     = "sakura_letters_pulse_v2";       // 脉搏同步
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -816,6 +822,70 @@ const Saves = {
     return true;
   },
   getReflectionRecord(nodeId) { return this.getReflectionRecords()[nodeId]; },
+
+  /* ============ v1.1.0 光影描绘 ============ */
+  // 记录每次描绘：{ nodeId: { litTargets: [...], coverage, tag, ts } }
+  getLightdrawRecords() {
+    try {
+      const raw = localStorage.getItem(LIGHTDRAW_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveLightdrawRecord(nodeId, litTargets, coverage, tag) {
+    const all = this.getLightdrawRecords();
+    all[nodeId] = { litTargets, coverage, tag, ts: Date.now() };
+    localStorage.setItem(LIGHTDRAW_KEY, JSON.stringify(all));
+    return true;
+  },
+  getLightdrawRecord(nodeId) { return this.getLightdrawRecords()[nodeId]; },
+
+  /* ============ v1.1.0 声音模仿 ============ */
+  // 记录每次模仿：{ nodeId: { pitch, tempo, diff, tag, ts } }
+  getMimicRecords() {
+    try {
+      const raw = localStorage.getItem(MIMIC_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveMimicRecord(nodeId, pitch, tempo, diff, tag) {
+    const all = this.getMimicRecords();
+    all[nodeId] = { pitch, tempo, diff, tag, ts: Date.now() };
+    localStorage.setItem(MIMIC_KEY, JSON.stringify(all));
+    return true;
+  },
+  getMimicRecord(nodeId) { return this.getMimicRecords()[nodeId]; },
+
+  /* ============ v1.1.0 季节切换 ============ */
+  // 记录每次季节选择：{ nodeId: { chosenSeason, isTarget, tag, ts } }
+  getSeasonRecords() {
+    try {
+      const raw = localStorage.getItem(SEASON_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSeasonRecord(nodeId, chosenSeason, isTarget, tag) {
+    const all = this.getSeasonRecords();
+    all[nodeId] = { chosenSeason, isTarget, tag, ts: Date.now() };
+    localStorage.setItem(SEASON_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSeasonRecord(nodeId) { return this.getSeasonRecords()[nodeId]; },
+
+  /* ============ v1.1.0 脉搏同步 ============ */
+  // 记录每次脉搏同步：{ nodeId: { hits, total, accuracy, tag, ts } }
+  getPulseRecords() {
+    try {
+      const raw = localStorage.getItem(PULSE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  savePulseRecord(nodeId, hits, total, accuracy, tag) {
+    const all = this.getPulseRecords();
+    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(PULSE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getPulseRecord(nodeId) { return this.getPulseRecords()[nodeId]; },
 
   /* ============ 工具 ============ */
   formatTime(ts) {

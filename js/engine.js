@@ -572,6 +572,46 @@
       return;
     }
 
+    // v1.1.0 光影描绘节点
+    if (node.lightdraw) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runLightdraw(node.lightdraw, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.1.0 声音模仿节点
+    if (node.mimic) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runMimic(node.mimic, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.1.0 季节切换节点
+    if (node.season) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runSeason(node.season, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.1.0 脉搏同步节点
+    if (node.pulse) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPulse(node.pulse, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -4316,6 +4356,648 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v1.1.0 光影描绘 runLightdraw
+     node.lightdraw = {
+       prompt: "用光点亮窗台上的东西——",
+       targets: [
+         { id, x, y, r, label, desc?, memory? }   // x/y/r 为百分比
+       ],
+       min: 2,  // 最少点亮数
+       thresholds: [
+         { min: 0.8, tag, label, text, add?, memory?, next },
+         { min: 0.4, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runLightdraw(ld, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "lightdraw-layer";
+    layer.id = "lightdraw-layer";
+    const targets = ld.targets || [];
+    layer.innerHTML = `
+      <div class="ld-prompt">${ld.prompt || "用光拖过黑暗——"}</div>
+      <div class="ld-stage" id="ld-stage">
+        <canvas class="ld-canvas" id="ld-canvas"></canvas>
+        ${targets.map((t, i) => `<div class="ld-target" data-id="${t.id}" data-idx="${i}" style="left:${t.x}%;top:${t.y}%;width:${(t.r||4)*2}%;height:${(t.r||4)*2}%;">
+          <div class="ld-target-core"></div>
+          <div class="ld-target-label">${t.label || ""}</div>
+        </div>`).join("")}
+      </div>
+      <div class="ld-info" id="ld-info">已点亮 <span id="ld-count">0</span> / ${targets.length}</div>
+      <div class="ld-actions">
+        <button class="ld-reset">重置</button>
+        <button class="ld-confirm" id="ld-confirm" disabled>收光</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#ld-stage");
+    const canvas = layer.querySelector("#ld-canvas");
+    const ctx = canvas.getContext("2d");
+    const countEl = layer.querySelector("#ld-count");
+    const infoEl = layer.querySelector("#ld-info");
+    const confirmBtn = layer.querySelector(".ld-confirm");
+    const resetBtn = layer.querySelector(".ld-reset");
+
+    const litSet = new Set();
+    let drawing = false;
+    let lastX = 0, lastY = 0;
+    let strokes = []; // {x, y}[] 列表的列表
+    let currentStroke = null;
+    let aborted = false;
+    let mo = null;
+
+    function resize() {
+      const rect = stage.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      redraw();
+    }
+    function redraw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 光路：用淡金色叠加
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(8, canvas.width * 0.025);
+      ctx.strokeStyle = "rgba(255,220,140,0.5)";
+      ctx.shadowBlur = 24;
+      ctx.shadowColor = "rgba(255,200,120,0.7)";
+      strokes.forEach(s => {
+        if (s.length < 2) {
+          if (s.length === 1) {
+            ctx.beginPath();
+            ctx.arc(s[0].x, s[0].y, ctx.lineWidth/2, 0, Math.PI*2);
+            ctx.fillStyle = "rgba(255,220,140,0.5)";
+            ctx.fill();
+          }
+          return;
+        }
+        ctx.beginPath();
+        ctx.moveTo(s[0].x, s[0].y);
+        for (let i = 1; i < s.length; i++) ctx.lineTo(s[i].x, s[i].y);
+        ctx.stroke();
+      });
+      ctx.shadowBlur = 0;
+    }
+
+    function checkTargets() {
+      const stageRect = stage.getBoundingClientRect();
+      targets.forEach((t, i) => {
+        if (litSet.has(t.id)) return;
+        const tx = (t.x / 100) * stageRect.width;
+        const ty = (t.y / 100) * stageRect.height;
+        const tr = ((t.r || 4) / 100) * Math.max(stageRect.width, stageRect.height);
+        // 检查任何 stroke 点是否落在目标半径内
+        for (const s of strokes) {
+          for (const p of s) {
+            const dx = p.x - tx, dy = p.y - ty;
+            if (dx*dx + dy*dy <= tr*tr) {
+              litSet.add(t.id);
+              const el = stage.querySelector(`.ld-target[data-idx="${i}"]`);
+              if (el) el.classList.add("lit");
+              if (t.memory && !Saves.isMemoryUnlocked(t.memory.id)) {
+                Saves.saveMemory(t.memory.id, t.memory.text);
+                flashHint(`✦ 新记忆：${t.memory.title || t.id}`);
+              }
+              break;
+            }
+          }
+          if (litSet.has(t.id)) break;
+        }
+      });
+      countEl.textContent = litSet.size;
+      infoEl.textContent = `已点亮 ${litSet.size} / ${targets.length}`;
+      confirmBtn.disabled = litSet.size < Math.min(ld.min || 1, targets.length);
+    }
+
+    function getPos(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    function onDown(clientX, clientY) {
+      drawing = true;
+      currentStroke = [];
+      const p = getPos(clientX, clientY);
+      currentStroke.push(p);
+      strokes.push(currentStroke);
+      redraw();
+      checkTargets();
+    }
+    function onMove(clientX, clientY) {
+      if (!drawing) return;
+      const p = getPos(clientX, clientY);
+      // 简化：距离过近不加
+      const last = currentStroke[currentStroke.length - 1];
+      if (last && Math.hypot(p.x - last.x, p.y - last.y) < 3) return;
+      currentStroke.push(p);
+      redraw();
+      checkTargets();
+    }
+    function onUp() {
+      drawing = false;
+      currentStroke = null;
+    }
+
+    const onMouseDown = e => { e.preventDefault(); onDown(e.clientX, e.clientY); };
+    const onMouseMove = e => onMove(e.clientX, e.clientY);
+    const onMouseUp = () => onUp();
+    const onTouchStart = e => { const t = e.touches[0]; onDown(t.clientX, t.clientY); e.preventDefault(); };
+    const onTouchMove = e => { if (!drawing) return; const t = e.touches[0]; onMove(t.clientX, t.clientY); e.preventDefault(); };
+    const onTouchEnd = () => onUp();
+
+    canvas.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    canvas.addEventListener("touchstart", onTouchStart, { passive: false });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd);
+
+    resetBtn.onclick = () => {
+      strokes = [];
+      litSet.clear();
+      stage.querySelectorAll(".ld-target.lit").forEach(el => el.classList.remove("lit"));
+      countEl.textContent = "0";
+      infoEl.textContent = `已点亮 0 / ${targets.length}`;
+      confirmBtn.disabled = true;
+      redraw();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const coverage = targets.length ? litSet.size / targets.length : 0;
+      const thresholds = ld.thresholds || [];
+      let matched = ld.fallback || { tag: "miss", label: "——暗着", next: null };
+      for (const t of thresholds) {
+        if (coverage >= t.min) { matched = t; break; }
+      }
+      Saves.saveLightdrawRecord(currentNodeId, Array.from(litSet), coverage, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ld-reading";
+      reading.innerHTML = `<div class="ld-reading-title">${matched.label || "解读"} · ${Math.round(coverage * 100)}%</div>
+        <div class="ld-reading-text">${matched.text || ""}</div>
+        <button class="ld-reading-close">继续</button>`;
+      reading.querySelector(".ld-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    // layer 移除时清理 document 监听 + ResizeObserver
+    mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("touchmove", onTouchMove);
+        document.removeEventListener("touchend", onTouchEnd);
+        if (ro) ro.disconnect();
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    // ResizeObserver 监听 stage 尺寸变化
+    const ro = new ResizeObserver(() => { if (!aborted) resize(); });
+    ro.observe(stage);
+    resize();
+  }
+
+  /* ============================================================
+     v1.1.0 声音模仿 runMimic
+     node.mimic = {
+       prompt: "学她刚才说话的语气——",
+       target: { pitch: 0.6, tempo: 0.4 },   // 0~1 目标值
+       tolerance: 0.15,                      // 容差
+       thresholds: [
+         { min: 0.8, tag, label, text, add?, memory?, next },
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runMimic(mm, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "mimic-layer";
+    layer.id = "mimic-layer";
+    const tgt = mm.target || { pitch: 0.5, tempo: 0.5 };
+    layer.innerHTML = `
+      <div class="mm-prompt">${mm.prompt || "学她刚才说话的语气——"}</div>
+      <div class="mm-target">目标 · 音调 <span id="mm-tgt-pitch">${Math.round(tgt.pitch*100)}</span> · 语速 <span id="mm-tgt-tempo">${Math.round(tgt.tempo*100)}</span></div>
+      <div class="mm-wave" id="mm-wave"></div>
+      <div class="mm-controls">
+        <div class="mm-row">
+          <label>音调</label>
+          <input type="range" id="mm-pitch" min="0" max="1" step="0.01" value="0.5">
+          <span id="mm-pitch-val">50</span>
+        </div>
+        <div class="mm-row">
+          <label>语速</label>
+          <input type="range" id="mm-tempo" min="0" max="1" step="0.01" value="0.5">
+          <span id="mm-tempo-val">50</span>
+        </div>
+      </div>
+      <div class="mm-info" id="mm-info">差异：——</div>
+      <div class="mm-actions">
+        <button class="mm-confirm" id="mm-confirm">就这样</button>
+      </div>
+    `;
+    const pitchEl = layer.querySelector("#mm-pitch");
+    const tempoEl = layer.querySelector("#mm-tempo");
+    const pitchVal = layer.querySelector("#mm-pitch-val");
+    const tempoVal = layer.querySelector("#mm-tempo-val");
+    const info = layer.querySelector("#mm-info");
+    const confirmBtn = layer.querySelector("#mm-confirm");
+    const wave = layer.querySelector("#mm-wave");
+
+    function update() {
+      const p = parseFloat(pitchEl.value);
+      const t = parseFloat(tempoEl.value);
+      pitchVal.textContent = Math.round(p * 100);
+      tempoVal.textContent = Math.round(t * 100);
+      const diff = (Math.abs(p - tgt.pitch) + Math.abs(t - tgt.tempo)) / 2;
+      const score = Math.max(0, 1 - diff);
+      info.textContent = `差异：${Math.round(diff * 100)}% · 相似度：${Math.round(score * 100)}%`;
+      // 波形：根据 pitch 调整振幅，tempo 调整频率
+      const freq = 4 + t * 8;
+      const amp = 20 + p * 30;
+      let path = "M0,40 ";
+      for (let x = 0; x <= 200; x += 2) {
+        const y = 40 + Math.sin((x / 200) * Math.PI * 2 * freq) * amp * 0.5;
+        path += `L${x},${y.toFixed(1)} `;
+      }
+      wave.innerHTML = `<svg viewBox="0 0 200 80" preserveAspectRatio="none"><path d="${path}" fill="none" stroke="#ffb8c8" stroke-width="2"/></svg>`;
+    }
+    pitchEl.addEventListener("input", update);
+    tempoEl.addEventListener("input", update);
+
+    confirmBtn.onclick = () => {
+      const p = parseFloat(pitchEl.value);
+      const t = parseFloat(tempoEl.value);
+      const diff = (Math.abs(p - tgt.pitch) + Math.abs(t - tgt.tempo)) / 2;
+      const score = Math.max(0, 1 - diff);
+      const thresholds = mm.thresholds || [];
+      let matched = mm.fallback || { tag: "miss", label: "——不像", next: null };
+      for (const th of thresholds) {
+        if (score >= th.min) { matched = th; break; }
+      }
+      Saves.saveMimicRecord(currentNodeId, p, t, diff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "mm-reading";
+      reading.innerHTML = `<div class="mm-reading-title">${matched.label || "解读"} · 相似度 ${Math.round(score * 100)}%</div>
+        <div class="mm-reading-text">${matched.text || ""}</div>
+        <button class="mm-reading-close">继续</button>`;
+      reading.querySelector(".mm-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+    update();
+  }
+
+  /* ============================================================
+     v1.1.0 季节切换 runSeason
+     node.season = {
+       prompt: "滑动切换四季——",
+       seasons: ["spring","summer","autumn","winter"],
+       target: "autumn",   // 正确季节
+       clue: "秋天的落叶里有她夹的字条",
+       thresholds: [
+         { isTarget: true, tag, label, text, add?, memory?, next },
+         { isTarget: false, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runSeason(sn, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "season-layer";
+    layer.id = "season-layer";
+    const seasons = sn.seasons || ["spring","summer","autumn","winter"];
+    const target = sn.target;
+    const seasonLabels = { spring: "春", summer: "夏", autumn: "秋", winter: "冬" };
+    layer.innerHTML = `
+      <div class="sn-prompt">${sn.prompt || "滑动切换四季——"}</div>
+      <div class="sn-stage" id="sn-stage">
+        <div class="sn-scene" id="sn-scene"></div>
+        <div class="sn-clue" id="sn-clue"></div>
+      </div>
+      <div class="sn-slider-wrap">
+        <input type="range" id="sn-slider" min="0" max="${seasons.length - 1}" step="1" value="0">
+        <div class="sn-labels">${seasons.map((s,i) => `<span data-i="${i}">${seasonLabels[s]||s}</span>`).join("")}</div>
+      </div>
+      <div class="sn-info" id="sn-info">当前：春</div>
+      <div class="sn-actions">
+        <button class="sn-confirm" id="sn-confirm">就选这个季节</button>
+      </div>
+    `;
+    const slider = layer.querySelector("#sn-slider");
+    const sceneEl = layer.querySelector("#sn-scene");
+    const clueEl = layer.querySelector("#sn-clue");
+    const info = layer.querySelector("#sn-info");
+    const confirmBtn = layer.querySelector("#sn-confirm");
+
+    function renderSeason(idx) {
+      const s = seasons[idx];
+      sceneEl.className = "sn-scene sn-" + s;
+      let sceneHtml = "";
+      if (s === "spring") sceneHtml = `<div class="sn-cherry"></div>`;
+      else if (s === "summer") sceneHtml = `<div class="sn-sun"></div>`;
+      else if (s === "autumn") sceneHtml = `<div class="sn-leaf"></div>`;
+      else if (s === "winter") sceneHtml = `<div class="sn-snow"></div>`;
+      sceneEl.innerHTML = sceneHtml;
+      if (s === target) {
+        clueEl.textContent = sn.clue || "";
+        clueEl.classList.add("show");
+      } else {
+        clueEl.textContent = "";
+        clueEl.classList.remove("show");
+      }
+      info.textContent = `当前：${seasonLabels[s] || s}`;
+    }
+    slider.addEventListener("input", () => renderSeason(parseInt(slider.value)));
+
+    confirmBtn.onclick = () => {
+      const idx = parseInt(slider.value);
+      const chosen = seasons[idx];
+      const isTarget = chosen === target;
+      const thresholds = sn.thresholds || [];
+      let matched = sn.fallback || { tag: "miss", label: "——选错了", next: null };
+      for (const t of thresholds) {
+        if (t.isTarget === isTarget) { matched = t; break; }
+      }
+      Saves.saveSeasonRecord(currentNodeId, chosen, isTarget, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "sn-reading";
+      reading.innerHTML = `<div class="sn-reading-title">${matched.label || "解读"}</div>
+        <div class="sn-reading-text">${matched.text || ""}</div>
+        <button class="sn-reading-close">继续</button>`;
+      reading.querySelector(".sn-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+    renderSeason(0);
+  }
+
+  /* ============================================================
+     v1.1.0 脉搏同步 runPulse
+     node.pulse = {
+       prompt: "让你的心跳跟上她——",
+       bpm: 72,
+       beats: 8,
+       tolerance: 0.18,   // 容差（占一拍比例）
+       thresholds: [
+         { min: 0.8, tag, label, text, add?, memory?, next },
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runPulse(pl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "pulse-layer";
+    layer.id = "pulse-layer";
+    layer.innerHTML = `
+      <div class="pl-prompt">${pl.prompt || "让你的心跳跟上她——"}</div>
+      <div class="pl-stage">
+        <canvas class="pl-canvas" id="pl-canvas"></canvas>
+        <div class="pl-info" id="pl-info">点击节奏与对方心跳对齐 · 0 / ${pl.beats || 8}</div>
+      </div>
+      <div class="pl-actions">
+        <button class="pl-start" id="pl-start">开始</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#pl-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#pl-info");
+    const startBtn = layer.querySelector("#pl-start");
+
+    const bpm = pl.bpm || 72;
+    const totalBeats = pl.beats || 8;
+    const tolerance = pl.tolerance || 0.2;
+    const beatMs = 60000 / bpm;
+    let hits = 0;
+    let hitWindow = 0;
+    let beatCount = 0;
+    let started = false;
+    let startTime = 0;
+    let rafId = null;
+    let aborted = false;
+    let mo = null;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+    }
+    const ro = new ResizeObserver(() => { if (!aborted) resize(); });
+
+    // 对方心跳：固定 BPM；玩家心跳：按点击节奏插值
+    let playerBeats = []; // {time, hit}
+
+    function draw(now) {
+      if (aborted) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 中线
+      ctx.strokeStyle = "rgba(255,255,255,0.1)";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+
+      const elapsed = now - startTime;
+      const scrollPx = (elapsed / 2000) * w; // 2秒一屏滚动
+
+      // 对方波形（上半）
+      ctx.strokeStyle = "#f0b878";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 2) {
+        const t = (x + scrollPx) / w; // 屏内时间比例
+        const beatPhase = (t * 2) % 1; // 一拍周期
+        let y = h * 0.25;
+        // 模拟心跳脉冲：尖峰
+        const peak = Math.exp(-Math.pow((beatPhase - 0.2) / 0.05, 2)) * 30;
+        y -= peak;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 玩家波形（下半）
+      ctx.strokeStyle = "#a8c5e8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 2) {
+        const t = (x + scrollPx) / w;
+        // 用玩家点击节拍构造波形
+        const beatPhase = ((t * 2) % 1);
+        let y = h * 0.75;
+        // 玩家点击：找最近一次 beat
+        const realTime = elapsed - (w - x) * (2000 / w);
+        let nearest = null, nearestDist = Infinity;
+        for (const pb of playerBeats) {
+          const d = Math.abs(pb.time - realTime);
+          if (d < nearestDist) { nearestDist = d; nearest = pb; }
+        }
+        if (nearest && nearestDist < beatMs * 0.5) {
+          const phase = nearestDist / (beatMs * 0.5);
+          y -= Math.exp(-Math.pow(phase / 0.3, 2)) * 25;
+        }
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // 命中窗口指示（中线中心）
+      const centerX = w * 0.5;
+      const beatPhase = ((elapsed / beatMs) % 1);
+      ctx.fillStyle = beatPhase < tolerance || beatPhase > (1 - tolerance)
+        ? "rgba(255,220,140,0.4)" : "rgba(255,255,255,0.05)";
+      ctx.fillRect(centerX - 4, 0, 8, h);
+
+      // 推进节拍计数
+      const totalElapsedBeats = Math.floor(elapsed / beatMs);
+      while (beatCount < totalElapsedBeats && beatCount < totalBeats) {
+        beatCount++;
+        info.textContent = `点击节奏与对方心跳对齐 · ${hits} / ${totalBeats}（第 ${beatCount} 拍）`;
+      }
+      if (beatCount >= totalBeats) {
+        finishPulse();
+        return;
+      }
+      rafId = requestAnimationFrame(draw);
+    }
+
+    function onTap() {
+      if (!started || aborted) return;
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const phase = (elapsed % beatMs) / beatMs;
+      // 距离最近拍点的相位差
+      const diff = Math.min(phase, 1 - phase);
+      const ok = diff <= tolerance;
+      playerBeats.push({ time: elapsed, hit: ok });
+      if (ok) {
+        hits++;
+        flashHint("✓");
+      } else {
+        flashHint("✗");
+      }
+      info.textContent = `点击节奏与对方心跳对齐 · ${hits} / ${totalBeats}（第 ${beatCount + 1} 拍）`;
+    }
+
+    function finishPulse() {
+      if (aborted) return;
+      aborted = true;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      const accuracy = totalBeats ? hits / totalBeats : 0;
+      const thresholds = pl.thresholds || [];
+      let matched = pl.fallback || { tag: "miss", label: "——没跟上", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.savePulseRecord(currentNodeId, hits, totalBeats, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "pl-reading";
+      reading.innerHTML = `<div class="pl-reading-title">${matched.label || "解读"} · ${Math.round(accuracy * 100)}%</div>
+        <div class="pl-reading-text">${matched.text || ""}</div>
+        <button class="pl-reading-close">继续</button>`;
+      reading.querySelector(".pl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    canvas.addEventListener("click", onTap);
+    canvas.addEventListener("touchstart", e => { onTap(); e.preventDefault(); }, { passive: false });
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startBtn.disabled = true;
+      startTime = performance.now();
+      rafId = requestAnimationFrame(draw);
+    };
+
+    // 清理
+    mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (ro) ro.disconnect();
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    ro.observe(canvas);
+    resize();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -4388,6 +5070,11 @@
     document.querySelectorAll(".timecapsule-deliver-layer").forEach(e => e.remove());
     document.querySelectorAll(".fold-layer").forEach(e => e.remove());
     document.querySelectorAll(".reflection-layer").forEach(e => e.remove());
+    // 清理 v1.1.0 浮层
+    document.querySelectorAll(".lightdraw-layer").forEach(e => e.remove());
+    document.querySelectorAll(".mimic-layer").forEach(e => e.remove());
+    document.querySelectorAll(".season-layer").forEach(e => e.remove());
+    document.querySelectorAll(".pulse-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
