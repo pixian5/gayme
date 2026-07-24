@@ -869,7 +869,7 @@ const SCRIPT = {
   dream_night_1: {
     day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "夜里，我做了一个梦。梦里樱花倒着飘。",
-    next: "common_day4_morning",
+    next: "d3_rubbing",
     dream: {
       title: "❉ 樱花倒着飘的夜晚 ❉",
       hint: "点击场景探索 · 收集梦境碎片",
@@ -1289,7 +1289,7 @@ const SCRIPT = {
   d4_lightdraw: {
     day: 4, time: "night", bg: "home_room", char: null, speaker: "",
     text: "夜里停电了。窗台上一片漆黑。你拿出一根没点燃的蜡烛——用手指在桌上拖一拖，假装是光。",
-    next: "d5_mimic",
+    next: "d4_tea",
     lightdraw: {
       prompt: "用手指在黑暗里拖出光路——照亮窗台上的东西",
       targets: [
@@ -1308,18 +1308,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1, shen: 1 } },
           personality: { brave: 2, honest: 2 },
           memory: { id: "光影·全亮", title: "照亮一切", text: "你在黑暗里拖出光，把窗台照亮了。" },
-          next: "d5_mimic" },
+          next: "d4_tea" },
         { min: 0.4, tag: "lit_some",
           label: "——只照亮了一半",
           text: "你只照亮了窗台的一半。另一半还埋在黑里——也行，有些事可以留到明天再看。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d4_tea" }
       ],
       fallback: { tag: "lit_none",
         label: "——没拖出光",
         text: "你拖了几下，光没成形状。算了——黑暗就黑暗吧。明天的太阳总会出来的。",
-        next: "d5_mimic" }
+        next: "d4_tea" }
     }
   },
 
@@ -1480,7 +1480,7 @@ const SCRIPT = {
   d5_piano: {
     day: 5, time: "morning", bg: "home_room", char: null, speaker: "",
     text: "窗台上有一架旧口风琴。她昨天哼过一段旋律——你试着弹出来。",
-    next: "common_day5_morning",
+    next: "d4_dice",
     piano: {
       prompt: "弹奏她哼过的旋律——",
       keys: 8,
@@ -1493,18 +1493,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "琴键·旋律", title: "她外婆的歌", text: "你弹出了她哼过的旋律——是她外婆教她的那首歌。" },
-          next: "common_day5_morning" },
+          next: "d4_dice" },
         { min: 0.55, tag: "ok",
           label: "——弹得还行",
           text: "你弹得磕磕绊绊，但旋律出来了。她说过：错音也是旋律的一部分。你想她是对的。",
           add: { affection: { shiyu: 1 } },
           personality: { honest: 1 },
-          next: "common_day5_morning" }
+          next: "d4_dice" }
       ],
       fallback: { tag: "miss",
         label: "——弹错了",
         text: "你完全弹错了。旋律碎了。但没关系——有些歌，本来就不是弹给人听的。",
-        next: "common_day5_morning" }
+        next: "d4_dice" }
     }
   },
 
@@ -1604,7 +1604,7 @@ const SCRIPT = {
   d4_rain: {
     day: 4, time: "night", bg: "home_room", char: null, speaker: "",
     text: "窗外开始下雨。雨滴打在窗台上，有它自己的节奏。她说：雨是天上敲的鼓——你跟着敲，就接住了它的意思。",
-    next: "common_day5_morning",
+    next: "d5_mimic",
     rain: {
       prompt: "听雨滴落地的节奏——按节奏点击窗台",
       drops: 8,
@@ -1617,18 +1617,150 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "雨滴·接住", title: "夜里接住的雨", text: "你在夜里跟着雨的节奏点击，接住了它的拍子。" },
-          next: "common_day5_morning" },
+          next: "d5_mimic" },
         { min: 0.4, tag: "ok",
           label: "——接了几拍",
           text: "你只接住了几拍。她说：接不住也是真的——雨是天上敲的，地上的人跟不上是常事。你已经尽力了。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "common_day5_morning" }
+          next: "d5_mimic" }
       ],
       fallback: { tag: "miss",
         label: "——没接住",
         text: "你完全没接住雨的节奏。雨自己敲它的，你敲你的——两个节奏错开了。她说：错开也是好的——证明你和雨不一样。",
-        next: "common_day5_morning" }
+        next: "d5_mimic" }
+    }
+  },
+
+  /* ============ v1.4.0 新玩法触发节点 ============ */
+  // 拓印
+  d3_rubbing: {
+    day: 3, time: "afternoon", bg: "library", char: null, speaker: "",
+    text: "图书馆的旧书页里夹着一片枯叶。她说过——把纸盖在上面，用铅笔轻轻拓，纹理就会出来。你试一试。",
+    next: "d3_collect",
+    rubbing: {
+      prompt: "用铅笔在纸上拖动——拓出叶脉的纹理",
+      pattern: "leaf",
+      min: 0.5,
+      thresholds: [
+        { min: 0.8, tag: "clear",
+          label: "——拓清了",
+          text: "叶脉一条一条在你笔下显出来。她说：拓印是慢的事——急不来。你拓的这片叶子，是一年前她夹进去的。你想起来了。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "拓印·叶脉", title: "图书馆里的拓印", text: "你在图书馆用铅笔拓出一片枯叶的纹理。" },
+          next: "d3_collect" },
+        { min: 0.5, tag: "ok",
+          label: "——拓了一半",
+          text: "你只拓出了一半的叶脉。她说：一半也够。看得见的部分，已经够你想起来了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d3_collect" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没拓出",
+        text: "你拓了几下，纹理没出来。她说：有时候纸太厚——有些东西，隔着纸是拓不出的。要直接看。",
+        next: "d3_collect" }
+    }
+  },
+
+  // 集字
+  d3_collect: {
+    day: 3, time: "afternoon", bg: "field", char: null, speaker: "",
+    text: "操场上飘起樱花。她说——你看，每一片花瓣里都藏着一个字。你试着在飘落的花瓣里，抓住那个「雨」字。",
+    next: "d3_focus",
+    collect: {
+      prompt: "在飘落的花瓣中点击收集「雨」字",
+      target: "雨",
+      total: 5,
+      duration: 12000,
+      distractors: ["风","云","月","花","叶","雪","霜","露"],
+      thresholds: [
+        { min: 0.8, tag: "collected",
+          label: "——抓到了",
+          text: "你抓住了一捧「雨」字。她说：雨是抓不住的——但你今天抓住了。她说：有些东西，你抓得住，是因为它愿意让你抓。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { brave: 2, kind: 1 },
+          memory: { id: "集字·雨", title: "操场上的雨字", text: "你在飘落的樱花里抓住了五个「雨」字。" },
+          next: "d3_focus" },
+        { min: 0.4, tag: "ok",
+          label: "——抓了几个",
+          text: "你只抓住了几个「雨」字。她说：抓不全也是真的——樱花开得快，落得也快。你已经尽力了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d3_focus" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没抓住",
+        text: "你一个「雨」字都没抓住。她说：抓不住也是好的——证明雨不是你的，是它自己的。",
+        next: "d3_focus" }
+    }
+  },
+
+  // 光影对焦
+  d3_focus: {
+    day: 3, time: "evening", bg: "rooftop", char: null, speaker: "",
+    text: "黄昏的天台上，远方樱花树下有一个人影。你眯起眼——画面是糊的。调整焦距，看清那人是谁。",
+    next: "d3_scentmem",
+    focus: {
+      prompt: "调整焦距——让远方的画面变清晰",
+      target: 0.5,
+      thresholds: [
+        { min: 0.85, tag: "clear",
+          label: "——看清了",
+          text: "画面慢慢清晰起来——樱花树下站着的是林诗雨。她没看你，看着远方。你想过去，但脚没动。她说：看清一个人，有时候比看不见更难。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "对焦·看清", title: "樱花树下的人", text: "你对焦看清了樱花树下站着的是林诗雨。" },
+          next: "d3_scentmem" },
+        { min: 0.5, tag: "ok",
+          label: "——看了一半",
+          text: "画面只清楚了一半——你看不清那人是谁。也许是她，也许不是。她说：模糊也好——不清不楚，反而能多看一会儿。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d3_scentmem" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "你完全没对上焦。人影还是一团模糊。她说：看不清也好——有些人，看清了反而难过。",
+        next: "d3_scentmem" }
+    }
+  },
+
+  // 气味记忆
+  d3_scentmem: {
+    day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "睡前，桌上摆着几个小瓶。她说过——闻一闻，记一记，明天让你辨认哪些是你今天闻过的。你打开每一个，记下气味。",
+    next: "common_day4_morning",
+    scentmem: {
+      prompt: "辨认之前闻过的气味——选中你今天闻过的",
+      samples: [
+        { id: "s1", name: "樱花的气息", desc: "淡淡的，甜里有涩", icon: "🌸", isTarget: true },
+        { id: "s2", name: "旧书的味道", desc: "纸的霉，带着岁月", icon: "📖", isTarget: true },
+        { id: "s3", name: "海风的咸", desc: "咸湿，带着远处", icon: "🌊", isTarget: true },
+        { id: "s4", name: "燃烧的香", desc: "焦糖似的，发苦", icon: "🔥", isTarget: false },
+        { id: "s5", name: "铁锈的腥", desc: "尖锐，发凉", icon: "⚙️", isTarget: false },
+        { id: "s6", name: "薄荷的凉", desc: "清凉，发麻", icon: "🍃", isTarget: false }
+      ],
+      thresholds: [
+        { min: 0.85, tag: "remembered",
+          label: "——记住了",
+          text: "你把今天闻过的气味都认出来了。她说：嗅觉是最不会骗人的记忆——眼睛会忘，鼻子不会。你今天闻过的，明天还会记得。",
+          add: { affection: { shiyu: 2, sunian: 1, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "气味·记忆", title: "夜里辨认的气味", text: "你在睡前辨认出了今天闻过的所有气味。" },
+          next: "common_day4_morning" },
+        { min: 0.5, tag: "ok",
+          label: "——记了一半",
+          text: "你只认出了一半的气味。她说：记一半也好——忘掉的那一半，也许是该忘的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "common_day4_morning" }
+      ],
+      fallback: { tag: "miss",
+        label: "——记错了",
+        text: "你认错了大半。她说：记错也是真的——有些气味，闻过就忘。忘了的，本来就不重要。",
+        next: "common_day4_morning" }
     }
   },
 

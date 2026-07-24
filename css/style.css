@@ -3968,6 +3968,332 @@ body {
   line-height: 1.8; margin-bottom: 14px;
 }
 
+/* ============ v1.4.0 拓印 ============ */
+.rubbing-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(35,25,30,0.92), rgba(12,8,10,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ru-prompt {
+  font-size: 18px; color: #e8c8a0;
+  letter-spacing: 3px; text-align: center;
+}
+.ru-stage {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+  width: min(95%, 640px);
+}
+.ru-canvas {
+  width: 100%; height: 320px;
+  background: #3a3a3a;
+  border: 1px solid rgba(232,200,160,0.35);
+  border-radius: 14px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.ru-info {
+  font-size: 15px; color: #e8c8a0;
+  letter-spacing: 2px;
+}
+.ru-actions {
+  display: flex; gap: 12px;
+}
+.ru-actions button, .ru-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(232,200,160,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ru-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.ru-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,28,20,0.88);
+  border: 1px solid rgba(232,200,160,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ru-reading-title {
+  font-size: 17px; color: #e8c8a0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ru-reading-text {
+  font-size: 15px; color: #e0d0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.4.0 集字 ============ */
+.collect-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(25,30,55,0.92), rgba(8,10,20,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.cl-prompt {
+  font-size: 18px; color: #b8c8e8;
+  letter-spacing: 3px; text-align: center;
+}
+.cl-target {
+  font-size: 15px; color: rgba(255,255,255,0.7);
+  letter-spacing: 2px;
+}
+.cl-target-char {
+  display: inline-block;
+  font-size: 22px; color: #ffd8e4;
+  font-weight: 600; margin: 0 6px;
+  padding: 2px 10px;
+  background: rgba(180,80,120,0.3);
+  border-radius: 8px;
+}
+.cl-stage {
+  position: relative;
+  width: min(95%, 720px);
+  height: 360px;
+  background: linear-gradient(180deg, rgba(40,50,80,0.4) 0%, rgba(20,28,50,0.6) 100%);
+  border: 1px solid rgba(180,200,240,0.25);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cl-char {
+  position: absolute;
+  font-size: 26px; font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease;
+}
+.cl-char:hover { transform: scale(1.1); }
+.cl-char-target { color: #ffd8e4; }
+.cl-char-hit {
+  color: #ffb8c8;
+  animation: clHit 0.3s ease;
+}
+@keyframes clHit {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.cl-char-miss {
+  color: #ff6060;
+  animation: clMiss 0.3s ease;
+}
+@keyframes clMiss {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.8) rotate(8deg); }
+  100% { transform: scale(0); opacity: 0; }
+}
+.cl-info {
+  font-size: 15px; color: #b8c8e8;
+  letter-spacing: 2px;
+}
+.cl-actions button, .cl-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(120,140,200,0.6), rgba(90,110,170,0.5));
+  border: 1px solid rgba(180,200,240,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.cl-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.cl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(25,30,55,0.88);
+  border: 1px solid rgba(180,200,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.cl-reading-title {
+  font-size: 17px; color: #b8c8e8;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.cl-reading-text {
+  font-size: 15px; color: #d0d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.4.0 光影对焦 ============ */
+.focus-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,20,0.92), rgba(12,8,5,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.fo-prompt {
+  font-size: 18px; color: #ffd8a0;
+  letter-spacing: 3px; text-align: center;
+}
+.fo-stage {
+  width: min(95%, 640px);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.fo-scene {
+  width: 100%; height: 260px;
+  background:
+    radial-gradient(60% 50% at 50% 70%, rgba(255,200,200,0.45), transparent 70%),
+    linear-gradient(180deg, #5a4a5a 0%, #8a6a7a 50%, #c8a0b0 100%);
+  border: 1px solid rgba(255,200,160,0.3);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  transition: filter 0.15s ease;
+  overflow: hidden;
+}
+.fo-scene-content {
+  font-size: 18px; color: #fff;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+  text-align: center;
+  padding: 0 20px;
+}
+.fo-controls {
+  width: min(90%, 480px);
+}
+.fo-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.fo-row label {
+  width: 50px; font-size: 15px; color: #ffd8e4;
+}
+.fo-row input[type="range"] {
+  flex: 1; accent-color: #e8a868;
+}
+.fo-row span {
+  width: 40px; text-align: right;
+  font-size: 14px; color: rgba(255,255,255,0.8);
+}
+.fo-info {
+  font-size: 15px; color: #ffd8a0;
+  letter-spacing: 2px;
+}
+.fo-actions button, .fo-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(220,160,90,0.6), rgba(180,120,60,0.5));
+  border: 1px solid rgba(255,200,160,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.fo-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.fo-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,28,18,0.88);
+  border: 1px solid rgba(255,200,160,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.fo-reading-title {
+  font-size: 17px; color: #ffd8a0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.fo-reading-text {
+  font-size: 15px; color: #e8d8c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.4.0 气味记忆 ============ */
+.scentmem-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(35,25,45,0.92), rgba(10,5,18,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sm-prompt {
+  font-size: 18px; color: #d8b8e8;
+  letter-spacing: 3px; text-align: center;
+}
+.sm-stage {
+  display: flex; flex-wrap: wrap;
+  align-items: stretch; justify-content: center;
+  gap: 14px;
+  width: min(95%, 720px);
+}
+.sm-card {
+  width: 160px; padding: 16px;
+  background: linear-gradient(135deg, rgba(180,140,200,0.25), rgba(140,100,180,0.18));
+  border: 1px solid rgba(216,180,232,0.35);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  text-align: center;
+}
+.sm-card:hover {
+  background: linear-gradient(135deg, rgba(200,160,220,0.4), rgba(160,120,200,0.3));
+  transform: translateY(-2px);
+  border-color: rgba(216,180,232,0.6);
+}
+.sm-card-picked {
+  background: linear-gradient(135deg, rgba(216,112,144,0.45), rgba(180,80,120,0.35));
+  border-color: rgba(255,200,220,0.7);
+  box-shadow: 0 4px 16px rgba(180,80,120,0.4);
+}
+.sm-card-icon {
+  font-size: 28px; color: #ffd8e4;
+}
+.sm-card-name {
+  font-size: 16px; color: #f0e0f8;
+  letter-spacing: 2px;
+}
+.sm-card-desc {
+  font-size: 12px; color: rgba(255,255,255,0.65);
+  line-height: 1.6;
+}
+.sm-info {
+  font-size: 15px; color: #d8b8e8;
+  letter-spacing: 2px;
+}
+.sm-actions button, .sm-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(180,140,200,0.6), rgba(140,100,180,0.5));
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.sm-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.sm-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,25,50,0.88);
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.sm-reading-title {
+  font-size: 17px; color: #d8b8e8;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.sm-reading-text {
+  font-size: 15px; color: #e0d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }
@@ -4000,4 +4326,15 @@ body {
   .mm-row label { width: 40px; font-size: 13px; }
   .sn-stage { width: 95%; height: 260px; }
   .pl-stage { height: 200px; }
+  /* v1.4.0 适配 */
+  .ru-canvas { height: 240px; }
+  .ru-prompt, .cl-prompt, .fo-prompt, .sm-prompt { font-size: 16px; letter-spacing: 2px; }
+  .cl-stage { height: 280px; }
+  .cl-char { font-size: 22px; }
+  .fo-scene { height: 200px; }
+  .fo-scene-content { font-size: 16px; letter-spacing: 2px; }
+  .sm-card { width: 130px; padding: 12px; }
+  .sm-card-icon { font-size: 24px; }
+  .sm-card-name { font-size: 14px; }
+  .sm-card-desc { font-size: 11px; }
 }

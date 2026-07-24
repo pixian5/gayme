@@ -692,6 +692,46 @@
       return;
     }
 
+    // v1.4.0 拓印节点
+    if (node.rubbing) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runRubbing(node.rubbing, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.4.0 集字节点
+    if (node.collect) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runCollect(node.collect, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.4.0 光影对焦节点
+    if (node.focus) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runFocus(node.focus, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.4.0 气味记忆节点
+    if (node.scentmem) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runScentmem(node.scentmem, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -5686,7 +5726,10 @@
     rollBtn.onclick = rollDice;
 
     confirmBtn.onclick = () => {
-      if (confirmBtn.disabled || !rolled) return;
+      if (confirmBtn.disabled || !rolled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      rollBtn.disabled = true;
       const sum = dice.reduce((a,b) => a+b, 0);
       const thresholds = d.thresholds || [];
       let matched = d.fallback || { tag: "miss", label: "——平淡", next: null };
@@ -5886,6 +5929,9 @@
 
     function finishWind() {
       if (aborted) return;
+      aborted = true;
+      finished = true;
+      sailBtn.disabled = true;
       const ratio = Math.min(1, progress / target);
       const thresholds = w.thresholds || [];
       let matched = w.fallback || { tag: "miss", label: "——没到", next: null };
@@ -6017,6 +6063,10 @@
     };
 
     confirmBtn.onclick = () => {
+      if (aborted || confirmBtn.disabled) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      resetBtn.disabled = true;
       const current = picked.map(p => p.s).join("");
       const correct = current === answer;
       const score = correct ? 1 : (current.length > 0 ? Math.max(0, current.length / answer.length * 0.5) : 0);
@@ -6262,6 +6312,630 @@
     resize();
   }
 
+  /* ============================================================
+     v1.4.0 拓印 runRubbing
+     node.rubbing = {
+       prompt: "用铅笔拓印——",
+       pattern: "leaf",   // 纹理类型（leaf/stone/wood/fabric）
+       min: 0.7,          // 最小覆盖率
+       thresholds: [
+         { min: 0.8, tag, label, text, add?, memory?, next },
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runRubbing(rb, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "rubbing-layer";
+    layer.id = "rubbing-layer";
+    layer.innerHTML = `
+      <div class="ru-prompt">${rb.prompt || "用铅笔拓印——"}</div>
+      <div class="ru-stage">
+        <canvas class="ru-canvas" id="ru-canvas"></canvas>
+        <div class="ru-info" id="ru-info">覆盖率：0%</div>
+      </div>
+      <div class="ru-actions">
+        <button class="ru-reset">重置</button>
+        <button class="ru-confirm" id="ru-confirm" disabled>完成拓印</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ru-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ru-info");
+    const confirmBtn = layer.querySelector("#ru-confirm");
+    const resetBtn = layer.querySelector(".ru-reset");
+
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+    let aborted = false;
+    const pattern = rb.pattern || "leaf";
+    let mask = null;
+    let maskCtx = null;
+    let cellW = 0, cellH = 0;
+    const GRID = 40;
+
+    function seeded(n) {
+      const x = Math.sin(n * 12.9898 + 78.233) * 43758.5453;
+      return x - Math.floor(x);
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      mask = document.createElement("canvas");
+      mask.width = GRID;
+      mask.height = GRID;
+      maskCtx = mask.getContext("2d");
+      cellW = canvas.width / GRID;
+      cellH = canvas.height / GRID;
+      drawPattern();
+    }
+
+    function drawPattern() {
+      const w = canvas.width, h = canvas.height;
+      ctx.fillStyle = "#3a3a3a";
+      ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      if (pattern === "leaf") {
+        ctx.strokeStyle = "rgba(100,140,80,0.5)";
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          ctx.beginPath();
+          const x = (w / 8) * (i + 1);
+          ctx.moveTo(x, h * 0.2);
+          ctx.bezierCurveTo(x - 30, h * 0.4, x + 30, h * 0.6, x, h * 0.8);
+          ctx.stroke();
+          for (let j = 0; j < 6; j++) {
+            const t = j / 6;
+            const cy = h * 0.2 + (h * 0.6) * t;
+            const off = (seeded(i * 10 + j) - 0.5) * 40;
+            ctx.beginPath();
+            ctx.moveTo(x, cy);
+            ctx.lineTo(x + off, cy + 20);
+            ctx.stroke();
+          }
+        }
+      } else if (pattern === "stone") {
+        for (let i = 0; i < 30; i++) {
+          const r = 100 + seeded(i) * 40;
+          ctx.fillStyle = `rgba(${r},${r},${r},0.4)`;
+          ctx.beginPath();
+          ctx.arc(seeded(i + 1) * w, seeded(i + 2) * h, 10 + seeded(i + 3) * 20, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (pattern === "wood") {
+        ctx.strokeStyle = "rgba(120,80,40,0.4)";
+        for (let i = 0; i < 15; i++) {
+          ctx.lineWidth = 1 + seeded(i) * 2;
+          ctx.beginPath();
+          const y = (h / 15) * i;
+          ctx.moveTo(0, y);
+          for (let x = 0; x < w; x += 20) {
+            ctx.lineTo(x, y + Math.sin(x * 0.05) * 5);
+          }
+          ctx.stroke();
+        }
+      } else {
+        ctx.strokeStyle = "rgba(180,160,140,0.3)";
+        ctx.lineWidth = 1;
+        for (let x = 0; x < w; x += 4) {
+          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y < h; y += 4) {
+          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+      }
+      ctx.restore();
+      if (maskCtx) {
+        maskCtx.clearRect(0, 0, GRID, GRID);
+        maskCtx.fillStyle = "#000";
+        maskCtx.fillRect(0, 0, GRID, GRID);
+      }
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: (t.clientX - rect.left) * (canvas.width / rect.width),
+        y: (t.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function markMask(x, y) {
+      if (!maskCtx) return;
+      const gx = Math.max(0, Math.min(GRID - 1, Math.floor(x / cellW)));
+      const gy = Math.max(0, Math.min(GRID - 1, Math.floor(y / cellH)));
+      maskCtx.fillStyle = "#fff";
+      maskCtx.fillRect(gx - 1, gy - 1, 3, 3);
+    }
+
+    function startDraw(e) {
+      if (aborted) return;
+      isDrawing = true;
+      const p = getPos(e);
+      lastX = p.x; lastY = p.y;
+      drawDot(p.x, p.y);
+    }
+    function drawDot(x, y) {
+      ctx.fillStyle = "rgba(240,230,210,0.7)";
+      ctx.beginPath();
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
+      ctx.fill();
+      markMask(x, y);
+    }
+    function moveDraw(e) {
+      if (!isDrawing || aborted) return;
+      e.preventDefault();
+      const p = getPos(e);
+      const dx = p.x - lastX, dy = p.y - lastY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const steps = Math.max(1, Math.floor(dist / 4));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        drawDot(lastX + dx * t, lastY + dy * t);
+      }
+      lastX = p.x; lastY = p.y;
+      updateCoverage();
+    }
+    function endDraw() { isDrawing = false; }
+
+    function getCoverage() {
+      if (!maskCtx) return 0;
+      const data = maskCtx.getImageData(0, 0, GRID, GRID).data;
+      let lit = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 128) lit++;
+      }
+      return lit / (GRID * GRID);
+    }
+
+    function updateCoverage() {
+      const estimated = getCoverage();
+      info.textContent = `覆盖率：${Math.round(estimated * 100)}%`;
+      const minCov = rb.min || 0.5;
+      if (estimated >= minCov) confirmBtn.disabled = false;
+    }
+
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", moveDraw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseleave", endDraw);
+    canvas.addEventListener("touchstart", e => { startDraw(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener("touchmove", e => { moveDraw(e); }, { passive: false });
+    canvas.addEventListener("touchend", endDraw);
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      drawPattern();
+      updateCoverage();
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      resetBtn.disabled = true;
+      isDrawing = false;
+      const coverage = getCoverage();
+      const thresholds = rb.thresholds || [];
+      let matched = rb.fallback || { tag: "miss", label: "——没拓清", next: null };
+      for (const t of thresholds) {
+        if (coverage >= t.min) { matched = t; break; }
+      }
+      Saves.saveRubbingRecord(currentNodeId, coverage, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ru-reading";
+      reading.innerHTML = `<div class="ru-reading-title">${matched.label || "解读"} · 覆盖率 ${Math.round(coverage * 100)}%</div>
+        <div class="ru-reading-text">${matched.text || ""}</div>
+        <button class="ru-reading-close">继续</button>`;
+      reading.querySelector(".ru-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+        if (ro) ro.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+    const ro = new ResizeObserver(() => { if (!aborted) resize(); });
+
+    document.getElementById("game").appendChild(layer);
+    ro.observe(canvas);
+    resize();
+  }
+
+  /* ============================================================
+     v1.4.0 集字 runCollect
+     node.collect = {
+       prompt: "在飘落的字符中收集目标字——",
+       target: "雨",      // 目标字
+       total: 5,          // 目标字总数
+       duration: 15000,   // 持续时间 ms
+       thresholds: [
+         { min: 0.8, tag, label, text, add?, memory?, next },
+         { min: 0.4, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runCollect(c, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "collect-layer";
+    layer.id = "collect-layer";
+    const target = c.target || "雨";
+    const total = c.total || 5;
+    const duration = c.duration || 15000;
+    // 干扰字
+    const distractors = c.distractors || ["风","云","月","花","叶","雪","霜","露"];
+    layer.innerHTML = `
+      <div class="cl-prompt">${c.prompt || "在飘落的字符中收集目标字——"}</div>
+      <div class="cl-target">目标字：<span class="cl-target-char">${target}</span> · 已收集 <span id="cl-count">0</span> / ${total}</div>
+      <div class="cl-stage" id="cl-stage"></div>
+      <div class="cl-info" id="cl-info">点击「开始」启动</div>
+      <div class="cl-actions">
+        <button class="cl-start" id="cl-start">开始</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#cl-stage");
+    const info = layer.querySelector("#cl-info");
+    const countEl = layer.querySelector("#cl-count");
+    const startBtn = layer.querySelector("#cl-start");
+
+    let collected = 0;
+    let started = false;
+    let aborted = false;
+    let spawnTimer = null;
+    let endTimer = null;
+    let chars = [];
+
+    function spawnChar() {
+      if (aborted) return;
+      const isTarget = Math.random() < 0.4;
+      const ch = isTarget ? target : distractors[Math.floor(Math.random() * distractors.length)];
+      const el = document.createElement("div");
+      el.className = "cl-char" + (isTarget ? " cl-char-target" : "");
+      el.textContent = ch;
+      el.style.left = (Math.random() * 90 + 5) + "%";
+      el.style.top = "-40px";
+      el.dataset.target = isTarget ? "1" : "0";
+      stage.appendChild(el);
+      chars.push(el);
+      // 动画下落
+      const duration = 4000 + Math.random() * 2000;
+      el.style.transition = `top ${duration}ms linear, opacity 0.3s`;
+      requestAnimationFrame(() => {
+        el.style.top = (stage.clientHeight + 20) + "px";
+      });
+      // 点击收集
+      el.onclick = () => {
+        if (aborted) return;
+        if (el.dataset.target === "1") {
+          collected++;
+          countEl.textContent = collected;
+          el.classList.add("cl-char-hit");
+          setTimeout(() => el.remove(), 300);
+        } else {
+          // 点错扣分（视觉反馈）
+          el.classList.add("cl-char-miss");
+          setTimeout(() => el.remove(), 300);
+        }
+      };
+      // 自动清理
+      setTimeout(() => { if (el.parentNode) el.remove(); }, duration + 500);
+    }
+
+    function startGame() {
+      if (started || aborted) return;
+      started = true;
+      startBtn.disabled = true;
+      info.textContent = `收集中—— ${duration/1000}秒`;
+      spawnTimer = setInterval(() => {
+        if (aborted || !document.body.contains(layer)) { clearInterval(spawnTimer); return; }
+        spawnChar();
+      }, 600);
+      endTimer = setTimeout(() => finishGame(), duration);
+    }
+    startBtn.onclick = startGame;
+
+    function finishGame() {
+      if (aborted) return;
+      aborted = true;
+      if (spawnTimer) clearInterval(spawnTimer);
+      if (endTimer) clearTimeout(endTimer);
+      // 清理所有字符
+      stage.querySelectorAll(".cl-char").forEach(c => c.remove());
+      const accuracy = total ? Math.min(1, collected / total) : 0;
+      const thresholds = c.thresholds || [];
+      let matched = c.fallback || { tag: "miss", label: "——没收集到", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.saveCollectRecord(currentNodeId, collected, total, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "cl-reading";
+      reading.innerHTML = `<div class="cl-reading-title">${matched.label || "解读"} · 收集 ${collected} / ${total}</div>
+        <div class="cl-reading-text">${matched.text || ""}</div>
+        <button class="cl-reading-close">继续</button>`;
+      reading.querySelector(".cl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (spawnTimer) clearInterval(spawnTimer);
+        if (endTimer) clearTimeout(endTimer);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.4.0 光影对焦 runFocus
+     node.focus = {
+       prompt: "调整焦距——让画面变清晰",
+       target: 0.5,      // 目标焦距 0~1
+       tolerance: 0.1,
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runFocus(f, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "focus-layer";
+    layer.id = "focus-layer";
+    const tgt = f.target !== undefined ? f.target : 0.5;
+    layer.innerHTML = `
+      <div class="fo-prompt">${f.prompt || "调整焦距——让画面变清晰"}</div>
+      <div class="fo-stage">
+        <div class="fo-scene" id="fo-scene">
+          <div class="fo-scene-content">远方的樱花树下，有一个等待的人影</div>
+        </div>
+      </div>
+      <div class="fo-controls">
+        <div class="fo-row">
+          <label>焦距</label>
+          <input type="range" id="fo-slider" min="0" max="1" step="0.01" value="0">
+          <span id="fo-val">0</span>
+        </div>
+      </div>
+      <div class="fo-info" id="fo-info">差异：——</div>
+      <div class="fo-actions">
+        <button class="fo-confirm" id="fo-confirm">确认焦距</button>
+      </div>
+    `;
+    const slider = layer.querySelector("#fo-slider");
+    const valEl = layer.querySelector("#fo-val");
+    const info = layer.querySelector("#fo-info");
+    const confirmBtn = layer.querySelector("#fo-confirm");
+    const scene = layer.querySelector("#fo-scene");
+
+    function update() {
+      const v = parseFloat(slider.value);
+      valEl.textContent = Math.round(v * 100);
+      const diff = Math.abs(v - tgt);
+      const score = Math.max(0, 1 - diff);
+      info.textContent = `差异：${Math.round(diff * 100)} · 清晰度：${Math.round(score * 100)}%`;
+      // 模糊度：越接近目标越清晰
+      const blur = diff * 20;
+      scene.style.filter = `blur(${blur}px) brightness(${0.7 + score * 0.3})`;
+    }
+    slider.addEventListener("input", update);
+
+    let aborted = false;
+    confirmBtn.onclick = () => {
+      if (aborted || confirmBtn.disabled) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      slider.disabled = true;
+      const v = parseFloat(slider.value);
+      const diff = Math.abs(v - tgt);
+      const score = Math.max(0, 1 - diff);
+      const thresholds = f.thresholds || [];
+      let matched = f.fallback || { tag: "miss", label: "——没对上焦", next: null };
+      for (const t of thresholds) {
+        if (score >= t.min) { matched = t; break; }
+      }
+      Saves.saveFocusRecord(currentNodeId, v, diff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "fo-reading";
+      reading.innerHTML = `<div class="fo-reading-title">${matched.label || "解读"} · 清晰度 ${Math.round(score * 100)}%</div>
+        <div class="fo-reading-text">${matched.text || ""}</div>
+        <button class="fo-reading-close">继续</button>`;
+      reading.querySelector(".fo-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    update();
+  }
+
+  /* ============================================================
+     v1.4.0 气味记忆 runScentmem
+     node.scentmem = {
+       prompt: "辨认之前闻过的气味——",
+       samples: [
+         { id, name, desc, isTarget: true },   // 之前闻过的
+         { id, name, desc, isTarget: false }
+       ],
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runScentmem(sm, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "scentmem-layer";
+    layer.id = "scentmem-layer";
+    const samples = sm.samples || [];
+    // 打乱顺序
+    const shuffled = samples.slice().sort(() => Math.random() - 0.5);
+    layer.innerHTML = `
+      <div class="sm-prompt">${sm.prompt || "辨认之前闻过的气味——"}</div>
+      <div class="sm-stage" id="sm-stage"></div>
+      <div class="sm-info" id="sm-info">点击气味卡片辨认——</div>
+      <div class="sm-actions">
+        <button class="sm-confirm" id="sm-confirm" disabled>确认</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#sm-stage");
+    const info = layer.querySelector("#sm-info");
+    const confirmBtn = layer.querySelector("#sm-confirm");
+
+    const picked = []; // {id, isTarget, picked: true/false}
+    let aborted = false;
+
+    shuffled.forEach(s => {
+      const card = document.createElement("div");
+      card.className = "sm-card";
+      card.dataset.id = s.id;
+      card.innerHTML = `
+        <div class="sm-card-icon">${s.icon || "✦"}</div>
+        <div class="sm-card-name">${s.name}</div>
+        <div class="sm-card-desc">${s.desc}</div>
+      `;
+      card.onclick = () => {
+        if (aborted) return;
+        const isPicked = card.classList.toggle("sm-card-picked");
+        const existing = picked.find(p => p.id === s.id);
+        if (isPicked && !existing) {
+          picked.push({ id: s.id, isTarget: s.isTarget });
+        } else if (!isPicked && existing) {
+          const i = picked.indexOf(existing);
+          picked.splice(i, 1);
+        }
+        info.textContent = picked.length > 0 ? `已选 ${picked.length} 个气味` : "点击气味卡片辨认——";
+        confirmBtn.disabled = picked.length === 0;
+      };
+      stage.appendChild(card);
+    });
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const targets = samples.filter(s => s.isTarget);
+      const correctPicks = picked.filter(p => p.isTarget).length;
+      const wrongPicks = picked.filter(p => !p.isTarget).length;
+      const totalTargets = targets.length;
+      const accuracy = Math.max(0, (correctPicks - wrongPicks) / Math.max(1, totalTargets));
+      const thresholds = sm.thresholds || [];
+      let matched = sm.fallback || { tag: "miss", label: "——记错了", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.saveScentmemRecord(currentNodeId, correctPicks, totalTargets, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "sm-reading";
+      reading.innerHTML = `<div class="sm-reading-title">${matched.label || "解读"} · 正确 ${correctPicks} / ${totalTargets}</div>
+        <div class="sm-reading-text">${matched.text || ""}</div>
+        <button class="sm-reading-close">继续</button>`;
+      reading.querySelector(".sm-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -6347,6 +7021,10 @@
     document.querySelectorAll(".wind-layer").forEach(e => e.remove());
     document.querySelectorAll(".decode-layer").forEach(e => e.remove());
     document.querySelectorAll(".rain-layer").forEach(e => e.remove());
+    document.querySelectorAll(".rubbing-layer").forEach(e => e.remove());
+    document.querySelectorAll(".collect-layer").forEach(e => e.remove());
+    document.querySelectorAll(".focus-layer").forEach(e => e.remove());
+    document.querySelectorAll(".scentmem-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

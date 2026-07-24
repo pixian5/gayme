@@ -72,6 +72,12 @@ const WIND_KEY    = "sakura_letters_wind_v2";        // 风向感知
 const DECODE_KEY  = "sakura_letters_decode_v2";      // 梦境解码
 const RAIN_KEY    = "sakura_letters_rain_v2";        // 雨滴节奏
 
+/* v1.4.0 新玩法存储 */
+const RUBBING_KEY  = "sakura_letters_rubbing_v2";    // 拓印
+const COLLECT_KEY  = "sakura_letters_collect_v2";    // 集字
+const FOCUS_KEY    = "sakura_letters_focus_v2";      // 光影对焦
+const SCENTMEM_KEY = "sakura_letters_scentmem_v2";   // 气味记忆
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1027,6 +1033,70 @@ const Saves = {
   },
   getRainRecord(nodeId) { return this.getRainRecords()[nodeId]; },
 
+  /* ============ v1.4.0 拓印 ============ */
+  // 记录每次拓印：{ nodeId: { coverage, tag, ts } }
+  getRubbingRecords() {
+    try {
+      const raw = localStorage.getItem(RUBBING_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveRubbingRecord(nodeId, coverage, tag) {
+    const all = this.getRubbingRecords();
+    all[nodeId] = { coverage, tag, ts: Date.now() };
+    localStorage.setItem(RUBBING_KEY, JSON.stringify(all));
+    return true;
+  },
+  getRubbingRecord(nodeId) { return this.getRubbingRecords()[nodeId]; },
+
+  /* ============ v1.4.0 集字 ============ */
+  // 记录每次集字：{ nodeId: { collected, total, accuracy, tag, ts } }
+  getCollectRecords() {
+    try {
+      const raw = localStorage.getItem(COLLECT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveCollectRecord(nodeId, collected, total, accuracy, tag) {
+    const all = this.getCollectRecords();
+    all[nodeId] = { collected, total, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(COLLECT_KEY, JSON.stringify(all));
+    return true;
+  },
+  getCollectRecord(nodeId) { return this.getCollectRecords()[nodeId]; },
+
+  /* ============ v1.4.0 光影对焦 ============ */
+  // 记录每次对焦：{ nodeId: { focus, diff, tag, ts } }
+  getFocusRecords() {
+    try {
+      const raw = localStorage.getItem(FOCUS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveFocusRecord(nodeId, focus, diff, tag) {
+    const all = this.getFocusRecords();
+    all[nodeId] = { focus, diff, tag, ts: Date.now() };
+    localStorage.setItem(FOCUS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getFocusRecord(nodeId) { return this.getFocusRecords()[nodeId]; },
+
+  /* ============ v1.4.0 气味记忆 ============ */
+  // 记录每次气味记忆：{ nodeId: { correct, total, tag, ts } }
+  getScentmemRecords() {
+    try {
+      const raw = localStorage.getItem(SCENTMEM_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveScentmemRecord(nodeId, correct, total, tag) {
+    const all = this.getScentmemRecords();
+    all[nodeId] = { correct, total, tag, ts: Date.now() };
+    localStorage.setItem(SCENTMEM_KEY, JSON.stringify(all));
+    return true;
+  },
+  getScentmemRecord(nodeId) { return this.getScentmemRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1053,7 +1123,8 @@ const Saves = {
      BREATH_KEY, TIMECAPSULE_KEY, FOLD_KEY, REFLECTION_KEY,
      LIGHTDRAW_KEY, MIMIC_KEY, SEASON_KEY, PULSE_KEY,
      TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY,
-     DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY].forEach(k => localStorage.removeItem(k));
+     DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY,
+     RUBBING_KEY, COLLECT_KEY, FOCUS_KEY, SCENTMEM_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
