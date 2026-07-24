@@ -713,7 +713,126 @@ const SCRIPT = {
     // v0.5.0 朋友圈：三女主同时发动态
     moment: ["m_d4_shiyu", "m_d3_group"]
   },
-  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」", next: "letter_2" },
+  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。", next: "d4_evening_scent" },
+
+  /* ============ v0.7.0 气味收集 ============ */
+  d4_evening_scent: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "——窗台上有几种气味，慢慢散开。我凑近闻——",
+    next: "d4_scent_recall",
+    scent: {
+      prompt: "细闻——窗台上有什么？",
+      min: 1,
+      items: [
+        { id: "old_letter",   icon: "✉", name: "匿名信的纸味", desc: "纸张被夜风吹得发干，混着一点墨。像被人翻过很多次。", scene: "home_room" },
+        { id: "cherry_night", icon: "🌸", name: "夜里的樱花",   desc: "几乎闻不到。只有一种很淡的甜，像被月光稀释过。", scene: "home_room" },
+        { id: "rain_dust",    icon: "💧", name: "雨后的尘土",   desc: "泥土翻起来的腥气，是即将下雨的前奏。", scene: "home_room" }
+      ],
+      next: "d4_scent_recall"
+    }
+  },
+
+  /* ============ v0.7.0 气味闪回 ============ */
+  d4_scent_recall: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "沈屿",
+    text: "——匿名信的纸味，让我想起前几天在图书馆翻过的那本旧书。",
+    next: "d4_silence",
+    scentRecall: {
+      scentId: "old_letter",
+      recallId: "recall_d4_old_letter",
+      text: "——纸的味道会变。我刚来这座城市的时候，所有的纸都闻起来像新印的。",
+      flashback: "「纸的味道会变。三个月前的纸和今天的纸，闻起来不一样。」——她那时候在图书馆里这么说。",
+      acknowledgedNext: "d4_silence",
+      skipNext: "d4_silence",
+      choices: [
+        { text: "她说过这句话——是林诗雨。", value: "remember_shiyu",
+          add: { affection: { shiyu: 1 } }, personality: { honest: 1 },
+          memory: { id: "回声·纸味", title: "夜里想起的诗雨", text: "夜里我闻到旧纸味，想起林诗雨说：纸会变。" },
+          next: "d4_silence" },
+        { text: "不去想，把信推开。", value: "ignore",
+          personality: { kind: -1 },
+          next: "d4_silence" }
+      ]
+    }
+  },
+
+  /* ============ v0.7.0 沉默选择 ============ */
+  d4_silence: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "——窗外的风停了。一个问题忽然浮上来：「如果我现在不回答，是不是也是一种回答？」",
+    next: "d4_touch",
+    silenceChoice: {
+      prompt: "——你为什么不回信？",
+      duration: 8,
+      options: [
+        { text: "我不知道怎么回。", value: "dont_know",
+          add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
+          memory: { id: "沉默·回信", title: "夜里承认不知道", text: "夜里我承认我不知道怎么回。她没说话，但她听见了。" },
+          next: "d4_touch" },
+        { text: "我不想回。", value: "refuse",
+          add: { affection: { shiyu: -1 } }, personality: { brave: 1 },
+          next: "d4_touch" }
+      ],
+      silent: {
+        text: "（你保持沉默。窗外的樱花落了一片，盖在信纸上。）",
+        add: { affection: { shiyu: 0 } }, personality: { kind: 1 },
+        memory: { id: "沉默·回信", title: "夜里的沉默", text: "夜里我什么也没说。沉默也是一种回答。" },
+        next: "d4_touch"
+      }
+    }
+  },
+
+  /* ============ v0.7.0 触觉关怀 ============ */
+  d4_touch: {
+    day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨",
+    text: "——门被轻轻推开。林诗雨站在门口，抱着稿纸。「我听见你屋里有动静……我可以进来吗？」她看上去眼睛红红的。",
+    next: "d4_temperature",
+    touch: {
+      prompt: "她抱着一摞稿纸站在门口——你想怎么安慰她？点击立绘不同部位。",
+      char: "shiyu",
+      min: 1,
+      parts: [
+        { id: "head",     label: "头", x: 38, y: 22, w: 24, h: 18,
+          dialogue: "「……你摸我的头。」她没躲，眼睛更红了。稿纸哗啦响了一下。",
+          add: { affection: { shiyu: 2 } }, personality: { kind: 1 },
+          memory: { id: "触觉·头", title: "夜里的安抚", text: "夜里你摸了她的头。她没躲。" } },
+        { id: "shoulder", label: "肩", x: 30, y: 50, w: 40, h: 16,
+          dialogue: "「——肩也酸。写了一下午，肩比心更累。」她终于笑了一下。",
+          add: { affection: { shiyu: 1 } } },
+        { id: "hand",     label: "手", x: 36, y: 75, w: 28, h: 14,
+          dialogue: "「……手这么凉。」她没缩回去，稿纸从臂弯里掉了一张。",
+          add: { affection: { shiyu: 2 } }, personality: { honest: 1 },
+          memory: { id: "触觉·手", title: "夜里凉的手", text: "夜里你握了她的手。她说，凉。" } }
+      ],
+      exitText: "（你收回手。）",
+      next: "d4_temperature"
+    }
+  },
+
+  /* ============ v0.7.0 温度感知 ============ */
+  d4_temperature: {
+    day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨",
+    text: "——她坐到窗边，看着外面的夜。「沈屿，你觉得现在——是冷，还是暖？」",
+    next: "letter_2",
+    temperature: {
+      prompt: "她说：现在是什么感觉？滑动温度条，把心里的温度调给她看。",
+      previewWarm:   "——把心调暖一点。她想被允许向前一步。",
+      previewCool:   "——退一步，凉一点。她想被允许停在原地。",
+      previewNeutral:"——就在此刻，不偏不倚。",
+      scoreBonus: {
+        warm:    { affection: { shiyu: 2 }, personality: { kind: 2, brave: 1 } },
+        neutral: { affection: { shiyu: 1 } },
+        cool:    { affection: { shiyu: 0 }, personality: { honest: 1 } }
+      },
+      scoreJump: {
+        warm: "d4_temp_warm",
+        neutral: "letter_2",
+        cool: "d4_temp_cool"
+      }
+    }
+  },
+  d4_temp_warm: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——暖。她笑了一下。「那就好。我也觉得……是暖的。」", next: "letter_2", memory: { id: "温度·暖", title: "夜里的暖", text: "夜里你说现在是暖。她笑了一下。" } },
+  d4_temp_cool: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——凉。她点点头。「嗯。凉就凉一点吧。也挺好。」", next: "letter_2", memory: { id: "温度·凉", title: "夜里的凉", text: "夜里你说现在是凉。她没说什么。" } },
   letter_2: {
     day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "「如果三条路其实通向同一个地方，你还要走吗？」",

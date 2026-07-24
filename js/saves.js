@@ -30,6 +30,12 @@ const ECHO_KEY         = "sakura_letters_echo_v2";       // 回声台词
 const PHOTO_KEY        = "sakura_letters_photo_v2";      // 摄影构图
 const RHYTHM_KEY       = "sakura_letters_rhythm_v2";     // 节奏敲击
 
+/* v0.7.0 新玩法存储 */
+const SCENT_KEY        = "sakura_letters_scent_v2";       // 气味收集
+const SILENCE_KEY      = "sakura_letters_silence_v2";     // 沉默选择记录
+const TOUCH_KEY        = "sakura_letters_touch_v2";      // 触觉关怀记录
+const TEMPERATURE_KEY  = "sakura_letters_temperature_v2";// 温度感知
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -466,6 +472,101 @@ const Saves = {
   },
   getRhythm(nodeId) { return this.getRhythms()[nodeId]; },
 
+  /* ============ v0.7.0 气味收集 ============ */
+  // 气味卡结构：{ id, name, desc, scene, ts }
+  getScents() {
+    try {
+      const raw = localStorage.getItem(SCENT_KEY);
+      return raw ? JSON.parse(raw) : { collected: {}, recalled: {} };
+    } catch (e) { return { collected: {}, recalled: {} }; }
+  },
+  collectScent(scent) {
+    const all = this.getScents();
+    if (all.collected[scent.id]) return false; // 已收集过
+    all.collected[scent.id] = { ...scent, ts: Date.now() };
+    localStorage.setItem(SCENT_KEY, JSON.stringify(all));
+    return true; // true 表示新收集
+  },
+  isScentCollected(id) { return !!this.getScents().collected[id]; },
+  // 闪回触发：用 scentId 关联已收集的气味
+  markScentRecalled(scentId, recallId) {
+    const all = this.getScents();
+    if (!all.recalled[scentId]) all.recalled[scentId] = [];
+    if (!all.recalled[scentId].includes(recallId)) {
+      all.recalled[scentId].push(recallId);
+      localStorage.setItem(SCENT_KEY, JSON.stringify(all));
+      return true;
+    }
+    return false;
+  },
+  isScentRecalled(scentId, recallId) {
+    const r = this.getScents().recalled[scentId] || [];
+    return r.includes(recallId);
+  },
+
+  /* ============ v0.7.0 沉默选择 ============ */
+  // 记录每个沉默节点的最终选择：{ nodeId: { choice, silent, ts } }
+  getSilenceRecords() {
+    try {
+      const raw = localStorage.getItem(SILENCE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSilenceRecord(nodeId, choice, silent) {
+    const all = this.getSilenceRecords();
+    all[nodeId] = { choice, silent, ts: Date.now() };
+    localStorage.setItem(SILENCE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSilenceRecord(nodeId) { return this.getSilenceRecords()[nodeId]; },
+  getSilentCount() {
+    const all = this.getSilenceRecords();
+    return Object.values(all).filter(r => r.silent).length;
+  },
+
+  /* ============ v0.7.0 触觉关怀 ============ */
+  // 记录每次触觉关怀的部位：{ nodeId: { parts: [], ts } }
+  getTouchRecords() {
+    try {
+      const raw = localStorage.getItem(TOUCH_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTouchRecord(nodeId, partId, partLabel) {
+    const all = this.getTouchRecords();
+    if (!all[nodeId]) all[nodeId] = { parts: [], ts: Date.now() };
+    if (!all[nodeId].parts.some(p => p.id === partId)) {
+      all[nodeId].parts.push({ id: partId, label: partLabel });
+      all[nodeId].ts = Date.now();
+      localStorage.setItem(TOUCH_KEY, JSON.stringify(all));
+      return true;
+    }
+    return false;
+  },
+  getTouchRecord(nodeId) { return this.getTouchRecords()[nodeId]; },
+
+  /* ============ v0.7.0 温度感知 ============ */
+  // 记录每个温度节点的最终温度：{ nodeId: { temp, tag, ts } }
+  getTemperatureRecords() {
+    try {
+      const raw = localStorage.getItem(TEMPERATURE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTemperatureRecord(nodeId, temp, tag) {
+    const all = this.getTemperatureRecords();
+    all[nodeId] = { temp, tag, ts: Date.now() };
+    localStorage.setItem(TEMPERATURE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTemperatureRecord(nodeId) { return this.getTemperatureRecords()[nodeId]; },
+  getCurrentTemperature() {
+    const all = this.getTemperatureRecords();
+    const vals = Object.values(all);
+    if (!vals.length) return 0; // 默认常温
+    return vals[vals.length - 1].temp;
+  },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -485,7 +586,8 @@ const Saves = {
     localStorage.removeItem(MEMORIES_KEY);
     [CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
      DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
-     COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY].forEach(k => localStorage.removeItem(k));
+     COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
+     SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

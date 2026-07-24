@@ -399,6 +399,56 @@
       return;
     }
 
+    // v0.7.0 气味收集节点
+    if (node.scent) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runScent(node.scent, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.7.0 气味闪回触发节点
+    if (node.scentRecall) {
+      setScene(node.bg);
+      renderCharacters(node);
+      triggerScentRecall(node.scentRecall, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.7.0 沉默选择节点
+    if (node.silenceChoice) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runSilenceChoice(node.silenceChoice, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.7.0 触觉关怀节点
+    if (node.touch) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTouch(node.touch, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.7.0 温度感知节点
+    if (node.temperature) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTemperature(node.temperature, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -2114,6 +2164,438 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v0.7.0 气味收集系统 runScent
+     node.scent = {
+       prompt: "图书馆里有几种气味——细闻哪一个？",
+       items: [
+         { id, name, desc, scene?, tag? }
+       ],
+       min: 1,                  // 至少细闻几个
+       next: "nodeId"            // 可选，覆盖默认 next
+     }
+     ============================================================ */
+  function runScent(scent, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+
+    const layer = document.createElement("div");
+    layer.className = "scent-layer";
+    layer.innerHTML = `
+      <div class="scent-prompt">${scent.prompt || "细闻——"}</div>
+      <div class="scent-grid"></div>
+      <div class="scent-status"></div>
+      <div class="scent-actions">
+        <button class="scent-confirm" disabled>继续</button>
+      </div>
+    `;
+    const grid = layer.querySelector(".scent-grid");
+    const statusEl = layer.querySelector(".scent-status");
+    const confirmBtn = layer.querySelector(".scent-confirm");
+
+    const collected = [];
+    const items = scent.items || [];
+    let remaining = items.length;
+
+    items.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "scent-card";
+      card.dataset.id = item.id;
+      card.innerHTML = `
+        <div class="scent-icon">${item.icon || "🌸"}</div>
+        <div class="scent-name">${item.name}</div>
+      `;
+      card.onclick = () => {
+        if (card.classList.contains("collected")) return;
+        card.classList.add("collected");
+        // 弹出气味描述卡片
+        const desc = document.createElement("div");
+        desc.className = "scent-desc-popup";
+        desc.innerHTML = `
+          <div class="scent-desc-name">${item.icon || "🌸"} ${item.name}</div>
+          <div class="scent-desc-text">${item.desc || ""}</div>
+          <button class="scent-desc-close">收下</button>
+        `;
+        desc.querySelector(".scent-desc-close").onclick = () => {
+          desc.remove();
+          const isNew = Saves.collectScent({
+            id: item.id, name: item.name, desc: item.desc, scene: item.scene || state.currentBg
+          });
+          if (isNew) flashHint(`🌿 收集气味：${item.name}`);
+          collected.push(item.id);
+          statusEl.textContent = `已细闻 ${collected.length} / ${items.length}`;
+          if (collected.length >= Math.min(scent.min || 1, items.length)) {
+            confirmBtn.disabled = false;
+          }
+        };
+        layer.appendChild(desc);
+      };
+      grid.appendChild(card);
+    });
+
+    if (!items.length) {
+      // 没有物品，直接放行
+      confirmBtn.disabled = false;
+    } else {
+      statusEl.textContent = `已细闻 0 / ${items.length}`;
+    }
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      layer.remove();
+      const node = SCRIPT[currentNodeId];
+      const jumpTo = scent.next || (node && node.next);
+      if (jumpTo) gotoNode(jumpTo);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.7.0 气味闪回触发 triggerScentRecall
+     node.scentRecall = {
+       scentId: "old_book",         // 要触发的气味 id（必须先收集过）
+       recallId: "recall_d3_old_book", // 闪回唯一 id，避免重复触发
+       text: "——我又闻到了那个味道。",
+       flashback: "「纸的味道会变。」她那时候这么说。",
+       choices: [
+         { text, value, add?, personality?, memory?, next }
+       ]
+     }
+     未收集过该气味时，跳过闪回，进入 node.next
+     ============================================================ */
+  function triggerScentRecall(recall, currentNodeId) {
+    const node = SCRIPT[currentNodeId];
+    const hasScent = Saves.isScentCollected(recall.scentId);
+    const already = Saves.isScentRecalled(recall.scentId, recall.recallId);
+
+    if (!hasScent) {
+      // 未收集过该气味 → 直接跳过
+      const jumpTo = recall.skipNext || (node && node.next);
+      if (jumpTo) gotoNode(jumpTo);
+      return;
+    }
+
+    // 已收集且已触发过 → 视为已确认，直接走已确认分支（避免重复弹窗）
+    if (already) {
+      const ack = recall.acknowledgedNext || (node && node.next);
+      if (ack) gotoNode(ack);
+      return;
+    }
+
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "scent-recall-layer";
+    layer.id = "scent-recall-layer";
+    layer.innerHTML = `
+      <div class="scent-recall-quote">
+        <div class="scent-recall-label">✦ 气味闪回</div>
+        <div class="scent-recall-text">${recall.text || ""}</div>
+        <div class="scent-recall-flashback">${recall.flashback || ""}</div>
+      </div>
+      <div class="scent-recall-choices"></div>
+    `;
+    const choicesEl = layer.querySelector(".scent-recall-choices");
+
+    (recall.choices || []).forEach(choice => {
+      const btn = document.createElement("button");
+      btn.className = "scent-recall-btn";
+      btn.textContent = choice.text;
+      btn.onclick = () => {
+        if (choice.add) { applyAdd(choice.add); updateHeartBar(); }
+        if (choice.personality) {
+          for (const dim in choice.personality) Saves.addPersonality(dim, choice.personality[dim]);
+        }
+        if (choice.memory) {
+          if (!Saves.isMemoryUnlocked(choice.memory.id)) {
+            Saves.saveMemory(choice.memory.id, choice.memory.text);
+            flashHint(`✦ 新记忆：${choice.memory.title}`);
+          }
+        }
+        Saves.markScentRecalled(recall.scentId, recall.recallId);
+        layer.remove();
+        const jumpTo = choice.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      choicesEl.appendChild(btn);
+    });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.7.0 沉默选择 runSilenceChoice
+     node.silenceChoice = {
+       prompt: "她问：你为什么不说话？",
+       duration: 10,            // 倒计时秒数
+       options: [{ text, value, add?, personality?, memory?, next }],
+       silent: {                // 超时进入的沉默分支
+         text, add?, personality?, memory?, next
+       }
+     }
+     ============================================================ */
+  function runSilenceChoice(silence, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "silence-layer";
+    layer.id = "silence-layer";
+
+    const duration = Math.max(2, silence.duration || 8);
+    let timeLeft = duration;
+    let settled = false;
+
+    layer.innerHTML = `
+      <div class="silence-prompt">${silence.prompt || ""}</div>
+      <div class="silence-timer">
+        <svg viewBox="0 0 60 60" class="silence-ring">
+          <circle cx="30" cy="30" r="26" class="silence-ring-bg"/>
+          <circle cx="30" cy="30" r="26" class="silence-ring-fg" id="silence-ring-fg"/>
+        </svg>
+        <span class="silence-time" id="silence-time">${timeLeft}</span>
+      </div>
+      <div class="silence-hint">不选也是一种选择 · 倒计时归零即沉默</div>
+      <div class="silence-options"></div>
+    `;
+    const optionsEl = layer.querySelector(".silence-options");
+    const ringFg = layer.querySelector("#silence-ring-fg");
+    const timeEl = layer.querySelector("#silence-time");
+
+    // 圆环周长 = 2π·26 ≈ 163.36
+    const CIRC = 2 * Math.PI * 26;
+    ringFg.style.strokeDasharray = CIRC;
+    ringFg.style.strokeDashoffset = 0;
+
+    function settle(choice, silent) {
+      if (settled) return;
+      settled = true;
+      clearInterval(timer);
+      Saves.saveSilenceRecord(currentNodeId, choice.value || "silent", silent);
+      if (choice.add) { applyAdd(choice.add); updateHeartBar(); }
+      if (choice.personality) {
+        for (const dim in choice.personality) Saves.addPersonality(dim, choice.personality[dim]);
+      }
+      if (choice.memory) {
+        if (!Saves.isMemoryUnlocked(choice.memory.id)) {
+          Saves.saveMemory(choice.memory.id, choice.memory.text);
+          flashHint(`✦ 新记忆：${choice.memory.title}`);
+        }
+      }
+      // 沉默分支有专属文本时，先短暂显示
+      if (silent && choice.text) {
+        layer.querySelector(".silence-prompt").textContent = choice.text;
+        layer.querySelector(".silence-options").innerHTML = "";
+        layer.querySelector(".silence-timer").style.opacity = "0";
+        layer.querySelector(".silence-hint").style.opacity = "0";
+        setTimeout(() => {
+          layer.remove();
+          const node = SCRIPT[currentNodeId];
+          const jumpTo = choice.next || (node && node.next);
+          if (jumpTo) gotoNode(jumpTo);
+        }, 1800);
+      } else {
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = choice.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      }
+    }
+
+    (silence.options || []).forEach(choice => {
+      const btn = document.createElement("button");
+      btn.className = "silence-btn";
+      btn.textContent = choice.text;
+      btn.onclick = () => settle(choice, false);
+      optionsEl.appendChild(btn);
+    });
+
+    const timer = setInterval(() => {
+      timeLeft--;
+      if (timeEl) timeEl.textContent = Math.max(0, timeLeft);
+      const offset = CIRC * (1 - timeLeft / duration);
+      if (ringFg) ringFg.style.strokeDashoffset = offset;
+      if (timeLeft <= 3) {
+        ringFg && ringFg.classList.add("silence-ring-warning");
+      }
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        settle(silence.silent || { value: "silent", next: silence.silent && silence.silent.next }, true);
+      }
+    }, 1000);
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.7.0 触觉关怀 runTouch
+     node.touch = {
+       prompt: "她看上去很难过——",
+       char: "shiyu",            // 立绘角色（仅用于定位，渲染由 node.char 决定）
+       parts: [
+         { id, label, x, y, w, h, dialogue, add?, personality?, memory? }
+       ],
+       exitText: "（你收回手。）",
+       next: "nodeId"           // 可选
+     }
+     ============================================================ */
+  function runTouch(touch, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "touch-layer";
+    layer.id = "touch-layer";
+    layer.innerHTML = `
+      <div class="touch-prompt">${touch.prompt || ""}</div>
+      <div class="touch-stage"></div>
+      <div class="touch-dialog" id="touch-dialog"></div>
+      <div class="touch-actions">
+        <button class="touch-exit" disabled>${touch.exitText || "（收回手）"}</button>
+      </div>
+    `;
+    const stage = layer.querySelector(".touch-stage");
+    const dialogEl = layer.querySelector("#touch-dialog");
+    const exitBtn = layer.querySelector(".touch-exit");
+
+    const touched = new Set();
+    const parts = touch.parts || [];
+
+    // 立绘占位（实际立绘在 #char-layer，这里只是热区容器）
+    const portraitBox = document.createElement("div");
+    portraitBox.className = "touch-portrait";
+    // 用 svg 占位（如果立绘层已渲染就不重复渲染）
+    portraitBox.innerHTML = PORTRAITS[touch.char] || `<div class="touch-portrait-empty">（无立绘）</div>`;
+    stage.appendChild(portraitBox);
+
+    // 在立绘上叠加可点击热区（按百分比定位）
+    parts.forEach(part => {
+      const hot = document.createElement("div");
+      hot.className = "touch-hotspot";
+      hot.style.left = `${part.x}%`;
+      hot.style.top = `${part.y}%`;
+      hot.style.width = `${part.w}%`;
+      hot.style.height = `${part.h}%`;
+      hot.dataset.id = part.id;
+      hot.innerHTML = `<span class="touch-hotspot-label">${part.label}</span>`;
+      hot.onclick = () => {
+        if (hot.classList.contains("touched")) return;
+        hot.classList.add("touched");
+        // 显示对话
+        dialogEl.innerHTML = `<div class="touch-dialogue-text">${part.dialogue || ""}</div>`;
+        // 应用效果
+        if (part.add) { applyAdd(part.add); updateHeartBar(); }
+        if (part.personality) {
+          for (const dim in part.personality) Saves.addPersonality(dim, part.personality[dim]);
+        }
+        if (part.memory) {
+          if (!Saves.isMemoryUnlocked(part.memory.id)) {
+            Saves.saveMemory(part.memory.id, part.memory.text);
+            flashHint(`✦ 新记忆：${part.memory.title}`);
+          }
+        }
+        Saves.saveTouchRecord(currentNodeId, part.id, part.label);
+        touched.add(part.id);
+        // 全部触碰过或至少碰过 1 个就解锁退出
+        exitBtn.disabled = touched.size < Math.min(touch.min || 1, parts.length);
+      };
+      portraitBox.appendChild(hot);
+    });
+
+    exitBtn.onclick = () => {
+      if (exitBtn.disabled) return;
+      layer.remove();
+      const node = SCRIPT[currentNodeId];
+      const jumpTo = touch.next || (node && node.next);
+      if (jumpTo) gotoNode(jumpTo);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.7.0 温度感知 runTemperature
+     node.temperature = {
+       prompt: "她问：现在是什么感觉？",
+       scoreBonus: {
+         warm:    { affection: { ... }, personality: { ... } },
+         neutral: { ... },
+         cool:    { ... }
+       },
+       scoreJump: { warm: "...", neutral: "...", cool: "..." },
+       next: "..."  // 默认跳转
+     }
+     温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
+     ============================================================ */
+  function runTemperature(temp, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+
+    const layer = document.createElement("div");
+    layer.className = "temperature-layer";
+    layer.id = "temperature-layer";
+    layer.innerHTML = `
+      <div class="temp-prompt">${temp.prompt || "调节心境温度——"}</div>
+      <div class="temp-display">
+        <span class="temp-value" id="temp-value">0</span>
+        <span class="temp-tag" id="temp-tag">常温</span>
+      </div>
+      <div class="temp-slider-wrap">
+        <span class="temp-label-cold">冷</span>
+        <input type="range" min="-100" max="100" value="0" step="1" class="temp-slider" id="temp-slider"/>
+        <span class="temp-label-warm">暖</span>
+      </div>
+      <div class="temp-preview" id="temp-preview"></div>
+      <div class="temp-actions">
+        <button class="temp-confirm" id="temp-confirm">就这样</button>
+      </div>
+    `;
+    const slider = layer.querySelector("#temp-slider");
+    const valueEl = layer.querySelector("#temp-value");
+    const tagEl = layer.querySelector("#temp-tag");
+    const previewEl = layer.querySelector("#temp-preview");
+    const confirmBtn = layer.querySelector("#temp-confirm");
+
+    function tagFor(v) {
+      if (v >= 30) return { tag: "warm", label: "暖" };
+      if (v <= -30) return { tag: "cool", label: "冷" };
+      return { tag: "neutral", label: "常温" };
+    }
+    function previewText(tag) {
+      if (tag === "warm") return temp.previewWarm || "——把心放暖一点。";
+      if (tag === "cool") return temp.previewCool || "——退一步，凉一点。";
+      return temp.previewNeutral || "——就在此刻，不偏不倚。";
+    }
+
+    function update(v) {
+      valueEl.textContent = (v > 0 ? "+" : "") + v;
+      const { tag, label } = tagFor(v);
+      tagEl.textContent = label;
+      tagEl.dataset.tag = tag;
+      previewEl.textContent = previewText(tag);
+      // 影响背景色调（实时预览）
+      el.bgOverlay.style.background =
+        tag === "warm" ? "linear-gradient(180deg, rgba(255,180,120,0.18), rgba(255,120,80,0.10))" :
+        tag === "cool" ? "linear-gradient(180deg, rgba(120,180,255,0.18), rgba(80,120,200,0.10))" :
+        "transparent";
+    }
+    slider.oninput = () => update(parseInt(slider.value, 10));
+    update(0);
+
+    confirmBtn.onclick = () => {
+      const v = parseInt(slider.value, 10);
+      const { tag } = tagFor(v);
+      Saves.saveTemperatureRecord(currentNodeId, v, tag);
+      if (temp.scoreBonus && temp.scoreBonus[tag]) {
+        applyAdd(temp.scoreBonus[tag]);
+        updateHeartBar();
+      }
+      // 恢复背景叠加
+      el.bgOverlay.style.background = "transparent";
+      flashHint(`🌡 心境温度：${v > 0 ? "+" : ""}${v}（${tagEl.textContent}）`);
+      layer.remove();
+      const node = SCRIPT[currentNodeId];
+      const jumpTo = (temp.scoreJump && temp.scoreJump[tag]) || temp.next || (node && node.next);
+      if (jumpTo) gotoNode(jumpTo);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -2164,6 +2646,14 @@
     if (photoLayer) photoLayer.remove();
     const rhythmLayer = document.querySelector(".rhythm-layer");
     if (rhythmLayer) rhythmLayer.remove();
+    // 清理 v0.7.0 浮层（用 querySelectorAll 防止重复残留）
+    document.querySelectorAll(".scent-layer").forEach(e => e.remove());
+    document.querySelectorAll(".scent-recall-layer").forEach(e => e.remove());
+    document.querySelectorAll(".silence-layer").forEach(e => e.remove());
+    document.querySelectorAll(".touch-layer").forEach(e => e.remove());
+    document.querySelectorAll(".temperature-layer").forEach(e => e.remove());
+    // 恢复温度叠加
+    if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
     el.titleScreen.classList.remove("hidden");
     el.endingScreen.classList.add("hidden");
