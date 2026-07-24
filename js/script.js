@@ -470,7 +470,141 @@ const SCRIPT = {
   d2_noon_8: { day: 2, time: "noon", bg: "cafeteria", char: "xiazhi", speaker: "夏织", text: "苏念？她运动会从来都请假。美术社那帮人跟我们不是一个次元。", next: "d2_noon_9" },
   d2_noon_9: { day: 2, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……她其实来过。去年看了一会儿就走了，没报名。", next: "d2_noon_10" },
   d2_noon_10: { day: 2, time: "noon", bg: "cafeteria", speaker: "", text: "我注意到她们说苏念时，眼神都温和了一些。原来三个人之间，是有故事的。", next: "d2_evening" },
-  d2_evening: { day: 2, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上回宿舍。匿名信的事还压在心里。我决定先把信收好，明天再想。", next: "common_day3_morning" },
+  d2_evening: { day: 2, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上回宿舍。匿名信的事还压在心里。我决定先把信收好，明天再想。临睡前做了个奇怪的梦——", next: "d2_dreamweave" },
+
+  /* ============ v0.8.0 梦境编织 ============ */
+  d2_dreamweave: {
+    day: 2, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "——梦里出现了几个碎片，按某种顺序拼起来，会变成一个完整的故事。",
+    next: "d3_tarot",
+    dreamweave: {
+      prompt: "把梦境碎片按你的直觉拼接——",
+      min: 2,
+      fragments: [
+        { id: "corridor", label: "走廊",     desc: "一条很长的走廊，尽头有人在回头。", color: "#a8c5e8" },
+        { id: "letter",   label: "信",       desc: "一封信飘在风里，写不下收信人。",     color: "#d87090" },
+        { id: "cherry",   label: "樱花",     desc: "花瓣落下来，盖住了字迹。",         color: "#ffb8c8" },
+        { id: "voice",    label: "声音",     desc: "有人在喊一个名字，听不清是谁。",     color: "#c8a8e0" }
+      ],
+      interpretations: [
+        { seq: ["corridor","letter","cherry","voice"], tag: "full_recall",
+          label: "——完整的梦",
+          text: "走廊尽头那人回头，是学姐。她手里那封信被风吹起，樱花盖住字迹，她在喊——你的名字。",
+          add: { affection: { shiyu: 1 } }, personality: { honest: 1, brave: 1 },
+          memory: { id: "梦境·完整", title: "夜里的完整梦", text: "你拼出了完整的梦：学姐、信、樱花、名字。" },
+          next: "d3_tarot" },
+        { seq: ["letter","cherry"], tag: "partial_letter",
+          label: "——半截的梦",
+          text: "信和樱花叠在一起。其他碎片散开，没有拼上。梦不完整，但有一些画面留了下来。",
+          add: { affection: { shiyu: 0 } },
+          memory: { id: "梦境·半截", title: "夜里的半截梦", text: "你只拼出了半截梦。其他部分散开了。" },
+          next: "d3_tarot" }
+      ],
+      fallback: { tag: "scattered", label: "——散碎的梦",
+        text: "碎片散开，没有拼成完整的形状。但你记住了其中一两个画面。",
+        next: "d3_tarot" }
+    }
+  },
+
+  /* ============ v0.8.0 占卜抽牌 ============ */
+  d3_tarot: {
+    day: 3, time: "morning", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "——早上走廊没人，学姐突然出现，手里捧着一副牌。「同学，要不要试试？今天的运势很特别。」她笑得眼睛弯弯的。",
+    next: "d3_spectrum",
+    tarot: {
+      prompt: "学姐翻开牌阵——抽三张：过去 / 现在 / 未来",
+      positions: ["过去", "现在", "未来"],
+      deck: [
+        { id: "cherry_bloom", name: "樱花·盛",  upright: "新生与相遇",     reversed: "将散而未散" },
+        { id: "letter_blank", name: "空白信",   upright: "未说出口的话",   reversed: "已经迟了" },
+        { id: "field_run",    name: "跑道",     upright: "向前奔跑",       reversed: "原地打转" },
+        { id: "purple_paint", name: "紫色画",   upright: "挣出自我",       reversed: "被困住" },
+        { id: "moon_hidden",  name: "隐月",     upright: "沉默的真相",     reversed: "被遮蔽的光" }
+      ],
+      combos: [
+        { ids: ["cherry_bloom","letter_blank","moon_hidden"], tag: "trio_truth",
+          label: "——真相之牌",
+          text: "过去盛开，现在空白，未来被遮蔽。学姐看了很久，说：「你最近在追一封信。追到了，反而最难回。」",
+          add: { affection: { shiyu: 1 } }, personality: { honest: 2 },
+          memory: { id: "占卜·真相", title: "三张真相", text: "学姐翻出三张牌，说追到了反而最难回。" },
+          next: "d3_spectrum" },
+        { ids: ["field_run","purple_paint"], tag: "duo_break",
+          label: "——挣脱之牌",
+          text: "跑道与紫画一起出现——两个都想挣出去的人。学姐说：「你身边有人正在挣。你看见了她吗？」",
+          add: { affection: { xiazhi: 1, sunian: 1 } }, personality: { brave: 1 },
+          memory: { id: "占卜·挣", title: "两个挣的人", text: "学姐翻出跑道与紫画，说身边有人正在挣。" },
+          next: "d3_spectrum" },
+        { ids: ["cherry_bloom"], tag: "solo_bloom",
+          label: "——只一张盛开",
+          text: "只有樱花一张清晰。学姐说：「现在是开的时候。别的，先不管。」",
+          add: { affection: { shiyu: 1 } },
+          next: "d3_spectrum" }
+      ],
+      fallback: { tag: "default", label: "——牌阵无言",
+        text: "三张牌没有特别的组合。学姐笑笑：「牌不肯说话，今天就这样吧。」",
+        next: "d3_spectrum" }
+    }
+  },
+
+  /* ============ v0.8.0 情绪光谱 ============ */
+  d3_spectrum: {
+    day: 3, time: "morning", bg: "classroom", char: null, speaker: "",
+    text: "——走进教室。班主任还没到。同学们在闹。我坐下，发现自己还没从梦和占卜里走出来。此刻——心在哪里？",
+    next: "common_day3_morning",
+    spectrum: {
+      prompt: "此刻你的心，在哪？点击/拖动平面选择位置。",
+      quadrants: {
+        q_tr: { tag: "joy_active", label: "愉悦·激昂",
+          add: { affection: { xiazhi: 1 } }, personality: { kind: 1, active: 2 },
+          memory: { id: "光谱·愉激", title: "早上的愉激", text: "早上你的心在愉激象限。同学看你眼睛亮了一下。" },
+          next: "common_day3_morning" },
+        q_br: { tag: "joy_calm", label: "愉悦·平静",
+          add: { affection: { shiyu: 1 } }, personality: { kind: 1 },
+          memory: { id: "光谱·愉静", title: "早上的愉静", text: "早上你的心在愉静象限。林诗雨说，你看上去很稳。" },
+          next: "common_day3_morning" },
+        q_tl: { tag: "sad_active", label: "不悦·激昂",
+          add: { affection: { sunian: 1 } }, personality: { brave: 1, honest: -1 },
+          memory: { id: "光谱·不激", title: "早上的不激", text: "早上你的心在不悦激昂象限。你差点和同学吵起来。" },
+          next: "common_day3_morning" },
+        q_bl: { tag: "sad_calm", label: "不悦·平静",
+          add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
+          memory: { id: "光谱·不静", title: "早上的不静", text: "早上你的心在不悦平静象限。你谁也不想理。" },
+          next: "common_day3_morning" }
+      },
+      fallback: { tag: "center", next: "common_day3_morning" }
+    }
+  },
+
+  /* 在 letter_2 之前插入笔迹选择，让写信时选笔迹 */
+  letter_2_pre: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "——回信前，我拿起笔。笔尖悬在纸上。该怎么写？",
+    next: "letter_2",
+    handwriting: {
+      prompt: "选一种笔迹——这会影响她读信时的感觉。",
+      next: "letter_2",
+      styles: [
+        { id: "neat", label: "工整",
+          desc: "一笔一划，端正清楚。",
+          preview: "「我 想 了 很 久。」",
+          add: { affection: { shiyu: 1 } }, personality: { honest: 2 },
+          memory: { id: "笔迹·工整", title: "工整的回信", text: "你用工整的笔迹写了回信。她读得出你的认真。" },
+          next: "letter_2" },
+        { id: "hurried", label: "潦草",
+          desc: "急促、连笔，像怕被自己看见。",
+          preview: "「我想了很久——」",
+          add: { affection: { shiyu: 0 } }, personality: { brave: 1 },
+          memory: { id: "笔迹·潦草", title: "潦草的回信", text: "你用潦草的笔迹写了回信。她读得出你的急。" },
+          next: "letter_2" },
+        { id: "hesitant", label: "迟疑",
+          desc: "笔尖反复停顿，墨点洇开。",
+          preview: "「我……想了……很久。」",
+          add: { affection: { shiyu: 0 } }, personality: { kind: 1 },
+          memory: { id: "笔迹·迟疑", title: "迟疑的回信", text: "你用迟疑的笔迹写了回信。她读得出你的犹豫。" },
+          next: "letter_2" }
+      ]
+    }
+  },
 
   /* ============ 第 3 日 · 运动会预选 ============ */
   common_day3_morning: { day: 3, time: "morning", bg: "classroom", speaker: "班主任", text: "运动会预选今天下午开始。各项目负责人课间到体育组抽签。", next: "d3_choice" },
@@ -831,8 +965,8 @@ const SCRIPT = {
       }
     }
   },
-  d4_temp_warm: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——暖。她笑了一下。「那就好。我也觉得……是暖的。」", next: "letter_2", memory: { id: "温度·暖", title: "夜里的暖", text: "夜里你说现在是暖。她笑了一下。" } },
-  d4_temp_cool: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——凉。她点点头。「嗯。凉就凉一点吧。也挺好。」", next: "letter_2", memory: { id: "温度·凉", title: "夜里的凉", text: "夜里你说现在是凉。她没说什么。" } },
+  d4_temp_warm: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——暖。她笑了一下。「那就好。我也觉得……是暖的。」", next: "letter_2_pre", memory: { id: "温度·暖", title: "夜里的暖", text: "夜里你说现在是暖。她笑了一下。" } },
+  d4_temp_cool: { day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨", text: "——凉。她点点头。「嗯。凉就凉一点吧。也挺好。」", next: "letter_2_pre", memory: { id: "温度·凉", title: "夜里的凉", text: "夜里你说现在是凉。她没说什么。" } },
   letter_2: {
     day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "「如果三条路其实通向同一个地方，你还要走吗？」",

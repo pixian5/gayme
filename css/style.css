@@ -1733,6 +1733,364 @@ body {
 }
 .temp-actions button:hover { transform: scale(1.05); }
 
+/* ============ v0.8.0 占卜抽牌 ============ */
+.tarot-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,18,40,0.92), rgba(8,4,14,0.98));
+  backdrop-filter: blur(14px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 30px; gap: 22px;
+  animation: scentFadeIn 0.6s ease;
+}
+.tarot-prompt {
+  font-size: 20px; letter-spacing: 4px;
+  color: #e8d8f0; text-align: center;
+  padding: 10px 24px;
+  border-top: 1px solid rgba(220,200,255,0.2);
+  border-bottom: 1px solid rgba(220,200,255,0.2);
+}
+.tarot-slots {
+  display: flex; gap: 22px; flex-wrap: wrap; justify-content: center;
+}
+.tarot-slot {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.tarot-slot-label {
+  font-size: 13px; letter-spacing: 6px;
+  color: rgba(220,200,255,0.6);
+}
+.tarot-slot-card {
+  width: 120px; height: 180px;
+  border: 1px dashed rgba(220,200,255,0.3);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.02);
+  transition: all 0.4s ease;
+}
+.tarot-slot.filled .tarot-slot-card {
+  border: 1px solid rgba(220,200,255,0.6);
+  background: linear-gradient(180deg, rgba(40,30,60,0.6), rgba(20,10,30,0.8));
+  box-shadow: 0 8px 24px rgba(120,80,160,0.3);
+}
+.tarot-card {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  width: 100%; height: 100%; padding: 14px;
+  text-align: center; gap: 8px;
+}
+.tarot-card.reversed { transform: rotate(180deg); }
+.tarot-card-name {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 3px;
+}
+.tarot-card-orient {
+  font-size: 11px; letter-spacing: 3px;
+  color: rgba(220,200,255,0.5);
+  padding: 3px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+}
+.tarot-card.reversed .tarot-card-orient {
+  background: rgba(180,80,120,0.3); color: #ffb8c8;
+}
+.tarot-deck { display: flex; align-items: center; justify-content: center; }
+.tarot-deck-stack {
+  position: relative; width: 90px; height: 130px;
+  cursor: pointer; transition: transform 0.2s ease;
+}
+.tarot-deck-stack:hover { transform: translateY(-4px); }
+.tarot-deck-card {
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, #4a3a6a, #2a1a3a);
+  border: 1px solid rgba(220,200,255,0.3);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.tarot-deck-card::after {
+  content: "✦"; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,220,235,0.5); font-size: 24px;
+}
+.tarot-actions button {
+  padding: 10px 36px;
+  background: linear-gradient(135deg, rgba(180,100,200,0.5), rgba(120,60,160,0.5));
+  border: 1px solid rgba(220,200,255,0.4);
+  border-radius: 24px;
+  color: #fff8ee; font-size: 17px; font-family: inherit;
+  letter-spacing: 4px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tarot-actions button:disabled {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4);
+  cursor: not-allowed;
+}
+.tarot-actions button:not(:disabled):hover { transform: scale(1.05); }
+.tarot-reading {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 520px; padding: 28px 32px;
+  background: linear-gradient(180deg, rgba(20,12,28,0.97), rgba(12,8,18,0.99));
+  border: 1px solid rgba(220,200,255,0.4);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  gap: 16px; align-items: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  animation: scentFadeIn 0.4s ease;
+  z-index: 39;
+}
+.tarot-reading-title {
+  font-size: 22px; color: #ffd8e4; letter-spacing: 4px;
+}
+.tarot-reading-text {
+  font-size: 16px; color: #e8d8f0; line-height: 1.9; text-align: center;
+}
+.tarot-reading-close {
+  padding: 8px 28px;
+  background: linear-gradient(135deg, rgba(180,100,200,0.6), rgba(120,60,160,0.5));
+  border: 1px solid rgba(220,200,255,0.4);
+  border-radius: 16px;
+  color: #fff8ee; font-family: inherit; cursor: pointer;
+}
+
+/* ============ v0.8.0 梦境编织 ============ */
+.dreamweave-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,22,40,0.88), rgba(8,4,14,0.97));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 18px;
+  animation: scentFadeIn 0.6s ease;
+}
+.dw-prompt {
+  font-size: 18px; color: #e8d8f0;
+  letter-spacing: 3px; text-align: center;
+}
+.dw-canvas {
+  min-height: 80px; max-width: 680px; width: 90%;
+  padding: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(220,200,255,0.2);
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.dw-canvas:empty::before {
+  content: "——按下方碎片，把它们放进梦境——";
+  color: rgba(220,200,255,0.3);
+  font-size: 14px; letter-spacing: 2px;
+  width: 100%; text-align: center;
+}
+.dw-node {
+  padding: 10px 16px;
+  background: rgba(40,30,60,0.6);
+  border: 1px solid;
+  border-left-width: 3px;
+  border-radius: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  animation: scentFadeIn 0.3s ease;
+}
+.dw-node-label {
+  font-size: 15px; color: #ffd8e4; letter-spacing: 2px;
+}
+.dw-node-desc {
+  font-size: 12px; color: rgba(220,200,255,0.6);
+}
+.dw-connector {
+  width: 16px; height: 1px;
+  background: rgba(220,200,255,0.4);
+  align-self: center;
+}
+.dw-pool {
+  display: flex; flex-wrap: wrap;
+  gap: 10px; justify-content: center;
+  max-width: 680px;
+}
+.dw-fragment {
+  padding: 8px 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(220,200,255,0.2);
+  border-left: 3px solid #d8a8e8;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dw-fragment:hover {
+  background: rgba(220,200,255,0.1);
+  transform: translateY(-2px);
+}
+.dw-fragment.placed {
+  opacity: 0.4; pointer-events: none;
+  text-decoration: line-through;
+}
+.dw-frag-label { font-size: 14px; color: #e8d8f0; letter-spacing: 2px; }
+.dw-actions { display: flex; gap: 12px; }
+.dw-actions button {
+  padding: 8px 22px;
+  background: rgba(220,200,255,0.1);
+  border: 1px solid rgba(220,200,255,0.3);
+  border-radius: 16px;
+  color: #fff8ee; font-family: inherit;
+  font-size: 14px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.dw-actions button:hover { background: rgba(220,200,255,0.2); }
+.dw-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.dw-actions .dw-confirm:not(:disabled) {
+  background: linear-gradient(135deg, rgba(180,100,200,0.6), rgba(120,60,160,0.5));
+  border-color: rgba(220,200,255,0.5);
+}
+.dw-reading {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 540px; padding: 28px 32px;
+  background: linear-gradient(180deg, rgba(20,12,28,0.97), rgba(12,8,18,0.99));
+  border: 1px solid rgba(220,200,255,0.4);
+  border-radius: 16px;
+  display: flex; flex-direction: column;
+  gap: 16px; align-items: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  animation: scentFadeIn 0.4s ease;
+  z-index: 39;
+}
+.dw-reading-title { font-size: 22px; color: #ffd8e4; letter-spacing: 4px; }
+.dw-reading-text { font-size: 16px; color: #e8d8f0; line-height: 1.9; text-align: center; }
+.dw-reading-close {
+  padding: 8px 28px;
+  background: linear-gradient(135deg, rgba(180,100,200,0.6), rgba(120,60,160,0.5));
+  border: 1px solid rgba(220,200,255,0.4);
+  border-radius: 16px;
+  color: #fff8ee; font-family: inherit; cursor: pointer;
+}
+
+/* ============ v0.8.0 笔迹选择 ============ */
+.handwriting-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,22,30,0.85), rgba(10,6,12,0.95));
+  backdrop-filter: blur(10px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 30px; gap: 24px;
+  animation: scentFadeIn 0.5s ease;
+}
+.hw-prompt {
+  font-size: 20px; color: #f5e8d8;
+  letter-spacing: 3px; text-align: center;
+}
+.hw-styles {
+  display: flex; gap: 18px; flex-wrap: wrap; justify-content: center;
+}
+.hw-style {
+  width: 200px; padding: 18px;
+  background: linear-gradient(180deg, rgba(40,30,40,0.7), rgba(20,12,20,0.85));
+  border: 1px solid rgba(255,200,220,0.2);
+  border-radius: 14px;
+  color: #f5f0e8; font-family: inherit;
+  cursor: pointer; transition: all 0.25s ease;
+  display: flex; flex-direction: column; gap: 8px;
+  text-align: left;
+}
+.hw-style:hover {
+  border-color: rgba(255,220,235,0.7);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(180,80,120,0.3);
+}
+.hw-label { font-size: 19px; letter-spacing: 3px; color: #ffd8e4; }
+.hw-desc { font-size: 13px; color: rgba(255,200,220,0.6); line-height: 1.7; }
+/* 不同笔迹预览的字体效果 */
+.hw-neat-preview { font-family: "Songti SC", "STSong", serif; letter-spacing: 6px; }
+.hw-hurried-preview { font-style: italic; letter-spacing: 1px; transform: skewX(-6deg); }
+.hw-hesitant-preview { letter-spacing: 2px; }
+.hw-preview {
+  min-height: 70px; max-width: 480px; padding: 20px 28px;
+  background: rgba(255,248,238,0.06);
+  border: 1px solid rgba(255,200,220,0.2);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff8ee;
+  letter-spacing: 3px; line-height: 1.8;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+/* ============ v0.8.0 情绪光谱 ============ */
+.spectrum-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(20,25,35,0.85), rgba(0,0,0,0.95));
+  backdrop-filter: blur(10px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 30px; gap: 20px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sp-prompt {
+  font-size: 20px; color: #f5e8d8;
+  letter-spacing: 3px; text-align: center;
+}
+.sp-stage {
+  position: relative; width: min(60vmin, 360px); height: min(60vmin, 360px);
+  background: radial-gradient(circle at center, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  cursor: crosshair;
+  overflow: hidden;
+}
+.sp-axes {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+.sp-axis {
+  stroke: rgba(255,255,255,0.2); stroke-width: 1; stroke-dasharray: 3 3;
+}
+.sp-ring {
+  fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 1;
+}
+.sp-axis-label {
+  fill: rgba(255,255,255,0.5);
+  font-size: 9px; letter-spacing: 1px;
+  font-family: inherit;
+}
+.sp-point {
+  position: absolute; width: 16px; height: 16px;
+  margin-left: -8px; margin-top: -8px;
+  background: radial-gradient(circle, #ffd8e4, #d87090);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255,180,200,0.8);
+  pointer-events: none;
+  transition: left 0.15s ease, top 0.15s ease;
+  left: 50%; top: 50%;
+}
+.sp-info {
+  font-size: 17px; color: #fff8ee;
+  letter-spacing: 2px; min-height: 28px;
+  text-align: center;
+}
+.sp-info[data-quadrant="q_tr"] { color: #ffd88a; }
+.sp-info[data-quadrant="q_br"] { color: #a8d8e8; }
+.sp-info[data-quadrant="q_tl"] { color: #ff9a76; }
+.sp-info[data-quadrant="q_bl"] { color: #a8c8d8; }
+.sp-actions button {
+  padding: 12px 36px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(140,60,160,0.5));
+  border: 1px solid rgba(255,220,235,0.4);
+  border-radius: 24px;
+  color: #fff8ee; font-size: 17px; font-family: inherit;
+  letter-spacing: 4px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sp-actions button:disabled {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4);
+  cursor: not-allowed;
+}
+.sp-actions button:not(:disabled):hover { transform: scale(1.05); }
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }

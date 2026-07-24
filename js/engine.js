@@ -449,6 +449,46 @@
       return;
     }
 
+    // v0.8.0 占卜抽牌节点
+    if (node.tarot) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTarot(node.tarot, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.8.0 梦境编织节点
+    if (node.dreamweave) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDreamweave(node.dreamweave, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.8.0 笔迹选择节点
+    if (node.handwriting) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runHandwriting(node.handwriting, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.8.0 情绪光谱节点
+    if (node.spectrum) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runSpectrum(node.spectrum, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -2596,6 +2636,475 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v0.8.0 占卜抽牌 runTarot
+     node.tarot = {
+       prompt: "学姐翻开牌阵——过去 / 现在 / 未来",
+       deck: [
+         { id, name, upright, reversed, svg? }
+       ],
+       positions: ["过去", "现在", "未来"],
+       // 抽完牌后按组合判定
+       combos: [
+         { ids: ["a","b","c"], tag: "triple_light", label: "三张全是光明",
+           add?, personality?, memory?, next },
+         { ids: ["a","b"], tag: "pair_ab", next } // 部分匹配也支持
+       ],
+       fallback: { tag: "default", next } // 都不匹配
+     }
+     ============================================================ */
+  function runTarot(tarot, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+
+    const layer = document.createElement("div");
+    layer.className = "tarot-layer";
+    layer.id = "tarot-layer";
+    layer.innerHTML = `
+      <div class="tarot-prompt">${tarot.prompt || "抽三张牌——"}</div>
+      <div class="tarot-slots"></div>
+      <div class="tarot-deck"></div>
+      <div class="tarot-actions">
+        <button class="tarot-confirm" disabled>解读</button>
+      </div>
+    `;
+    const slotsEl = layer.querySelector(".tarot-slots");
+    const deckEl = layer.querySelector(".tarot-deck");
+    const confirmBtn = layer.querySelector(".tarot-confirm");
+
+    const positions = tarot.positions || ["过去", "现在", "未来"];
+    const deck = tarot.deck || [];
+    const drawCount = positions.length;
+    const drawn = []; // 抽出的牌 id 列表
+
+    // 渲染牌阵槽位
+    positions.forEach(pos => {
+      const slot = document.createElement("div");
+      slot.className = "tarot-slot";
+      slot.innerHTML = `<div class="tarot-slot-label">${pos}</div>
+                        <div class="tarot-slot-card"></div>`;
+      slotsEl.appendChild(slot);
+    });
+
+    // 渲染牌堆（叠成一摞）
+    const deckWrap = document.createElement("div");
+    deckWrap.className = "tarot-deck-stack";
+    if (deck.length) {
+      // 渲染最多 6 张可见层
+      const stackVisible = Math.min(6, deck.length);
+      for (let i = 0; i < stackVisible; i++) {
+        const card = document.createElement("div");
+        card.className = "tarot-deck-card";
+        card.style.transform = `translateY(${-i * 2}px) translateX(${i * 1}px) rotate(${(i - 2.5) * 0.6}deg)`;
+        card.style.zIndex = stackVisible - i;
+        deckWrap.appendChild(card);
+      }
+    }
+    deckEl.appendChild(deckWrap);
+
+    let deckClicks = 0;
+    deckWrap.onclick = () => {
+      if (drawn.length >= drawCount) return;
+      // 随机抽一张未抽过的
+      const remaining = deck.filter(c => !drawn.includes(c.id));
+      if (!remaining.length) return;
+      const pick = remaining[Math.floor(Math.random() * remaining.length)];
+      // 50% 概率逆位
+      const reversed = Math.random() < 0.5;
+      drawn.push(pick.id);
+      // 填入下一个槽位
+      const slotIdx = drawn.length - 1;
+      const slotCard = slotsEl.children[slotIdx].querySelector(".tarot-slot-card");
+      slotCard.innerHTML = `<div class="tarot-card ${reversed ? "reversed" : ""}">
+        <div class="tarot-card-name">${pick.name}</div>
+        <div class="tarot-card-orient">${reversed ? "逆位" : "正位"}</div>
+      </div>`;
+      slotsEl.children[slotIdx].classList.add("filled");
+      // 临时保存抽到的牌信息（用于 combo 匹配）
+      pick._reversed = reversed;
+      if (drawn.length >= drawCount) {
+        confirmBtn.disabled = false;
+        deckEl.style.opacity = "0.3";
+        deckEl.style.pointerEvents = "none";
+      }
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      // 匹配 combo
+      const pickedCards = drawn.map(id => deck.find(c => c.id === id));
+      const combo = matchTarotCombo(tarot, pickedCards);
+      // 保存
+      const past = pickedCards[0], present = pickedCards[1], future = pickedCards[2];
+      Saves.saveTarotRecord(currentNodeId,
+        past ? { id: past.id, name: past.name, reversed: past._reversed } : null,
+        present ? { id: present.id, name: present.name, reversed: present._reversed } : null,
+        future ? { id: future.id, name: future.name, reversed: future._reversed } : null,
+        combo.tag);
+      // 应用效果
+      if (combo.add) { applyAdd(combo.add); updateHeartBar(); }
+      if (combo.personality) {
+        for (const dim in combo.personality) Saves.addPersonality(dim, combo.personality[dim]);
+      }
+      if (combo.memory) {
+        if (!Saves.isMemoryUnlocked(combo.memory.id)) {
+          Saves.saveMemory(combo.memory.id, combo.memory.text);
+          flashHint(`✦ 新记忆：${combo.memory.title}`);
+        }
+      }
+      // 显示解读
+      const reading = document.createElement("div");
+      reading.className = "tarot-reading";
+      reading.innerHTML = `<div class="tarot-reading-title">${combo.label || "解读"}</div>
+        <div class="tarot-reading-text">${combo.text || ""}</div>
+        <button class="tarot-reading-close">继续</button>`;
+      reading.querySelector(".tarot-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = combo.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchTarotCombo(tarot, pickedCards) {
+    const drawnIds = pickedCards.map(c => c?.id).filter(Boolean);
+    const combos = tarot.combos || [];
+    // 优先匹配完整组合
+    for (const c of combos) {
+      if (c.ids && c.ids.length === drawnIds.length &&
+          c.ids.every(id => drawnIds.includes(id))) {
+        return c;
+      }
+    }
+    // 再匹配部分组合（2 张）
+    for (const c of combos) {
+      if (c.ids && c.ids.length === 2 && c.ids.every(id => drawnIds.includes(id))) {
+        return c;
+      }
+    }
+    // 最后单张
+    for (const c of combos) {
+      if (c.ids && c.ids.length === 1 && drawnIds.includes(c.ids[0])) {
+        return c;
+      }
+    }
+    return tarot.fallback || { tag: "default", label: "——牌阵无言", next: null };
+  }
+
+  /* ============================================================
+     v0.8.0 梦境编织 runDreamweave
+     node.dreamweave = {
+       prompt: "把碎片按你的直觉拖进画布——",
+       fragments: [
+         { id, label, desc, color }
+       ],
+       // 解析拼接顺序
+       interpretations: [
+         { seq: ["a","b","c"], tag: "flow", label, text, add?, memory?, next }
+       ],
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+  function runDreamweave(dw, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "dreamweave-layer";
+    layer.id = "dreamweave-layer";
+    layer.innerHTML = `
+      <div class="dw-prompt">${dw.prompt || "编织梦境——"}</div>
+      <div class="dw-canvas" id="dw-canvas"></div>
+      <div class="dw-pool" id="dw-pool"></div>
+      <div class="dw-actions">
+        <button class="dw-reset">重置</button>
+        <button class="dw-confirm" disabled>解读梦境</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#dw-canvas");
+    const pool = layer.querySelector("#dw-pool");
+    const confirmBtn = layer.querySelector(".dw-confirm");
+    const resetBtn = layer.querySelector(".dw-reset");
+
+    const fragments = dw.fragments || [];
+    const sequence = []; // 已放入画布的碎片 id
+
+    fragments.forEach(frag => {
+      const chip = document.createElement("div");
+      chip.className = "dw-fragment";
+      chip.dataset.id = frag.id;
+      chip.style.borderLeftColor = frag.color || "#d8a8e8";
+      chip.innerHTML = `<span class="dw-frag-label">${frag.label}</span>`;
+      chip.onclick = () => {
+        if (chip.classList.contains("placed")) return;
+        chip.classList.add("placed");
+        // 加入画布
+        const node = document.createElement("div");
+        node.className = "dw-node";
+        node.style.borderColor = frag.color || "#d8a8e8";
+        node.innerHTML = `<div class="dw-node-label">${frag.label}</div>
+          <div class="dw-node-desc">${frag.desc || ""}</div>`;
+        node.dataset.id = frag.id;
+        canvas.appendChild(node);
+        sequence.push(frag.id);
+        // 添加连接线
+        if (sequence.length > 1) {
+          const line = document.createElement("div");
+          line.className = "dw-connector";
+          canvas.appendChild(line);
+        }
+        confirmBtn.disabled = sequence.length < Math.min(dw.min || 2, fragments.length);
+      };
+      pool.appendChild(chip);
+    });
+
+    resetBtn.onclick = () => {
+      canvas.innerHTML = "";
+      sequence.length = 0;
+      pool.querySelectorAll(".dw-fragment").forEach(c => c.classList.remove("placed"));
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      // 匹配解读
+      const interp = matchDreamweave(dw, sequence);
+      // 保存
+      Saves.saveDreamweaveRecord(currentNodeId, sequence.slice(), interp.text || "", interp.tag);
+      if (interp.add) { applyAdd(interp.add); updateHeartBar(); }
+      if (interp.personality) {
+        for (const dim in interp.personality) Saves.addPersonality(dim, interp.personality[dim]);
+      }
+      if (interp.memory) {
+        if (!Saves.isMemoryUnlocked(interp.memory.id)) {
+          Saves.saveMemory(interp.memory.id, interp.memory.text);
+          flashHint(`✦ 新记忆：${interp.memory.title}`);
+        }
+      }
+      // 显示解读
+      const reading = document.createElement("div");
+      reading.className = "dw-reading";
+      reading.innerHTML = `<div class="dw-reading-title">${interp.label || "解读"}</div>
+        <div class="dw-reading-text">${interp.text || ""}</div>
+        <button class="dw-reading-close">继续</button>`;
+      reading.querySelector(".dw-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = interp.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchDreamweave(dw, seq) {
+    const interps = dw.interpretations || [];
+    // 优先匹配完全相同顺序
+    for (const i of interps) {
+      if (i.seq && i.seq.length === seq.length && i.seq.every((id, idx) => id === seq[idx])) {
+        return i;
+      }
+    }
+    // 再匹配包含（顺序无关，只要都包含）
+    for (const i of interps) {
+      if (i.seq && i.seq.length === seq.length && i.seq.every(id => seq.includes(id))) {
+        return i;
+      }
+    }
+    return dw.fallback || { tag: "default", label: "——梦不成形", next: null };
+  }
+
+  /* ============================================================
+     v0.8.0 笔迹选择 runHandwriting
+     node.handwriting = {
+       prompt: "你拿笔开始写——选一种笔迹",
+       letter: "letter_2",
+       styles: [
+         { id, label, desc, add?, personality?, memory?, next }
+       ]
+     }
+     ============================================================ */
+  function runHandwriting(hw, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "handwriting-layer";
+    layer.id = "handwriting-layer";
+    layer.innerHTML = `
+      <div class="hw-prompt">${hw.prompt || "选一种笔迹——"}</div>
+      <div class="hw-styles"></div>
+      <div class="hw-preview" id="hw-preview"></div>
+    `;
+    const stylesEl = layer.querySelector(".hw-styles");
+    const previewEl = layer.querySelector("#hw-preview");
+
+    const styles = hw.styles || [];
+    styles.forEach(style => {
+      const btn = document.createElement("button");
+      btn.className = `hw-style hw-${style.id}`;
+      btn.innerHTML = `<div class="hw-label">${style.label}</div>
+                       <div class="hw-desc">${style.desc || ""}</div>`;
+      btn.onmouseenter = () => {
+        previewEl.textContent = style.preview || style.label;
+        previewEl.className = `hw-preview hw-${style.id}-preview`;
+      };
+      btn.onclick = () => {
+        Saves.saveHandwritingRecord(currentNodeId, style.id, style.label);
+        if (style.add) { applyAdd(style.add); updateHeartBar(); }
+        if (style.personality) {
+          for (const dim in style.personality) Saves.addPersonality(dim, style.personality[dim]);
+        }
+        if (style.memory) {
+          if (!Saves.isMemoryUnlocked(style.memory.id)) {
+            Saves.saveMemory(style.memory.id, style.memory.text);
+            flashHint(`✦ 新记忆：${style.memory.title}`);
+          }
+        }
+        flashHint(`✒ 笔迹：${style.label}`);
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = style.next || hw.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      stylesEl.appendChild(btn);
+    });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.8.0 情绪光谱 runSpectrum
+     node.spectrum = {
+       prompt: "此刻你的心，在哪？",
+       // x: -100(不悦) ~ +100(愉悦)；y: -100(平静) ~ +100(激活)
+       quadrants: {
+         // 象限 tag：右上愉悦激活/右下愉悦平静/左上不悦激活/左下不悦平静
+         q_tr: { tag: "joy_active",   label: "愉悦·激昂", add?, personality?, memory?, next },
+         q_br: { tag: "joy_calm",     label: "愉悦·平静", add?, personality?, memory?, next },
+         q_tl: { tag: "sad_active",   label: "不悦·激昂", add?, personality?, memory?, next },
+         q_bl: { tag: "sad_calm",     label: "不悦·平静", add?, personality?, memory?, next }
+       },
+       fallback: { tag: "center", next }
+     }
+     ============================================================ */
+  function runSpectrum(spec, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "spectrum-layer";
+    layer.id = "spectrum-layer";
+    layer.innerHTML = `
+      <div class="sp-prompt">${spec.prompt || "此刻你的心，在哪？"}</div>
+      <div class="sp-stage" id="sp-stage">
+        <svg class="sp-axes" viewBox="-110 -110 220 220">
+          <line x1="-100" y1="0" x2="100" y2="0" class="sp-axis"/>
+          <line x1="0" y1="-100" x2="0" y2="100" class="sp-axis"/>
+          <circle cx="0" cy="0" r="60" class="sp-ring"/>
+          <circle cx="0" cy="0" r="30" class="sp-ring"/>
+          <text x="98" y="-4" class="sp-axis-label">愉悦 →</text>
+          <text x="-100" y="-4" class="sp-axis-label">← 不悦</text>
+          <text x="4" y="-96" class="sp-axis-label">↑ 激昂</text>
+          <text x="4" y="100" class="sp-axis-label">↓ 平静</text>
+        </svg>
+        <div class="sp-point" id="sp-point"></div>
+      </div>
+      <div class="sp-info" id="sp-info">点击或拖动选择位置</div>
+      <div class="sp-actions">
+        <button class="sp-confirm" id="sp-confirm" disabled>确定</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#sp-stage");
+    const point = layer.querySelector("#sp-point");
+    const info = layer.querySelector("#sp-info");
+    const confirmBtn = layer.querySelector("#sp-confirm");
+
+    let curX = 0, curY = 0, hasSelected = false;
+
+    function stageToValue(clientX, clientY) {
+      const rect = stage.getBoundingClientRect();
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      // 限制在 -100..100
+      let x = Math.round((clientX - rect.left - cx) / (rect.width / 2) * 100);
+      let y = Math.round(-(clientY - rect.top - cy) / (rect.height / 2) * 100); // y 翻转
+      x = Math.max(-100, Math.min(100, x));
+      y = Math.max(-100, Math.min(100, y));
+      return { x, y };
+    }
+    function updatePoint(x, y) {
+      curX = x; curY = y;
+      point.style.left = `${50 + x / 2}%`;
+      point.style.top = `${50 - y / 2}%`;
+      const q = quadrantOf(x, y);
+      const qdef = spec.quadrants && spec.quadrants[q];
+      info.textContent = qdef ? `${qdef.label}（${x > 0 ? "+" : ""}${x}, ${y > 0 ? "+" : ""}${y}）` : `${x}, ${y}`;
+      info.dataset.quadrant = q;
+      confirmBtn.disabled = false;
+    }
+    function quadrantOf(x, y) {
+      if (x >= 0 && y >= 0) return "q_tr";
+      if (x < 0 && y >= 0) return "q_tl";
+      if (x >= 0 && y < 0) return "q_br";
+      return "q_bl";
+    }
+
+    let dragging = false;
+    stage.addEventListener("mousedown", e => {
+      dragging = true;
+      const v = stageToValue(e.clientX, e.clientY);
+      updatePoint(v.x, v.y);
+      hasSelected = true;
+    });
+    document.addEventListener("mousemove", e => {
+      if (!dragging) return;
+      const v = stageToValue(e.clientX, e.clientY);
+      updatePoint(v.x, v.y);
+    });
+    document.addEventListener("mouseup", () => { dragging = false; });
+    // 触屏支持
+    stage.addEventListener("touchstart", e => {
+      const t = e.touches[0];
+      const v = stageToValue(t.clientX, t.clientY);
+      updatePoint(v.x, v.y);
+      hasSelected = true;
+      e.preventDefault();
+    }, { passive: false });
+    stage.addEventListener("touchmove", e => {
+      const t = e.touches[0];
+      const v = stageToValue(t.clientX, t.clientY);
+      updatePoint(v.x, v.y);
+      e.preventDefault();
+    }, { passive: false });
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const q = quadrantOf(curX, curY);
+      const qdef = (spec.quadrants && spec.quadrants[q]) || spec.fallback || { tag: q, next: null };
+      const tag = qdef.tag || q;
+      Saves.saveSpectrumRecord(currentNodeId, curX, curY, tag);
+      if (qdef.add) { applyAdd(qdef.add); updateHeartBar(); }
+      if (qdef.personality) {
+        for (const dim in qdef.personality) Saves.addPersonality(dim, qdef.personality[dim]);
+      }
+      if (qdef.memory) {
+        if (!Saves.isMemoryUnlocked(qdef.memory.id)) {
+          Saves.saveMemory(qdef.memory.id, qdef.memory.text);
+          flashHint(`✦ 新记忆：${qdef.memory.title}`);
+        }
+      }
+      flashHint(`✦ 情绪：${qdef.label}`);
+      layer.remove();
+      const node = SCRIPT[currentNodeId];
+      const jumpTo = qdef.next || (node && node.next);
+      if (jumpTo) gotoNode(jumpTo);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -2652,6 +3161,11 @@
     document.querySelectorAll(".silence-layer").forEach(e => e.remove());
     document.querySelectorAll(".touch-layer").forEach(e => e.remove());
     document.querySelectorAll(".temperature-layer").forEach(e => e.remove());
+    // 清理 v0.8.0 浮层
+    document.querySelectorAll(".tarot-layer").forEach(e => e.remove());
+    document.querySelectorAll(".dreamweave-layer").forEach(e => e.remove());
+    document.querySelectorAll(".handwriting-layer").forEach(e => e.remove());
+    document.querySelectorAll(".spectrum-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

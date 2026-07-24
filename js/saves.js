@@ -36,6 +36,12 @@ const SILENCE_KEY      = "sakura_letters_silence_v2";     // 沉默选择记录
 const TOUCH_KEY        = "sakura_letters_touch_v2";      // 触觉关怀记录
 const TEMPERATURE_KEY  = "sakura_letters_temperature_v2";// 温度感知
 
+/* v0.8.0 新玩法存储 */
+const TAROT_KEY        = "sakura_letters_tarot_v2";       // 占卜抽牌
+const DREAMWEAVE_KEY   = "sakura_letters_dreamweave_v2"; // 梦境编织
+const HANDWRITING_KEY  = "sakura_letters_handwriting_v2";// 笔迹选择
+const SPECTRUM_KEY     = "sakura_letters_spectrum_v2";   // 情绪光谱
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -567,6 +573,89 @@ const Saves = {
     return vals[vals.length - 1].temp;
   },
 
+  /* ============ v0.8.0 占卜抽牌 ============ */
+  // 记录每次占卜的三张牌：{ nodeId: { past, present, future, combo, ts } }
+  getTarotRecords() {
+    try {
+      const raw = localStorage.getItem(TAROT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTarotRecord(nodeId, past, present, future, combo) {
+    const all = this.getTarotRecords();
+    all[nodeId] = { past, present, future, combo, ts: Date.now() };
+    localStorage.setItem(TAROT_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTarotRecord(nodeId) { return this.getTarotRecords()[nodeId]; },
+  getLastTarotCombo() {
+    const all = this.getTarotRecords();
+    const vals = Object.values(all);
+    if (!vals.length) return null;
+    return vals[vals.length - 1].combo;
+  },
+
+  /* ============ v0.8.0 梦境编织 ============ */
+  // 记录每次拼接的顺序：{ nodeId: { sequence: [], meaning, tag, ts } }
+  getDreamweaveRecords() {
+    try {
+      const raw = localStorage.getItem(DREAMWEAVE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveDreamweaveRecord(nodeId, sequence, meaning, tag) {
+    const all = this.getDreamweaveRecords();
+    all[nodeId] = { sequence, meaning, tag, ts: Date.now() };
+    localStorage.setItem(DREAMWEAVE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getDreamweaveRecord(nodeId) { return this.getDreamweaveRecords()[nodeId]; },
+
+  /* ============ v0.8.0 笔迹选择 ============ */
+  // 记录每次写信的笔迹：{ nodeId: { style, label, ts } }
+  getHandwritingRecords() {
+    try {
+      const raw = localStorage.getItem(HANDWRITING_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveHandwritingRecord(nodeId, style, label) {
+    const all = this.getHandwritingRecords();
+    all[nodeId] = { style, label, ts: Date.now() };
+    localStorage.setItem(HANDWRITING_KEY, JSON.stringify(all));
+    return true;
+  },
+  getHandwritingRecord(nodeId) { return this.getHandwritingRecords()[nodeId]; },
+  getLastHandwriting() {
+    const all = this.getHandwritingRecords();
+    const vals = Object.values(all);
+    if (!vals.length) return null;
+    return vals[vals.length - 1].style;
+  },
+
+  /* ============ v0.8.0 情绪光谱 ============ */
+  // 记录每次选择的情绪点：{ nodeId: { x, y, tag, ts } }
+  // x: -100(不悦)~+100(愉悦)，y: -100(平静)~+100(激活)
+  getSpectrumRecords() {
+    try {
+      const raw = localStorage.getItem(SPECTRUM_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSpectrumRecord(nodeId, x, y, tag) {
+    const all = this.getSpectrumRecords();
+    all[nodeId] = { x, y, tag, ts: Date.now() };
+    localStorage.setItem(SPECTRUM_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSpectrumRecord(nodeId) { return this.getSpectrumRecords()[nodeId]; },
+  getLastSpectrum() {
+    const all = this.getSpectrumRecords();
+    const vals = Object.values(all);
+    if (!vals.length) return null;
+    return vals[vals.length - 1];
+  },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -587,7 +676,8 @@ const Saves = {
     [CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
      DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
      COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
-     SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY].forEach(k => localStorage.removeItem(k));
+     SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY,
+     TAROT_KEY, DREAMWEAVE_KEY, HANDWRITING_KEY, SPECTRUM_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
