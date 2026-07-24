@@ -42,6 +42,12 @@ const DREAMWEAVE_KEY   = "sakura_letters_dreamweave_v2"; // 梦境编织
 const HANDWRITING_KEY  = "sakura_letters_handwriting_v2";// 笔迹选择
 const SPECTRUM_KEY     = "sakura_letters_spectrum_v2";   // 情绪光谱
 
+/* v0.9.0 新玩法存储 */
+const CONSTELLATION_KEY = "sakura_letters_constellation_v2"; // 星座连线
+const STETHOSCOPE_KEY   = "sakura_letters_stethoscope_v2";   // 心声听诊
+const PUZZLE_KEY        = "sakura_letters_puzzle_v2";         // 信物拼图
+const PERFUME_KEY       = "sakura_letters_perfume_v2";       // 气味调香
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -651,6 +657,76 @@ const Saves = {
   getSpectrumRecord(nodeId) { return this.getSpectrumRecords()[nodeId]; },
   getLastSpectrum() {
     const all = this.getSpectrumRecords();
+    const vals = Object.values(all);
+    if (!vals.length) return null;
+    return vals[vals.length - 1];
+  },
+
+  /* ============ v0.9.0 星座连线 ============ */
+  // 记录每次连星的顺序：{ nodeId: { sequence: [], tag, ts } }
+  getConstellationRecords() {
+    try {
+      const raw = localStorage.getItem(CONSTELLATION_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveConstellationRecord(nodeId, sequence, tag) {
+    const all = this.getConstellationRecords();
+    all[nodeId] = { sequence, tag, ts: Date.now() };
+    localStorage.setItem(CONSTELLATION_KEY, JSON.stringify(all));
+    return true;
+  },
+  getConstellationRecord(nodeId) { return this.getConstellationRecords()[nodeId]; },
+
+  /* ============ v0.9.0 心声听诊 ============ */
+  // 记录每次心跳同步：{ nodeId: { hits, total, accuracy, tag, ts } }
+  getStethoscopeRecords() {
+    try {
+      const raw = localStorage.getItem(STETHOSCOPE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveStethoscopeRecord(nodeId, hits, total, accuracy, tag) {
+    const all = this.getStethoscopeRecords();
+    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(STETHOSCOPE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getStethoscopeRecord(nodeId) { return this.getStethoscopeRecords()[nodeId]; },
+
+  /* ============ v0.9.0 信物拼图 ============ */
+  // 记录每次拼图顺序：{ nodeId: { sequence: [], tag, ts } }
+  getPuzzleRecords() {
+    try {
+      const raw = localStorage.getItem(PUZZLE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  savePuzzleRecord(nodeId, sequence, tag) {
+    const all = this.getPuzzleRecords();
+    all[nodeId] = { sequence, tag, ts: Date.now() };
+    localStorage.setItem(PUZZLE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getPuzzleRecord(nodeId) { return this.getPuzzleRecords()[nodeId]; },
+
+  /* ============ v0.9.0 气味调香 ============ */
+  // 记录每次调香配方：{ nodeId: { notes: { 前, 中, 后 }, tag, ts } }
+  getPerfumeRecords() {
+    try {
+      const raw = localStorage.getItem(PERFUME_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  savePerfumeRecord(nodeId, notes, tag) {
+    const all = this.getPerfumeRecords();
+    all[nodeId] = { notes, tag, ts: Date.now() };
+    localStorage.setItem(PERFUME_KEY, JSON.stringify(all));
+    return true;
+  },
+  getPerfumeRecord(nodeId) { return this.getPerfumeRecords()[nodeId]; },
+  getLastPerfume() {
+    const all = this.getPerfumeRecords();
     const vals = Object.values(all);
     if (!vals.length) return null;
     return vals[vals.length - 1];

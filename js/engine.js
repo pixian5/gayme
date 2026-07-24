@@ -489,6 +489,46 @@
       return;
     }
 
+    // v0.9.0 星座连线节点
+    if (node.constellation) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runConstellation(node.constellation, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.9.0 心声听诊节点
+    if (node.stethoscope) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runStethoscope(node.stethoscope, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.9.0 信物拼图节点
+    if (node.puzzle) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPuzzle(node.puzzle, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v0.9.0 气味调香节点
+    if (node.perfume) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPerfume(node.perfume, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -3105,6 +3145,566 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v0.9.0 星座连线 runConstellation
+     node.constellation = {
+       prompt: "夜空散布星点——按你的直觉连线",
+       stars: [ { id, x, y, name } ],   // x,y 为 0~100 百分比坐标
+       constellations: [
+         { stars: ["a","b","c"], tag: "trio", label, text, add?, personality?, memory?, next }
+       ],
+       min: 2,   // 至少连几颗
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+  function runConstellation(cs, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "constellation-layer";
+    layer.id = "constellation-layer";
+    layer.innerHTML = `
+      <div class="cs-prompt">${cs.prompt || "夜空散布星点——按你的直觉连线"}</div>
+      <div class="cs-stage" id="cs-stage">
+        <svg class="cs-lines" id="cs-lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+        <div class="cs-stars" id="cs-stars"></div>
+      </div>
+      <div class="cs-info" id="cs-info">点击星点连线（至少 ${cs.min || 2} 颗）</div>
+      <div class="cs-actions">
+        <button class="cs-reset">重置</button>
+        <button class="cs-confirm" disabled>解读星图</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#cs-stage");
+    const linesSvg = layer.querySelector("#cs-lines");
+    const starsEl = layer.querySelector("#cs-stars");
+    const info = layer.querySelector("#cs-info");
+    const confirmBtn = layer.querySelector(".cs-confirm");
+    const resetBtn = layer.querySelector(".cs-reset");
+
+    const stars = cs.stars || [];
+    const sequence = [];
+
+    stars.forEach(star => {
+      const dot = document.createElement("div");
+      dot.className = "cs-star";
+      dot.style.left = star.x + "%";
+      dot.style.top = star.y + "%";
+      dot.dataset.id = star.id;
+      dot.innerHTML = `<span class="cs-star-dot"></span><span class="cs-star-name">${star.name || ""}</span>`;
+      dot.onclick = () => {
+        if (dot.classList.contains("lit")) return;
+        dot.classList.add("lit");
+        sequence.push(star.id);
+        drawLines();
+        const minReq = Math.min(cs.min || 2, stars.length);
+        confirmBtn.disabled = sequence.length < minReq;
+        info.textContent = `已连接 ${sequence.length} 颗：${sequence.map(id => stars.find(s => s.id === id).name || id).join(" → ")}`;
+      };
+      starsEl.appendChild(dot);
+    });
+
+    function drawLines() {
+      linesSvg.innerHTML = "";
+      for (let i = 0; i < sequence.length - 1; i++) {
+        const a = stars.find(s => s.id === sequence[i]);
+        const b = stars.find(s => s.id === sequence[i + 1]);
+        if (!a || !b) continue;
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", a.x);
+        line.setAttribute("y1", a.y);
+        line.setAttribute("x2", b.x);
+        line.setAttribute("y2", b.y);
+        line.setAttribute("class", "cs-line");
+        linesSvg.appendChild(line);
+      }
+    }
+
+    resetBtn.onclick = () => {
+      sequence.length = 0;
+      linesSvg.innerHTML = "";
+      starsEl.querySelectorAll(".cs-star.lit").forEach(s => s.classList.remove("lit"));
+      confirmBtn.disabled = true;
+      info.textContent = `点击星点连线（至少 ${cs.min || 2} 颗）`;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const interp = matchConstellation(cs, sequence);
+      Saves.saveConstellationRecord(currentNodeId, sequence.slice(), interp.tag);
+      if (interp.add) { applyAdd(interp.add); updateHeartBar(); }
+      if (interp.personality) {
+        for (const dim in interp.personality) Saves.addPersonality(dim, interp.personality[dim]);
+      }
+      if (interp.memory) {
+        if (!Saves.isMemoryUnlocked(interp.memory.id)) {
+          Saves.saveMemory(interp.memory.id, interp.memory.text);
+          flashHint(`✦ 新记忆：${interp.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "cs-reading";
+      reading.innerHTML = `<div class="cs-reading-title">${interp.label || "解读"}</div>
+        <div class="cs-reading-text">${interp.text || ""}</div>
+        <button class="cs-reading-close">继续</button>`;
+      reading.querySelector(".cs-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = interp.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchConstellation(cs, seq) {
+    const consts = cs.constellations || [];
+    for (const c of consts) {
+      if (c.stars && c.stars.length === seq.length && c.stars.every((id, i) => id === seq[i])) {
+        return c;
+      }
+    }
+    for (const c of consts) {
+      if (c.stars && c.stars.length === seq.length && c.stars.every(id => seq.includes(id))) {
+        return c;
+      }
+    }
+    for (const c of consts) {
+      if (c.stars && c.stars.every(id => seq.includes(id))) {
+        return c;
+      }
+    }
+    return cs.fallback || { tag: "default", label: "——星图无言", next: null };
+  }
+
+  /* ============================================================
+     v0.9.0 心声听诊 runStethoscope
+     node.stethoscope = {
+       prompt: "把听诊器贴在胸口——跟随心跳",
+       bpm: 72,
+       beats: 12,         // 总节拍数
+       window: 0.3,       // 命中窗口（秒，前后各一半）
+       thresholds: [
+         { min: 0.8, tag: "sync", label, text, add?, memory?, next },
+         { min: 0.5, tag: "half", label, text, next }
+       ],
+       fallback: { tag: "miss", next }
+     }
+     ============================================================ */
+  function runStethoscope(st, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "stethoscope-layer";
+    layer.id = "stethoscope-layer";
+    layer.innerHTML = `
+      <div class="st-prompt">${st.prompt || "跟随心跳——"}</div>
+      <div class="st-stage" id="st-stage">
+        <canvas class="st-wave" id="st-wave" width="600" height="160"></canvas>
+        <div class="st-marker" id="st-marker"></div>
+      </div>
+      <div class="st-info" id="st-info">点击/空格同步心跳</div>
+      <div class="st-actions">
+        <button class="st-start">开始</button>
+        <button class="st-tap" id="st-tap" disabled>同步（空格）</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#st-wave");
+    const ctx = canvas.getContext("2d");
+    const marker = layer.querySelector("#st-marker");
+    const info = layer.querySelector("#st-info");
+    const startBtn = layer.querySelector(".st-start");
+    const tapBtn = layer.querySelector("#st-tap");
+
+    const bpm = st.bpm || 72;
+    const totalBeats = st.beats || 12;
+    const beatInterval = 60000 / bpm;
+    const windowSec = (st.window || 0.3) * 1000;
+    const beats = [];
+    let hits = 0;
+    let started = false;
+    let finished = false;
+    let beatIdx = 0;
+    let startTime = 0;
+    let animId = null;
+
+    function ecgY(t) {
+      // 心电图波形：在每拍中点产生尖峰
+      const phase = (t % beatInterval) / beatInterval;
+      if (phase < 0.1) return 0;
+      if (phase < 0.15) return -30;
+      if (phase < 0.18) return 60;
+      if (phase < 0.21) return -40;
+      if (phase < 0.25) return 10;
+      return 0;
+    }
+
+    function draw() {
+      if (finished) return;
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      // 网格
+      ctx.strokeStyle = "rgba(180,255,200,0.1)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+      // 波形（滚动窗口，显示最近 3 秒）
+      const showMs = 3000;
+      const startMs = elapsed - showMs;
+      ctx.strokeStyle = "#7aff9a";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      let first = true;
+      for (let x = 0; x < W; x++) {
+        const t = startMs + (x / W) * showMs;
+        if (t < 0) continue;
+        const y = H / 2 - ecgY(t);
+        if (first) { ctx.moveTo(x, y); first = false; }
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // 当前位置标记
+      marker.style.left = "100%";
+      // 节拍点（在窗口内显示）
+      beats.forEach(b => {
+        const t = b.time - startMs;
+        if (t < 0 || t > showMs) return;
+        const x = (t / showMs) * W;
+        const hit = b.hit;
+        ctx.fillStyle = hit ? "#7aff9a" : "rgba(255,120,120,0.5)";
+        ctx.beginPath();
+        ctx.arc(x, H / 2, hit ? 5 : 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // 检查是否结束
+      if (beatIdx >= totalBeats && elapsed > beats[totalBeats - 1].time + windowSec) {
+        finishStethoscope();
+        return;
+      }
+      animId = requestAnimationFrame(draw);
+    }
+
+    function registerBeat() {
+      const now = performance.now();
+      const beatTime = startTime + beatIdx * beatInterval;
+      // 判断玩家是否在窗口内点击
+      const diff = Math.abs(now - beatTime);
+      if (diff < windowSec) {
+        beats[beatIdx].hit = true;
+        hits++;
+        flashHint(`♥ 同步 ${Math.round((1 - diff / windowSec) * 100)}%`);
+      }
+      beatIdx++;
+      info.textContent = `命中 ${hits} / ${beatIdx}（窗口 ${(windowSec / 1000).toFixed(1)}s）`;
+      if (beatIdx >= totalBeats) {
+        setTimeout(finishStethoscope, windowSec + 50);
+      }
+    }
+
+    function onKey(e) {
+      if (e.code === "Space" && started && !finished) {
+        e.preventDefault();
+        registerBeat();
+      }
+    }
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startBtn.disabled = true;
+      tapBtn.disabled = false;
+      startTime = performance.now();
+      // 预生成所有节拍时间
+      for (let i = 0; i < totalBeats; i++) {
+        beats.push({ time: startTime + i * beatInterval, hit: false });
+      }
+      info.textContent = `跟随心跳——命中 0 / ${totalBeats}`;
+      document.addEventListener("keydown", onKey);
+      draw();
+    };
+
+    tapBtn.onclick = () => {
+      if (!started || finished) return;
+      registerBeat();
+    };
+
+    function finishStethoscope() {
+      if (finished) return;
+      finished = true;
+      cancelAnimationFrame(animId);
+      document.removeEventListener("keydown", onKey);
+      const accuracy = hits / totalBeats;
+      const thresholds = st.thresholds || [];
+      let matched = st.fallback || { tag: "miss", label: "——错拍", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.saveStethoscopeRecord(currentNodeId, hits, totalBeats, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "st-reading";
+      reading.innerHTML = `<div class="st-reading-title">${matched.label || "解读"} · ${Math.round(accuracy * 100)}%</div>
+        <div class="st-reading-text">${matched.text || ""}</div>
+        <button class="st-reading-close">继续</button>`;
+      reading.querySelector(".st-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v0.9.0 信物拼图 runPuzzle
+     node.puzzle = {
+       prompt: "把碎片按你的记忆拼起来——",
+       pieces: [ { id, label, desc } ],
+       interpretations: [
+         { order: ["a","b","c","d"], tag, label, text, add?, memory?, next }
+       ],
+       min: 2,
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+  function runPuzzle(pz, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "puzzle-layer";
+    layer.id = "puzzle-layer";
+    layer.innerHTML = `
+      <div class="pz-prompt">${pz.prompt || "把碎片拼起来——"}</div>
+      <div class="pz-board" id="pz-board"></div>
+      <div class="pz-pool" id="pz-pool"></div>
+      <div class="pz-actions">
+        <button class="pz-reset">重置</button>
+        <button class="pz-confirm" disabled>解读拼图</button>
+      </div>
+    `;
+    const board = layer.querySelector("#pz-board");
+    const pool = layer.querySelector("#pz-pool");
+    const confirmBtn = layer.querySelector(".pz-confirm");
+    const resetBtn = layer.querySelector(".pz-reset");
+
+    const pieces = pz.pieces || [];
+    const sequence = [];
+
+    pieces.forEach(piece => {
+      const chip = document.createElement("div");
+      chip.className = "pz-piece";
+      chip.dataset.id = piece.id;
+      chip.innerHTML = `<div class="pz-piece-label">${piece.label}</div>
+        <div class="pz-piece-desc">${piece.desc || ""}</div>`;
+      chip.onclick = () => {
+        if (chip.classList.contains("placed")) return;
+        chip.classList.add("placed");
+        const slot = document.createElement("div");
+        slot.className = "pz-slot filled";
+        slot.dataset.id = piece.id;
+        slot.innerHTML = `<div class="pz-slot-label">${piece.label}</div>`;
+        board.appendChild(slot);
+        sequence.push(piece.id);
+        confirmBtn.disabled = sequence.length < Math.min(pz.min || 2, pieces.length);
+      };
+      pool.appendChild(chip);
+    });
+
+    resetBtn.onclick = () => {
+      board.innerHTML = "";
+      sequence.length = 0;
+      pool.querySelectorAll(".pz-piece.placed").forEach(c => c.classList.remove("placed"));
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const interp = matchPuzzle(pz, sequence);
+      Saves.savePuzzleRecord(currentNodeId, sequence.slice(), interp.tag);
+      if (interp.add) { applyAdd(interp.add); updateHeartBar(); }
+      if (interp.personality) {
+        for (const dim in interp.personality) Saves.addPersonality(dim, interp.personality[dim]);
+      }
+      if (interp.memory) {
+        if (!Saves.isMemoryUnlocked(interp.memory.id)) {
+          Saves.saveMemory(interp.memory.id, interp.memory.text);
+          flashHint(`✦ 新记忆：${interp.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "pz-reading";
+      reading.innerHTML = `<div class="pz-reading-title">${interp.label || "解读"}</div>
+        <div class="pz-reading-text">${interp.text || ""}</div>
+        <button class="pz-reading-close">继续</button>`;
+      reading.querySelector(".pz-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = interp.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchPuzzle(pz, seq) {
+    const interps = pz.interpretations || [];
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every((id, idx) => id === seq[idx])) {
+        return i;
+      }
+    }
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every(id => seq.includes(id))) {
+        return i;
+      }
+    }
+    return pz.fallback || { tag: "default", label: "——拼不成形", next: null };
+  }
+
+  /* ============================================================
+     v0.9.0 气味调香 runPerfume
+     node.perfume = {
+       prompt: "用三种香调调一瓶香水——",
+       notes: ["前调", "中调", "后调"],
+       ingredients: [ { id, label, desc, note } ],  // note = "前调"/"中调"/"后调"
+       recipes: [
+         { ids: ["a","b","c"], tag, label, text, add?, memory?, next }
+       ],
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+  function runPerfume(pf, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "perfume-layer";
+    layer.id = "perfume-layer";
+    const notes = pf.notes || ["前调", "中调", "后调"];
+    layer.innerHTML = `
+      <div class="pf-prompt">${pf.prompt || "调一瓶香水——"}</div>
+      <div class="pf-blends" id="pf-blends"></div>
+      <div class="pf-ingredients" id="pf-ingredients"></div>
+      <div class="pf-actions">
+        <button class="pf-reset">重置</button>
+        <button class="pf-confirm" disabled>解读香方</button>
+      </div>
+    `;
+    const blendsEl = layer.querySelector("#pf-blends");
+    const ingEl = layer.querySelector("#pf-ingredients");
+    const confirmBtn = layer.querySelector(".pf-confirm");
+    const resetBtn = layer.querySelector(".pf-reset");
+
+    const ingredients = pf.ingredients || [];
+    const selected = {}; // note -> ingredient id
+
+    // 渲染调香槽
+    notes.forEach(note => {
+      const slot = document.createElement("div");
+      slot.className = "pf-slot";
+      slot.dataset.note = note;
+      slot.innerHTML = `<div class="pf-slot-label">${note}</div>
+        <div class="pf-slot-fill" data-note="${note}">—</div>`;
+      blendsEl.appendChild(slot);
+    });
+
+    // 渲染材料
+    ingredients.forEach(ing => {
+      const chip = document.createElement("div");
+      chip.className = `pf-ingredient pf-ing-${ing.note}`;
+      chip.dataset.id = ing.id;
+      chip.dataset.note = ing.note;
+      chip.innerHTML = `<div class="pf-ing-label">${ing.label}</div>
+        <div class="pf-ing-note">${ing.note}</div>
+        <div class="pf-ing-desc">${ing.desc || ""}</div>`;
+      chip.onclick = () => {
+        // 取消同 note 的旧选择
+        const note = ing.note;
+        if (selected[note]) {
+          const oldChip = ingEl.querySelector(`.pf-ingredient[data-id="${selected[note]}"]`);
+          if (oldChip) oldChip.classList.remove("selected");
+        }
+        if (chip.classList.contains("selected")) {
+          chip.classList.remove("selected");
+          delete selected[note];
+          blendsEl.querySelector(`.pf-slot-fill[data-note="${note}"]`).textContent = "—";
+        } else {
+          chip.classList.add("selected");
+          selected[note] = ing.id;
+          blendsEl.querySelector(`.pf-slot-fill[data-note="${note}"]`).textContent = ing.label;
+        }
+        confirmBtn.disabled = Object.keys(selected).length < notes.length;
+      };
+      ingEl.appendChild(chip);
+    });
+
+    resetBtn.onclick = () => {
+      Object.keys(selected).forEach(k => delete selected[k]);
+      ingEl.querySelectorAll(".pf-ingredient.selected").forEach(c => c.classList.remove("selected"));
+      notes.forEach(note => {
+        blendsEl.querySelector(`.pf-slot-fill[data-note="${note}"]`).textContent = "—";
+      });
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const ids = notes.map(n => selected[n]).filter(Boolean);
+      const recipe = matchPerfume(pf, ids);
+      Saves.savePerfumeRecord(currentNodeId, { ...selected }, recipe.tag);
+      if (recipe.add) { applyAdd(recipe.add); updateHeartBar(); }
+      if (recipe.personality) {
+        for (const dim in recipe.personality) Saves.addPersonality(dim, recipe.personality[dim]);
+      }
+      if (recipe.memory) {
+        if (!Saves.isMemoryUnlocked(recipe.memory.id)) {
+          Saves.saveMemory(recipe.memory.id, recipe.memory.text);
+          flashHint(`✦ 新记忆：${recipe.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "pf-reading";
+      reading.innerHTML = `<div class="pf-reading-title">${recipe.label || "解读"}</div>
+        <div class="pf-reading-text">${recipe.text || ""}</div>
+        <button class="pf-reading-close">继续</button>`;
+      reading.querySelector(".pf-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = recipe.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchPerfume(pf, ids) {
+    const recipes = pf.recipes || [];
+    for (const r of recipes) {
+      if (r.ids && r.ids.length === ids.length && r.ids.every(id => ids.includes(id))) {
+        return r;
+      }
+    }
+    return pf.fallback || { tag: "default", label: "——香不成方", next: null };
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -3166,6 +3766,11 @@
     document.querySelectorAll(".dreamweave-layer").forEach(e => e.remove());
     document.querySelectorAll(".handwriting-layer").forEach(e => e.remove());
     document.querySelectorAll(".spectrum-layer").forEach(e => e.remove());
+    // 清理 v0.9.0 浮层
+    document.querySelectorAll(".constellation-layer").forEach(e => e.remove());
+    document.querySelectorAll(".stethoscope-layer").forEach(e => e.remove());
+    document.querySelectorAll(".puzzle-layer").forEach(e => e.remove());
+    document.querySelectorAll(".perfume-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

@@ -608,6 +608,154 @@ const SCRIPT = {
 
   /* ============ 第 3 日 · 运动会预选 ============ */
   common_day3_morning: { day: 3, time: "morning", bg: "classroom", speaker: "班主任", text: "运动会预选今天下午开始。各项目负责人课间到体育组抽签。", next: "d3_choice" },
+
+  /* ============ v0.9.0 星座连线 ============ */
+  d1_night_stars: {
+    day: 1, time: "night", bg: "rooftop", char: "shiyu", speaker: "林诗雨",
+    text: "——晚上天台。风很轻。林诗雨指着头顶：「你看，那几颗连起来，像不像一封信？」",
+    next: "common_day2_morning",
+    constellation: {
+      prompt: "夜空散布星点——按你的直觉连成一个图案",
+      min: 3,
+      stars: [
+        { id: "north_star", x: 50, y: 12, name: "北辰" },
+        { id: "letter_a",   x: 28, y: 30, name: "信·起笔" },
+        { id: "letter_b",  x: 72, y: 32, name: "信·落笔" },
+        { id: "cherry_a",  x: 20, y: 60, name: "樱·左瓣" },
+        { id: "cherry_b",  x: 80, y: 62, name: "樱·右瓣" },
+        { id: "heart",     x: 50, y: 78, name: "心" }
+      ],
+      constellations: [
+        { stars: ["letter_a","north_star","letter_b","cherry_b","heart","cherry_a"], tag: "full_letter",
+          label: "——一封寄给夜空的信",
+          text: "星点连成信的形状，从起笔到落笔，最后收在心。林诗雨看了很久，说：「原来连星星都会写信。」",
+          add: { affection: { shiyu: 2 } }, personality: { honest: 2, kind: 1 },
+          memory: { id: "星座·信", title: "夜空里的信", text: "你连出寄给夜空的信。林诗雨说连星星都会写信。" },
+          next: "common_day2_morning" },
+        { stars: ["cherry_a","heart","cherry_b"], tag: "cherry_heart",
+          label: "——樱花落在心上",
+          text: "三颗星连成樱花包着一颗心。林诗雨轻声说：「樱花和心——你把它们连在一起了。」",
+          add: { affection: { shiyu: 1 } }, personality: { kind: 2 },
+          memory: { id: "星座·樱心", title: "樱花与心", text: "你连出樱花包着心。林诗雨轻声说，你把它们连在一起了。" },
+          next: "common_day2_morning" },
+        { stars: ["letter_a","north_star","letter_b"], tag: "letter_only",
+          label: "——只有信的形状",
+          text: "三颗星连成信的轮廓，没有收信人。林诗雨说：「写了，但没寄出去——也行。」",
+          add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
+          next: "common_day2_morning" }
+      ],
+      fallback: { tag: "scattered_stars", label: "——散落的星",
+        text: "星点连不成特别的形状。林诗雨抬头看了很久，说：「没关系，今晚的星，本来就乱。」",
+        next: "common_day2_morning" }
+    }
+  },
+
+  /* ============ v0.9.0 心声听诊 ============ */
+  d3_stethoscope: {
+    day: 3, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织",
+    text: "——运动会预选后，夏织跑完最后一圈，坐在草地上喘气。她忽然把你的手按在自己胸口：「你听——它还在跳。」",
+    next: "common_day3_afternoon",
+    stethoscope: {
+      prompt: "把心跳贴在掌心——跟随她的节拍点击同步",
+      bpm: 90, beats: 10, window: 0.35,
+      thresholds: [
+        { min: 0.8, tag: "sync", label: "——同频的心跳",
+          text: "你跟上了她几乎每一拍。夏织抬头，眼睛亮亮的：「你居然——跟得上我跑完之后的心跳。」",
+          add: { affection: { xiazhi: 2 } }, personality: { active: 2, kind: 1 },
+          memory: { id: "心跳·同频", title: "跑完之后的心跳", text: "你跟上了夏织跑完之后的心跳。她说你居然跟得上。" },
+          next: "common_day3_afternoon" },
+        { min: 0.5, tag: "half", label: "——半同步",
+          text: "你跟上了一半。夏织笑笑：「差不多——能跟上一半就够啦。」",
+          add: { affection: { xiazhi: 1 } }, personality: { active: 1 },
+          next: "common_day3_afternoon" }
+      ],
+      fallback: { tag: "miss", label: "——错拍",
+        text: "你没能跟上她的心跳。夏织没说什么，只是把你的手松开：「算了，下次再试。」",
+        next: "common_day3_afternoon" }
+    }
+  },
+
+  /* ============ v0.9.0 信物拼图 ============ */
+  d4_puzzle: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "——夜里整理书包，那张被撕碎的匿名信散了一桌。我想把它拼回来——但它怎么拼，好像都不止一种答案。",
+    next: "d4_evening_scent",
+    puzzle: {
+      prompt: "把碎片按你的记忆拼起来——",
+      min: 4,
+      pieces: [
+        { id: "shred_1", label: "碎片·樱", desc: "写着半个「樱」字。" },
+        { id: "shred_2", label: "碎片·信", desc: "写着半个「信」字。" },
+        { id: "shred_3", label: "碎片·名", desc: "写着半个「名」字，看不清是谁。" },
+        { id: "shred_4", label: "碎片·夜", desc: "写着半个「夜」字。" },
+        { id: "shred_5", label: "碎片·空", desc: "一片空白，被撕得很碎。" }
+      ],
+      interpretations: [
+        { order: ["shred_1","shred_2","shred_3","shred_4"], tag: "letter_named",
+          label: "——樱信·夜名",
+          text: "拼起来是「樱信·夜名」。一封夜里写的、署名樱的信。我盯着那个「名」——那不是我的名字，是学姐的。",
+          add: { affection: { shiyu: 0 } }, personality: { honest: 2, brave: 1 },
+          memory: { id: "拼图·樱信", title: "署名樱的信", text: "你拼出「樱信·夜名」——一封夜里写的、署名樱的信。" },
+          next: "d4_evening_scent" },
+        { order: ["shred_1","shred_2","shred_5","shred_3"], tag: "letter_blank",
+          label: "——樱信·无名",
+          text: "拼起来是「樱信·无名」。一封樱的信，但没有署名。也许——她本来就没打算让人知道是她。",
+          add: { affection: { shiyu: 0 } }, personality: { kind: 1, honest: 1 },
+          memory: { id: "拼图·无名", title: "没有署名的樱信", text: "你拼出「樱信·无名」——一封没有署名的樱信。" },
+          next: "d4_evening_scent" },
+        { order: ["shred_4","shred_1","shred_2","shred_3"], tag: "night_letter",
+          label: "——夜樱信名",
+          text: "换个顺序读，是「夜樱·信名」。夜里的樱，信的名字。我忽然想——也许名字不是署名，是收信人。",
+          add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
+          next: "d4_evening_scent" }
+      ],
+      fallback: { tag: "scattered", label: "——拼不成形",
+        text: "碎片拼不起来。我叹了口气，把那张空白碎片收好——也许有些信，本来就不该被拼回来。",
+        next: "d4_evening_scent" }
+    }
+  },
+
+  /* ============ v0.9.0 气味调香 ============ */
+  d5_perfume: {
+    day: 5, time: "noon", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "——苏念在美术室调一瓶香水。她说是给画用的——让画有气味。「你来调，我手抖。」她把瓶子推过来。",
+    next: "common_day5_afternoon",
+    perfume: {
+      prompt: "用前调/中调/后调调一瓶香水——",
+      notes: ["前调", "中调", "后调"],
+      ingredients: [
+        { id: "cherry_blossom", label: "樱花",   note: "前调", desc: "甜而轻，最先散去。" },
+        { id: "lemon_zest",     label: "柠檬皮", note: "前调", desc: "酸而亮，刺一下。" },
+        { id: "old_paper",      label: "旧纸",   note: "中调", desc: "泛黄稿纸的味道。" },
+        { id: "ink",            label: "墨水",   note: "中调", desc: "蓝黑色的金属气。" },
+        { id: "dusk_wood",      label: "暮木",   note: "后调", desc: "沉，像旧校舍的楼梯。" },
+        { id: "rain_warm",      label: "暖雨",   note: "后调", desc: "夏日雨后的潮热。" }
+      ],
+      recipes: [
+        { ids: ["cherry_blossom","old_paper","dusk_wood"], tag: "sakura_letter",
+          label: "——樱时信笺",
+          text: "樱花、旧纸、暮木。一瓶樱时信笺。苏念闻了闻：「……像一封写给黄昏的信。」她说这就是她要的。",
+          add: { affection: { sunian: 2 } }, personality: { kind: 2, honest: 1 },
+          memory: { id: "调香·樱时", title: "樱时信笺", text: "你调出樱时信笺。苏念说像一封写给黄昏的信。" },
+          next: "common_day5_afternoon" },
+        { ids: ["lemon_zest","ink","rain_warm"], tag: "summer_ink",
+          label: "——夏墨暖雨",
+          text: "柠檬、墨水、暖雨。一瓶夏天的墨水。苏念皱眉：「太冲——但也对。」她说这就是夏织的味道。",
+          add: { affection: { xiazhi: 1, sunian: 1 } }, personality: { active: 2 },
+          memory: { id: "调香·夏墨", title: "夏墨暖雨", text: "你调出夏墨暖雨。苏念说这就是夏织的味道。" },
+          next: "common_day5_afternoon" },
+        { ids: ["cherry_blossom","ink","dusk_wood"], tag: "quiet_dusk",
+          label: "——静暮",
+          text: "樱花、墨水、暮木。一瓶很静的香水。苏念没说话，把瓶盖拧紧：「这瓶先收着。」",
+          add: { affection: { shiyu: 1, sunian: 1 } }, personality: { kind: 1, honest: 1 },
+          memory: { id: "调香·静暮", title: "静暮", text: "你调出很静的香水。苏念说先收着。" },
+          next: "common_day5_afternoon" }
+      ],
+      fallback: { tag: "default_scent", label: "——不成香",
+        text: "三种气味凑在一起，没成什么特别的香。苏念笑笑：「也行——一瓶普通的香水。」",
+        next: "common_day5_afternoon" }
+    }
+  },
   d3_choice: {
     day: 3, time: "morning", bg: "classroom",
     choice: {
