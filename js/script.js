@@ -2147,7 +2147,7 @@ const SCRIPT = {
   d7_echoloc: {
     day: 7, time: "night", bg: "tunnel", char: null, speaker: "",
     text: "她带你去一条隧道。她说——前面有东西，但你看不见。她让你发出声音，听回声，再点出你估算的位置。她说：听得出的人，能看不见也能知道。",
-    next: "d5_mimic",
+    next: "d8_compass",
     echoloc: {
       prompt: "点「发出」听回声——再点画面估算障碍位置",
       actual: 0.6,
@@ -2160,18 +2160,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { honest: 2, brave: 1 },
           memory: { id: "回声·60%", title: "隧道里的回声", text: "你在隧道里靠回声估算出了障碍的位置。" },
-          next: "d5_mimic" },
+          next: "d8_compass" },
         { max: 0.2, tag: "ok",
           label: "——差一点",
           text: "你估算的位置差了一点。她说：差一点也行——你听出了大概。大概也是真的。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d8_compass" }
       ],
       fallback: { tag: "miss",
         label: "——听偏了",
         text: "你估算的位置完全偏了。她说：听偏了也没关系——回声有时候会骗人。她不让你再试一次。",
-        next: "d5_mimic" }
+        next: "d8_compass" }
     }
   },
 

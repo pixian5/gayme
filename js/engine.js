@@ -11082,6 +11082,7 @@
     confirmBtn.onclick = () => {
       if (aborted) return;
       aborted = true;
+      confirmBtn.disabled = true;
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchmove", onMove);
@@ -11089,12 +11090,12 @@
       // 计算最小角度差
       let diff = Math.abs(angle - target);
       if (diff > 180) diff = 360 - diff;
-      Saves.saveCompassRecord(currentNodeId, Math.round(angle), target, diff, diff <= tolerance ? "perfect" : diff <= tolerance * 3 ? "good" : "miss");
       const thresholds = cp.thresholds || [];
       let matched = cp.fallback || { tag: "miss", label: "——方向偏了", next: null };
       for (const t of thresholds) {
         if (diff <= (t.max ?? tolerance)) { matched = t; break; }
       }
+      Saves.saveCompassRecord(currentNodeId, Math.round(angle), target, diff, matched.tag);
       if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
       if (matched.personality) {
         for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
@@ -11241,12 +11242,12 @@
       playBtn.disabled = true;
       const correct = selected === code ? 1 : 0;
       const error = correct ? 0 : 1;
-      Saves.saveTelegraphRecord(currentNodeId, code, selected, correct, correct ? "perfect" : "miss");
       const thresholds = tg.thresholds || [];
       let matched = tg.fallback || { tag: "miss", label: "——译错了", next: null };
       for (const t of thresholds) {
         if (error <= (t.max ?? 0)) { matched = t; break; }
       }
+      Saves.saveTelegraphRecord(currentNodeId, code, selected, correct, matched.tag);
       if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
       if (matched.personality) {
         for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
@@ -11502,15 +11503,16 @@
     confirmBtn.onclick = () => {
       if (aborted) return;
       aborted = true;
+      confirmBtn.disabled = true;
       const leftSum = left.reduce((s, x) => s + x.w, 0);
       const rightSum = right.reduce((s, x) => s + x.w, 0);
       const diff = Math.abs(leftSum - rightSum);
-      Saves.saveBalanceRecord(currentNodeId, leftSum, rightSum, diff, diff <= tolerance ? "perfect" : diff <= tolerance * 3 ? "good" : "miss");
       const thresholds = bl.thresholds || [];
       let matched = bl.fallback || { tag: "miss", label: "——没平衡", next: null };
       for (const t of thresholds) {
         if (diff <= (t.max ?? tolerance)) { matched = t; break; }
       }
+      Saves.saveBalanceRecord(currentNodeId, leftSum, rightSum, diff, matched.tag);
       if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
       if (matched.personality) {
         for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
@@ -11708,12 +11710,12 @@
         if (aborted) return;
         aborted = true;
         confirmBtn.disabled = true;
-        Saves.savePendulumRecord(currentNodeId, posNow, target, err, err <= tolerance ? "perfect" : err <= tolerance * 2 ? "good" : "miss");
         const thresholds = pd.thresholds || [];
         let matched = pd.fallback || { tag: "miss", label: "——停早了", next: null };
         for (const t of thresholds) {
           if (err <= (t.max ?? tolerance)) { matched = t; break; }
         }
+        Saves.savePendulumRecord(currentNodeId, posNow, target, err, matched.tag);
         if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
         if (matched.personality) {
           for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
