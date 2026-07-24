@@ -22,6 +22,8 @@
 
   <!-- 顶部菜单条 -->
   <div id="top-bar">
+    <button data-menu="inbox" title="消息" id="btn-inbox">📩<span id="inbox-badge" class="hidden"></span></button>
+    <button data-menu="moments" title="朋友圈" id="btn-moments">🌸</button>
     <button data-menu="history" title="历史">📜</button>
     <button data-menu="save" title="存档">💾</button>
     <button data-menu="load" title="读档">📂</button>
@@ -33,6 +35,9 @@
     <button id="btn-auto" title="自动">▶▶</button>
     <button id="btn-skip" title="快进">⏩</button>
   </div>
+
+  <!-- 环境线索层 -->
+  <div id="clue-layer"></div>
 
   <!-- 日程条（左上） -->
   <div id="day-bar"></div>
@@ -68,7 +73,7 @@
       <button data-action="trueend" class="hidden">★ 真结局 ★</button>
       <button data-action="about">关于</button>
     </div>
-    <div class="title-version">v0.4.0 · Demo</div>
+    <div class="title-version">v0.5.0 · Demo</div>
   </div>
 
   <!-- 通用菜单浮层（存档/读档/设置/历史/图鉴/CG/关键词/流程图） -->

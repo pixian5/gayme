@@ -184,6 +184,67 @@ const ENDINGS = [
   { id: "true_end",     heroine: "真结局", title: "樱 花 信", type: "TRUE",  desc: "你替她回了一封信，也写下自己。" },
 ];
 
+/* ============ v0.5.0 朋友圈动态池 ============ */
+const MOMENTS = [
+  {
+    id: "m_d1_shiyu", char: "shiyu", likes: 3,
+    text: "今天的樱花，从教室看出去像一片云。\n我想我应该再多走一段路。",
+    likeAffection: { affection: { shiyu: 1 } },
+    comments: [
+      { text: "加油。", value: "c1", add: { affection: { shiyu: 1 } }, personality: { brave: 1 } },
+      { text: "你不写也没关系。", value: "c2", add: { affection: { shiyu: 2 } }, personality: { kind: 1 } },
+      { text: "（只看不评）", value: "c3" },
+    ],
+  },
+  {
+    id: "m_d2_xiazhi", char: "xiazhi", likes: 7,
+    text: "今天又被训了。\n但我知道自己在跑什么。这就够了。",
+    likeAffection: { affection: { xiazhi: 1 } },
+    comments: [
+      { text: "别太拼。", value: "c1", add: { affection: { xiazhi: 1 } }, personality: { kind: 1 } },
+      { text: "跑下去。", value: "c2", add: { affection: { xiazhi: 1 } }, personality: { brave: 1, active: 1 } },
+    ],
+  },
+  {
+    id: "m_d2_sunian", char: "sunian", likes: 1,
+    text: "紫色。\n又是紫色。\n我什么都没画出来。",
+    likeAffection: { affection: { sunian: 1 } },
+    comments: [
+      { text: "那就歇会儿。", value: "c1", add: { affection: { sunian: 1 } }, personality: { kind: 1 } },
+      { text: "再画一笔试试。", value: "c2", add: { affection: { sunian: 1 } }, personality: { active: 1 } },
+      { text: "紫色也是颜色。", value: "c3", add: { affection: { sunian: 2 } }, personality: { honest: 1 } },
+    ],
+  },
+  {
+    id: "m_d3_group", char: "xiazhi", likes: 12,
+    text: "今天林诗雨和苏念跑来接我。\n我笑了一下，没让人看出来眼睛红了。\n谢谢你们。",
+    likeAffection: { affection: { xiazhi: 1, shiyu: 1, sunian: 1 } },
+    comments: [
+      { text: "我们都在。", value: "c1", add: { affection: { xiazhi: 1 } }, personality: { kind: 2, honest: 1 } },
+      { text: "你才是。", value: "c2", add: { affection: { xiazhi: 1 } }, personality: { honest: 1 } },
+    ],
+  },
+  {
+    id: "m_d4_shiyu", char: "shiyu", likes: 5,
+    text: "今天他来帮我排剧本。\n他不知道，那一页的开场白我写了三遍。\n他没看见，我也没让他看见。",
+    likeAffection: { affection: { shiyu: 1 } },
+    comments: [
+      { text: "我看见了。", value: "c1", add: { affection: { shiyu: 2 } }, personality: { honest: 2 } },
+      { text: "写得真好。", value: "c2", add: { affection: { shiyu: 1 } }, personality: { kind: 1 } },
+    ],
+  },
+  {
+    id: "m_d5_sunian", char: "sunian", likes: 2,
+    text: "画坏了。\n但好像，画坏的那一刻我才知道我想画什么。",
+    likeAffection: { affection: { sunian: 1 } },
+    comments: [
+      { text: "那就重画。", value: "c1", add: { affection: { sunian: 1 } }, personality: { brave: 1, active: 1 } },
+      { text: "坏也是好。", value: "c2", add: { affection: { sunian: 2 } }, personality: { honest: 1 } },
+    ],
+  },
+];
+window.MOMENTS = MOMENTS;
+
 /* ============ 剧本节点 ============ */
 const SCRIPT = {
 
@@ -220,7 +281,24 @@ const SCRIPT = {
       text: "——又是一个不敢抬头的转学生。我递出地图的时候手指在抖，他没看见。我也不想让他看见。其实那张地图我画了三遍。第一遍太潦草，第二遍太用力，第三遍——刚刚好。可我画了三遍这件事，谁也不知道。",
       memory: "诗雨·走廊",
       requiresMemory: false // 序章直接可看，不需要先解锁记忆
-    }
+    },
+    // v0.5.0 环境线索：走廊里有可探索的细节
+    clues: [
+      {
+        id: "clue_map", x: 62, y: 38, w: 12, h: 22,
+        title: "地图边角",
+        text: "她递的校园地图边角有被反复涂改的痕迹。「角色 A 推开门——」这行字被划掉了三次，又写了回来。",
+        keyword: "角色A",
+        memory: { id: "诗雨·地图", title: "涂改的地图", text: "她在地图上写了又划，划了又写。原来她和我一样，也在犹豫。" },
+        personality: { honest: 1 }
+      },
+      {
+        id: "clue_window", x: 18, y: 55, w: 10, h: 18,
+        title: "窗外樱花",
+        text: "走廊窗户开着，樱花瓣落在地上。一片粉瓣贴在她鞋尖，她没察觉。",
+        personality: { kind: 1 }
+      }
+    ]
   },
   prologue_9: { day: 1, time: "morning", bg: "classroom", char: null, speaker: "", text: "推开门的瞬间，整间教室的目光都甩了过来。班主任咳嗽一声，才把它们压回去。", next: "prologue_10" },
   prologue_10: { day: 1, time: "morning", bg: "classroom", speaker: "班主任", text: "都安静。这是新转来的沈屿同学，希望大家多照顾。诗雨，带他到座位。", next: "prologue_11" },
@@ -315,7 +393,30 @@ const SCRIPT = {
   d2_library_5: { day: 2, time: "morning", bg: "library", speaker: "沈屿", text: "只看到「角色 A 推开门」。继续写下去吧，我不打扰你。", next: "d2_library_6" },
   d2_library_6: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……没人知道我在写。家里希望我考法律系。如果让他们知道——", next: "d2_library_7" },
   d2_library_7: { day: 2, time: "morning", bg: "library", speaker: "沈屿", text: "那你为什么还在写？", next: "d2_library_8" },
-  d2_library_8: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。", next: "d2_library_9", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true } },
+  d2_library_8: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。", next: "d2_library_doodle", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true } },
+  d2_library_doodle: {
+    day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨",
+    text: "……你既然看到了，能不能帮我画一句开场？我画不出角色 A 推开门的样子。你随便涂一下，让我看见她。",
+    next: "d2_library_9",
+    // v0.5.0 涂鸦系统
+    doodle: {
+      prompt: "帮林诗雨画一句开场（涂鸦一笔，让她看见角色 A）",
+      moodBonus: {
+        "激动": { affection: { shiyu: 2 } },
+        "平静": { affection: { shiyu: 1 } },
+        "紧张": { affection: { shiyu: 1 } },
+        "用力": { affection: { shiyu: 1 } },
+        "克制": { affection: { shiyu: 0 } }
+      },
+      moodJump: {
+        "激动": "d2_library_encourage",
+        "平静": "d2_library_calm"
+      }
+    }
+  },
+  // 涂鸦后的两个分支汇合回主线
+  d2_library_encourage: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这一笔这么用力。原来推开门也可以是这种姿势。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔，她照着写下了开场。" } },
+  d2_library_calm: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……很安静的一笔。原来她推开门时也可以不害怕。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔很安静，她跟着写下了开场。" } },
   d2_library_9: { day: 2, time: "morning", bg: "library", speaker: "", text: "窗外的樱花被风吹进图书馆，落在她摊开的稿纸上。她没去拂，只是看着它。", next: "d2_noon" },
 
   d2_field_1: { day: 2, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "来了来了！热身先跑两圈——欸你怎么脸那么白，没吃早饭？", next: "d2_field_2" },
@@ -338,7 +439,28 @@ const SCRIPT = {
   d2_rooftop_2: { day: 2, time: "morning", bg: "rooftop", char: null, speaker: "沈屿", text: "（匿名信说的三条路……我现在一条都看不清。）", next: "d2_rooftop_3" },
   d2_rooftop_3: { day: 2, time: "morning", bg: "rooftop", speaker: "", text: "风把一张便条吹到我脚边。上面只有一行字：「学姐也是转学生。」", next: "d2_noon", keyword: "学姐" },
 
-  d2_noon: { day: 2, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "中午。食堂人多得像沙丁鱼罐头。我端着托盘找不到位置——", next: "d2_noon_2" },
+  d2_noon: {
+    day: 2, time: "noon", bg: "cafeteria", char: null, speaker: "",
+    text: "中午。食堂人多得像沙丁鱼罐头。我端着托盘找不到位置——",
+    next: "d2_noon_2",
+    // v0.5.0 收件箱：林诗雨的私信
+    inbox: {
+      id: "msg_shiyu_d2",
+      char: "shiyu",
+      from: "林诗雨",
+      title: "关于小说",
+      body: "你说「角色 A 推开门」——如果她推开门后什么都没有呢？我卡在这里了。给我一点建议，30秒内回我。",
+      deadline: 30000,
+      type: "free",
+      hint: "写下你的建议…",
+      matchings: [
+        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: { id: "诗雨·敢", text: "你说：敢。她记下了。" } },
+        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: { id: "诗雨·停", text: "你说：停一停。她沉默了。" } },
+      ]
+    },
+    // v0.5.0 朋友圈：夏织发布动态
+    moment: "m_d2_xiazhi"
+  },
   d2_noon_2: { day: 2, time: "noon", bg: "cafeteria", chars: [{id:"xiazhi", pos:"left"}, {id:"shiyu", pos:"right"}], speaker: "夏织", text: "这儿这儿！转学生，坐我跟班长中间！", next: "d2_noon_3" },
   d2_noon_3: { day: 2, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "夏织和林诗雨居然坐在一起。一个像太阳，一个像月亮，气场却并不冲突。", next: "d2_noon_4" },
   d2_noon_4: { day: 2, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "夏织，运动会报名表你交了没？", next: "d2_noon_5" },
@@ -408,7 +530,44 @@ const SCRIPT = {
       ]
     }
   },
-  letter_1_after: { day: 3, time: "evening", bg: "home_room", speaker: "沈屿", text: "我把信封好，放在窗台上。明天它就会不见。", next: "common_day4_morning" },
+  letter_1_after: { day: 3, time: "evening", bg: "home_room", speaker: "沈屿", text: "我把信封好，放在窗台上。明天它就会不见。", next: "dream_night_1" },
+
+  /* —— v0.5.0 梦境碎片：第3日夜晚 —— */
+  dream_night_1: {
+    day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "夜里，我做了一个梦。梦里樱花倒着飘。",
+    next: "common_day4_morning",
+    dream: {
+      title: "❉ 樱花倒着飘的夜晚 ❉",
+      hint: "点击场景探索 · 收集梦境碎片",
+      scenes: [
+        {
+          icon: "📚", label: "图书馆",
+          text: "梦见林诗雨的稿纸翻回第一页。她写过的字一行行消失，最后只剩「角色 A 推开门」。",
+          shard: { id: "dream_shard_shiyu", text: "她写过的字会消失，但她写过的那句话不会。" },
+          personality: { honest: 1 }
+        },
+        {
+          icon: "🏃", label: "操场",
+          text: "梦见夏织在跑道上往回跑——发令枪响，她退回起点。她笑着说：「这次我重新跑一次。」",
+          shard: { id: "dream_shard_xiazhi", text: "如果可以重来，她依然会选择起跑。" },
+          personality: { brave: 1 }
+        },
+        {
+          icon: "🎨", label: "美术室",
+          text: "梦见苏念把紫色的画翻过来。背面是空的。她说：「背面也是画。」",
+          shard: { id: "dream_shard_sunian", text: "背面也是画。空白也是答案。" },
+          personality: { honest: 1, kind: 1 }
+        },
+        {
+          icon: "✉", label: "窗台",
+          text: "窗台上那封信自己翻开了。它没有署名。但梦里我知道——是我写给自己的。",
+          shard: { id: "dream_shard_self", text: "那封没署名的信，最后是写给我的。" },
+          personality: { honest: 2 }
+        }
+      ]
+    }
+  },
 
   /* ============ 第 4 日 · 学园祭筹备 ============ */
   common_day4_morning: { day: 4, time: "morning", bg: "classroom", speaker: "班主任", text: "学园祭还有一周。各班今天定主题。文艺社、田径社、美术社都要出节目。", next: "d4_choice" },
@@ -453,7 +612,13 @@ const SCRIPT = {
   d4_noon_2: { day: 4, time: "noon", bg: "cafeteria", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "夏织", text: "我提议——学园祭那天，我们三个一起出节目。诗雨写本子，我跑展，苏念画海报。", next: "d4_noon_3" },
   d4_noon_3: { day: 4, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……可以。", next: "d4_noon_4" },
   d4_noon_4: { day: 4, time: "noon", bg: "cafeteria", char: "sunian", speaker: "苏念", text: "海报……我画。", next: "d4_noon_5" },
-  d4_noon_5: { day: 4, time: "noon", bg: "cafeteria", speaker: "", text: "三个互不相让的人，难得地达成了默契。我忽然意识到，她们才是彼此的「三条路」。", next: "d4_evening" },
+  d4_noon_5: {
+    day: 4, time: "noon", bg: "cafeteria", speaker: "",
+    text: "三个互不相让的人，难得地达成了默契。我忽然意识到，她们才是彼此的「三条路」。",
+    next: "d4_evening",
+    // v0.5.0 朋友圈：三女主同时发动态
+    moment: ["m_d4_shiyu", "m_d3_group"]
+  },
   d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」", next: "letter_2" },
   letter_2: {
     day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
@@ -502,7 +667,26 @@ const SCRIPT = {
   sy_2: { day: 5, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "你来了。我以为你不会来。", next: "sy_3" },
   sy_3: { day: 5, time: "morning", bg: "library", speaker: "沈屿", text: "你说不写会忘掉自己。我来看看，你还记不记得自己。", next: "sy_4" },
   sy_4: { day: 5, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……我妈昨天翻了我的书包。", next: "sy_5" },
-  sy_5: { day: 5, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "她没说什么。只是把稿纸原样放回去，做了一桌我最爱吃的菜。比骂我还可怕。", next: "sy_6" },
+  sy_5: {
+    day: 5, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨",
+    text: "她没说什么。只是把稿纸原样放回去，做了一桌我最爱吃的菜。比骂我还可怕。",
+    next: "sy_6",
+    // v0.5.0 收件箱：诗雨半夜的私信
+    inbox: {
+      id: "msg_shiyu_night",
+      char: "shiyu",
+      from: "林诗雨",
+      title: "凌晨三点的信",
+      body: "我妈睡了我才能发。我没问她为什么没骂我。我怕一问，她就要哭了。我不知道该写下去还是停下来。",
+      deadline: 45000,
+      type: "free",
+      hint: "回她一句…",
+      matchings: [
+        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: { id: "诗雨·凌晨", text: "你说：写下去。她在屏幕那头点了头。" } },
+        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: { id: "诗雨·凌晨", text: "你说：先睡吧。她合上了本子。" } },
+      ]
+    }
+  },
   sy_6: { day: 5, time: "morning", bg: "library", speaker: "沈屿", text: "她爱你，只是用错了方式。", next: "sy_7" },
   sy_7: { day: 5, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我知道。可那方式压了我十七年。小说写的是个优等生毕业前消失了。所有人都觉得她去了好大学，只有她自己知道，她去了很远的地方。", next: "sy_8" },
   sy_8: { day: 5, time: "morning", bg: "library", speaker: "沈屿", text: "你想给她一个结局吗？", next: "sy_9" },
@@ -567,7 +751,28 @@ const SCRIPT = {
   xz_3: { day: 5, time: "morning", bg: "field", speaker: "沈屿", text: "你一个人练？教练呢？", next: "xz_4" },
   xz_4: { day: 5, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "教练上周辞退我了。他说我发挥不稳定，浪费特招名额。", next: "xz_5" },
   xz_5: { day: 5, time: "morning", bg: "field", speaker: "沈屿", text: "那你还跑？", next: "xz_6" },
-  xz_6: { day: 5, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "不跑我去哪？回那个家？我爸小时候带我练跑，摔过一次膝盖，旧伤。我妈再婚之后，那已经不是我的家了。", next: "xz_7", set: { flag_xiazhi_injury: true } },
+  xz_6: {
+    day: 5, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织",
+    text: "不跑我去哪？回那个家？我爸小时候带我练跑，摔过一次膝盖，旧伤。我妈再婚之后，那已经不是我的家了。",
+    next: "xz_7", set: { flag_xiazhi_injury: true },
+    // v0.5.0 收件箱：夏织的私信（关于教练辞退）
+    inbox: {
+      id: "msg_xiazhi_coach",
+      char: "xiazhi",
+      from: "夏织",
+      title: "教练的事",
+      body: "教练上周把我辞了。他说我发挥不稳定。我不怪他。可我不知道——还能不能跑下去。你老实告诉我：我还有戏吗？30秒内回我。",
+      deadline: 30000,
+      type: "free",
+      hint: "老实告诉她…",
+      matchings: [
+        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: { id: "夏织·教练", text: "你说：你能跑。她笑了。" } },
+        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: { id: "夏织·教练", text: "你说：先治伤。她沉默了。" } },
+      ]
+    },
+    // v0.5.0 朋友圈：夏织深夜动态
+    moment: "m_d2_xiazhi"
+  },
   xz_7: { day: 5, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", next: "xz_8" },
   xz_8: { day: 5, time: "morning", bg: "field", speaker: "", text: "她说着笑起来，眼睛却红了一圈。", next: "xz_9" },
   xz_9: { day: 5, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", next: "xz_minigame" },
@@ -631,7 +836,29 @@ const SCRIPT = {
   sn_2: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "你又来了。", next: "sn_3" },
   sn_3: { day: 5, time: "morning", bg: "art_room", speaker: "沈屿", text: "你说画不完。我来看看，是不是真的画不完。", next: "sn_4" },
   sn_4: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "省展邀请函上个月寄来。让我交一幅新作。我答应了，然后撕了四十七张草稿。每一张都差一点。差那一点，就不是我。", next: "sn_5" },
-  sn_5: { day: 5, time: "morning", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_6" },
+  sn_5: { day: 5, time: "morning", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_5b" },
+  // v0.5.0 涂鸦：让苏念画一笔自己
+  sn_5b: {
+    day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "……「我」？我不知道。我画了三年紫色，画到忘了自己本来想画什么。你能不能——帮我画一笔，让我看见「我」是谁？",
+    next: "sn_6",
+    doodle: {
+      prompt: "帮苏念画一笔「她是谁」（涂鸦一笔，让她看见自己）",
+      moodBonus: {
+        "激动": { affection: { sunian: 2 } },
+        "平静": { affection: { sunian: 2 } },
+        "用力": { affection: { sunian: 1 } },
+        "紧张": { affection: { sunian: 1 } },
+        "克制": { affection: { sunian: 1 } }
+      },
+      moodJump: {
+        "激动": "sn_5b_release",
+        "平静": "sn_5b_calm"
+      }
+    }
+  },
+  sn_5b_release: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
+  sn_5b_calm: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
   sn_6: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "我不知道。这就是问题。我画了三年，画到忘了自己本来想画什么。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。", next: "sn_7" },
   sn_7: { day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "你看这幅——", next: "sn_8" },
   sn_8: { day: 5, time: "morning", bg: "art_room", speaker: "", text: "她把那张未完成的紫推到我面前。我第一次看清：那片紫里，藏着一只翅膀，半张脸，一只手。", next: "sn_9" },
