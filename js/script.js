@@ -1604,7 +1604,7 @@ const SCRIPT = {
   d4_rain: {
     day: 4, time: "night", bg: "home_room", char: null, speaker: "",
     text: "窗外开始下雨。雨滴打在窗台上，有它自己的节奏。她说：雨是天上敲的鼓——你跟着敲，就接住了它的意思。",
-    next: "d5_mimic",
+    next: "d4_tealeaf",
     rain: {
       prompt: "听雨滴落地的节奏——按节奏点击窗台",
       drops: 8,
@@ -1617,17 +1617,154 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "雨滴·接住", title: "夜里接住的雨", text: "你在夜里跟着雨的节奏点击，接住了它的拍子。" },
-          next: "d5_mimic" },
+          next: "d4_tealeaf" },
         { min: 0.4, tag: "ok",
           label: "——接了几拍",
           text: "你只接住了几拍。她说：接不住也是真的——雨是天上敲的，地上的人跟不上是常事。你已经尽力了。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d4_tealeaf" }
       ],
       fallback: { tag: "miss",
         label: "——没接住",
         text: "你完全没接住雨的节奏。雨自己敲它的，你敲你的——两个节奏错开了。她说：错开也是好的——证明你和雨不一样。",
+        next: "d4_tealeaf" }
+    }
+  },
+
+  /* ============ v1.5.0 新玩法触发节点 ============ */
+  // 茶渍占卜
+  d4_tealeaf: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "雨停了。你泡了一杯茶。她说——杯底的茶渍，藏着今晚的答案。你试着转一转杯，让茶渍说话。",
+    next: "d4_shadow",
+    tealeaf: {
+      prompt: "拖动茶杯——让茶渍在杯底流转",
+      min: 0.3,
+      shapes: [
+        { id: "heart", name: "心形", areas: [0, 1, 5] },
+        { id: "moon",  name: "月牙", areas: [3, 4] },
+        { id: "tree",  name: "树影", areas: [2] },
+        { id: "river", name: "水形", areas: [0, 1, 2, 3, 4, 5] }
+      ],
+      thresholds: [
+        { min: 0.6, tag: "clear",
+          label: "——看清了",
+          text: "茶渍在杯底结成一个形状。她说：那是你今晚的样子——比你自己想的，要清楚一些。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "茶渍·看清", title: "雨夜的茶渍", text: "你在雨后的夜里泡茶，从杯底的茶渍里看出一个形状。" },
+          next: "d4_shadow" },
+        { min: 0.35, tag: "ok",
+          label: "——看出一半",
+          text: "茶渍半散半聚。她说：一半也是答案——剩下的一半，留给明天。你想她说的是对的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_shadow" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没看出",
+        text: "茶渍散了，没成形。她说：散也是好的——证明今晚没有非要回答的事。你把茶喝了。",
+        next: "d4_shadow" }
+    }
+  },
+
+  // 影子对齐
+  d4_shadow: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "窗外路灯把光投进来。桌上一个小木块，投出长长的影子。她说——把影子挪到那个轮廓上，就能听见一段旧话。",
+    next: "d4_candle",
+    shadow: {
+      prompt: "拖动木块——让影子与虚线轮廓重合",
+      lightAngle: 30,
+      target: [
+        { x: 0.55, y: 0.50 },
+        { x: 0.85, y: 0.50 },
+        { x: 0.85, y: 0.62 },
+        { x: 0.55, y: 0.62 }
+      ],
+      min: 0.5,
+      thresholds: [
+        { min: 0.7, tag: "aligned",
+          label: "——对上了",
+          text: "影子严丝合缝地盖在轮廓上。她说：影子不会说谎——它永远跟着光走。你也一样。今晚，你跟着光，找到了一段旧话。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { brave: 2, honest: 1 },
+          memory: { id: "影子·对齐", title: "路灯下的影子", text: "你把木块的影子对齐到桌上的轮廓。" },
+          next: "d4_candle" },
+        { min: 0.4, tag: "ok",
+          label: "——偏了一些",
+          text: "影子偏了一点。她说：偏一点也是对——世界上没有完全重合的两件事。你想她说的是对的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_candle" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "影子完全没对上。她说：没对上也是答案——证明光不在你想的方向上。你换一盏灯再试。",
+        next: "d4_candle" }
+    }
+  },
+
+  // 烛火守护
+  d4_candle: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "桌上点起一支蜡烛。她说——风吹六阵，守住它。守得住火，就守得住今晚要说的那句话。",
+    next: "d4_dial",
+    candle: {
+      prompt: "旋转挡风板——守护烛火不被风吹灭",
+      winds: 6,
+      duration: 2200,
+      gap: 700,
+      thresholds: [
+        { min: 0.7, tag: "guarded",
+          label: "——守住了",
+          text: "六阵风过去，火还在。她说：守住火的人，也守住了话。今晚她要说的那句——你听见了。",
+          add: { affection: { shiyu: 2, sunian: 1 } },
+          personality: { brave: 2, kind: 1 },
+          memory: { id: "烛火·守住", title: "夜里守住的火", text: "你在雨夜的房间里守住了烛火，撑过六阵风。" },
+          next: "d4_dial" },
+        { min: 0.4, tag: "ok",
+          label: "——守了一半",
+          text: "你只守住了一半。她说：一半也是好的——剩下的火，明天再点。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_dial" }
+      ],
+      fallback: { tag: "miss",
+        label: "——灭了",
+        text: "火灭了。她说：灭了也没关系——黑暗里说的话，比光里更真。你坐在黑里，听她说完。",
+        next: "d4_dial" }
+    }
+  },
+
+  // 电话拨号
+  d4_dial: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "床头有一台旧电话。她说——拨一个号码，是 7 位数。她说完只重复了一遍。你试着拨出去。",
+    next: "d5_mimic",
+    dial: {
+      prompt: "拨出你记得的号码——",
+      target: "1206437",
+      preview: 4000,
+      thresholds: [
+        { min: 0.99, tag: "dialed",
+          label: "——拨对了",
+          text: "拨号声嘟嘟响过，对面接了。是个熟悉的声音——你说不出是谁，但她喊了你的名字。你想：原来她也记得。",
+          add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
+          personality: { honest: 2, brave: 2 },
+          memory: { id: "电话·拨通", title: "雨夜的电话", text: "你在雨夜拨通了一个 7 位的号码，对面接了。" },
+          next: "d5_mimic" },
+        { min: 0.5, tag: "ok",
+          label: "——拨了一半",
+          text: "拨号声断断续续，对面没接。你想：号码记不全也是好的——有些事，记一半就够。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——拨错了",
+        text: "拨号声嘟嘟响，没有人接。她说：拨错的号码，也是号码——它属于某个你不知道的人。你挂了电话。",
         next: "d5_mimic" }
     }
   },

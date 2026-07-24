@@ -4294,6 +4294,286 @@ body {
   line-height: 1.8; margin-bottom: 14px;
 }
 
+/* ============ v1.5.0 茶渍占卜 ============ */
+.tealeaf-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,25,0.92), rgba(12,8,6,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.tl-prompt {
+  font-size: 18px; color: #e8c890;
+  letter-spacing: 3px; text-align: center;
+}
+.tl-stage {
+  position: relative;
+  width: min(95%, 540px);
+}
+.tl-canvas {
+  width: 100%; height: 360px;
+  background: #3a2a1a;
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  cursor: grab;
+  touch-action: none;
+}
+.tl-canvas:active { cursor: grabbing; }
+.tl-info {
+  position: absolute; right: 12px; top: 12px;
+  font-size: 13px; color: #ffd8a0;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.tl-actions { display: flex; gap: 12px; }
+.tl-actions button, .tl-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.tl-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.tl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.88);
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.tl-reading-title {
+  font-size: 17px; color: #e8c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.tl-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.5.0 影子对齐 ============ */
+.shadow-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(25,20,30,0.92), rgba(8,6,12,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sh-prompt {
+  font-size: 18px; color: #d8c890;
+  letter-spacing: 3px; text-align: center;
+}
+.sh-stage {
+  position: relative;
+  width: min(95%, 720px);
+}
+.sh-canvas {
+  width: 100%; height: 380px;
+  background: #2a1a10;
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: none;
+}
+.sh-info {
+  position: absolute; right: 12px; top: 12px;
+  font-size: 13px; color: #ffd8a0;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.sh-actions { display: flex; gap: 12px; }
+.sh-actions button, .sh-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.sh-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.sh-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.88);
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.sh-reading-title {
+  font-size: 17px; color: #d8c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.sh-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.5.0 烛火守护 ============ */
+.candle-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,20,15,0.92), rgba(8,4,2,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.cd-prompt {
+  font-size: 18px; color: #ffb878;
+  letter-spacing: 3px; text-align: center;
+}
+.cd-stage {
+  position: relative;
+  width: min(95%, 540px);
+}
+.cd-canvas {
+  width: 100%; height: 380px;
+  background: #1a0a05;
+  border: 1px solid rgba(255,140,80,0.4);
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: none;
+}
+.cd-info {
+  position: absolute; left: 12px; top: 12px;
+  font-size: 13px; color: #ffd8a0;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.cd-actions { display: flex; gap: 12px; }
+.cd-actions button, .cd-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(220,120,60,0.6), rgba(180,80,40,0.5));
+  border: 1px solid rgba(255,180,120,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.cd-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.cd-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,10,0.88);
+  border: 1px solid rgba(255,180,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.cd-reading-title {
+  font-size: 17px; color: #ffb878;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.cd-reading-text {
+  font-size: 15px; color: #e8c8a0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.5.0 电话拨号 ============ */
+.dial-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(25,20,30,0.94), rgba(6,4,10,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.dl-prompt {
+  font-size: 18px; color: #b8d8e8;
+  letter-spacing: 3px; text-align: center;
+}
+.dl-display {
+  font-family: "Menlo", "Monaco", "Courier New", monospace;
+  font-size: 36px; color: #ffd8a0;
+  letter-spacing: 8px;
+  background: rgba(0,0,0,0.5);
+  padding: 14px 32px;
+  border: 1px solid rgba(255,180,120,0.4);
+  border-radius: 12px;
+  min-width: 280px; text-align: center;
+  text-shadow: 0 0 12px rgba(255,180,120,0.5);
+}
+.dl-display.dl-preview {
+  color: #b8e8d8;
+  border-color: rgba(180,232,216,0.6);
+  text-shadow: 0 0 12px rgba(180,232,216,0.5);
+  animation: blink 1.2s steps(2) infinite;
+}
+.dl-info {
+  font-size: 14px; color: #b8d8e8;
+  letter-spacing: 2px;
+}
+.dl-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 70px);
+  gap: 10px;
+  margin: 8px 0;
+}
+.dl-key {
+  width: 70px; height: 70px;
+  background: linear-gradient(135deg, rgba(60,50,70,0.7), rgba(40,30,50,0.7));
+  border: 1px solid rgba(216,180,232,0.3);
+  border-radius: 50%;
+  color: #f0e0f8;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dl-key:hover {
+  background: linear-gradient(135deg, rgba(180,140,200,0.6), rgba(140,100,180,0.5));
+  transform: translateY(-1px);
+  border-color: rgba(216,180,232,0.6);
+}
+.dl-key:active { transform: translateY(1px); }
+.dl-key:disabled {
+  opacity: 0.3; cursor: not-allowed;
+  transform: none;
+}
+.dl-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.dl-actions button, .dl-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,200,0.6), rgba(140,100,180,0.5));
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.dl-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.dl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,25,50,0.88);
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.dl-reading-title {
+  font-size: 16px; color: #b8d8e8;
+  letter-spacing: 3px; margin-bottom: 10px;
+  font-family: "Menlo", "Monaco", "Courier New", monospace;
+}
+.dl-reading-text {
+  font-size: 15px; color: #e0d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }

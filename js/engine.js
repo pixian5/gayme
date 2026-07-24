@@ -732,6 +732,46 @@
       return;
     }
 
+    // v1.5.0 茶渍占卜节点
+    if (node.tealeaf) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTealeaf(node.tealeaf, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.5.0 影子对齐节点
+    if (node.shadow) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runShadow(node.shadow, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.5.0 烛火守护节点
+    if (node.candle) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runCandle(node.candle, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.5.0 电话拨号节点
+    if (node.dial) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDial(node.dial, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -6936,6 +6976,996 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v1.5.0 茶渍占卜 runTealeaf
+     node.tealeaf = {
+       prompt: "拖动茶杯——让茶渍在杯底流转",
+       shapes: [
+         { id: "heart", name: "心形", areas: [0,1,5], label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       min: 0.4,    // 最少茶渍覆盖率才能确认
+       thresholds: [
+         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
+         { min: 0.4, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runTealeaf(tl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "tealeaf-layer";
+    layer.id = "tealeaf-layer";
+    layer.innerHTML = `
+      <div class="tl-prompt">${tl.prompt || "拖动茶杯——让茶渍在杯底流转"}</div>
+      <div class="tl-stage">
+        <canvas class="tl-canvas" id="tl-canvas"></canvas>
+        <div class="tl-info" id="tl-info">覆盖率：0%</div>
+      </div>
+      <div class="tl-actions">
+        <button class="tl-reset">重置</button>
+        <button class="tl-confirm" id="tl-confirm" disabled>解读茶渍</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#tl-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#tl-info");
+    const confirmBtn = layer.querySelector("#tl-confirm");
+    const resetBtn = layer.querySelector(".tl-reset");
+
+    let isDragging = false;
+    let lastX = 0, lastY = 0;
+    let aborted = false;
+    const SECTORS = 6;
+    let cupCx = 0, cupCy = 0, cupR = 0;
+    let mask = null, maskCtx = null;
+    const GRID = 60;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cupCx = canvas.width / 2;
+      cupCy = canvas.height / 2;
+      cupR = Math.min(canvas.width, canvas.height) * 0.42;
+      mask = document.createElement("canvas");
+      mask.width = GRID; mask.height = GRID;
+      maskCtx = mask.getContext("2d");
+      drawCup();
+    }
+
+    function drawCup() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 杯壁
+      const grd = ctx.createRadialGradient(cupCx, cupCy, cupR * 0.2, cupCx, cupCy, cupR);
+      grd.addColorStop(0, "#f5e6c8");
+      grd.addColorStop(1, "#a89066");
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cupCx, cupCy, cupR, 0, Math.PI * 2);
+      ctx.fill();
+      // 茶汤底色
+      ctx.fillStyle = "rgba(120,70,40,0.35)";
+      ctx.beginPath();
+      ctx.arc(cupCx, cupCy, cupR * 0.92, 0, Math.PI * 2);
+      ctx.fill();
+      // 杯沿
+      ctx.strokeStyle = "rgba(80,50,30,0.6)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(cupCx, cupCy, cupR, 0, Math.PI * 2);
+      ctx.stroke();
+      // 扇区分隔（淡）
+      ctx.strokeStyle = "rgba(255,255,255,0.08)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < SECTORS; i++) {
+        const a = (i / SECTORS) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cupCx, cupCy);
+        ctx.lineTo(cupCx + Math.cos(a) * cupR * 0.9, cupCy + Math.sin(a) * cupR * 0.9);
+        ctx.stroke();
+      }
+      if (maskCtx) {
+        maskCtx.clearRect(0, 0, GRID, GRID);
+      }
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: (t.clientX - rect.left) * (canvas.width / rect.width),
+        y: (t.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    function inCup(x, y) {
+      const dx = x - cupCx, dy = y - cupCy;
+      return dx * dx + dy * dy <= cupR * cupR * 0.85;
+    }
+
+    function markMask(x, y) {
+      if (!maskCtx) return;
+      const gx = Math.max(0, Math.min(GRID - 1, Math.floor((x / canvas.width) * GRID)));
+      const gy = Math.max(0, Math.min(GRID - 1, Math.floor((y / canvas.height) * GRID)));
+      maskCtx.fillStyle = "#fff";
+      maskCtx.fillRect(gx - 1, gy - 1, 3, 3);
+    }
+
+    function drop(x, y, vx, vy) {
+      if (!inCup(x, y)) return;
+      // 按速度方向洒一串茶渍点
+      const speed = Math.sqrt(vx * vx + vy * vy);
+      const count = Math.min(8, 2 + Math.floor(speed / 4));
+      for (let i = 0; i < count; i++) {
+        const ox = (Math.random() - 0.5) * 6 + vx * 0.3;
+        const oy = (Math.random() - 0.5) * 6 + vy * 0.3;
+        const px = x + ox, py = y + oy;
+        if (!inCup(px, py)) continue;
+        const r = 2 + Math.random() * 4;
+        ctx.fillStyle = `rgba(60,30,15,${0.4 + Math.random() * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(px, py, r, 0, Math.PI * 2);
+        ctx.fill();
+        markMask(px, py);
+      }
+    }
+
+    function startDrag(e) {
+      if (aborted) return;
+      isDragging = true;
+      const p = getPos(e);
+      lastX = p.x; lastY = p.y;
+      drop(p.x, p.y, 0, 0);
+      updateCoverage();
+    }
+    function moveDrag(e) {
+      if (!isDragging || aborted) return;
+      e.preventDefault();
+      const p = getPos(e);
+      const vx = p.x - lastX, vy = p.y - lastY;
+      drop(p.x, p.y, vx, vy);
+      lastX = p.x; lastY = p.y;
+      updateCoverage();
+    }
+    function endDrag() { isDragging = false; }
+
+    function getCoverage() {
+      if (!maskCtx) return 0;
+      const data = maskCtx.getImageData(0, 0, GRID, GRID).data;
+      let lit = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i] > 128) lit++;
+      }
+      return lit / (GRID * GRID);
+    }
+
+    function updateCoverage() {
+      const c = getCoverage();
+      info.textContent = `覆盖率：${Math.round(c * 100)}%`;
+      const minCov = tl.min || 0.3;
+      if (c >= minCov) confirmBtn.disabled = false;
+    }
+
+    canvas.addEventListener("mousedown", startDrag);
+    canvas.addEventListener("mousemove", moveDrag);
+    canvas.addEventListener("mouseup", endDrag);
+    canvas.addEventListener("mouseleave", endDrag);
+    canvas.addEventListener("touchstart", e => { startDrag(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener("touchmove", e => { moveDrag(e); }, { passive: false });
+    canvas.addEventListener("touchend", endDrag);
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      drawCup();
+      updateCoverage();
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      resetBtn.disabled = true;
+      isDragging = false;
+      const coverage = getCoverage();
+      // 计算每个扇区的茶渍量
+      const sectorCounts = new Array(SECTORS).fill(0);
+      if (maskCtx) {
+        const data = maskCtx.getImageData(0, 0, GRID, GRID).data;
+        for (let y = 0; y < GRID; y++) {
+          for (let x = 0; x < GRID; x++) {
+            const idx = (y * GRID + x) * 4;
+            if (data[idx] <= 128) continue;
+            const wx = (x / GRID) * canvas.width;
+            const wy = (y / GRID) * canvas.height;
+            const dx = wx - cupCx, dy = wy - cupCy;
+            if (dx * dx + dy * dy > cupR * cupR * 0.85) continue;
+            let ang = Math.atan2(dy, dx) + Math.PI / 2;
+            if (ang < 0) ang += Math.PI * 2;
+            const s = Math.floor((ang / (Math.PI * 2)) * SECTORS) % SECTORS;
+            sectorCounts[s]++;
+          }
+        }
+      }
+      const total = sectorCounts.reduce((a, b) => a + b, 0) || 1;
+      // 匹配 shape
+      const shapes = tl.shapes || [];
+      let bestShape = null;
+      let bestScore = -1;
+      for (const sh of shapes) {
+        const areas = sh.areas || [];
+        let score = 0;
+        for (let i = 0; i < SECTORS; i++) {
+          const want = areas.includes(i) ? 1 : 0;
+          const have = sectorCounts[i] / total;
+          score += want ? have : (1 - have) / SECTORS;
+        }
+        if (score > bestScore) { bestScore = score; bestShape = sh; }
+      }
+      const shapeScore = Math.max(0, Math.min(1, bestScore));
+      // 综合分数 = 覆盖率 * 0.4 + shape 匹配度 * 0.6
+      const score = coverage * 0.4 + shapeScore * 0.6;
+      const thresholds = tl.thresholds || [];
+      let matched = tl.fallback || { tag: "miss", label: "——看不清", next: null };
+      for (const t of thresholds) {
+        if (score >= t.min) { matched = t; break; }
+      }
+      const shapeName = bestShape ? bestShape.name : "无相";
+      Saves.saveTealeafRecord(currentNodeId, shapeName, score, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "tl-reading";
+      reading.innerHTML = `<div class="tl-reading-title">${matched.label || "解读"} · ${shapeName} · 信度 ${Math.round(score * 100)}%</div>
+        <div class="tl-reading-text">${matched.text || ""}</div>
+        <button class="tl-reading-close">继续</button>`;
+      reading.querySelector(".tl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.5.0 影子对齐 runShadow
+     node.shadow = {
+       prompt: "拖动物体——让影子与目标轮廓重合",
+       lightAngle: 45,   // 光源角度（度）
+       target: [{x,y}, ...],  // 目标影子轮廓（归一化 0-1 坐标）
+       min: 0.6,
+       thresholds: [...],
+       fallback: {...}
+     }
+     ============================================================ */
+  function runShadow(sh, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "shadow-layer";
+    layer.id = "shadow-layer";
+    layer.innerHTML = `
+      <div class="sh-prompt">${sh.prompt || "拖动物体——让影子与目标轮廓重合"}</div>
+      <div class="sh-stage">
+        <canvas class="sh-canvas" id="sh-canvas"></canvas>
+        <div class="sh-info" id="sh-info">重合度：0%</div>
+      </div>
+      <div class="sh-actions">
+        <button class="sh-reset">重置</button>
+        <button class="sh-confirm" id="sh-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#sh-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#sh-info");
+    const confirmBtn = layer.querySelector("#sh-confirm");
+    const resetBtn = layer.querySelector(".sh-reset");
+
+    let aborted = false;
+    let dragging = false;
+    let objX = 0, objY = 0;
+    let dragOffX = 0, dragOffY = 0;
+    const lightAng = (sh.lightAngle ?? 45) * Math.PI / 180;
+    const target = (sh.target || []).map(p => ({ x: p.x, y: p.y }));
+    let mask = null, maskCtx = null;
+    let tgtMask = null, tgtMaskCtx = null;
+    const GRID = 80;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      mask = document.createElement("canvas");
+      mask.width = GRID; mask.height = GRID;
+      maskCtx = mask.getContext("2d");
+      tgtMask = document.createElement("canvas");
+      tgtMask.width = GRID; tgtMask.height = GRID;
+      tgtMaskCtx = tgtMask.getContext("2d");
+      // 物体初始位置（左侧）
+      objX = canvas.width * 0.25;
+      objY = canvas.height * 0.5;
+      drawTargetMask();
+      draw();
+    }
+
+    function drawTargetMask() {
+      tgtMaskCtx.clearRect(0, 0, GRID, GRID);
+      tgtMaskCtx.fillStyle = "#fff";
+      // 把目标点连成多边形
+      if (target.length < 3) return;
+      tgtMaskCtx.beginPath();
+      target.forEach((p, i) => {
+        const x = p.x * GRID, y = p.y * GRID;
+        if (i === 0) tgtMaskCtx.moveTo(x, y);
+        else tgtMaskCtx.lineTo(x, y);
+      });
+      tgtMaskCtx.closePath();
+      tgtMaskCtx.fill();
+    }
+
+    function shadowPolygon() {
+      // 物体是一个 30x30 的方块，根据光源角度投影到地面（y 较大方向）
+      const size = Math.min(canvas.width, canvas.height) * 0.06;
+      const half = size / 2;
+      // 光源方向单位向量（光从该方向来）
+      const lx = Math.cos(lightAng), ly = Math.sin(lightAng);
+      // 物体四个角
+      const corners = [
+        { x: objX - half, y: objY - half },
+        { x: objX + half, y: objY - half },
+        { x: objX + half, y: objY + half },
+        { x: objX - half, y: objY + half }
+      ];
+      // 投影方向：光前进方向
+      const projLen = size * 2.5;
+      const proj = corners.map(c => ({
+        x: c.x + lx * projLen,
+        y: c.y + ly * projLen
+      }));
+      // 影子多边形：物角点和对应的投影点
+      return [corners[0], corners[1], proj[1], proj[2], proj[3], corners[3]];
+    }
+
+    function drawShadowMask() {
+      maskCtx.clearRect(0, 0, GRID, GRID);
+      maskCtx.fillStyle = "#fff";
+      const poly = shadowPolygon();
+      maskCtx.beginPath();
+      poly.forEach((p, i) => {
+        const gx = (p.x / canvas.width) * GRID;
+        const gy = (p.y / canvas.height) * GRID;
+        if (i === 0) maskCtx.moveTo(gx, gy);
+        else maskCtx.lineTo(gx, gy);
+      });
+      maskCtx.closePath();
+      maskCtx.fill();
+    }
+
+    function overlap() {
+      if (!maskCtx || !tgtMaskCtx) return 0;
+      const a = maskCtx.getImageData(0, 0, GRID, GRID).data;
+      const b = tgtMaskCtx.getImageData(0, 0, GRID, GRID).data;
+      let inter = 0, union = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const pa = a[i] > 128, pb = b[i] > 128;
+        if (pa && pb) inter++;
+        if (pa || pb) union++;
+      }
+      return union > 0 ? inter / union : 0;
+    }
+
+    function draw() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 背景（地面）
+      const grd = ctx.createLinearGradient(0, 0, 0, h);
+      grd.addColorStop(0, "#5a4a3a");
+      grd.addColorStop(1, "#3a2a1a");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      // 光源方向指示
+      const lx = Math.cos(lightAng), ly = Math.sin(lightAng);
+      const arrCx = w * 0.5, arrCy = h * 0.15;
+      ctx.strokeStyle = "rgba(255,240,180,0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(arrCx - lx * 30, arrCy - ly * 30);
+      ctx.lineTo(arrCx + lx * 30, arrCy + ly * 30);
+      ctx.stroke();
+      // 箭头
+      ctx.beginPath();
+      ctx.moveTo(arrCx + lx * 30, arrCy + ly * 30);
+      ctx.lineTo(arrCx + lx * 20 - ly * 8, arrCy + ly * 20 + lx * 8);
+      ctx.moveTo(arrCx + lx * 30, arrCy + ly * 30);
+      ctx.lineTo(arrCx + lx * 20 + ly * 8, arrCy + ly * 20 - lx * 8);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255,240,180,0.7)";
+      ctx.font = "12px serif";
+      ctx.fillText("光", arrCx - 6, arrCy - 12);
+
+      // 目标轮廓（虚线）
+      if (target.length >= 3) {
+        ctx.strokeStyle = "rgba(255,200,100,0.7)";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        target.forEach((p, i) => {
+          const x = p.x * w, y = p.y * h;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(255,200,100,0.12)";
+        ctx.fill();
+      }
+      // 影子
+      drawShadowMask();
+      const poly = shadowPolygon();
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.beginPath();
+      poly.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      ctx.closePath();
+      ctx.fill();
+      // 物体（一个木块）
+      const size = Math.min(w, h) * 0.06;
+      ctx.fillStyle = "#8a6040";
+      ctx.fillRect(objX - size / 2, objY - size / 2, size, size);
+      ctx.strokeStyle = "#4a2810";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(objX - size / 2, objY - size / 2, size, size);
+
+      const o = overlap();
+      info.textContent = `重合度：${Math.round(o * 100)}%`;
+      const minO = sh.min || 0.5;
+      if (o >= minO) confirmBtn.disabled = false;
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: (t.clientX - rect.left) * (canvas.width / rect.width),
+        y: (t.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+    function startDrag(e) {
+      if (aborted) return;
+      const p = getPos(e);
+      const size = Math.min(canvas.width, canvas.height) * 0.06;
+      if (Math.abs(p.x - objX) < size && Math.abs(p.y - objY) < size) {
+        dragging = true;
+        dragOffX = p.x - objX;
+        dragOffY = p.y - objY;
+      }
+    }
+    function moveDrag(e) {
+      if (!dragging || aborted) return;
+      e.preventDefault();
+      const p = getPos(e);
+      objX = Math.max(0, Math.min(canvas.width, p.x - dragOffX));
+      objY = Math.max(0, Math.min(canvas.height, p.y - dragOffY));
+      draw();
+    }
+    function endDrag() { dragging = false; }
+
+    canvas.addEventListener("mousedown", startDrag);
+    canvas.addEventListener("mousemove", moveDrag);
+    canvas.addEventListener("mouseup", endDrag);
+    canvas.addEventListener("mouseleave", endDrag);
+    canvas.addEventListener("touchstart", e => { startDrag(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener("touchmove", e => { moveDrag(e); }, { passive: false });
+    canvas.addEventListener("touchend", endDrag);
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      objX = canvas.width * 0.25;
+      objY = canvas.height * 0.5;
+      draw();
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      resetBtn.disabled = true;
+      dragging = false;
+      const o = overlap();
+      const thresholds = sh.thresholds || [];
+      let matched = sh.fallback || { tag: "miss", label: "——没对上", next: null };
+      for (const t of thresholds) {
+        if (o >= t.min) { matched = t; break; }
+      }
+      Saves.saveShadowRecord(currentNodeId, o, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "sh-reading";
+      reading.innerHTML = `<div class="sh-reading-title">${matched.label || "解读"} · 重合度 ${Math.round(o * 100)}%</div>
+        <div class="sh-reading-text">${matched.text || ""}</div>
+        <button class="sh-reading-close">继续</button>`;
+      reading.querySelector(".sh-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.5.0 烛火守护 runCandle
+     node.candle = {
+       prompt: "旋转挡风板——守护烛火不被风吹灭",
+       winds: 6,       // 风的阵数
+       duration: 2500, // 每阵风持续毫秒
+       gap: 800,       // 风之间间隔
+       thresholds: [
+         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
+         { min: 0.4, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runCandle(cd, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "candle-layer";
+    layer.id = "candle-layer";
+    layer.innerHTML = `
+      <div class="cd-prompt">${cd.prompt || "旋转挡风板——守护烛火不被风吹灭"}</div>
+      <div class="cd-stage">
+        <canvas class="cd-canvas" id="cd-canvas"></canvas>
+        <div class="cd-info" id="cd-info">第 0 / ${cd.winds || 6} 阵风 · 火焰 100%</div>
+      </div>
+      <div class="cd-actions">
+        <button class="cd-start" id="cd-start">开始</button>
+        <button class="cd-confirm" id="cd-confirm" disabled>结束</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#cd-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#cd-info");
+    const startBtn = layer.querySelector("#cd-start");
+    const confirmBtn = layer.querySelector("#cd-confirm");
+
+    let aborted = false;
+    let started = false;
+    let shieldAng = 0;       // 挡风板角度（弧度）
+    let windAng = 0;         // 当前风方向
+    let windActive = false;
+    let flame = 1.0;         // 火焰强度 0-1
+    let windsTotal = cd.winds || 6;
+    let windsPassed = 0;
+    let windsSurvived = 0;
+    let windTimer = null;
+    let gapTimer = null;
+    let rafId = null;
+    let cx = 0, cy = 0, R = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cx = canvas.width / 2;
+      cy = canvas.height / 2;
+      R = Math.min(canvas.width, canvas.height) * 0.4;
+      draw();
+    }
+
+    function draw() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 背景
+      const grd = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 1.4);
+      grd.addColorStop(0, "#3a2a30");
+      grd.addColorStop(1, "#0a0510");
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, w, h);
+      // 风向指示（外圈箭头）
+      if (windActive) {
+        const dist = R * 1.1;
+        const ax = cx + Math.cos(windAng) * dist;
+        const ay = cy + Math.sin(windAng) * dist;
+        ctx.strokeStyle = "rgba(180,220,255,0.85)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(cx + Math.cos(windAng) * R * 0.85, cy + Math.sin(windAng) * R * 0.85);
+        ctx.stroke();
+        // 箭头头
+        ctx.fillStyle = "rgba(180,220,255,0.9)";
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(windAng) * R * 0.85, cy + Math.sin(windAng) * R * 0.85);
+        ctx.lineTo(cx + Math.cos(windAng + 0.3) * R * 0.95, cy + Math.sin(windAng + 0.3) * R * 0.95);
+        ctx.lineTo(cx + Math.cos(windAng - 0.3) * R * 0.95, cy + Math.sin(windAng - 0.3) * R * 0.95);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // 挡风板（弧形）
+      ctx.strokeStyle = "rgba(216,180,140,0.9)";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R * 0.7, shieldAng - 0.5, shieldAng + 0.5);
+      ctx.stroke();
+      // 板手柄
+      ctx.fillStyle = "#a87850";
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(shieldAng) * R * 0.7, cy + Math.sin(shieldAng) * R * 0.7, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 蜡烛
+      ctx.fillStyle = "#e8d8b0";
+      ctx.fillRect(cx - 6, cy + 20, 12, 40);
+      // 火焰
+      const fh = 25 + flame * 25;
+      const fw = 8 + flame * 6;
+      const fy = cy + 20 - fh;
+      const fgrd = ctx.createLinearGradient(cx, fy, cx, fy + fh);
+      fgrd.addColorStop(0, `rgba(255,${Math.floor(180 + flame * 60)},80,${0.9})`);
+      fgrd.addColorStop(1, `rgba(255,80,30,${0.4 + flame * 0.4})`);
+      ctx.fillStyle = fgrd;
+      ctx.beginPath();
+      ctx.ellipse(cx, fy + fh / 2, fw / 2, fh / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // 火心
+      if (flame > 0.1) {
+        ctx.fillStyle = "rgba(255,240,200,0.7)";
+        ctx.beginPath();
+        ctx.ellipse(cx, fy + fh / 2 + 2, fw / 4, fh / 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      info.textContent = `第 ${windsPassed} / ${windsTotal} 阵风 · 火焰 ${Math.round(flame * 100)}%`;
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return {
+        x: (t.clientX - rect.left) * (canvas.width / rect.width),
+        y: (t.clientY - rect.top) * (canvas.height / rect.height)
+      };
+    }
+
+    let rotating = false;
+    function startRot(e) {
+      if (aborted) return;
+      rotating = true;
+      updateRot(e);
+    }
+    function updateRot(e) {
+      if (!rotating || aborted) return;
+      e.preventDefault();
+      const p = getPos(e);
+      shieldAng = Math.atan2(p.y - cy, p.x - cx);
+      draw();
+    }
+    function endRot() { rotating = false; }
+
+    canvas.addEventListener("mousedown", startRot);
+    canvas.addEventListener("mousemove", updateRot);
+    canvas.addEventListener("mouseup", endRot);
+    canvas.addEventListener("mouseleave", endRot);
+    canvas.addEventListener("touchstart", e => { startRot(e); e.preventDefault(); }, { passive: false });
+    canvas.addEventListener("touchmove", e => { updateRot(e); }, { passive: false });
+    canvas.addEventListener("touchend", endRot);
+
+    function loop() {
+      if (aborted) return;
+      // 风吹火焰衰减
+      if (windActive) {
+        const angDiff = Math.abs(angleDiff(windAng - shieldAng));
+        // 挡住则衰减慢，没挡住则快
+        const block = angDiff < 0.6 ? 1 : 0;
+        const decay = block ? 0.002 : 0.012;
+        flame = Math.max(0, flame - decay);
+        if (flame <= 0) {
+          endGame(false);
+          return;
+        }
+      } else {
+        // 没风时缓慢恢复
+        flame = Math.min(1, flame + 0.003);
+      }
+      draw();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function angleDiff(d) {
+      while (d > Math.PI) d -= Math.PI * 2;
+      while (d < -Math.PI) d += Math.PI * 2;
+      return d;
+    }
+
+    function startGame() {
+      if (aborted || started) return;
+      started = true;
+      startBtn.disabled = true;
+      flame = 1.0;
+      windsPassed = 0;
+      windsSurvived = 0;
+      nextWind();
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function nextWind() {
+      if (aborted) return;
+      if (windsPassed >= windsTotal) {
+        endGame(true);
+        return;
+      }
+      windsPassed++;
+      windAng = Math.random() * Math.PI * 2;
+      windActive = true;
+      windTimer = setTimeout(() => {
+        if (aborted) return;
+        if (flame > 0) windsSurvived++;
+        windActive = false;
+        gapTimer = setTimeout(nextWind, cd.gap || 800);
+      }, cd.duration || 2500);
+    }
+
+    function endGame(success) {
+      if (aborted) return;
+      aborted = true;
+      if (windTimer) clearTimeout(windTimer);
+      if (gapTimer) clearTimeout(gapTimer);
+      if (rafId) cancelAnimationFrame(rafId);
+      windActive = false;
+      startBtn.disabled = true;
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = success ? "完成" : "继续";
+    }
+
+    startBtn.onclick = startGame;
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || !started || aborted && !confirmBtn.dataset.ready) {
+        // 防止 endGame 后多次点击
+      }
+      if (confirmBtn.disabled) return;
+      // 已经 endGame
+      aborted = true;
+      confirmBtn.disabled = true;
+      const ratio = windsSurvived / Math.max(1, windsTotal);
+      const thresholds = cd.thresholds || [];
+      let matched = cd.fallback || { tag: "miss", label: "——灭了", next: null };
+      for (const t of thresholds) {
+        if (ratio >= t.min) { matched = t; break; }
+      }
+      Saves.saveCandleRecord(currentNodeId, windsSurvived, windsTotal, ratio, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "cd-reading";
+      reading.innerHTML = `<div class="cd-reading-title">${matched.label || "解读"} · 守住 ${windsSurvived} / ${windsTotal} 阵风</div>
+        <div class="cd-reading-text">${matched.text || ""}</div>
+        <button class="cd-reading-close">继续</button>`;
+      reading.querySelector(".cd-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (windTimer) clearTimeout(windTimer);
+        if (gapTimer) clearTimeout(gapTimer);
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.5.0 电话拨号 runDial
+     node.dial = {
+       prompt: "拨出你记得的号码",
+       target: "1206437",   // 目标号码
+       preview: 4000,       // 预览毫秒（0=一直显示）
+       thresholds: [...],
+       fallback: {...}
+     }
+     ============================================================ */
+  function runDial(dl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "dial-layer";
+    layer.id = "dial-layer";
+    const target = String(dl.target || "");
+    layer.innerHTML = `
+      <div class="dl-prompt">${dl.prompt || "拨出你记得的号码"}</div>
+      <div class="dl-display" id="dl-display"></div>
+      <div class="dl-info" id="dl-info"></div>
+      <div class="dl-pad" id="dl-pad"></div>
+      <div class="dl-actions">
+        <button class="dl-back" id="dl-back">退格</button>
+        <button class="dl-clear">清空</button>
+        <button class="dl-confirm" id="dl-confirm" disabled>拨号</button>
+      </div>
+    `;
+    const display = layer.querySelector("#dl-display");
+    const info = layer.querySelector("#dl-info");
+    const pad = layer.querySelector("#dl-pad");
+    const backBtn = layer.querySelector("#dl-back");
+    const clearBtn = layer.querySelector(".dl-clear");
+    const confirmBtn = layer.querySelector("#dl-confirm");
+
+    let aborted = false;
+    let dialed = "";
+    const previewMs = dl.preview ?? 4000;
+
+    // 预览阶段
+    function showPreview() {
+      if (previewMs > 0) {
+        display.textContent = target;
+        display.classList.add("dl-preview");
+        info.textContent = `记住这个号码… (${Math.ceil(previewMs / 1000)}s)`;
+        confirmBtn.disabled = true;
+        setTimeout(() => {
+          if (aborted) return;
+          display.textContent = "";
+          display.classList.remove("dl-preview");
+          info.textContent = "拨出刚才的号码——";
+          buildPad();
+        }, previewMs);
+      } else {
+        info.textContent = "拨出号码——";
+        buildPad();
+      }
+    }
+
+    function buildPad() {
+      pad.innerHTML = "";
+      const layout = ["1","2","3","4","5","6","7","8","9","*","0","#"];
+      layout.forEach(n => {
+        const b = document.createElement("button");
+        b.className = "dl-key";
+        b.textContent = n;
+        b.dataset.key = n;
+        b.onclick = () => {
+          if (aborted) return;
+          if (dialed.length >= 12) return;
+          dialed += n;
+          updateDisplay();
+        };
+        pad.appendChild(b);
+      });
+    }
+
+    function updateDisplay() {
+      display.textContent = dialed;
+      confirmBtn.disabled = dialed.length === 0;
+    }
+
+    backBtn.onclick = () => {
+      if (aborted) return;
+      dialed = dialed.slice(0, -1);
+      updateDisplay();
+    };
+    clearBtn.onclick = () => {
+      if (aborted) return;
+      dialed = "";
+      updateDisplay();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      backBtn.disabled = true;
+      clearBtn.disabled = true;
+      pad.querySelectorAll(".dl-key").forEach(b => b.disabled = true);
+      const correct = dialed === target ? 1 : (dialed.length > 0 ? Math.max(0, dialed.length / target.length * 0.5) : 0);
+      const thresholds = dl.thresholds || [];
+      let matched = dl.fallback || { tag: "miss", label: "——拨错了", next: null };
+      for (const t of thresholds) {
+        if (correct >= t.min) { matched = t; break; }
+      }
+      Saves.saveDialRecord(currentNodeId, dialed, target, correct, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "dl-reading";
+      reading.innerHTML = `<div class="dl-reading-title">${matched.label || "解读"} · 你拨的：${dialed} / 目标：${target}</div>
+        <div class="dl-reading-text">${matched.text || ""}</div>
+        <button class="dl-reading-close">继续</button>`;
+      reading.querySelector(".dl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    showPreview();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -7025,6 +8055,10 @@
     document.querySelectorAll(".collect-layer").forEach(e => e.remove());
     document.querySelectorAll(".focus-layer").forEach(e => e.remove());
     document.querySelectorAll(".scentmem-layer").forEach(e => e.remove());
+    document.querySelectorAll(".tealeaf-layer").forEach(e => e.remove());
+    document.querySelectorAll(".shadow-layer").forEach(e => e.remove());
+    document.querySelectorAll(".candle-layer").forEach(e => e.remove());
+    document.querySelectorAll(".dial-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
