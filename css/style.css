@@ -4574,6 +4574,261 @@ body {
   line-height: 1.8; margin-bottom: 14px;
 }
 
+/* ============ v1.6.0 雾窗描绘 ============ */
+.foggy-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,40,55,0.92), rgba(8,12,20,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.fg-prompt {
+  font-size: 18px; color: #c8d8e8;
+  letter-spacing: 3px; text-align: center;
+}
+.fg-stage { position: relative; width: min(95%, 640px); }
+.fg-canvas {
+  width: 100%; height: 380px;
+  background: #2a3548;
+  border: 1px solid rgba(200,220,255,0.3);
+  border-radius: 14px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.fg-info {
+  position: absolute; right: 12px; top: 12px;
+  font-size: 13px; color: #d8e8ff;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.fg-actions { display: flex; gap: 12px; }
+.fg-actions button, .fg-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(120,160,200,0.6), rgba(80,120,180,0.5));
+  border: 1px solid rgba(200,220,255,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.fg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.fg-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(30,40,55,0.88);
+  border: 1px solid rgba(200,220,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.fg-reading-title {
+  font-size: 17px; color: #c8d8e8;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.fg-reading-text {
+  font-size: 15px; color: #d8e0f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.6.0 糖块拼图 ============ */
+.sugar-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,50,0.92), rgba(12,8,16,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sg-prompt {
+  font-size: 18px; color: #e8c8e0;
+  letter-spacing: 3px; text-align: center;
+}
+.sg-stage {
+  position: relative;
+  width: min(95%, 360px); height: 280px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(216,180,232,0.3);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.sg-board {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(216,180,232,0.08);
+  border-radius: 8px;
+}
+.sg-cell {
+  border: 1px dashed rgba(216,180,232,0.3);
+  border-radius: 6px;
+}
+.sg-piece {
+  position: absolute;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff;
+  font-weight: 600;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  transition: transform 0.15s ease;
+}
+.sg-piece:hover { transform: scale(1.05); }
+.sg-piece:active { cursor: grabbing; }
+.sg-piece.placed {
+  cursor: default;
+  box-shadow: 0 0 16px rgba(216,180,232,0.7), 0 4px 12px rgba(0,0,0,0.4);
+}
+.sg-info {
+  font-size: 14px; color: #e8c8e0;
+  letter-spacing: 2px;
+}
+.sg-actions { display: flex; gap: 12px; }
+.sg-actions button, .sg-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(180,140,200,0.6), rgba(140,100,180,0.5));
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.sg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.sg-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,25,50,0.88);
+  border: 1px solid rgba(216,180,232,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.sg-reading-title {
+  font-size: 17px; color: #e8c8e0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.sg-reading-text {
+  font-size: 15px; color: #e8d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.6.0 钟调共振 ============ */
+.chime-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,30,50,0.92), rgba(8,8,16,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ch-prompt {
+  font-size: 18px; color: #ffd8a0;
+  letter-spacing: 3px; text-align: center;
+}
+.ch-stage { position: relative; width: min(95%, 540px); }
+.ch-canvas {
+  width: 100%; height: 360px;
+  background: #1a1a2a;
+  border: 1px solid rgba(255,200,120,0.3);
+  border-radius: 14px;
+  cursor: pointer;
+  touch-action: none;
+}
+.ch-info {
+  position: absolute; left: 12px; top: 12px;
+  font-size: 13px; color: #ffd8a0;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ch-actions { display: flex; gap: 12px; }
+.ch-actions button, .ch-reading-close {
+  padding: 10px 28px;
+  background: linear-gradient(135deg, rgba(220,160,80,0.6), rgba(180,120,60,0.5));
+  border: 1px solid rgba(255,200,120,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ch-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ch-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.88);
+  border: 1px solid rgba(255,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ch-reading-title {
+  font-size: 17px; color: #ffd8a0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ch-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.6.0 沙漏计时 ============ */
+.hourglass-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(35,28,20,0.92), rgba(10,6,2,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.hg-prompt {
+  font-size: 18px; color: #e8c890;
+  letter-spacing: 3px; text-align: center;
+}
+.hg-stage { position: relative; width: min(95%, 360px); }
+.hg-canvas {
+  width: 100%; height: 380px;
+  background: #1a1008;
+  border: 1px solid rgba(216,180,140,0.3);
+  border-radius: 14px;
+}
+.hg-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd8a0;
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.hg-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.hg-actions button, .hg-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.hg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.hg-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.88);
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.hg-reading-title {
+  font-size: 17px; color: #e8c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.hg-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }

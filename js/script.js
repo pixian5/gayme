@@ -1742,7 +1742,7 @@ const SCRIPT = {
   d4_dial: {
     day: 4, time: "night", bg: "home_room", char: null, speaker: "",
     text: "床头有一台旧电话。她说——拨一个号码，是 7 位数。她说完只重复了一遍。你试着拨出去。",
-    next: "d5_mimic",
+    next: "d5_foggy",
     dial: {
       prompt: "拨出你记得的号码——",
       target: "1206437",
@@ -1754,17 +1754,163 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
           personality: { honest: 2, brave: 2 },
           memory: { id: "电话·拨通", title: "雨夜的电话", text: "你在雨夜拨通了一个 7 位的号码，对面接了。" },
-          next: "d5_mimic" },
+          next: "d5_foggy" },
         { min: 0.5, tag: "ok",
           label: "——拨了一半",
           text: "拨号声断断续续，对面没接。你想：号码记不全也是好的——有些事，记一半就够。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d5_foggy" }
       ],
       fallback: { tag: "miss",
         label: "——拨错了",
         text: "拨号声嘟嘟响，没有人接。她说：拨错的号码，也是号码——它属于某个你不知道的人。你挂了电话。",
+        next: "d5_foggy" }
+    }
+  },
+
+
+  /* ============ v1.6.0 新玩法触发节点 ============ */
+  // 雾窗描绘
+  d5_foggy: {
+    day: 5, time: "morning", bg: "home_room", char: null, speaker: "",
+    text: "醒来时窗户起雾了。她说——用手指在雾上画一个形状，雾散了，形状还在。你想画一颗星。",
+    next: "d5_sugar",
+    foggy: {
+      prompt: "在起雾的玻璃上拖动手指——描出一颗星",
+      shape: "star",
+      hintPath: [
+        { x: 0.50, y: 0.20 },
+        { x: 0.62, y: 0.45 },
+        { x: 0.85, y: 0.45 },
+        { x: 0.66, y: 0.60 },
+        { x: 0.74, y: 0.85 },
+        { x: 0.50, y: 0.68 },
+        { x: 0.26, y: 0.85 },
+        { x: 0.34, y: 0.60 },
+        { x: 0.15, y: 0.45 },
+        { x: 0.38, y: 0.45 },
+        { x: 0.50, y: 0.20 }
+      ],
+      min: 0.35,
+      thresholds: [
+        { min: 0.6, tag: "clear",
+          label: "——画清了",
+          text: "雾散开，星形留在玻璃上。她说：画出来就不算忘了。你想：原来有些事，画一下就能留住。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "雾窗·星", title: "晨起的星", text: "你在起雾的窗上用手指画了一颗星。" },
+          next: "d5_sugar" },
+        { min: 0.35, tag: "ok",
+          label: "——画了一半",
+          text: "雾只散了一半，星形不全。她说：一半也是星——剩下的一半，留给下一次起雾。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_sugar" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没画成",
+        text: "雾没散开，星也没成。她说：没画出来也是真的——证明有些事，手指记不住。你想她说的是对的。",
+        next: "d5_sugar" }
+    }
+  },
+
+  // 糖块拼图
+  d5_sugar: {
+    day: 5, time: "morning", bg: "home_room", char: null, speaker: "",
+    text: "桌上摆着四颗糖。她说——把它们摆到该摆的地方，就能拼出一句话。你看着糖，开始摆。",
+    next: "d5_chime",
+    sugar: {
+      prompt: "把糖块拖到对应格——拼出「记得回来」",
+      pieces: [
+        { id: "j", label: "记", color: "#d87090", x: 0.05, y: 0.10, target: { gx: 0, gy: 0 } },
+        { id: "d", label: "得", color: "#a8c8e8", x: 0.85, y: 0.10, target: { gx: 1, gy: 0 } },
+        { id: "h", label: "回", color: "#c8a8e8", x: 0.05, y: 0.80, target: { gx: 0, gy: 1 } },
+        { id: "l", label: "来", color: "#a8e8c8", x: 0.85, y: 0.80, target: { gx: 1, gy: 1 } }
+      ],
+      grid: { cols: 2, rows: 2, cell: 90 },
+      min: 0.75,
+      thresholds: [
+        { min: 1.0, tag: "all",
+          label: "——拼完了",
+          text: "四颗糖就位，桌上一行字：「记得回来」。她说：记得回来就好。你想：原来糖也会说话。",
+          add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "糖块·记得", title: "桌上的糖字", text: "你把四颗糖拼成「记得回来」。" },
+          next: "d5_chime" },
+        { min: 0.75, tag: "ok",
+          label: "——拼了大半",
+          text: "你只拼对了三颗。她说：三颗也是好的——剩下那一颗，留给自己。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_chime" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没拼成",
+        text: "糖散在桌上，没拼成字。她说：散也是好的——糖本来就该散着吃。你拿了一颗剥开。",
+        next: "d5_chime" }
+    }
+  },
+
+  // 钟调共振
+  d5_chime: {
+    day: 5, time: "noon", bg: "home_room", char: null, speaker: "",
+    text: "墙上一只旧钟停了。她说——把钟摆调到对的角度，敲一下，它就接着走。你试一试。",
+    next: "d5_hourglass",
+    chime: {
+      prompt: "拖动钟摆——调到目标角度后敲一下",
+      target: 35,
+      tolerance: 5,
+      thresholds: [
+        { max: 5, tag: "resonant",
+          label: "——共振了",
+          text: "钟摆停在 35 度。你一敲，钟响了——它的音稳稳地接住了空气。她说：听见了吗？这就是「对」的声音。",
+          add: { affection: { shiyu: 2, sunian: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "钟调·共振", title: "墙上的旧钟", text: "你把钟摆调到 35 度，钟响了，重新走起来。" },
+          next: "d5_hourglass" },
+        { max: 15, tag: "ok",
+          label: "——偏了一些",
+          text: "钟摆偏了一点。你敲下去，钟响了，但音不稳。她说：偏一点也是音——只是没那么准。你想她说的是对的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_hourglass" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "钟摆完全没对上。你敲下去，钟没响——只发出一声闷响。她说：闷响也是响——证明它在听。",
+        next: "d5_hourglass" }
+    }
+  },
+
+  // 沙漏计时
+  d5_hourglass: {
+    day: 5, time: "afternoon", bg: "home_room", char: null, speaker: "",
+    text: "她拿出一只沙漏。她说——在 5 秒的时候翻一次，让沙在 5 秒后落完。她说完就走了。你拿着沙漏。",
+    next: "d5_mimic",
+    hourglass: {
+      prompt: "点「开始」计时，到 5 秒时点「翻转」",
+      target: 5000,
+      duration: 8000,
+      tolerance: 600,
+      thresholds: [
+        { max: 400, tag: "perfect",
+          label: "——卡上了",
+          text: "你在 5 秒的那一刻翻转。沙顺着颈口倒流回去——5 秒后，沙又落完一次。她说：你卡住了时间。你想：原来时间也能留住。",
+          add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
+          personality: { brave: 2, honest: 2 },
+          memory: { id: "沙漏·5秒", title: "卡住的时间", text: "你在 5 秒的时候翻转了沙漏，让沙再落一次。" },
+          next: "d5_mimic" },
+        { max: 1000, tag: "ok",
+          label: "——差一点",
+          text: "你差了一点。沙没在 5 秒落完。她说：差一点也是好的——证明你想过它。你想她说的是对的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没卡上",
+        text: "你完全没卡上。沙落完了，没翻转。她说：没卡上也是真的——有些事错过了，就是错过了。你看着空了的沙漏。",
         next: "d5_mimic" }
     }
   },

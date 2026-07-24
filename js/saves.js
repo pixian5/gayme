@@ -84,6 +84,12 @@ const SHADOW_KEY  = "sakura_letters_shadow_v2";    // 影子对齐
 const CANDLE_KEY  = "sakura_letters_candle_v2";    // 烛火守护
 const DIAL_KEY    = "sakura_letters_dial_v2";       // 电话拨号
 
+/* v1.6.0 新玩法存储 */
+const FOGGY_KEY   = "sakura_letters_foggy_v2";     // 雾窗描绘
+const SUGAR_KEY   = "sakura_letters_sugar_v2";     // 糖块拼图
+const CHIME_KEY   = "sakura_letters_chime_v2";     // 钟调共振
+const HOURGLASS_KEY = "sakura_letters_hourglass_v2"; // 沙漏计时
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1167,6 +1173,70 @@ const Saves = {
   },
   getDialRecord(nodeId) { return this.getDialRecords()[nodeId]; },
 
+  /* ============ v1.6.0 雾窗描绘 ============ */
+  // { nodeId: { coverage, shape, tag, ts } }
+  getFoggyRecords() {
+    try {
+      const raw = localStorage.getItem(FOGGY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveFoggyRecord(nodeId, coverage, shape, tag) {
+    const all = this.getFoggyRecords();
+    all[nodeId] = { coverage, shape, tag, ts: Date.now() };
+    localStorage.setItem(FOGGY_KEY, JSON.stringify(all));
+    return true;
+  },
+  getFoggyRecord(nodeId) { return this.getFoggyRecords()[nodeId]; },
+
+  /* ============ v1.6.0 糖块拼图 ============ */
+  // { nodeId: { placed, total, tag, ts } }
+  getSugarRecords() {
+    try {
+      const raw = localStorage.getItem(SUGAR_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSugarRecord(nodeId, placed, total, tag) {
+    const all = this.getSugarRecords();
+    all[nodeId] = { placed, total, tag, ts: Date.now() };
+    localStorage.setItem(SUGAR_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSugarRecord(nodeId) { return this.getSugarRecords()[nodeId]; },
+
+  /* ============ v1.6.0 钟调共振 ============ */
+  // { nodeId: { diff, tag, ts } }
+  getChimeRecords() {
+    try {
+      const raw = localStorage.getItem(CHIME_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveChimeRecord(nodeId, diff, tag) {
+    const all = this.getChimeRecords();
+    all[nodeId] = { diff, tag, ts: Date.now() };
+    localStorage.setItem(CHIME_KEY, JSON.stringify(all));
+    return true;
+  },
+  getChimeRecord(nodeId) { return this.getChimeRecords()[nodeId]; },
+
+  /* ============ v1.6.0 沙漏计时 ============ */
+  // { nodeId: { error, tag, ts } }
+  getHourglassRecords() {
+    try {
+      const raw = localStorage.getItem(HOURGLASS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveHourglassRecord(nodeId, error, tag) {
+    const all = this.getHourglassRecords();
+    all[nodeId] = { error, tag, ts: Date.now() };
+    localStorage.setItem(HOURGLASS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getHourglassRecord(nodeId) { return this.getHourglassRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1195,7 +1265,8 @@ const Saves = {
      TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY,
      DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY,
      RUBBING_KEY, COLLECT_KEY, FOCUS_KEY, SCENTMEM_KEY,
-     TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY].forEach(k => localStorage.removeItem(k));
+     TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY,
+     FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
