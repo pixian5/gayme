@@ -1128,7 +1128,134 @@ const SCRIPT = {
       ]
     }
   },
-  letter_2_after: { day: 4, time: "evening", bg: "home_room", speaker: "沈屿", text: "信封好，放在窗台。明天就是决定路线的日子。", next: "common_day5_morning" },
+  letter_2_after: { day: 4, time: "evening", bg: "home_room", speaker: "沈屿", text: "信封好，放在窗台。窗外起了风。我坐到窗前——心有点乱。先静一静再睡。", next: "d4_breath" },
+
+  /* ============ v1.0.0 新玩法触发节点 ============ */
+  // 呼吸引导
+  d4_breath: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "窗外的樱花在风里起伏。我试着跟上它的节奏——一吸，一呼。",
+    next: "d4_fold",
+    breath: {
+      prompt: "跟着窗外的樱花——长按吸气，松开呼气",
+      cycles: 3,
+      inhaleMs: 4000,
+      holdMs: 1000,
+      exhaleMs: 6000,
+      thresholds: [
+        { min: 0.7, tag: "calm",
+          label: "——静了下来",
+          text: "三次呼吸后，心跳慢下来了。樱花还在飘，可你不再急着追它。窗台上的信封静静躺着——你第一次觉得自己能写下它。",
+          add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } },
+          personality: { kind: 1, honest: 1 },
+          memory: { id: "呼吸·静", title: "窗前的三次呼吸", text: "你在窗前跟樱花一起呼吸了三次。心静下来了。" },
+          next: "d4_fold" },
+        { min: 0.3, tag: "ok",
+          label: "——半静半乱",
+          text: "心跳只慢了一点。还是有点乱，但你不再抗拒这份乱——乱也是真的。",
+          personality: { honest: 1 },
+          next: "d4_fold" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没静下来",
+        text: "你越想跟上樱花，越跟不上。算了——心乱就乱吧。明天的路总要走的。",
+        next: "d4_fold" }
+    }
+  },
+
+  // 信纸折痕
+  d4_fold: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "信封还在窗台。你伸手拿起它——该怎么折，才能让读到的人知道你认真想过？",
+    next: "d4_reflection",
+    fold: {
+      prompt: "按顺序折这封信——每一种折法都在说不同的话",
+      folds: [
+        { id: "a", label: "对折",   desc: "最简单——把信一分为二" },
+        { id: "b", label: "三角折", desc: "折成樱花瓣的形状" },
+        { id: "c", label: "卷起",   desc: "像卷起一缕头发" },
+        { id: "d", label: "折角",   desc: "只折一个角——像留了个出口" }
+      ],
+      interpretations: [
+        { order: ["a", "b"], tag: "sakura_fold",
+          label: "——樱花瓣的折法",
+          text: "先对折，再折成三角——像一片樱花瓣。读到的人会知道：你想把春天一起寄给她。",
+          add: { affection: { shiyu: 1 } },
+          personality: { kind: 2, brave: 1 },
+          memory: { id: "折信·樱花瓣", title: "樱花瓣的折法", text: "你把信折成樱花瓣的形状。" },
+          next: "d4_reflection" },
+        { order: ["b", "c"], tag: "soft_fold",
+          label: "——柔软的折法",
+          text: "三角再卷起——信变得很软。苏念说，柔软不是没力气，是肯放下劲。",
+          add: { affection: { sunian: 1 } },
+          personality: { kind: 1, honest: 1 },
+          next: "d4_reflection" },
+        { order: ["d"], tag: "open_fold",
+          label: "——留了个出口",
+          text: "只折一个角。信没合上——像你还没说完。学姐看见会笑吧：你也学会留出口了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "折信·留出口", title: "留了个出口", text: "你只折了一个角。信没合上。" },
+          next: "d4_reflection" }
+      ],
+      min: 1,
+      fallback: { tag: "default_fold",
+        label: "——折得普通",
+        text: "你折了几下，没成什么特别的形状。也行——一封普通的信，也是一封诚实的信。",
+        next: "d4_reflection" }
+    }
+  },
+
+  // 倒影对齐
+  d4_reflection: {
+    day: 4, time: "evening", bg: "rain", char: null, speaker: "",
+    text: "下楼透口气。檐下有一滩积水——樱花飘进去，倒影在水里晃。你蹲下来——把倒影拨正。",
+    next: "d4_timecapsule",
+    reflection: {
+      prompt: "拖动下半，让倒影和上面的樱花对齐——",
+      upper: "樱花飘落",
+      lower: "倒影模糊",
+      thresholds: [
+        { min: 0.85, tag: "aligned",
+          label: "——对上了",
+          text: "倒影一寸寸挪回来，和水面的樱花对齐了。你看见自己的脸——比白天平静。林诗雨说过，能在水面上看见自己的人，走得远。",
+          add: { affection: { shiyu: 1, xiazhi: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "倒影·对齐", title: "檐下的对齐", text: "你在檐下把樱花倒影拨正了。第一次看清了自己。" },
+          next: "d4_timecapsule" },
+        { min: 0.5, tag: "close",
+          label: "——差一点",
+          text: "差一点就对上了。倒影还在晃——也许有些事本来就不能完全对齐。",
+          add: { affection: { shiyu: 0 } },
+          personality: { honest: 1 },
+          next: "d4_timecapsule" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "你怎么拨，倒影都晃。算了——明天的路本来也看不清。先回去吧。",
+        next: "d4_timecapsule" }
+    }
+  },
+
+  // 时光胶囊
+  d4_timecapsule: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "回到房间。窗台上有一张空白的纸——给未来的自己写一句话吧。明天醒来之前，它会到。",
+    next: "common_day5_morning",
+    timecapsule: {
+      prompt: "给明天的自己写一句话——",
+      placeholder: "（最多 60 字）",
+      maxLength: 60,
+      deliverAt: "common_day5_morning",
+      onSubmit: { tag: "written",
+        label: "——封存",
+        text: "你把纸折好，塞进信封。明早起来之前，它会到——这是你给未来自己的一份承诺。",
+        add: { affection: { shen: 1 } },
+        personality: { brave: 2, honest: 1 },
+        memory: { id: "时光·胶囊", title: "给明天的自己", text: "你给明天的自己写了一句话，封进了信封。" },
+        next: "common_day5_morning" }
+    }
+  },
 
   /* ============ 第 5 日 · 路线决定日 ============ */
   common_day5_morning: { day: 5, time: "morning", bg: "rooftop", char: null, speaker: "", text: "第 5 日清晨。我爬上天台透气。海风把樱花吹成一场粉色的雨。", next: "d5_route_check" },

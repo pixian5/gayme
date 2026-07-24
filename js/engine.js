@@ -286,6 +286,9 @@
       });
     }
 
+    // v1.0.0 时光胶囊：在节点进入时投递过去的胶囊
+    deliverTimecapsules(nodeId);
+
     // 循环文本：根据 loopCount 显示不同文本
     let displayNode = node;
     if (node.loopText && Array.isArray(node.loopText)) {
@@ -524,6 +527,46 @@
       setScene(node.bg);
       renderCharacters(node);
       runPerfume(node.perfume, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.0.0 呼吸引导节点
+    if (node.breath) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runBreath(node.breath, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.0.0 时光胶囊节点
+    if (node.timecapsule) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTimecapsule(node.timecapsule, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.0.0 信纸折痕节点
+    if (node.fold) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runFold(node.fold, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.0.0 倒影对齐节点
+    if (node.reflection) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runReflection(node.reflection, nodeId);
       updateDayBar(node);
       updateHeartBar();
       return;
@@ -3705,6 +3748,536 @@
     return pf.fallback || { tag: "default", label: "——香不成方", next: null };
   }
 
+  /* ============================================================
+     v1.0.0 呼吸引导 runBreath
+     node.breath = {
+       prompt: "深呼吸——长按吸气，松开呼气",
+       cycles: 3,           // 完成几个呼吸循环
+       inhaleMs: 4000,      // 吸气时长
+       holdMs: 1000,        // 屏息时长
+       exhaleMs: 6000,      // 呼气时长
+       thresholds: [
+         { min: 0.8, tag: "calm", label, text, add?, memory?, next },
+         { min: 0.5, tag: "ok", label, text, next }
+       ],
+       fallback: { tag: "miss", next }
+     }
+     ============================================================ */
+  function runBreath(br, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "breath-layer";
+    layer.id = "breath-layer";
+    layer.innerHTML = `
+      <div class="br-prompt">${br.prompt || "深呼吸——"}</div>
+      <div class="br-stage" id="br-stage">
+        <div class="br-circle" id="br-circle"></div>
+        <div class="br-text" id="br-text">准备</div>
+      </div>
+      <div class="br-info" id="br-info">长按圆形区域吸气，松开呼气</div>
+      <div class="br-progress" id="br-progress"></div>
+      <div class="br-actions">
+        <button class="br-start" id="br-start">开始</button>
+      </div>
+    `;
+    const circle = layer.querySelector("#br-circle");
+    const textEl = layer.querySelector("#br-text");
+    const info = layer.querySelector("#br-info");
+    const progress = layer.querySelector("#br-progress");
+    const startBtn = layer.querySelector("#br-start");
+
+    const totalCycles = br.cycles || 3;
+    const inhaleMs = br.inhaleMs || 4000;
+    const holdMs = br.holdMs || 1000;
+    const exhaleMs = br.exhaleMs || 6000;
+    let currentCycle = 0;
+    let phase = "idle"; // idle / inhale / hold / exhale
+    let phaseStartTime = 0;
+    let pressing = false;
+    let pressStartTime = 0;
+    let syncSum = 0;
+    let syncCount = 0;
+    let started = false;
+
+    // 渲染进度点
+    for (let i = 0; i < totalCycles; i++) {
+      const dot = document.createElement("span");
+      dot.className = "br-dot";
+      progress.appendChild(dot);
+    }
+
+    function updateProgress() {
+      const dots = progress.querySelectorAll(".br-dot");
+      dots.forEach((d, i) => {
+        d.classList.toggle("done", i < currentCycle);
+      });
+    }
+
+    function setCircle(scale, color) {
+      circle.style.transform = `scale(${scale})`;
+      circle.style.background = color;
+    }
+
+    function startInhale() {
+      phase = "inhale";
+      phaseStartTime = performance.now();
+      textEl.textContent = "吸——";
+      info.textContent = `第 ${currentCycle + 1} / ${totalCycles} 次 · 吸气`;
+      setCircle(1.0, "radial-gradient(circle, rgba(180,220,255,0.6), rgba(120,160,220,0.4))");
+      // 用动画过渡
+      circle.style.transition = `transform ${inhaleMs}ms ease-in-out, background ${inhaleMs}ms ease`;
+    }
+
+    function startHold() {
+      phase = "hold";
+      phaseStartTime = performance.now();
+      textEl.textContent = "屏息";
+      info.textContent = `第 ${currentCycle + 1} / ${totalCycles} 次 · 屏息`;
+      setCircle(1.0, "radial-gradient(circle, rgba(255,255,200,0.6), rgba(220,200,120,0.4))");
+      circle.style.transition = "transform 0.3s ease, background 0.3s ease";
+    }
+
+    function startExhale() {
+      phase = "exhale";
+      phaseStartTime = performance.now();
+      textEl.textContent = "呼——";
+      info.textContent = `第 ${currentCycle + 1} / ${totalCycles} 次 · 呼气`;
+      setCircle(0.4, "radial-gradient(circle, rgba(255,180,200,0.5), rgba(216,112,144,0.3))");
+      circle.style.transition = `transform ${exhaleMs}ms ease-in-out, background ${exhaleMs}ms ease`;
+    }
+
+    function nextPhase() {
+      if (phase === "inhale") {
+        startHold();
+      } else if (phase === "hold") {
+        startExhale();
+      } else if (phase === "exhale") {
+        currentCycle++;
+        updateProgress();
+        if (currentCycle >= totalCycles) {
+          finishBreath();
+          return;
+        }
+        startInhale();
+      }
+    }
+
+    function finishBreath() {
+      phase = "done";
+      const avgSync = syncCount ? syncSum / syncCount : 0;
+      const thresholds = br.thresholds || [];
+      let matched = br.fallback || { tag: "miss", label: "——乱息", next: null };
+      for (const t of thresholds) {
+        if (avgSync >= t.min) { matched = t; break; }
+      }
+      Saves.saveBreathRecord(currentNodeId, currentCycle, avgSync, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "br-reading";
+      reading.innerHTML = `<div class="br-reading-title">${matched.label || "解读"} · ${Math.round(avgSync * 100)}%</div>
+        <div class="br-reading-text">${matched.text || ""}</div>
+        <button class="br-reading-close">继续</button>`;
+      reading.querySelector(".br-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    // 主循环：用 requestAnimationFrame 推进阶段
+    function loop() {
+      if (phase === "idle" || phase === "done") return;
+      const now = performance.now();
+      const elapsed = now - phaseStartTime;
+      if (phase === "inhale" && elapsed >= inhaleMs) {
+        nextPhase();
+      } else if (phase === "hold" && elapsed >= holdMs) {
+        nextPhase();
+      } else if (phase === "exhale" && elapsed >= exhaleMs) {
+        nextPhase();
+      }
+      requestAnimationFrame(loop);
+    }
+
+    // 玩家长按：判定同步度
+    function onPressDown(e) {
+      if (!started || phase === "done" || phase === "idle") return;
+      e.preventDefault();
+      pressing = true;
+      pressStartTime = performance.now();
+      // 只有吸气阶段长按才算同步
+      if (phase === "inhale") {
+        const idealStart = phaseStartTime;
+        const diff = Math.abs(pressStartTime - idealStart);
+        const sync = Math.max(0, 1 - diff / inhaleMs);
+        syncSum += sync;
+        syncCount++;
+      }
+    }
+    function onPressUp() {
+      pressing = false;
+      if (!started || phase === "done") return;
+      if (phase === "exhale") {
+        const releaseTime = performance.now();
+        const idealEnd = phaseStartTime + exhaleMs;
+        const diff = Math.abs(releaseTime - idealEnd);
+        const sync = Math.max(0, 1 - diff / exhaleMs);
+        syncSum += sync;
+        syncCount++;
+      }
+    }
+
+    circle.addEventListener("mousedown", onPressDown);
+    circle.addEventListener("mouseup", onPressUp);
+    circle.addEventListener("mouseleave", onPressUp);
+    circle.addEventListener("touchstart", onPressDown, { passive: false });
+    circle.addEventListener("touchend", onPressUp);
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startBtn.disabled = true;
+      startInhale();
+      requestAnimationFrame(loop);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.0.0 时光胶囊 runTimecapsule
+     node.timecapsule = {
+       prompt: "给未来的自己写一句话——",
+       placeholder: "（最多 60 字）",
+       maxLength: 60,
+       deliverAt: "d5_evening",   // 投递到的未来节点 id
+       onSubmit: { tag, label, text, add?, memory?, next }   // 写完的反馈
+     }
+     ============================================================ */
+  function runTimecapsule(tc, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "timecapsule-layer";
+    layer.id = "timecapsule-layer";
+    const maxLen = tc.maxLength || 60;
+    layer.innerHTML = `
+      <div class="tc-prompt">${tc.prompt || "给未来的自己写一句话——"}</div>
+      <div class="tc-wrap">
+        <textarea class="tc-input" id="tc-input" maxlength="${maxLen}" placeholder="${tc.placeholder || '写点什么……'}"></textarea>
+        <div class="tc-count"><span id="tc-count">0</span> / ${maxLen}</div>
+      </div>
+      <div class="tc-actions">
+        <button class="tc-skip">跳过</button>
+        <button class="tc-submit" id="tc-submit" disabled>封存</button>
+      </div>
+    `;
+    const input = layer.querySelector("#tc-input");
+    const count = layer.querySelector("#tc-count");
+    const submitBtn = layer.querySelector("#tc-submit");
+    const skipBtn = layer.querySelector(".tc-skip");
+
+    input.addEventListener("input", () => {
+      count.textContent = input.value.length;
+      submitBtn.disabled = input.value.trim().length === 0;
+    });
+
+    function finish(submitted) {
+      const message = input.value.trim();
+      const tag = submitted ? (tc.onSubmit && tc.onSubmit.tag || "written") : "skipped";
+      Saves.saveTimecapsuleRecord(currentNodeId, message, tc.deliverAt || null, tag);
+      const feedback = submitted ? (tc.onSubmit || {}) : (tc.onSkip || { tag: "skipped", label: "——没写", text: "你没写。也许以后再写。", next: null });
+      if (feedback.add) { applyAdd(feedback.add); updateHeartBar(); }
+      if (feedback.personality) {
+        for (const dim in feedback.personality) Saves.addPersonality(dim, feedback.personality[dim]);
+      }
+      if (feedback.memory) {
+        if (!Saves.isMemoryUnlocked(feedback.memory.id)) {
+          Saves.saveMemory(feedback.memory.id, feedback.memory.text);
+          flashHint(`✦ 新记忆：${feedback.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "tc-reading";
+      reading.innerHTML = `<div class="tc-reading-title">${feedback.label || "——封存"}</div>
+        <div class="tc-reading-text">${feedback.text || ""}</div>
+        <button class="tc-reading-close">继续</button>`;
+      reading.querySelector(".tc-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = feedback.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    submitBtn.onclick = () => { if (input.value.trim()) finish(true); };
+    skipBtn.onclick = () => finish(false);
+
+    document.getElementById("game").appendChild(layer);
+    setTimeout(() => input.focus(), 100);
+  }
+
+  // 在指定节点触发时光胶囊投递（读取未投递的胶囊）
+  function deliverTimecapsules(nodeId) {
+    const caps = Saves.getTimecapsulesForNode(nodeId);
+    if (!caps.length) return;
+    const layer = document.createElement("div");
+    layer.className = "timecapsule-deliver-layer";
+    layer.id = "timecapsule-deliver-layer";
+    const capsHtml = caps.map((c, i) => `<div class="tc-deliver-item" data-idx="${i}">
+      <div class="tc-deliver-label">来自过去的胶囊 #${i + 1}</div>
+      <div class="tc-deliver-msg">${(c.message || "").replace(/</g, "&lt;")}</div>
+    </div>`).join("");
+    layer.innerHTML = `
+      <div class="tc-deliver-wrap">
+        <div class="tc-deliver-title">——过去的自己寄来了一封信——</div>
+        ${capsHtml}
+        <button class="tc-deliver-close">读完</button>
+      </div>
+    `;
+    layer.querySelector(".tc-deliver-close").onclick = () => {
+      caps.forEach(c => Saves.markTimecapsuleDelivered(c.sourceNodeId));
+      layer.remove();
+    };
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.0.0 信纸折痕 runFold
+     node.fold = {
+       prompt: "按顺序折叠信纸——",
+       folds: [ { id, label, desc } ],
+       interpretations: [
+         { order: ["a","b","c"], tag, label, text, add?, memory?, next }
+       ],
+       min: 2,
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+  function runFold(fd, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "fold-layer";
+    layer.id = "fold-layer";
+    layer.innerHTML = `
+      <div class="fd-prompt">${fd.prompt || "按顺序折叠信纸——"}</div>
+      <div class="fd-paper" id="fd-paper">
+        <div class="fd-paper-text">樱·时·信·笺</div>
+      </div>
+      <div class="fd-actions" id="fd-actions"></div>
+      <div class="fd-controls">
+        <button class="fd-reset">重置</button>
+        <button class="fd-confirm" disabled>解读折痕</button>
+      </div>
+    `;
+    const paper = layer.querySelector("#fd-paper");
+    const actionsEl = layer.querySelector("#fd-actions");
+    const confirmBtn = layer.querySelector(".fd-confirm");
+    const resetBtn = layer.querySelector(".fd-reset");
+
+    const folds = fd.folds || [];
+    const sequence = [];
+
+    folds.forEach(f => {
+      const btn = document.createElement("button");
+      btn.className = "fd-action";
+      btn.dataset.id = f.id;
+      btn.innerHTML = `<div class="fd-action-label">${f.label}</div>
+        <div class="fd-action-desc">${f.desc || ""}</div>`;
+      btn.onclick = () => {
+        if (btn.classList.contains("used")) return;
+        btn.classList.add("used");
+        sequence.push(f.id);
+        // 累加折痕视觉
+        const crease = document.createElement("div");
+        crease.className = `fd-crease fd-crease-${sequence.length}`;
+        paper.appendChild(crease);
+        paper.classList.add(`fold-step-${sequence.length}`);
+        confirmBtn.disabled = sequence.length < Math.min(fd.min || 2, folds.length);
+      };
+      actionsEl.appendChild(btn);
+    });
+
+    resetBtn.onclick = () => {
+      sequence.length = 0;
+      paper.className = "fd-paper";
+      paper.querySelectorAll(".fd-crease").forEach(c => c.remove());
+      actionsEl.querySelectorAll(".fd-action.used").forEach(b => b.classList.remove("used"));
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const interp = matchFold(fd, sequence);
+      Saves.saveFoldRecord(currentNodeId, sequence.slice(), interp.tag);
+      if (interp.add) { applyAdd(interp.add); updateHeartBar(); }
+      if (interp.personality) {
+        for (const dim in interp.personality) Saves.addPersonality(dim, interp.personality[dim]);
+      }
+      if (interp.memory) {
+        if (!Saves.isMemoryUnlocked(interp.memory.id)) {
+          Saves.saveMemory(interp.memory.id, interp.memory.text);
+          flashHint(`✦ 新记忆：${interp.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "fd-reading";
+      reading.innerHTML = `<div class="fd-reading-title">${interp.label || "解读"}</div>
+        <div class="fd-reading-text">${interp.text || ""}</div>
+        <button class="fd-reading-close">继续</button>`;
+      reading.querySelector(".fd-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = interp.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  function matchFold(fd, seq) {
+    const interps = fd.interpretations || [];
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every((id, idx) => id === seq[idx])) {
+        return i;
+      }
+    }
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every(id => seq.includes(id))) {
+        return i;
+      }
+    }
+    return fd.fallback || { tag: "default", label: "——折不成形", next: null };
+  }
+
+  /* ============================================================
+     v1.0.0 倒影对齐 runReflection
+     node.reflection = {
+       prompt: "拖动下半，让倒影与上半对齐——",
+       upper: "樱花飘落",       // 上半画面文案
+       lower: "倒影模糊",       // 下半初始文案
+       // 玩家拖动下半左右滑动；越接近中心对齐度越高
+       thresholds: [
+         { min: 0.9, tag: "aligned", label, text, add?, memory?, next },
+         { min: 0.6, tag: "close", label, text, next }
+       ],
+       fallback: { tag: "miss", next }
+     }
+     ============================================================ */
+  function runReflection(rf, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "reflection-layer";
+    layer.id = "reflection-layer";
+    layer.innerHTML = `
+      <div class="rf-prompt">${rf.prompt || "拖动下半，让倒影与上半对齐——"}</div>
+      <div class="rf-stage" id="rf-stage">
+        <div class="rf-upper" id="rf-upper">${rf.upper || ""}</div>
+        <div class="rf-water"></div>
+        <div class="rf-lower" id="rf-lower">${rf.lower || ""}</div>
+      </div>
+      <div class="rf-info" id="rf-info">拖动下半调整位置</div>
+      <div class="rf-actions">
+        <button class="rf-confirm" id="rf-confirm">确定对齐</button>
+      </div>
+    `;
+    const stage = layer.querySelector("#rf-stage");
+    const lower = layer.querySelector("#rf-lower");
+    const info = layer.querySelector("#rf-info");
+    const confirmBtn = layer.querySelector("#rf-confirm");
+
+    let offsetX = 0;  // 像素
+    let dragging = false;
+    let dragStartX = 0;
+    let startOffset = 0;
+    const maxOffset = 120; // 最大偏移像素
+
+    function updateInfo() {
+      const ratio = 1 - Math.min(1, Math.abs(offsetX) / maxOffset);
+      info.textContent = `对齐度：${Math.round(ratio * 100)}%`;
+      info.dataset.ratio = ratio.toFixed(3);
+    }
+
+    function onDown(clientX) {
+      dragging = true;
+      dragStartX = clientX;
+      startOffset = offsetX;
+    }
+    function onMove(clientX) {
+      if (!dragging) return;
+      let next = startOffset + (clientX - dragStartX);
+      next = Math.max(-maxOffset, Math.min(maxOffset, next));
+      offsetX = next;
+      lower.style.transform = `translateX(${offsetX}px)`;
+      updateInfo();
+    }
+    function onUp() { dragging = false; }
+
+    lower.addEventListener("mousedown", e => onDown(e.clientX));
+    document.addEventListener("mousemove", e => onMove(e.clientX));
+    document.addEventListener("mouseup", onUp);
+    lower.addEventListener("touchstart", e => { const t = e.touches[0]; onDown(t.clientX); e.preventDefault(); }, { passive: false });
+    document.addEventListener("touchmove", e => { if (!dragging) return; const t = e.touches[0]; onMove(t.clientX); e.preventDefault(); }, { passive: false });
+    document.addEventListener("touchend", onUp);
+
+    // 初始偏移到一边
+    offsetX = maxOffset * 0.7;
+    lower.style.transform = `translateX(${offsetX}px)`;
+    updateInfo();
+
+    confirmBtn.onclick = () => {
+      const ratio = 1 - Math.min(1, Math.abs(offsetX) / maxOffset);
+      const accuracy = ratio;
+      const thresholds = rf.thresholds || [];
+      let matched = rf.fallback || { tag: "miss", label: "——错位", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.saveReflectionRecord(currentNodeId, offsetX, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "rf-reading";
+      reading.innerHTML = `<div class="rf-reading-title">${matched.label || "解读"} · ${Math.round(accuracy * 100)}%</div>
+        <div class="rf-reading-text">${matched.text || ""}</div>
+        <button class="rf-reading-close">继续</button>`;
+      reading.querySelector(".rf-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -3771,6 +4344,11 @@
     document.querySelectorAll(".stethoscope-layer").forEach(e => e.remove());
     document.querySelectorAll(".puzzle-layer").forEach(e => e.remove());
     document.querySelectorAll(".perfume-layer").forEach(e => e.remove());
+    // 清理 v1.0.0 浮层
+    document.querySelectorAll(".breath-layer").forEach(e => e.remove());
+    document.querySelectorAll(".timecapsule-layer").forEach(e => e.remove());
+    document.querySelectorAll(".fold-layer").forEach(e => e.remove());
+    document.querySelectorAll(".reflection-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

@@ -48,6 +48,12 @@ const STETHOSCOPE_KEY   = "sakura_letters_stethoscope_v2";   // 心声听诊
 const PUZZLE_KEY        = "sakura_letters_puzzle_v2";         // 信物拼图
 const PERFUME_KEY       = "sakura_letters_perfume_v2";       // 气味调香
 
+/* v1.0.0 新玩法存储 */
+const BREATH_KEY        = "sakura_letters_breath_v2";         // 呼吸引导
+const TIMECAPSULE_KEY   = "sakura_letters_timecapsule_v2";   // 时光胶囊
+const FOLD_KEY          = "sakura_letters_fold_v2";         // 信纸折痕
+const REFLECTION_KEY    = "sakura_letters_reflection_v2";    // 倒影对齐
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -731,6 +737,85 @@ const Saves = {
     if (!vals.length) return null;
     return vals[vals.length - 1];
   },
+
+  /* ============ v1.0.0 呼吸引导 ============ */
+  // 记录每次呼吸：{ nodeId: { cycles, avgSync, tag, ts } }
+  getBreathRecords() {
+    try {
+      const raw = localStorage.getItem(BREATH_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveBreathRecord(nodeId, cycles, avgSync, tag) {
+    const all = this.getBreathRecords();
+    all[nodeId] = { cycles, avgSync, tag, ts: Date.now() };
+    localStorage.setItem(BREATH_KEY, JSON.stringify(all));
+    return true;
+  },
+  getBreathRecord(nodeId) { return this.getBreathRecords()[nodeId]; },
+
+  /* ============ v1.0.0 时光胶囊 ============ */
+  // 记录每次写的胶囊：{ nodeId: { message, deliverAt, delivered, tag, ts } }
+  // deliverAt 是未来某节点 id；delivered 标记是否已投递
+  getTimecapsuleRecords() {
+    try {
+      const raw = localStorage.getItem(TIMECAPSULE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTimecapsuleRecord(nodeId, message, deliverAt, tag) {
+    const all = this.getTimecapsuleRecords();
+    all[nodeId] = { message, deliverAt, delivered: false, tag, ts: Date.now() };
+    localStorage.setItem(TIMECAPSULE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTimecapsuleRecord(nodeId) { return this.getTimecapsuleRecords()[nodeId]; },
+  // 查找所有投递到 targetNodeId 的胶囊
+  getTimecapsulesForNode(targetNodeId) {
+    const all = this.getTimecapsuleRecords();
+    return Object.entries(all)
+      .filter(([k, v]) => v.deliverAt === targetNodeId && !v.delivered)
+      .map(([k, v]) => ({ sourceNodeId: k, ...v }));
+  },
+  markTimecapsuleDelivered(nodeId) {
+    const all = this.getTimecapsuleRecords();
+    if (all[nodeId]) {
+      all[nodeId].delivered = true;
+      localStorage.setItem(TIMECAPSULE_KEY, JSON.stringify(all));
+    }
+  },
+
+  /* ============ v1.0.0 信纸折痕 ============ */
+  // 记录每次折纸顺序：{ nodeId: { sequence: [], tag, ts } }
+  getFoldRecords() {
+    try {
+      const raw = localStorage.getItem(FOLD_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveFoldRecord(nodeId, sequence, tag) {
+    const all = this.getFoldRecords();
+    all[nodeId] = { sequence, tag, ts: Date.now() };
+    localStorage.setItem(FOLD_KEY, JSON.stringify(all));
+    return true;
+  },
+  getFoldRecord(nodeId) { return this.getFoldRecords()[nodeId]; },
+
+  /* ============ v1.0.0 倒影对齐 ============ */
+  // 记录每次对齐结果：{ nodeId: { offsetX, accuracy, tag, ts } }
+  getReflectionRecords() {
+    try {
+      const raw = localStorage.getItem(REFLECTION_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveReflectionRecord(nodeId, offsetX, accuracy, tag) {
+    const all = this.getReflectionRecords();
+    all[nodeId] = { offsetX, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(REFLECTION_KEY, JSON.stringify(all));
+    return true;
+  },
+  getReflectionRecord(nodeId) { return this.getReflectionRecords()[nodeId]; },
 
   /* ============ 工具 ============ */
   formatTime(ts) {
