@@ -102,6 +102,12 @@ const WINDCHIME_KEY  = "sakura_letters_windchime_v2"; // 风铃调音
 const BOTTLE_KEY     = "sakura_letters_bottle_v2";    // 瓶中信
 const ECHOLOC_KEY    = "sakura_letters_echoloc_v2";   // 回声定位
 
+/* v1.9.0 新玩法存储 */
+const COMPASS_KEY    = "sakura_letters_compass_v2";    // 罗盘导航
+const TELEGRAPH_KEY  = "sakura_letters_telegraph_v2";  // 密码电报
+const BALANCE_KEY    = "sakura_letters_balance_v2";    // 天平称重
+const PENDULUM_KEY   = "sakura_letters_pendulum_v2";   // 钟摆节奏
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1377,6 +1383,70 @@ const Saves = {
   },
   getEcholocRecord(nodeId) { return this.getEcholocRecords()[nodeId]; },
 
+  /* ============ v1.9.0 罗盘导航 ============ */
+  // { nodeId: { angle, target, error, tag, ts } }
+  getCompassRecords() {
+    try {
+      const raw = localStorage.getItem(COMPASS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveCompassRecord(nodeId, angle, target, error, tag) {
+    const all = this.getCompassRecords();
+    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
+    localStorage.setItem(COMPASS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getCompassRecord(nodeId) { return this.getCompassRecords()[nodeId]; },
+
+  /* ============ v1.9.0 密码电报 ============ */
+  // { nodeId: { code, choice, correct, tag, ts } }
+  getTelegraphRecords() {
+    try {
+      const raw = localStorage.getItem(TELEGRAPH_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTelegraphRecord(nodeId, code, choice, correct, tag) {
+    const all = this.getTelegraphRecords();
+    all[nodeId] = { code, choice, correct, tag, ts: Date.now() };
+    localStorage.setItem(TELEGRAPH_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTelegraphRecord(nodeId) { return this.getTelegraphRecords()[nodeId]; },
+
+  /* ============ v1.9.0 天平称重 ============ */
+  // { nodeId: { left, right, diff, tag, ts } }
+  getBalanceRecords() {
+    try {
+      const raw = localStorage.getItem(BALANCE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveBalanceRecord(nodeId, left, right, diff, tag) {
+    const all = this.getBalanceRecords();
+    all[nodeId] = { left, right, diff, tag, ts: Date.now() };
+    localStorage.setItem(BALANCE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getBalanceRecord(nodeId) { return this.getBalanceRecords()[nodeId]; },
+
+  /* ============ v1.9.0 钟摆节奏 ============ */
+  // { nodeId: { clickAt, targetAt, error, tag, ts } }
+  getPendulumRecords() {
+    try {
+      const raw = localStorage.getItem(PENDULUM_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  savePendulumRecord(nodeId, clickAt, targetAt, error, tag) {
+    const all = this.getPendulumRecords();
+    all[nodeId] = { clickAt, targetAt, error, tag, ts: Date.now() };
+    localStorage.setItem(PENDULUM_KEY, JSON.stringify(all));
+    return true;
+  },
+  getPendulumRecord(nodeId) { return this.getPendulumRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1408,7 +1478,8 @@ const Saves = {
      TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY,
      FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY,
      KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY,
-     FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY].forEach(k => localStorage.removeItem(k));
+     FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY,
+     COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

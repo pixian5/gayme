@@ -892,6 +892,46 @@
       return;
     }
 
+    // v1.9.0 罗盘导航节点
+    if (node.compass) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runCompass(node.compass, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.9.0 密码电报节点
+    if (node.telegraph) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTelegraph(node.telegraph, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.9.0 天平称重节点
+    if (node.balance) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runBalance(node.balance, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.9.0 钟摆节奏节点
+    if (node.pendulum) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPendulum(node.pendulum, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -10888,6 +10928,832 @@
     resize();
   }
 
+  /* ============================================================
+     v1.9.0 罗盘导航 runCompass
+     node.compass = {
+       prompt: "拖动罗盘——让指针对准她说的方向",
+       target: 135,        // 目标角度（0-360，0=北）
+       tolerance: 8,       // 容差（度）
+       thresholds: [
+         { max: 8, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runCompass(cp, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "compass-layer";
+    layer.id = "compass-layer";
+    layer.innerHTML = `
+      <div class="cp-prompt">${cp.prompt || "拖动罗盘——让指针对准她说的方向"}</div>
+      <div class="cp-stage">
+        <canvas class="cp-canvas" id="cp-canvas"></canvas>
+        <div class="cp-info" id="cp-info">拖动罗盘外圈旋转指针</div>
+      </div>
+      <div class="cp-actions">
+        <button class="cp-reset">重置</button>
+        <button class="cp-confirm" id="cp-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#cp-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#cp-info");
+    const confirmBtn = layer.querySelector("#cp-confirm");
+    const resetBtn = layer.querySelector(".cp-reset");
+
+    let aborted = false;
+    let dragging = false;
+    let angle = 0;            // 当前指针角度（0-360，顺时针，0=北/上方）
+    let cw = 0, ch = 0, cx = 0, cy = 0, radius = 0;
+    const target = cp.target ?? 135;
+    const tolerance = cp.tolerance ?? 8;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      cx = cw / 2; cy = ch / 2;
+      radius = Math.min(cw, ch) * 0.42;
+      draw();
+    }
+
+    function draw() {
+      // 背景
+      ctx.fillStyle = "#0a1a2a";
+      ctx.fillRect(0, 0, cw, ch);
+      // 罗盘外圈
+      const grad = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius);
+      grad.addColorStop(0, "#3a5a7a");
+      grad.addColorStop(1, "#1a2a3a");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(180,200,240,0.6)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // 刻度
+      ctx.strokeStyle = "rgba(180,200,240,0.5)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 360; i += 15) {
+        const rad = (i - 90) * Math.PI / 180;
+        const r1 = radius * 0.88, r2 = i % 90 === 0 ? radius * 0.72 : radius * 0.82;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
+        ctx.lineTo(cx + Math.cos(rad) * r2, cy + Math.sin(rad) * r2);
+        ctx.stroke();
+      }
+      // 方位字母 N/E/S/W
+      ctx.fillStyle = "#ffe890";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const dirs = [["N", 0], ["E", 90], ["S", 180], ["W", 270]];
+      dirs.forEach(([d, deg]) => {
+        const rad = (deg - 90) * Math.PI / 180;
+        ctx.fillText(d, cx + Math.cos(rad) * radius * 0.62, cy + Math.sin(rad) * radius * 0.62);
+      });
+      // 目标方位（隐藏，只在结束时显示）
+      if (aborted) {
+        const trad = (target - 90) * Math.PI / 180;
+        ctx.strokeStyle = "rgba(255,140,180,0.8)";
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(trad) * radius * 0.7, cy + Math.sin(trad) * radius * 0.7);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // 当前指针
+      const arad = (angle - 90) * Math.PI / 180;
+      ctx.strokeStyle = "#ff5070";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(arad) * radius * 0.7, cy + Math.sin(arad) * radius * 0.7);
+      ctx.stroke();
+      // 指针箭头
+      ctx.fillStyle = "#ff5070";
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(arad) * radius * 0.7, cy + Math.sin(arad) * radius * 0.7, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // 中心
+      ctx.fillStyle = "#ffe890";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 信息
+      info.textContent = `当前方位 ${Math.round(angle)}° · 目标方位隐藏`;
+    }
+
+    function getAngleFromEvent(e) {
+      const t = e.touches ? e.touches[0] : e;
+      const rect = canvas.getBoundingClientRect();
+      const dx = t.clientX - rect.left - cx;
+      const dy = t.clientY - rect.top - cy;
+      let deg = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+      if (deg < 0) deg += 360;
+      return deg;
+    }
+    function onDown(e) {
+      e.preventDefault();
+      dragging = true;
+      angle = getAngleFromEvent(e);
+      draw();
+    }
+    function onMove(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      angle = getAngleFromEvent(e);
+      draw();
+    }
+    function onUp() { dragging = false; }
+    canvas.addEventListener("mousedown", onDown);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("touchstart", onDown, { passive: false });
+    canvas.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+
+    resetBtn.onclick = () => { angle = 0; draw(); };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+      // 计算最小角度差
+      let diff = Math.abs(angle - target);
+      if (diff > 180) diff = 360 - diff;
+      Saves.saveCompassRecord(currentNodeId, Math.round(angle), target, diff, diff <= tolerance ? "perfect" : diff <= tolerance * 3 ? "good" : "miss");
+      const thresholds = cp.thresholds || [];
+      let matched = cp.fallback || { tag: "miss", label: "——方向偏了", next: null };
+      for (const t of thresholds) {
+        if (diff <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      draw();
+      const reading = document.createElement("div");
+      reading.className = "cp-reading";
+      reading.innerHTML = `<div class="cp-reading-title">${matched.label || "解读"} · 偏差 ${diff.toFixed(0)}°</div>
+        <div class="cp-reading-text">${matched.text || ""}</div>
+        <button class="cp-reading-close">继续</button>`;
+      reading.querySelector(".cp-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.9.0 密码电报 runTelegraph
+     node.telegraph = {
+       prompt: "听完电报——选出对应的字母",
+       code: "SOS",        // 目标字符
+       options: ["SOS","OK","HI","NO"],  // 选项
+       rhythm: [100,300,100,300,100,500], // 摩斯节奏：嘀(短)/嗒(长)/间隔(ms)
+       tolerance: 1,        // 容错数（错选容差）
+       thresholds: [
+         { max: 0, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runTelegraph(tg, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "telegraph-layer";
+    layer.id = "telegraph-layer";
+    const code = tg.code || "SOS";
+    const options = tg.options || [code, "OK", "HI", "NO"];
+    layer.innerHTML = `
+      <div class="tg-prompt">${tg.prompt || "听完电报——选出对应的字母"}</div>
+      <div class="tg-stage">
+        <div class="tg-display" id="tg-display">— · — · —</div>
+        <div class="tg-wave" id="tg-wave"></div>
+        <div class="tg-info" id="tg-info">点「播放」听电报节奏</div>
+      </div>
+      <div class="tg-actions">
+        <button class="tg-play" id="tg-play">播放</button>
+        <button class="tg-confirm" id="tg-confirm" disabled>确认</button>
+      </div>
+      <div class="tg-options" id="tg-options"></div>
+    `;
+    const display = layer.querySelector("#tg-display");
+    const waveEl = layer.querySelector("#tg-wave");
+    const info = layer.querySelector("#tg-info");
+    const playBtn = layer.querySelector("#tg-play");
+    const confirmBtn = layer.querySelector("#tg-confirm");
+    const optionsEl = layer.querySelector("#tg-options");
+
+    let aborted = false;
+    let played = false;
+    let selected = null;
+    const MORSE = {
+      "A": ".-",   "B": "-...", "C": "-.-.", "D": "-..",  "E": ".",
+      "F": "..-.", "G": "--.",  "H": "....", "I": "..",   "J": ".---",
+      "K": "-.-",  "L": ".-..", "M": "--",   "N": "-.",   "O": "---",
+      "P": ".--.", "Q": "--.-", "R": ".-.",  "S": "...",  "T": "-",
+      "U": "..-",  "V": "...-", "W": ".--",  "X": "-..-", "Y": "-.--",
+      "Z": "--..", "0": "-----","1": ".----","2": "..---","3": "...--",
+      "4": "....-","5": ".....","6": "-....","7": "--...","8": "---..","9": "----."
+    };
+    // 构建显示文本：将 code 转成摩斯码
+    const morseSeq = code.toUpperCase().split("").map(ch => MORSE[ch] || "").filter(Boolean);
+    const morseText = morseSeq.join(" / ");
+    display.textContent = played ? morseText : "— · — · —";
+
+    // 构建选项按钮
+    options.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "tg-option";
+      btn.textContent = opt;
+      btn.dataset.value = opt;
+      btn.onclick = () => {
+        if (aborted) return;
+        optionsEl.querySelectorAll(".tg-option").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selected = opt;
+        confirmBtn.disabled = false;
+      };
+      optionsEl.appendChild(btn);
+    });
+
+    playBtn.onclick = () => {
+      if (played) {
+        // 允许重复播放
+        played = false;
+        waveEl.innerHTML = "";
+      }
+      played = true;
+      display.textContent = morseText;
+      playBtn.disabled = true;
+      // 构建嘀嗒动画序列
+      const flat = morseSeq.join(""); // 例如 "......---..."
+      const DOT = 220, DASH = 660, GAP = 220, SEP = 660;
+      let delay = 0;
+      waveEl.innerHTML = "";
+      flat.split("").forEach((sym, i) => {
+        const span = document.createElement("span");
+        span.className = "tg-beat " + (sym === "." ? "dot" : "dash");
+        span.style.animationDelay = (delay) + "ms";
+        waveEl.appendChild(span);
+        delay += (sym === "." ? DOT : DASH) + GAP;
+      });
+      // 字母间额外间隔已隐含在 join 里，简化处理
+      setTimeout(() => { if (!aborted) playBtn.disabled = false; }, delay + 200);
+      info.textContent = "听完后——选出对应的字母";
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || selected === null) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      playBtn.disabled = true;
+      const correct = selected === code ? 1 : 0;
+      const error = correct ? 0 : 1;
+      Saves.saveTelegraphRecord(currentNodeId, code, selected, correct, correct ? "perfect" : "miss");
+      const thresholds = tg.thresholds || [];
+      let matched = tg.fallback || { tag: "miss", label: "——译错了", next: null };
+      for (const t of thresholds) {
+        if (error <= (t.max ?? 0)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "tg-reading";
+      reading.innerHTML = `<div class="tg-reading-title">${matched.label || "解读"} · 你选「${selected}」 · 正解「${code}」</div>
+        <div class="tg-reading-text">${matched.text || ""}</div>
+        <button class="tg-reading-close">继续</button>`;
+      reading.querySelector(".tg-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.9.0 天平称重 runBalance
+     node.balance = {
+       prompt: "把物品放到天平两端——让它平衡",
+       items: [3, 5, 7, 2, 4],  // 可放置物品的重量
+       target: "balance",       // "balance"=平衡 或 数字=目标左-右差值
+       tolerance: 0.5,
+       thresholds: [
+         { max: 0.5, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runBalance(bl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "balance-layer";
+    layer.id = "balance-layer";
+    const items = bl.items || [3, 5, 7, 2, 4];
+    layer.innerHTML = `
+      <div class="bl-prompt">${bl.prompt || "把物品放到天平两端——让它平衡"}</div>
+      <div class="bl-stage">
+        <canvas class="bl-canvas" id="bl-canvas"></canvas>
+        <div class="bl-info" id="bl-info">点击物品，再点左盘或右盘放入</div>
+      </div>
+      <div class="bl-pool" id="bl-pool"></div>
+      <div class="bl-actions">
+        <button class="bl-reset">重置</button>
+        <button class="bl-confirm" id="bl-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#bl-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#bl-info");
+    const poolEl = layer.querySelector("#bl-pool");
+    const confirmBtn = layer.querySelector("#bl-confirm");
+    const resetBtn = layer.querySelector(".bl-reset");
+
+    let aborted = false;
+    let selected = -1;            // 当前选中的物品索引（在 pool 中）
+    let pool = items.map((w, i) => ({ w, id: i }));
+    let left = [];                // 左盘物品
+    let right = [];               // 右盘物品
+    let cw = 0, ch = 0;
+    let tilt = 0;                 // 当前倾斜角（度）
+    const tolerance = bl.tolerance ?? 0.5;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      ctx.fillStyle = "#1a1a2a";
+      ctx.fillRect(0, 0, cw, ch);
+      const baseY = ch * 0.78;
+      const centerX = cw / 2;
+      // 底座
+      ctx.fillStyle = "#5a4030";
+      ctx.fillRect(centerX - 30, baseY, 60, ch * 0.12);
+      ctx.beginPath();
+      ctx.arc(centerX, baseY, 30, 0, Math.PI * 2);
+      ctx.fill();
+      // 立柱
+      ctx.fillStyle = "#7a5040";
+      ctx.fillRect(centerX - 4, ch * 0.2, 8, baseY - ch * 0.2);
+      // 横梁（按倾斜角旋转）
+      const beamY = ch * 0.32;
+      const beamLen = Math.min(cw * 0.42, 220);
+      const leftEnd = { x: centerX - beamLen, y: beamY + tilt * 1.2 };
+      const rightEnd = { x: centerX + beamLen, y: beamY - tilt * 1.2 };
+      ctx.strokeStyle = "#a88060";
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(leftEnd.x, leftEnd.y);
+      ctx.lineTo(rightEnd.x, rightEnd.y);
+      ctx.stroke();
+      // 左右吊绳
+      ctx.strokeStyle = "#c8a880";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(leftEnd.x, leftEnd.y); ctx.lineTo(leftEnd.x, leftEnd.y + 80); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(rightEnd.x, rightEnd.y); ctx.lineTo(rightEnd.x, rightEnd.y + 80); ctx.stroke();
+      // 左右托盘
+      const drawPan = (x, y, items, highlight) => {
+        ctx.save();
+        ctx.translate(x, y + 80);
+        ctx.fillStyle = highlight ? "rgba(255,200,100,0.6)" : "rgba(180,150,120,0.6)";
+        ctx.strokeStyle = "#d8b890";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 60, 12, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+        // 物品
+        items.forEach((it, i) => {
+          ctx.fillStyle = "#e8c890";
+          ctx.strokeStyle = "#8a6840";
+          ctx.lineWidth = 1;
+          const ix = (i - (items.length - 1) / 2) * 22;
+          ctx.fillRect(ix - 9, -22, 18, 22);
+          ctx.strokeRect(ix - 9, -22, 18, 22);
+          ctx.fillStyle = "#3a2a1a";
+          ctx.font = "11px sans-serif";
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText(it.w, ix, -11);
+        });
+        ctx.restore();
+      };
+      drawPan(leftEnd.x, leftEnd.y, left, selected === "left");
+      drawPan(rightEnd.x, rightEnd.y, right, selected === "right");
+      // 中心支点
+      ctx.fillStyle = "#ffe890";
+      ctx.beginPath();
+      ctx.arc(centerX, beamY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 信息
+      const leftSum = left.reduce((s, x) => s + x.w, 0);
+      const rightSum = right.reduce((s, x) => s + x.w, 0);
+      info.textContent = `左 ${leftSum} · 右 ${rightSum} · 差 ${Math.abs(leftSum - rightSum)}`;
+    }
+
+    function updateTilt() {
+      const leftSum = left.reduce((s, x) => s + x.w, 0);
+      const rightSum = right.reduce((s, x) => s + x.w, 0);
+      // 倾斜：左重则左低（tilt>0），右重则右低（tilt<0）
+      const target = Math.max(-20, Math.min(20, (leftSum - rightSum) * 2));
+      const step = () => {
+        if (aborted) return;
+        const delta = target - tilt;
+        if (Math.abs(delta) < 0.1) { tilt = target; draw(); return; }
+        tilt += delta * 0.15;
+        draw();
+        if (Math.abs(delta) > 0.1) requestAnimationFrame(step);
+      };
+      step();
+    }
+
+    function renderPool() {
+      poolEl.innerHTML = "";
+      pool.forEach((it, i) => {
+        const btn = document.createElement("button");
+        btn.className = "bl-item" + (selected === i ? " selected" : "");
+        btn.textContent = it.w;
+        btn.dataset.i = i;
+        btn.onclick = () => {
+          selected = (selected === i) ? -1 : i;
+          renderPool();
+          draw();
+        };
+        poolEl.appendChild(btn);
+      });
+    }
+
+    // 点击 canvas 上的托盘放入
+    canvas.addEventListener("click", (e) => {
+      if (aborted) return;
+      if (selected === -1 || selected === "left" || selected === "right") {
+        // 也可以点击托盘取出
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const beamY = ch * 0.32 + 80;
+        const beamLen = Math.min(cw * 0.42, 220);
+        const leftX = cw / 2 - beamLen;
+        const rightX = cw / 2 + beamLen;
+        if (Math.abs(x - leftX) < 60) {
+          // 取出左盘最后一个
+          if (left.length > 0) {
+            const it = left.pop();
+            pool.push(it);
+            selected = -1;
+            renderPool();
+            updateTilt();
+          }
+        } else if (Math.abs(x - rightX) < 60) {
+          if (right.length > 0) {
+            const it = right.pop();
+            pool.push(it);
+            selected = -1;
+            renderPool();
+            updateTilt();
+          }
+        }
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const beamLen = Math.min(cw * 0.42, 220);
+      const leftX = cw / 2 - beamLen;
+      const rightX = cw / 2 + beamLen;
+      if (Math.abs(x - leftX) < 60) {
+        const it = pool.splice(selected, 1)[0];
+        left.push(it);
+        selected = -1;
+        renderPool();
+        updateTilt();
+      } else if (Math.abs(x - rightX) < 60) {
+        const it = pool.splice(selected, 1)[0];
+        right.push(it);
+        selected = -1;
+        renderPool();
+        updateTilt();
+      }
+    });
+
+    resetBtn.onclick = () => {
+      pool = items.map((w, i) => ({ w, id: i }));
+      left = []; right = []; selected = -1;
+      renderPool();
+      updateTilt();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      const leftSum = left.reduce((s, x) => s + x.w, 0);
+      const rightSum = right.reduce((s, x) => s + x.w, 0);
+      const diff = Math.abs(leftSum - rightSum);
+      Saves.saveBalanceRecord(currentNodeId, leftSum, rightSum, diff, diff <= tolerance ? "perfect" : diff <= tolerance * 3 ? "good" : "miss");
+      const thresholds = bl.thresholds || [];
+      let matched = bl.fallback || { tag: "miss", label: "——没平衡", next: null };
+      for (const t of thresholds) {
+        if (diff <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "bl-reading";
+      reading.innerHTML = `<div class="bl-reading-title">${matched.label || "解读"} · 左 ${leftSum} · 右 ${rightSum}</div>
+        <div class="bl-reading-text">${matched.text || ""}</div>
+        <button class="bl-reading-close">继续</button>`;
+      reading.querySelector(".bl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    renderPool();
+    resize();
+  }
+
+  /* ============================================================
+     v1.9.0 钟摆节奏 runPendulum
+     node.pendulum = {
+       prompt: "钟摆摆到目标位置时——点「停」",
+       target: 0.85,       // 目标位置（0-1，0=左极点，0.5=中，1=右极点）
+       tolerance: 0.06,
+       duration: 12000,    // 总时长
+       thresholds: [
+         { max: 0.06, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runPendulum(pd, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "pendulum-layer";
+    layer.id = "pendulum-layer";
+    layer.innerHTML = `
+      <div class="pd-prompt">${pd.prompt || "钟摆摆到目标位置时——点「停」"}</div>
+      <div class="pd-stage">
+        <canvas class="pd-canvas" id="pd-canvas"></canvas>
+        <div class="pd-info" id="pd-info">点「开始」摆动钟摆</div>
+      </div>
+      <div class="pd-actions">
+        <button class="pd-start" id="pd-start">开始</button>
+        <button class="pd-stop" id="pd-stop" disabled>停</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#pd-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#pd-info");
+    const startBtn = layer.querySelector("#pd-start");
+    const stopBtn = layer.querySelector("#pd-stop");
+
+    let aborted = false;
+    let started = false;
+    let stopped = false;
+    let startTime = 0;
+    let rafId = null;
+    let phase = 0;             // 摆动相位
+    const target = pd.target ?? 0.85;
+    const tolerance = pd.tolerance ?? 0.06;
+    const duration = pd.duration || 12000;
+    let cw = 0, ch = 0, cx = 0, cy = 0, len = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      cx = cw / 2; cy = ch * 0.18;
+      len = ch * 0.6;
+      draw();
+    }
+
+    function posFromPhase(p) {
+      // sin(phase) ∈ [-1, 1]，映射到 0-1（0=左，1=右）
+      return (Math.sin(p) + 1) / 2;
+    }
+
+    function draw() {
+      // 背景
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#2a1a2a");
+      grad.addColorStop(1, "#0a0a1a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      // 顶部刻度（目标范围）
+      const targetX = cx + (target - 0.5) * 2 * (cw * 0.4);
+      ctx.fillStyle = "rgba(255,200,150,0.25)";
+      const tolW = tolerance * 2 * (cw * 0.4);
+      ctx.fillRect(targetX - tolW / 2, 10, tolW, 16);
+      // 目标线
+      ctx.strokeStyle = "rgba(255,200,150,0.7)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(targetX, 10);
+      ctx.lineTo(targetX, ch * 0.18 + len + 30);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 顶部固定点
+      ctx.fillStyle = "#ffe890";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.fill();
+      // 钟摆位置
+      const pos = posFromPhase(phase);
+      const px = cx + (pos - 0.5) * 2 * (cw * 0.4);
+      const py = cy + len;
+      // 摆杆
+      ctx.strokeStyle = "#c8a880";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      // 摆锤
+      ctx.fillStyle = stopped ? "#ff5070" : "#ffd060";
+      ctx.beginPath();
+      ctx.arc(px, py, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#8a6840";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // 信息
+      if (!started) info.textContent = "点「开始」摆动钟摆";
+      else if (stopped) {
+        const posNow = posFromPhase(phase);
+        const err = Math.abs(posNow - target);
+        info.textContent = `停在 ${(posNow * 100).toFixed(0)}% · 目标 ${(target * 100).toFixed(0)}% · 偏差 ${(err * 100).toFixed(1)}%`;
+      } else {
+        const remain = Math.max(0, duration - (performance.now() - startTime));
+        info.textContent = `剩余 ${(remain / 1000).toFixed(1)}s · 目标 ${(target * 100).toFixed(0)}%`;
+      }
+    }
+
+    function loop() {
+      if (aborted) return;
+      if (started && !stopped) {
+        // 摆动相位增长
+        phase += 0.045;
+        // 超时自动停
+        if ((performance.now() - startTime) >= duration) {
+          stopped = true;
+          stopBtn.disabled = true;
+        }
+        draw();
+      }
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      rafId = requestAnimationFrame(loop);
+    };
+
+    stopBtn.onclick = () => {
+      if (!started || stopped) return;
+      stopped = true;
+      stopBtn.disabled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      draw();
+      // 不立即结束，让玩家确认
+      const posNow = posFromPhase(phase);
+      const err = Math.abs(posNow - target);
+      // 显示一个确认按钮
+      const confirmBtn = document.createElement("button");
+      confirmBtn.className = "pd-confirm";
+      confirmBtn.textContent = "确认";
+      confirmBtn.onclick = () => {
+        if (aborted) return;
+        aborted = true;
+        confirmBtn.disabled = true;
+        Saves.savePendulumRecord(currentNodeId, posNow, target, err, err <= tolerance ? "perfect" : err <= tolerance * 2 ? "good" : "miss");
+        const thresholds = pd.thresholds || [];
+        let matched = pd.fallback || { tag: "miss", label: "——停早了", next: null };
+        for (const t of thresholds) {
+          if (err <= (t.max ?? tolerance)) { matched = t; break; }
+        }
+        if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+        if (matched.personality) {
+          for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+        }
+        if (matched.memory) {
+          if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+            Saves.saveMemory(matched.memory.id, matched.memory.text);
+            flashHint(`✦ 新记忆：${matched.memory.title}`);
+          }
+        }
+        const reading = document.createElement("div");
+        reading.className = "pd-reading";
+        reading.innerHTML = `<div class="pd-reading-title">${matched.label || "解读"} · 停在 ${(posNow * 100).toFixed(0)}%</div>
+          <div class="pd-reading-text">${matched.text || ""}</div>
+          <button class="pd-reading-close">继续</button>`;
+        reading.querySelector(".pd-reading-close").onclick = () => {
+          reading.remove();
+          layer.remove();
+          const node = SCRIPT[currentNodeId];
+          const jumpTo = matched.next || (node && node.next);
+          if (jumpTo) gotoNode(jumpTo);
+        };
+        layer.appendChild(reading);
+      };
+      layer.querySelector(".pd-actions").appendChild(confirmBtn);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -10993,6 +11859,10 @@
     document.querySelectorAll(".windchime-layer").forEach(e => e.remove());
     document.querySelectorAll(".bottle-layer").forEach(e => e.remove());
     document.querySelectorAll(".echoloc-layer").forEach(e => e.remove());
+    document.querySelectorAll(".compass-layer").forEach(e => e.remove());
+    document.querySelectorAll(".telegraph-layer").forEach(e => e.remove());
+    document.querySelectorAll(".balance-layer").forEach(e => e.remove());
+    document.querySelectorAll(".pendulum-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

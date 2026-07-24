@@ -2175,6 +2175,126 @@ const SCRIPT = {
     }
   },
 
+  /* ============ v1.9.0 新玩法触发节点 ============ */
+  // 罗盘导航
+  d8_compass: {
+    day: 8, time: "morning", bg: "sea", char: null, speaker: "",
+    text: "她带你到海边。她说——风从那个方向来。她递给你一只旧罗盘：把它对准风的方向。她不告诉你风从哪个方向来。",
+    next: "d8_telegraph",
+    compass: {
+      prompt: "拖动罗盘外圈——让指针对准风来的方向",
+      target: 135,             // 东南
+      tolerance: 10,
+      thresholds: [
+        { max: 10, tag: "perfect",
+          label: "——对了",
+          text: "指针稳稳停在风的方向上。她说：你对得很准——风往哪里来，你就往哪里去。你想：她说的不是罗盘。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "罗盘·东南", title: "海边的罗盘", text: "你把罗盘指针对准了风来的方向。" },
+          next: "d8_telegraph" },
+        { max: 30, tag: "ok",
+          label: "——差一点",
+          text: "指针差了一点。她说：差不多——风是会变的，你跟着它走，跟着跟着就对了。她接过罗盘。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d8_telegraph" }
+      ],
+      fallback: { tag: "miss",
+        label: "——方向偏了",
+        text: "指针完全偏了。她说：方向感不好的不只是你——但有些路，得靠别的去找。她把罗盘收回口袋。",
+        next: "d8_telegraph" }
+    }
+  },
+
+  // 密码电报
+  d8_telegraph: {
+    day: 8, time: "afternoon", bg: "attic", char: null, speaker: "",
+    text: "她带你去阁楼。一只旧电报机摆在桌上。她说——它收了一段电报，你听完——告诉我它说的是什么。她不告诉你答案。",
+    next: "d8_balance",
+    telegraph: {
+      prompt: "点「播放」听电报节奏——选出对应字母",
+      code: "HI",
+      options: ["HI", "OK", "NO", "GO"],
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——译对了",
+          text: "你选了 HI。她说：你听得懂——听得懂的人，能收到别人收不到的话。她像是在说自己。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "电报·HI", title: "阁楼上的电报", text: "你在电报节奏里译出了 HI 两个字。" },
+          next: "d8_balance" }
+      ],
+      fallback: { tag: "miss",
+        label: "——译错了",
+        text: "你选错了。她说：听不懂也没关系——有些话，本来就不是给所有人听的。她把电报机关掉。",
+        next: "d8_balance" }
+    }
+  },
+
+  // 天平称重
+  d8_balance: {
+    day: 8, time: "afternoon", bg: "home_room", char: null, speaker: "",
+    text: "窗台上有只小天平。她说——这五块东西，重量都不一样。她让你把它们放到两端，让天平平。她说：平衡是最难的。",
+    next: "d8_pendulum",
+    balance: {
+      prompt: "点物品，再点左/右盘放入——让天平平衡",
+      items: [3, 5, 7, 2, 4],
+      tolerance: 0.5,
+      thresholds: [
+        { max: 0.5, tag: "perfect",
+          label: "——平衡了",
+          text: "天平平了。她说：你找到了——把不一样的东西放到一样重。她想说的是另一件事，但你没问。",
+          add: { affection: { shiyu: 2, shen: 1, xiazhi: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "天平·五块", title: "窗台上的天平", text: "你把五块不同重量的物品放到天平两端，让它平衡。" },
+          next: "d8_pendulum" },
+        { max: 2, tag: "ok",
+          label: "——差不多",
+          text: "天平差一点。她说：差一点也算平——世上没有真的平，只有差不多。她把一块换了个位置。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d8_pendulum" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没平衡",
+        text: "天平完全没平。她说：平衡不是谁都找得到的——你急了，急的时候最容易偏。她把天平收起来。",
+        next: "d8_pendulum" }
+    }
+  },
+
+  // 钟摆节奏
+  d8_pendulum: {
+    day: 8, time: "night", bg: "clock_room", char: null, speaker: "",
+    text: "她带你去钟楼。一只老钟摆在摆动。她说——它在找一个位置。她让你在它到那个位置的时候点「停」。她说：时机不对，就什么都不是。",
+    next: "d5_mimic",
+    pendulum: {
+      prompt: "钟摆摆到目标位置时——点「停」",
+      target: 0.85,
+      tolerance: 0.06,
+      duration: 12000,
+      thresholds: [
+        { max: 0.06, tag: "perfect",
+          label: "——停对了",
+          text: "钟摆稳稳停在了目标位置。她说：你的时机很准——准的人，知道什么时候该停。她想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "钟摆·85%", title: "钟楼里的钟摆", text: "你在钟摆到目标位置时点停，时机很准。" },
+          next: "d5_mimic" },
+        { max: 0.15, tag: "ok",
+          label: "——差一点",
+          text: "钟摆差一点。她说：差一点也是停——只是没那么对。她不让你再试一次。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——停早了",
+        text: "钟摆完全没停对位置。她说：时机不对——不对就是不对。她把钟摆按住，让它停下。",
+        next: "d5_mimic" }
+    }
+  },
+
   /* ============ v1.4.0 新玩法触发节点 ============ */
   // 拓印
   d3_rubbing: {

@@ -5480,4 +5480,311 @@ body {
   .wc-chime-cap { width: 28px; height: 6px; }
   .wc-chime-rod { height: 48px; }
   .bt-slider { max-width: 200px; }
+  /* v1.9.0 适配 */
+  .cp-canvas { height: 320px; }
+  .cp-prompt, .tg-prompt, .bl-prompt, .pd-prompt { font-size: 16px; letter-spacing: 2px; }
+  .tg-display { font-size: 22px; letter-spacing: 6px; }
+  .tg-option { padding: 8px 16px; font-size: 14px; }
+  .bl-canvas { height: 300px; }
+  .bl-item { width: 40px; height: 40px; font-size: 16px; }
+  .pd-canvas { height: 300px; }
+  .cp-actions button, .tg-actions button, .bl-actions button, .pd-actions button,
+  .pd-confirm,
+  .cp-reading-close, .tg-reading-close, .bl-reading-close, .pd-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+  .cp-reading, .tg-reading, .bl-reading, .pd-reading { max-width: 92%; padding: 14px 18px; }
+  .cp-reading-title, .tg-reading-title, .bl-reading-title, .pd-reading-title { font-size: 15px; }
+  .cp-reading-text, .tg-reading-text, .bl-reading-text, .pd-reading-text { font-size: 13px; }
+}
+
+/* ============ v1.9.0 罗盘导航 ============ */
+.compass-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(15,25,45,0.96), rgba(2,5,15,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.cp-prompt {
+  font-size: 18px; color: #b8c8ff;
+  letter-spacing: 3px; text-align: center;
+}
+.cp-stage { position: relative; width: min(95%, 460px); }
+.cp-canvas {
+  width: 100%; height: 460px;
+  background: #0a1a2a;
+  border: 1px solid rgba(180,200,240,0.3);
+  border-radius: 14px;
+  cursor: grab;
+  touch-action: none;
+}
+.cp-canvas:active { cursor: grabbing; }
+.cp-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #b8c8ff;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.cp-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.cp-actions button, .cp-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,120,200,0.6), rgba(80,90,180,0.5));
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.cp-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.cp-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,30,50,0.88);
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.cp-reading-title {
+  font-size: 17px; color: #b8c8ff;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.cp-reading-text {
+  font-size: 15px; color: #d8d8f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.9.0 密码电报 ============ */
+.telegraph-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,25,15,0.96), rgba(10,8,4,0.99));
+  backdrop-filter: blur(10px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.tg-prompt {
+  font-size: 18px; color: #ffe890;
+  letter-spacing: 3px; text-align: center;
+}
+.tg-stage {
+  width: min(95%, 520px);
+  background: rgba(20,15,5,0.7);
+  border: 1px solid rgba(255,220,120,0.3);
+  border-radius: 14px;
+  padding: 20px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+.tg-display {
+  font-size: 28px; color: #ffe890;
+  font-family: "Courier New", monospace;
+  letter-spacing: 8px;
+  text-align: center;
+  min-height: 36px;
+}
+.tg-wave {
+  display: flex; gap: 6px;
+  align-items: center; justify-content: center;
+  min-height: 32px; flex-wrap: wrap;
+}
+.tg-beat {
+  display: inline-block;
+  background: #ffe890;
+  border-radius: 4px;
+  opacity: 0;
+  animation: tg-beat-flash 0.4s ease forwards;
+}
+.tg-beat.dot { width: 8px; height: 8px; border-radius: 50%; }
+.tg-beat.dash { width: 24px; height: 8px; border-radius: 4px; }
+@keyframes tg-beat-flash {
+  0% { opacity: 0; transform: scale(0.5); }
+  40% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 0.6; transform: scale(1); }
+}
+.tg-info {
+  font-size: 13px; color: #ffe890;
+  letter-spacing: 2px;
+}
+.tg-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.tg-actions button, .tg-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(255,220,120,0.6), rgba(200,180,80,0.5));
+  border: 1px solid rgba(255,240,150,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.tg-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.tg-options {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center; max-width: 90%;
+}
+.tg-option {
+  padding: 10px 22px;
+  background: rgba(40,30,10,0.7);
+  border: 1px solid rgba(255,220,120,0.4);
+  border-radius: 18px; color: #ffe890;
+  font-family: "Courier New", monospace;
+  font-size: 16px;
+  letter-spacing: 4px; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tg-option:hover { background: rgba(80,60,20,0.8); }
+.tg-option.selected {
+  background: linear-gradient(135deg, rgba(255,220,120,0.6), rgba(200,180,80,0.5));
+  color: #fff;
+  border-color: rgba(255,240,150,0.8);
+  transform: scale(1.05);
+}
+.tg-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(30,25,15,0.92);
+  border: 1px solid rgba(255,220,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.tg-reading-title {
+  font-size: 17px; color: #ffe890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.tg-reading-text {
+  font-size: 15px; color: #f8e8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.9.0 天平称重 ============ */
+.balance-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(245,235,220,0.95), rgba(220,200,180,0.95));
+  backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.bl-prompt {
+  font-size: 18px; color: #5a4030;
+  letter-spacing: 3px; text-align: center;
+}
+.bl-stage { position: relative; width: min(95%, 560px); }
+.bl-canvas {
+  width: 100%; height: 380px;
+  background: #1a1a2a;
+  border: 1px solid rgba(180,140,120,0.3);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.bl-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #f8e8b8;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.bl-pool {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  justify-content: center; max-width: 90%;
+}
+.bl-item {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, #e8c890, #c8a870);
+  border: 2px solid #8a6840;
+  border-radius: 8px; color: #3a2a1a;
+  font-family: "Courier New", monospace;
+  font-size: 20px; font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.bl-item:hover { transform: translateY(-2px); }
+.bl-item.selected {
+  background: linear-gradient(135deg, #ffd890, #e8b870);
+  border-color: #ff8060;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(255,128,96,0.4);
+}
+.bl-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.bl-actions button, .bl-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(180,140,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.bl-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.bl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(255,250,240,0.92);
+  border: 1px solid rgba(180,140,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.bl-reading-title {
+  font-size: 17px; color: #b86050;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.bl-reading-text {
+  font-size: 15px; color: #5a4030;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.9.0 钟摆节奏 ============ */
+.pendulum-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,20,35,0.96), rgba(8,4,12,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.pd-prompt {
+  font-size: 18px; color: #ffd060;
+  letter-spacing: 3px; text-align: center;
+}
+.pd-stage { position: relative; width: min(95%, 520px); }
+.pd-canvas {
+  width: 100%; height: 400px;
+  background: #0a0a1a;
+  border: 1px solid rgba(200,180,100,0.3);
+  border-radius: 14px;
+}
+.pd-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd060;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.pd-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.pd-actions button, .pd-reading-close, .pd-confirm {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,180,100,0.6), rgba(160,140,80,0.5));
+  border: 1px solid rgba(220,200,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.pd-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pd-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(30,25,35,0.92);
+  border: 1px solid rgba(220,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.pd-reading-title {
+  font-size: 17px; color: #ffd060;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.pd-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
 }
