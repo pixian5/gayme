@@ -3256,6 +3256,414 @@ body {
   letter-spacing: 3px; cursor: pointer;
 }
 
+/* ============ v1.2.0 茶席品茗 ============ */
+.tea-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,25,20,0.92), rgba(10,8,5,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.tea-prompt {
+  font-size: 18px; color: #ffb8c8;
+  letter-spacing: 3px; text-align: center;
+}
+.tea-stage {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.tea-cup {
+  position: relative;
+  width: 140px; height: 120px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+  border: 2px solid rgba(255,220,180,0.4);
+  border-radius: 0 0 70px 70px / 0 0 50px 50px;
+  overflow: hidden;
+}
+.tea-liquid {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 65%;
+  background: linear-gradient(180deg, rgba(140,80,40,0.9), rgba(100,60,30,0.95));
+  transition: background 0.3s ease;
+}
+.tea-steam {
+  position: absolute; top: -10px; left: 50%;
+  transform: translateX(-50%);
+  width: 60px; height: 40px;
+  opacity: 0;
+  background: radial-gradient(ellipse at center bottom, rgba(255,255,255,0.4), transparent 70%);
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.tea-target {
+  font-size: 13px; color: rgba(255,220,180,0.7);
+  letter-spacing: 2px;
+}
+.tea-controls {
+  width: min(90%, 480px);
+  display: flex; flex-direction: column;
+  gap: 12px;
+}
+.tea-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.tea-row label {
+  width: 50px; font-size: 15px; color: #ffd8e4;
+}
+.tea-row input[type="range"] {
+  flex: 1; accent-color: #d87090;
+}
+.tea-row span {
+  width: 40px; text-align: right;
+  font-size: 14px; color: rgba(255,255,255,0.8);
+}
+.tea-info {
+  font-size: 15px; color: #ffb8c8;
+  letter-spacing: 2px;
+}
+.tea-actions button, .tea-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(180,80,120,0.5));
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.tea-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.tea-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,30,0.85);
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.tea-reading-title {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.tea-reading-text {
+  font-size: 15px; color: #e8d0d8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.2.0 星象观测 ============ */
+.astronomy-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(10,15,40,0.96), rgba(0,0,10,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.as-prompt {
+  font-size: 18px; color: #c8d8f0;
+  letter-spacing: 3px; text-align: center;
+}
+.as-stage {
+  position: relative;
+  width: min(90%, 480px); height: 320px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+}
+.as-disk {
+  position: relative;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,0.05), transparent 70%),
+    radial-gradient(circle at 30% 30%, rgba(180,180,255,0.15), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(150,180,255,0.1), transparent 50%),
+    linear-gradient(135deg, #0a0a20, #050518);
+  border: 2px solid rgba(180,180,255,0.3);
+  overflow: hidden;
+  transition: transform 0.4s ease;
+  box-shadow: 0 0 40px rgba(100,120,200,0.2);
+}
+.as-sky {
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(1px 1px at 80% 50%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.6), transparent),
+    radial-gradient(2px 2px at 50% 40%, rgba(255,240,200,0.9), transparent),
+    radial-gradient(1px 1px at 70% 80%, rgba(200,200,255,0.7), transparent),
+    radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.5), transparent);
+}
+.as-window {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,220,140,0.5);
+  background: radial-gradient(circle, rgba(255,220,140,0.1), transparent 70%);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.as-stars {
+  width: 100%; height: 100%;
+  background-image:
+    radial-gradient(2px 2px at 30% 40%, rgba(255,240,180,0.9), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.7), transparent),
+    radial-gradient(1px 1px at 50% 30%, rgba(255,220,140,0.8), transparent),
+    radial-gradient(1px 1px at 60% 80%, rgba(255,255,255,0.5), transparent);
+}
+.as-pointer {
+  position: absolute;
+  top: -8px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 16px solid rgba(255,220,140,0.8);
+}
+.as-clue {
+  font-size: 14px; color: rgba(255,220,140,0.8);
+  letter-spacing: 2px; text-align: center;
+  min-height: 20px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.as-clue.show { opacity: 1; }
+.as-slider-wrap {
+  width: min(90%, 480px);
+  display: flex; flex-direction: column;
+  gap: 8px;
+}
+.as-slider-wrap input[type="range"] {
+  width: 100%; accent-color: #8090c0;
+}
+.as-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: rgba(200,210,240,0.6);
+}
+.as-info {
+  font-size: 15px; color: #c8d8f0;
+  letter-spacing: 2px;
+}
+.as-actions button, .as-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(100,120,200,0.5), rgba(80,100,180,0.4));
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.as-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,25,50,0.85);
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.as-reading-title {
+  font-size: 17px; color: #c8d8f0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.as-reading-text {
+  font-size: 15px; color: #d0d8e8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.2.0 颜料调配 ============ */
+.palette-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,20,25,0.92), rgba(10,5,8,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.pa-prompt {
+  font-size: 18px; color: #ffb8c8;
+  letter-spacing: 3px; text-align: center;
+}
+.pa-stage {
+  display: flex; gap: 30px;
+  align-items: center;
+}
+.pa-target, .pa-current {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+}
+.pa-label {
+  font-size: 13px; color: rgba(255,255,255,0.6);
+  letter-spacing: 2px;
+}
+.pa-color {
+  width: 120px; height: 120px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: rgb(128,128,128);
+  transition: background 0.2s ease;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.pa-controls {
+  width: min(90%, 480px);
+  display: flex; flex-direction: column;
+  gap: 12px;
+}
+.pa-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.pa-row label {
+  width: 30px; font-size: 16px; font-weight: 600;
+}
+.pa-row input[type="range"] {
+  flex: 1; accent-color: #d87090;
+}
+.pa-row span {
+  width: 40px; text-align: right;
+  font-size: 14px; color: rgba(255,255,255,0.8);
+}
+.pa-info {
+  font-size: 15px; color: #ffb8c8;
+  letter-spacing: 2px;
+}
+.pa-actions button, .pa-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(180,80,120,0.5));
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.pa-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.pa-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,30,0.85);
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.pa-reading-title {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.pa-reading-text {
+  font-size: 15px; color: #e8d0d8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.2.0 琴键演奏 ============ */
+.piano-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(25,20,30,0.92), rgba(8,6,12,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.pi-prompt {
+  font-size: 18px; color: #ffb8c8;
+  letter-spacing: 3px; text-align: center;
+}
+.pi-stage {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  min-height: 60px;
+}
+.pi-sequence {
+  display: flex; gap: 8px;
+  flex-wrap: wrap; justify-content: center;
+}
+.pi-note {
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,200,220,0.2);
+  border-radius: 10px;
+  font-size: 14px; color: rgba(255,255,255,0.7);
+  letter-spacing: 2px;
+  transition: all 0.2s ease;
+}
+.pi-note.played {
+  background: rgba(216,112,144,0.4);
+  border-color: rgba(255,200,220,0.6);
+  color: #ffd8e4;
+}
+.pi-progress {
+  font-size: 13px; color: rgba(255,200,220,0.6);
+  letter-spacing: 2px;
+}
+.pi-piano {
+  display: flex; gap: 4px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(60,40,50,0.6), rgba(30,20,30,0.8));
+  border-radius: 12px 12px 8px 8px;
+  border: 1px solid rgba(255,200,220,0.2);
+}
+.pi-key {
+  width: 48px; height: 140px;
+  background: linear-gradient(180deg, #f5f0e8 0%, #e8e0d8 80%, #d0c8c0 100%);
+  border: 1px solid rgba(0,0,0,0.2);
+  border-radius: 0 0 8px 8px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.1);
+}
+.pi-key:hover {
+  background: linear-gradient(180deg, #fff5f0 0%, #f0e8e0 80%, #d8c8c0 100%);
+}
+.pi-key.active {
+  background: linear-gradient(180deg, #ffd8e4 0%, #d8a0b8 80%, #b87090 100%);
+  transform: translateY(2px);
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,0.2);
+}
+.pi-key-label {
+  font-size: 12px; color: rgba(80,60,80,0.7);
+  letter-spacing: 1px;
+}
+.pi-info {
+  font-size: 15px; color: #ffb8c8;
+  letter-spacing: 2px;
+}
+.pi-actions {
+  display: flex; gap: 12px;
+}
+.pi-actions button, .pi-reading-close {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, rgba(216,112,144,0.6), rgba(180,80,120,0.5));
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.pi-actions button:disabled {
+  opacity: 0.4; cursor: not-allowed;
+}
+.pi-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,30,0.85);
+  border: 1px solid rgba(255,200,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.pi-reading-title {
+  font-size: 17px; color: #ffd8e4;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.pi-reading-text {
+  font-size: 15px; color: #e8d0d8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }

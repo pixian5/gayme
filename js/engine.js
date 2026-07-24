@@ -612,6 +612,46 @@
       return;
     }
 
+    // v1.2.0 茶席品茗节点
+    if (node.tea) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTea(node.tea, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.2.0 星象观测节点
+    if (node.astronomy) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runAstronomy(node.astronomy, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.2.0 颜料调配节点
+    if (node.palette) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPalette(node.palette, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.2.0 琴键演奏节点
+    if (node.piano) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPiano(node.piano, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -4998,6 +5038,529 @@
     resize();
   }
 
+  /* ============================================================
+     v1.2.0 茶席品茗 runTea
+     node.tea = {
+       prompt: "泡一壶茶——",
+       target: { temp: 0.6, amount: 0.4, time: 0.5 }, // 0~1 目标值
+       tolerance: 0.15,
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.55, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runTea(t, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "tea-layer";
+    layer.id = "tea-layer";
+    const tgt = t.target || { temp: 0.5, amount: 0.5, time: 0.5 };
+    layer.innerHTML = `
+      <div class="tea-prompt">${t.prompt || "泡一壶茶——"}</div>
+      <div class="tea-stage">
+        <div class="tea-cup" id="tea-cup">
+          <div class="tea-liquid" id="tea-liquid"></div>
+          <div class="tea-steam" id="tea-steam"></div>
+        </div>
+        <div class="tea-target">目标 · 水温${Math.round(tgt.temp*100)} · 茶量${Math.round(tgt.amount*100)} · 时间${Math.round(tgt.time*100)}</div>
+      </div>
+      <div class="tea-controls">
+        <div class="tea-row">
+          <label>水温</label>
+          <input type="range" id="tea-temp" min="0" max="1" step="0.01" value="0.5">
+          <span id="tea-temp-val">50</span>
+        </div>
+        <div class="tea-row">
+          <label>茶量</label>
+          <input type="range" id="tea-amount" min="0" max="1" step="0.01" value="0.5">
+          <span id="tea-amount-val">50</span>
+        </div>
+        <div class="tea-row">
+          <label>浸泡</label>
+          <input type="range" id="tea-time" min="0" max="1" step="0.01" value="0.5">
+          <span id="tea-time-val">50</span>
+        </div>
+      </div>
+      <div class="tea-info" id="tea-info">相似度：——</div>
+      <div class="tea-actions">
+        <button class="tea-confirm" id="tea-confirm">奉茶</button>
+      </div>
+    `;
+    const tempEl = layer.querySelector("#tea-temp");
+    const amountEl = layer.querySelector("#tea-amount");
+    const timeEl = layer.querySelector("#tea-time");
+    const tempVal = layer.querySelector("#tea-temp-val");
+    const amountVal = layer.querySelector("#tea-amount-val");
+    const timeVal = layer.querySelector("#tea-time-val");
+    const info = layer.querySelector("#tea-info");
+    const confirmBtn = layer.querySelector("#tea-confirm");
+    const liquid = layer.querySelector("#tea-liquid");
+    const steam = layer.querySelector("#tea-steam");
+
+    function update() {
+      const p = parseFloat(tempEl.value);
+      const a = parseFloat(amountEl.value);
+      const ti = parseFloat(timeEl.value);
+      tempVal.textContent = Math.round(p * 100);
+      amountVal.textContent = Math.round(a * 100);
+      timeVal.textContent = Math.round(ti * 100);
+      const diff = (Math.abs(p - tgt.temp) + Math.abs(a - tgt.amount) + Math.abs(ti - tgt.time)) / 3;
+      const score = Math.max(0, 1 - diff);
+      info.textContent = `相似度：${Math.round(score * 100)}%`;
+      // 茶汤颜色：水温高偏红，茶量多偏深，时间长偏浓
+      const r = Math.round(120 + p * 100);
+      const g = Math.round(60 + (1-a) * 40);
+      const b = Math.round(20 + (1-ti) * 30);
+      liquid.style.background = `linear-gradient(180deg, rgba(${r},${g},${b},0.9), rgba(${r-30},${g-20},${b-10},0.95))`;
+      // 蒸汽：水温越高越明显
+      steam.style.opacity = p * 0.8;
+    }
+    tempEl.addEventListener("input", update);
+    amountEl.addEventListener("input", update);
+    timeEl.addEventListener("input", update);
+
+    confirmBtn.onclick = () => {
+      const p = parseFloat(tempEl.value);
+      const a = parseFloat(amountEl.value);
+      const ti = parseFloat(timeEl.value);
+      const diff = (Math.abs(p - tgt.temp) + Math.abs(a - tgt.amount) + Math.abs(ti - tgt.time)) / 3;
+      const score = Math.max(0, 1 - diff);
+      const thresholds = t.thresholds || [];
+      let matched = t.fallback || { tag: "miss", label: "——没泡好", next: null };
+      for (const th of thresholds) {
+        if (score >= th.min) { matched = th; break; }
+      }
+      Saves.saveTeaRecord(currentNodeId, p, a, ti, diff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "tea-reading";
+      reading.innerHTML = `<div class="tea-reading-title">${matched.label || "解读"} · 相似度 ${Math.round(score * 100)}%</div>
+        <div class="tea-reading-text">${matched.text || ""}</div>
+        <button class="tea-reading-close">继续</button>`;
+      reading.querySelector(".tea-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+    update();
+  }
+
+  /* ============================================================
+     v1.2.0 星象观测 runAstronomy
+     node.astronomy = {
+       prompt: "旋转星图盘——对齐今夜的星座",
+       constellations: ["aries","taurus","gemini",...],  // 盘上星座
+       target: "libra",   // 目标星座
+       clue: "天秤座的星辰今夜最亮",
+       thresholds: [
+         { isTarget: true, tag, label, text, add?, memory?, next },
+         { isTarget: false, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runAstronomy(a, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "astronomy-layer";
+    layer.id = "astronomy-layer";
+    const constellations = a.constellations || ["aries","taurus","gemini","cancer","leo","virgo","libra","scorpio"];
+    const target = a.target;
+    const conLabels = {
+      aries:"白羊座", taurus:"金牛座", gemini:"双子座", cancer:"巨蟹座",
+      leo:"狮子座", virgo:"处女座", libra:"天秤座", scorpio:"天蝎座",
+      sagittarius:"射手座", capricorn:"摩羯座", aquarius:"水瓶座", pisces:"双鱼座"
+    };
+    layer.innerHTML = `
+      <div class="as-prompt">${a.prompt || "旋转星图盘——"}</div>
+      <div class="as-stage">
+        <div class="as-disk" id="as-disk">
+          <div class="as-sky"></div>
+          <div class="as-window" id="as-window"></div>
+          <div class="as-pointer"></div>
+        </div>
+        <div class="as-clue" id="as-clue"></div>
+      </div>
+      <div class="as-slider-wrap">
+        <input type="range" id="as-slider" min="0" max="${constellations.length - 1}" step="1" value="0">
+        <div class="as-labels">${constellations.map((c,i) => `<span data-i="${i}">${conLabels[c]||c}</span>`).join("")}</div>
+      </div>
+      <div class="as-info" id="as-info">当前：${conLabels[constellations[0]] || constellations[0]}</div>
+      <div class="as-actions">
+        <button class="as-confirm" id="as-confirm">确认星象</button>
+      </div>
+    `;
+    const slider = layer.querySelector("#as-slider");
+    const disk = layer.querySelector("#as-disk");
+    const windowEl = layer.querySelector("#as-window");
+    const clueEl = layer.querySelector("#as-clue");
+    const info = layer.querySelector("#as-info");
+    const confirmBtn = layer.querySelector("#as-confirm");
+
+    function renderCon(idx) {
+      const c = constellations[idx];
+      // 旋转星盘角度
+      const angle = (idx / constellations.length) * 360;
+      disk.style.transform = `rotate(${angle}deg)`;
+      windowEl.innerHTML = `<div class="as-stars as-${c}"></div>`;
+      if (c === target) {
+        clueEl.textContent = a.clue || "";
+        clueEl.classList.add("show");
+      } else {
+        clueEl.textContent = "";
+        clueEl.classList.remove("show");
+      }
+      info.textContent = `当前：${conLabels[c] || c}`;
+    }
+    slider.addEventListener("input", () => renderCon(parseInt(slider.value)));
+
+    confirmBtn.onclick = () => {
+      const idx = parseInt(slider.value);
+      const chosen = constellations[idx];
+      const isTarget = chosen === target;
+      const thresholds = a.thresholds || [];
+      let matched = a.fallback || { tag: "miss", label: "——选错了", next: null };
+      for (const t of thresholds) {
+        if (t.isTarget === isTarget) { matched = t; break; }
+      }
+      Saves.saveAstronomyRecord(currentNodeId, idx, isTarget ? 0 : 1, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "as-reading";
+      reading.innerHTML = `<div class="as-reading-title">${matched.label || "解读"}</div>
+        <div class="as-reading-text">${matched.text || ""}</div>
+        <button class="as-reading-close">继续</button>`;
+      reading.querySelector(".as-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+    renderCon(0);
+  }
+
+  /* ============================================================
+     v1.2.0 颜料调配 runPalette
+     node.palette = {
+       prompt: "调出她裙摆的颜色——",
+       target: { r: 216, g: 112, b: 144 },   // 0~255
+       tolerance: 30,
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.55, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runPalette(p, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "palette-layer";
+    layer.id = "palette-layer";
+    const tgt = p.target || { r: 216, g: 112, b: 144 };
+    layer.innerHTML = `
+      <div class="pa-prompt">${p.prompt || "调出目标颜色——"}</div>
+      <div class="pa-stage">
+        <div class="pa-target">
+          <div class="pa-label">目标色</div>
+          <div class="pa-color" id="pa-target-color" style="background: rgb(${tgt.r},${tgt.g},${tgt.b})"></div>
+        </div>
+        <div class="pa-current">
+          <div class="pa-label">你的色</div>
+          <div class="pa-color" id="pa-current-color"></div>
+        </div>
+      </div>
+      <div class="pa-controls">
+        <div class="pa-row">
+          <label style="color:#ff8080">红</label>
+          <input type="range" id="pa-r" min="0" max="255" step="1" value="128">
+          <span id="pa-r-val">128</span>
+        </div>
+        <div class="pa-row">
+          <label style="color:#80ff80">绿</label>
+          <input type="range" id="pa-g" min="0" max="255" step="1" value="128">
+          <span id="pa-g-val">128</span>
+        </div>
+        <div class="pa-row">
+          <label style="color:#8080ff">蓝</label>
+          <input type="range" id="pa-b" min="0" max="255" step="1" value="128">
+          <span id="pa-b-val">128</span>
+        </div>
+      </div>
+      <div class="pa-info" id="pa-info">差异：——</div>
+      <div class="pa-actions">
+        <button class="pa-confirm" id="pa-confirm">就这色</button>
+      </div>
+    `;
+    const rEl = layer.querySelector("#pa-r");
+    const gEl = layer.querySelector("#pa-g");
+    const bEl = layer.querySelector("#pa-b");
+    const rVal = layer.querySelector("#pa-r-val");
+    const gVal = layer.querySelector("#pa-g-val");
+    const bVal = layer.querySelector("#pa-b-val");
+    const info = layer.querySelector("#pa-info");
+    const confirmBtn = layer.querySelector("#pa-confirm");
+    const currentColor = layer.querySelector("#pa-current-color");
+
+    function update() {
+      const r = parseInt(rEl.value);
+      const g = parseInt(gEl.value);
+      const b = parseInt(bEl.value);
+      rVal.textContent = r;
+      gVal.textContent = g;
+      bVal.textContent = b;
+      currentColor.style.background = `rgb(${r},${g},${b})`;
+      const dr = Math.abs(r - tgt.r);
+      const dg = Math.abs(g - tgt.g);
+      const db = Math.abs(b - tgt.b);
+      const diff = (dr + dg + db) / 3;
+      const score = Math.max(0, 1 - diff / 255);
+      info.textContent = `差异：${Math.round(diff)} · 相似度：${Math.round(score * 100)}%`;
+    }
+    rEl.addEventListener("input", update);
+    gEl.addEventListener("input", update);
+    bEl.addEventListener("input", update);
+
+    confirmBtn.onclick = () => {
+      const r = parseInt(rEl.value);
+      const g = parseInt(gEl.value);
+      const b = parseInt(bEl.value);
+      const dr = Math.abs(r - tgt.r);
+      const dg = Math.abs(g - tgt.g);
+      const db = Math.abs(b - tgt.b);
+      const diff = (dr + dg + db) / 3;
+      const score = Math.max(0, 1 - diff / 255);
+      const thresholds = p.thresholds || [];
+      let matched = p.fallback || { tag: "miss", label: "——不像", next: null };
+      for (const th of thresholds) {
+        if (score >= th.min) { matched = th; break; }
+      }
+      Saves.savePaletteRecord(currentNodeId, r, g, b, diff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "pa-reading";
+      reading.innerHTML = `<div class="pa-reading-title">${matched.label || "解读"} · 相似度 ${Math.round(score * 100)}%</div>
+        <div class="pa-reading-text">${matched.text || ""}</div>
+        <button class="pa-reading-close">继续</button>`;
+      reading.querySelector(".pa-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+    update();
+  }
+
+  /* ============================================================
+     v1.2.0 琴键演奏 runPiano
+     node.piano = {
+       prompt: "弹奏她哼过的旋律——",
+       keys: 8,                    // 琴键数
+       sequence: [0,2,4,2,0],      // 目标序列（琴键索引）
+       showSequence: true,         // 是否先展示序列
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.55, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runPiano(p, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "piano-layer";
+    layer.id = "piano-layer";
+    const numKeys = p.keys || 8;
+    const sequence = p.sequence || [0,2,4,2,0];
+    const noteNames = ["Do","Re","Mi","Fa","Sol","La","Si","Do","Re","Mi"];
+    layer.innerHTML = `
+      <div class="pi-prompt">${p.prompt || "弹奏旋律——"}</div>
+      <div class="pi-stage">
+        <div class="pi-sequence" id="pi-sequence"></div>
+        <div class="pi-progress" id="pi-progress">序列：0 / ${sequence.length}</div>
+      </div>
+      <div class="pi-piano" id="pi-piano"></div>
+      <div class="pi-info" id="pi-info">先听一遍旋律——</div>
+      <div class="pi-actions">
+        <button class="pi-play" id="pi-play">播放旋律</button>
+        <button class="pi-confirm" id="pi-confirm" disabled>完成</button>
+      </div>
+    `;
+    const piano = layer.querySelector("#pi-piano");
+    const seqEl = layer.querySelector("#pi-sequence");
+    const progress = layer.querySelector("#pi-progress");
+    const info = layer.querySelector("#pi-info");
+    const playBtn = layer.querySelector("#pi-play");
+    const confirmBtn = layer.querySelector("#pi-confirm");
+
+    // 生成琴键
+    const keyEls = [];
+    for (let i = 0; i < numKeys; i++) {
+      const key = document.createElement("div");
+      key.className = "pi-key";
+      key.dataset.idx = i;
+      key.innerHTML = `<div class="pi-key-label">${noteNames[i] || i}</div>`;
+      piano.appendChild(key);
+      keyEls.push(key);
+    }
+
+    // 显示目标序列（用问号，播放后才揭示）
+    function renderSeq(revealed) {
+      seqEl.innerHTML = sequence.map((k, i) => {
+        const label = revealed ? noteNames[k] : "?";
+        return `<div class="pi-note" data-idx="${i}">${label}</div>`;
+      }).join("");
+    }
+    renderSeq(!p.showSequence);
+
+    let playerSeq = [];
+    let playing = false;
+    let aborted = false;
+
+    function flashKey(idx, duration = 300) {
+      const k = keyEls[idx];
+      if (!k) return;
+      k.classList.add("active");
+      setTimeout(() => k.classList.remove("active"), duration);
+    }
+
+    function playSequence() {
+      if (playing) return;
+      playing = true;
+      playBtn.disabled = true;
+      info.textContent = "听旋律……";
+      renderSeq(true);
+      let i = 0;
+      const iv = setInterval(() => {
+        if (aborted || !document.body.contains(layer)) { clearInterval(iv); return; }
+        if (i >= sequence.length) {
+          clearInterval(iv);
+          playing = false;
+          playBtn.disabled = false;
+          info.textContent = "按顺序点击琴键演奏——";
+          return;
+        }
+        flashKey(sequence[i]);
+        i++;
+      }, 600);
+    }
+    playBtn.onclick = playSequence;
+
+    function onKeyClick(idx) {
+      if (playing || aborted) return;
+      if (playerSeq.length >= sequence.length) return;
+      flashKey(idx);
+      playerSeq.push(idx);
+      progress.textContent = `序列：${playerSeq.length} / ${sequence.length}`;
+      // 标记已弹音符
+      const notes = seqEl.querySelectorAll(".pi-note");
+      if (notes[playerSeq.length - 1]) {
+        notes[playerSeq.length - 1].classList.add("played");
+      }
+      if (playerSeq.length >= sequence.length) {
+        confirmBtn.disabled = false;
+        info.textContent = "可以提交了——";
+      }
+    }
+    keyEls.forEach((k, i) => {
+      k.addEventListener("click", () => onKeyClick(i));
+    });
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || playing) return;
+      let correct = 0;
+      for (let i = 0; i < sequence.length; i++) {
+        if (playerSeq[i] === sequence[i]) correct++;
+      }
+      const accuracy = sequence.length ? correct / sequence.length : 0;
+      const thresholds = p.thresholds || [];
+      let matched = p.fallback || { tag: "miss", label: "——弹错了", next: null };
+      for (const th of thresholds) {
+        if (accuracy >= th.min) { matched = th; break; }
+      }
+      Saves.savePianoRecord(currentNodeId, playerSeq.join(","), correct, sequence.length, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "pi-reading";
+      reading.innerHTML = `<div class="pi-reading-title">${matched.label || "解读"} · 正确率 ${Math.round(accuracy * 100)}%</div>
+        <div class="pi-reading-text">${matched.text || ""}</div>
+        <button class="pi-reading-close">继续</button>`;
+      reading.querySelector(".pi-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    // 清理
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -5075,6 +5638,10 @@
     document.querySelectorAll(".mimic-layer").forEach(e => e.remove());
     document.querySelectorAll(".season-layer").forEach(e => e.remove());
     document.querySelectorAll(".pulse-layer").forEach(e => e.remove());
+    document.querySelectorAll(".tea-layer").forEach(e => e.remove());
+    document.querySelectorAll(".astronomy-layer").forEach(e => e.remove());
+    document.querySelectorAll(".palette-layer").forEach(e => e.remove());
+    document.querySelectorAll(".piano-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

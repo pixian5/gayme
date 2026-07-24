@@ -1386,6 +1386,128 @@ const SCRIPT = {
     }
   },
 
+  /* ============ v1.2.0 新玩法触发节点 ============ */
+  // 茶席品茗
+  d4_tea: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "回到房间，桌上有一套茶具。泡一壶茶吧——给明天的自己留一杯。",
+    next: "d4_astronomy",
+    tea: {
+      prompt: "泡一壶茶——调整水温、茶量、浸泡时间",
+      target: { temp: 0.7, amount: 0.4, time: 0.5 },
+      tolerance: 0.15,
+      thresholds: [
+        { min: 0.85, tag: "perfect",
+          label: "——恰到好处",
+          text: "茶汤色泽温润，香气恰到好处。你抿一口——苦里有回甘，像这一天的尾巴。明天会好的。",
+          add: { affection: { shen: 2, shiyu: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "茶·恰到好处", title: "夜里泡的茶", text: "你在夜里泡了一壶恰到好处的茶，苦里有回甘。" },
+          next: "d4_astronomy" },
+        { min: 0.55, tag: "ok",
+          label: "——还行",
+          text: "茶泡得还行——不坏，也不好。有些夜晚就是这样，不浓不淡，过了就过了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_astronomy" }
+      ],
+      fallback: { tag: "miss",
+        label: "——泡坏了",
+        text: "茶泡得太苦或者太淡。你倒掉，重新烧水——有些事可以重来，有些不行。明天再说吧。",
+        next: "d4_astronomy" }
+    }
+  },
+
+  // 星象观测
+  d4_astronomy: {
+    day: 4, time: "night", bg: "rooftop", char: null, speaker: "",
+    text: "天台上夜风很凉。抬头看星空——旋转星图盘，对齐今夜的星座。",
+    next: "d5_palette",
+    astronomy: {
+      prompt: "旋转星图盘——对齐今夜最亮的星座",
+      constellations: ["aries","taurus","gemini","cancer","leo","virgo","libra","scorpio"],
+      target: "libra",
+      clue: "天秤座的星辰今夜最亮——它总在权衡，却从不偏倚。",
+      thresholds: [
+        { isTarget: true, tag: "aligned",
+          label: "——对齐了",
+          text: "天秤座挂在夜空正中。你想起她说过的：秤平的时候，不是没重量，是两边的重量一样。你和她，也许就是这样。",
+          add: { affection: { shiyu: 1, sunian: 1, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "星象·天秤", title: "天秤座的夜", text: "你在天台上对齐了天秤座的星辰。" },
+          next: "d5_palette" },
+        { isTarget: false, tag: "miss",
+          label: "——对错了",
+          text: "你选了别的星座——今夜它不亮。也许她说的那个秤，今夜不在天上。",
+          next: "d5_palette" }
+      ],
+      fallback: { tag: "miss", next: "d5_palette" }
+    }
+  },
+
+  // 颜料调配
+  d5_palette: {
+    day: 5, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "苏念把调色盘推过来。「调出这个颜色——」她指着画上裙摆的一角。「调对，我就告诉你画的是谁。」",
+    next: "d5_piano",
+    palette: {
+      prompt: "调出她裙摆的颜色——",
+      target: { r: 200, g: 140, b: 180 },
+      tolerance: 30,
+      thresholds: [
+        { min: 0.85, tag: "matched",
+          label: "——调对了",
+          text: "你调出的颜色几乎一模一样。苏念看了一眼：「……是林诗雨。我画的是她那天在校门口的样子。」她顿了顿：「你怎么知道她裙子的颜色？」",
+          add: { affection: { sunian: 2, shiyu: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "颜料·裙摆", title: "裙摆的颜色", text: "你调出了林诗雨裙摆的颜色，苏念说画的是她。" },
+          next: "d5_piano" },
+        { min: 0.55, tag: "ok",
+          label: "——差一点",
+          text: "你调出的颜色差一点。苏念看了看：「……不是她。但你调的这个颜色，像另一个人。」她没说是谁。",
+          add: { affection: { sunian: 1 } },
+          personality: { honest: 1 },
+          next: "d5_piano" }
+      ],
+      fallback: { tag: "miss",
+        label: "——不像",
+        text: "你调出的颜色完全不对。苏念笑了一下：「……算了。有些颜色，调不出来就是调不出来。」",
+        next: "d5_piano" }
+    }
+  },
+
+  // 琴键演奏
+  d5_piano: {
+    day: 5, time: "morning", bg: "home_room", char: null, speaker: "",
+    text: "窗台上有一架旧口风琴。她昨天哼过一段旋律——你试着弹出来。",
+    next: "common_day5_morning",
+    piano: {
+      prompt: "弹奏她哼过的旋律——",
+      keys: 8,
+      sequence: [0, 2, 4, 2, 0],
+      showSequence: true,
+      thresholds: [
+        { min: 0.85, tag: "perfect",
+          label: "——弹对了",
+          text: "你一个音不差地弹了出来。旋律在房间里回响——你想起来了：这是她外婆教她的那首歌。你没见过她外婆，但这一刻，你好像听见了。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "琴键·旋律", title: "她外婆的歌", text: "你弹出了她哼过的旋律——是她外婆教她的那首歌。" },
+          next: "common_day5_morning" },
+        { min: 0.55, tag: "ok",
+          label: "——弹得还行",
+          text: "你弹得磕磕绊绊，但旋律出来了。她说过：错音也是旋律的一部分。你想她是对的。",
+          add: { affection: { shiyu: 1 } },
+          personality: { honest: 1 },
+          next: "common_day5_morning" }
+      ],
+      fallback: { tag: "miss",
+        label: "——弹错了",
+        text: "你完全弹错了。旋律碎了。但没关系——有些歌，本来就不是弹给人听的。",
+        next: "common_day5_morning" }
+    }
+  },
+
   /* ============ 第 5 日 · 路线决定日 ============ */
   common_day5_morning: { day: 5, time: "morning", bg: "rooftop", char: null, speaker: "", text: "第 5 日清晨。我爬上天台透气。海风把樱花吹成一场粉色的雨。", next: "d5_route_check" },
   d5_route_check: {
