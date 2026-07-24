@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>樱时信笺 · Sakura Letters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="game">
+
+  <!-- 背景层 -->
+  <div id="bg-layer" class="bg-scene scene-school_gate"></div>
+  <div id="bg-overlay"></div>
+
+  <!-- 粒子层（樱花/雨/雪） -->
+  <canvas id="particles"></canvas>
+
+  <!-- 立绘层 -->
+  <div id="char-layer"></div>
+
+  <!-- 顶部菜单条 -->
+  <div id="top-bar">
+    <button data-menu="history" title="历史">📜</button>
+    <button data-menu="save" title="存档">💾</button>
+    <button data-menu="load" title="读档">📂</button>
+    <button data-menu="config" title="设置">⚙️</button>
+    <button data-menu="title" title="返回标题">🏠</button>
+    <button id="btn-auto" title="自动">▶▶</button>
+    <button id="btn-skip" title="快进">⏩</button>
+  </div>
+
+  <!-- 对话框 -->
+  <div id="dialog-box" class="hidden">
+    <div id="speaker"></div>
+    <div id="dialog-text"></div>
+    <div id="click-hint">▼</div>
+  </div>
+
+  <!-- 选项层 -->
+  <div id="choices" class="hidden"></div>
+
+  <!-- 标题画面 -->
+  <div id="title-screen" class="screen">
+    <div class="title-main">
+      <h1 class="title-cn">樱时信笺</h1>
+      <p class="title-en">Sakura · Letters · in · Cherry · Time</p>
+      <p class="title-sub">在樱花开落的季节，写下属于你的回信</p>
+    </div>
+    <div class="title-menu">
+      <button data-action="new">开始新游戏</button>
+      <button data-action="continue">继续游戏</button>
+      <button data-action="load">读取存档</button>
+      <button data-action="gallery">结局图鉴</button>
+      <button data-action="about">关于</button>
+    </div>
+    <div class="title-version">v0.0.1 · Demo</div>
+  </div>
+
+  <!-- 通用菜单浮层（存档/读档/设置/历史/图鉴） -->
+  <div id="overlay" class="screen hidden">
+    <div class="overlay-panel">
+      <div class="overlay-header">
+        <h2 id="overlay-title">存档</h2>
+        <button class="overlay-close" data-close>✕</button>
+      </div>
+      <div id="overlay-body" class="overlay-body"></div>
+    </div>
+  </div>
+
+  <!-- 结局画面 -->
+  <div id="ending-screen" class="screen hidden">
+    <div class="ending-content">
+      <div id="ending-type"></div>
+      <h2 id="ending-title"></h2>
+      <p id="ending-text"></p>
+      <div class="ending-actions">
+        <button data-action="title">返回标题</button>
+        <button data-action="gallery">结局图鉴</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/saves.js"></script>
+<script src="js/script.js"></script>
+<script src="js/engine.js"></script>
+</body>
+</html>
