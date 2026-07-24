@@ -3791,13 +3791,14 @@
     const holdMs = br.holdMs || 1000;
     const exhaleMs = br.exhaleMs || 6000;
     let currentCycle = 0;
-    let phase = "idle"; // idle / inhale / hold / exhale
+    let phase = "idle"; // idle / inhale / hold / exhale / done
     let phaseStartTime = 0;
-    let pressing = false;
     let pressStartTime = 0;
     let syncSum = 0;
     let syncCount = 0;
     let started = false;
+    let rafId = null;
+    let aborted = false;
 
     // 渲染进度点
     for (let i = 0; i < totalCycles; i++) {
@@ -3863,7 +3864,9 @@
     }
 
     function finishBreath() {
+      if (phase === "done") return;
       phase = "done";
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       const avgSync = syncCount ? syncSum / syncCount : 0;
       const thresholds = br.thresholds || [];
       let matched = br.fallback || { tag: "miss", label: "——乱息", next: null };
@@ -3898,7 +3901,7 @@
 
     // 主循环：用 requestAnimationFrame 推进阶段
     function loop() {
-      if (phase === "idle" || phase === "done") return;
+      if (aborted || phase === "idle" || phase === "done") return;
       const now = performance.now();
       const elapsed = now - phaseStartTime;
       if (phase === "inhale" && elapsed >= inhaleMs) {
@@ -3908,14 +3911,15 @@
       } else if (phase === "exhale" && elapsed >= exhaleMs) {
         nextPhase();
       }
-      requestAnimationFrame(loop);
+      if (!aborted && phase !== "idle" && phase !== "done") {
+        rafId = requestAnimationFrame(loop);
+      }
     }
 
     // 玩家长按：判定同步度
     function onPressDown(e) {
       if (!started || phase === "done" || phase === "idle") return;
       e.preventDefault();
-      pressing = true;
       pressStartTime = performance.now();
       // 只有吸气阶段长按才算同步
       if (phase === "inhale") {
@@ -3927,7 +3931,6 @@
       }
     }
     function onPressUp() {
-      pressing = false;
       if (!started || phase === "done") return;
       if (phase === "exhale") {
         const releaseTime = performance.now();
@@ -3941,7 +3944,6 @@
 
     circle.addEventListener("mousedown", onPressDown);
     circle.addEventListener("mouseup", onPressUp);
-    circle.addEventListener("mouseleave", onPressUp);
     circle.addEventListener("touchstart", onPressDown, { passive: false });
     circle.addEventListener("touchend", onPressUp);
 
@@ -3950,8 +3952,26 @@
       started = true;
       startBtn.disabled = true;
       startInhale();
-      requestAnimationFrame(loop);
+      rafId = requestAnimationFrame(loop);
     };
+
+    // layer 被外部移除时取消 rAF，避免 backToTitle 后空转
+    const cleanup = () => {
+      aborted = true;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      circle.removeEventListener("mousedown", onPressDown);
+      circle.removeEventListener("mouseup", onPressUp);
+      circle.removeEventListener("touchstart", onPressDown);
+      circle.removeEventListener("touchend", onPressUp);
+    };
+    // MutationObserver 监听 layer 被移除
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        cleanup();
+        mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
 
     document.getElementById("game").appendChild(layer);
   }
@@ -4197,7 +4217,6 @@
         <button class="rf-confirm" id="rf-confirm">确定对齐</button>
       </div>
     `;
-    const stage = layer.querySelector("#rf-stage");
     const lower = layer.querySelector("#rf-lower");
     const info = layer.querySelector("#rf-info");
     const confirmBtn = layer.querySelector("#rf-confirm");
@@ -4229,12 +4248,31 @@
     }
     function onUp() { dragging = false; }
 
-    lower.addEventListener("mousedown", e => onDown(e.clientX));
-    document.addEventListener("mousemove", e => onMove(e.clientX));
-    document.addEventListener("mouseup", onUp);
-    lower.addEventListener("touchstart", e => { const t = e.touches[0]; onDown(t.clientX); e.preventDefault(); }, { passive: false });
-    document.addEventListener("touchmove", e => { if (!dragging) return; const t = e.touches[0]; onMove(t.clientX); e.preventDefault(); }, { passive: false });
-    document.addEventListener("touchend", onUp);
+    const onMouseDown = e => onDown(e.clientX);
+    const onMouseMove = e => onMove(e.clientX);
+    const onMouseUp = () => onUp();
+    const onTouchStart = e => { const t = e.touches[0]; onDown(t.clientX); e.preventDefault(); };
+    const onTouchMove = e => { if (!dragging) return; const t = e.touches[0]; onMove(t.clientX); e.preventDefault(); };
+    const onTouchEnd = () => onUp();
+
+    lower.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+    lower.addEventListener("touchstart", onTouchStart, { passive: false });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd);
+
+    // layer 移除时清理 document 上的监听，避免泄漏
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("touchmove", onTouchMove);
+        document.removeEventListener("touchend", onTouchEnd);
+        mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
 
     // 初始偏移到一边
     offsetX = maxOffset * 0.7;
@@ -4347,6 +4385,7 @@
     // 清理 v1.0.0 浮层
     document.querySelectorAll(".breath-layer").forEach(e => e.remove());
     document.querySelectorAll(".timecapsule-layer").forEach(e => e.remove());
+    document.querySelectorAll(".timecapsule-deliver-layer").forEach(e => e.remove());
     document.querySelectorAll(".fold-layer").forEach(e => e.remove());
     document.querySelectorAll(".reflection-layer").forEach(e => e.remove());
     // 恢复温度叠加
