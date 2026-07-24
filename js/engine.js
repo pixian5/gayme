@@ -46,6 +46,8 @@
     inGame: false,
     playCount: Saves.getFlag("playCount", 0),
     visitedNodes: Saves.getFlag("visitedNodes", {}),
+    loopCount: Saves.getFlag("loopCount", 0), // 剧情内循环次数（每次非真结局+1）
+    perspectiveActive: false, // 视角切换：当前是否在对方视角
   };
 
   const MAX_HISTORY = 200;
@@ -152,6 +154,10 @@
         el.dialogText.innerHTML = node.text || "";
         el.clickHint.style.opacity = "1";
         onTextComplete(node);
+        // 信件节点：跳过打字后也要触发信件
+        if (node.letter) {
+          setTimeout(() => showLetter(node.letter, state.currentNode), 200);
+        }
       }
     }
   }
@@ -170,6 +176,9 @@
       const timeLabel = { morning: "上午", noon: "中午", evening: "晚上" }[node.time] || "";
       el.dayBar.textContent = `${dayLabel} · ${timeLabel}`;
       el.dayBar.style.opacity = "1";
+      // 循环徽章：显示当前循环次数
+      if (state.loopCount > 0) el.dayBar.dataset.loop = state.loopCount;
+      else delete el.dayBar.dataset.loop;
     }
   }
 
@@ -226,10 +235,24 @@
     applySet(node.set);
 
     // 解锁关键词
-    if (node.keyword) Saves.unlockKeyword(node.keyword);
+    if (node.keyword) {
+      if (Saves.unlockKeyword(node.keyword)) flashHint(`新关键词：${node.keyword}`);
+    }
     // 解锁 CG
     if (node.cg_unlock) {
       if (Saves.unlockCG(node.cg_unlock)) flashHint(`新 CG：${CGS.find(c => c.id === node.cg_unlock)?.title || ""}`);
+    }
+    // 解锁记忆片段（循环系统）
+    if (node.memory && !Saves.isMemoryUnlocked(node.memory.id)) {
+      Saves.saveMemory(node.memory.id, node.memory.text);
+      flashHint(`✦ 记忆片段：${node.memory.title || node.memory.id}`);
+    }
+
+    // 循环文本：根据 loopCount 显示不同文本
+    let displayNode = node;
+    if (node.loopText && Array.isArray(node.loopText)) {
+      const idx = Math.min(state.loopCount, node.loopText.length - 1);
+      displayNode = Object.assign({}, node, { text: node.loopText[idx] });
     }
 
     // 条件节点
@@ -259,8 +282,8 @@
       const speakerName = node.speaker ? (CHARACTERS[node.speaker]?.name || node.speaker) : "";
       el.speaker.textContent = speakerName;
       el.dialogBox.classList.remove("hidden");
-      typewriter(node.text || "", () => {
-        setTimeout(() => showLetter(node.letter), 400);
+      typewriter(displayNode.text || "", () => {
+        setTimeout(() => showLetter(node.letter, nodeId), 400);
       });
       updateDayBar(node);
       updateHeartBar();
@@ -299,13 +322,75 @@
       : "rgba(40,40,60,0.7)";
     el.dialogBox.classList.remove("hidden");
 
-    if (speakerName && node.text) pushHistory(speakerName, node.text, nodeId);
-    else if (node.text) pushHistory("旁白", node.text, nodeId);
+    // 视角切换支持：节点定义了 perspective 时显示切换按钮
+    renderPerspectiveButton(node);
+
+    if (speakerName && displayNode.text) pushHistory(speakerName, displayNode.text, nodeId);
+    else if (displayNode.text) pushHistory("旁白", displayNode.text, nodeId);
 
     updateDayBar(node);
     updateHeartBar();
+    updateLoopBadge();
 
-    typewriter(node.text || "", () => onTextComplete(node));
+    typewriter(displayNode.text || "", () => onTextComplete(node));
+  }
+
+  /* ============ 视角切换 ============ */
+  let perspectiveBtn = null;
+  function renderPerspectiveButton(node) {
+    if (perspectiveBtn) { perspectiveBtn.remove(); perspectiveBtn = null; }
+    if (!node.perspective) return;
+    if (!Saves.isMemoryUnlocked(node.perspective.memory) && node.perspective.requiresMemory !== false) return;
+    perspectiveBtn = document.createElement("button");
+    perspectiveBtn.id = "perspective-btn";
+    perspectiveBtn.innerHTML = "👁";
+    perspectiveBtn.style.cssText = "position:absolute;right:14px;bottom:160px;width:44px;height:44px;border-radius:50%;background:rgba(20,18,32,0.8);border:1px solid rgba(255,200,220,0.5);color:#ffd8e4;font-size:18px;cursor:pointer;z-index:20;transition:transform 0.2s;backdrop-filter:blur(6px);";
+    perspectiveBtn.title = "切换视角";
+    perspectiveBtn.onmouseenter = () => perspectiveBtn.style.transform = "scale(1.1)";
+    perspectiveBtn.onmouseleave = () => perspectiveBtn.style.transform = "scale(1)";
+    perspectiveBtn.onclick = () => showPerspective(node.perspective);
+    document.getElementById("game").appendChild(perspectiveBtn);
+  }
+
+  function showPerspective(p) {
+    let layer = document.getElementById("perspective-layer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "perspective-layer";
+      layer.style.cssText = "position:absolute;inset:0;background:rgba(10,5,20,0.85);backdrop-filter:blur(8px);z-index:30;display:flex;align-items:center;justify-content:center;padding:40px;";
+      layer.onclick = (e) => { if (e.target === layer) layer.remove(); };
+      document.getElementById("game").appendChild(layer);
+    }
+    layer.innerHTML = "";
+    const card = document.createElement("div");
+    card.style.cssText = "max-width:580px;width:100%;padding:36px 40px;background:linear-gradient(135deg, rgba(40,20,55,0.95), rgba(60,30,75,0.95));border:1px solid rgba(255,200,220,0.3);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,0.6);";
+    const tag = document.createElement("div");
+    tag.style.cssText = "font-size:12px;letter-spacing:6px;color:rgba(255,200,220,0.5);margin-bottom:14px;text-align:center;";
+    tag.textContent = "❝ 内心独白 ❞";
+    const who = document.createElement("div");
+    who.style.cssText = "font-size:16px;color:#ffd8e4;letter-spacing:4px;text-align:center;margin-bottom:24px;";
+    who.textContent = p.who || "——";
+    const text = document.createElement("div");
+    text.style.cssText = "font-size:16px;line-height:2.1;color:rgba(255,240,248,0.9);letter-spacing:1px;text-indent:2em;";
+    text.textContent = p.text;
+    const close = document.createElement("button");
+    close.textContent = "合上";
+    close.style.cssText = "margin:28px auto 0;display:block;padding:10px 28px;background:rgba(180,80,120,0.4);border:1px solid rgba(255,200,220,0.5);border-radius:8px;color:#ffd8e4;font-family:inherit;font-size:14px;letter-spacing:3px;cursor:pointer;";
+    close.onclick = () => layer.remove();
+    card.appendChild(tag); card.appendChild(who); card.appendChild(text); card.appendChild(close);
+    layer.appendChild(card);
+    if (p.memory && !Saves.isMemoryUnlocked(p.memory)) {
+      Saves.saveMemory(p.memory, p.text);
+      flashHint(`✦ 解锁视角记忆`);
+    }
+  }
+
+  /* ============ 循环徽章 ============ */
+  function updateLoopBadge() {
+    if (!el.dayBar) return;
+    if (state.loopCount > 0) {
+      el.dayBar.dataset.loop = state.loopCount;
+    }
   }
 
   /* ============ 选项 ============ */
@@ -318,11 +403,24 @@
     prompt.textContent = choice.prompt || "请选择";
     el.choices.appendChild(prompt);
 
-    choice.options.forEach((opt) => {
-      // 多周目：解锁隐藏选项
+    // 循环解锁的额外选项
+    let options = choice.options.slice();
+    if (choice.loopChoice && Array.isArray(choice.loopChoice)) {
+      choice.loopChoice.forEach((extra) => {
+        if (state.loopCount >= (extra.minLoop || 1)) options.push(extra);
+      });
+    }
+
+    options.forEach((opt) => {
+      // 多周目解锁隐藏选项
       if (opt.requires && !opt.requires()) return;
+      // 合成关键词解锁的隐藏选项
+      if (opt.requires_compose && !Saves.isComposed(opt.requires_compose)) return;
+      // 记忆解锁的隐藏选项
+      if (opt.requires_memory && !Saves.isMemoryUnlocked(opt.requires_memory)) return;
       const btn = document.createElement("button");
       btn.className = "choice-btn";
+      if (opt.composed) btn.classList.add("composed-choice");
       // 二周目彩蛋
       if (state.playCount >= 1 && opt.easter && state.visitedNodes[opt.next] > 0) {
         btn.textContent = opt.text + " ♪";
@@ -344,7 +442,7 @@
   }
 
   /* ============ 信件系统 ============ */
-  function showLetter(letter) {
+  function showLetter(letter, currentNodeId) {
     el.choices.innerHTML = "";
     el.choices.classList.remove("hidden");
     const prompt = document.createElement("div");
@@ -357,7 +455,59 @@
     subPrompt.textContent = "—— 回信 ——";
     el.choices.appendChild(subPrompt);
 
-    letter.options.forEach((opt) => {
+    // 自由书写模式：玩家自己打字写信
+    if (letter.type === "free") {
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "position:absolute;top:26%;left:50%;transform:translateX(-50%);width:min(560px,90%);display:flex;flex-direction:column;gap:12px;";
+      const ta = document.createElement("textarea");
+      ta.placeholder = letter.hint || "在此写下你想说的话…";
+      ta.style.cssText = "width:100%;height:140px;padding:16px;background:rgba(20,15,30,0.85);border:1px solid rgba(255,200,220,0.3);border-radius:10px;color:#ffe8f0;font-family:inherit;font-size:15px;line-height:1.8;letter-spacing:1px;resize:none;";
+      ta.maxLength = 200;
+      wrap.appendChild(ta);
+
+      const hint = document.createElement("div");
+      hint.style.cssText = "font-size:12px;color:rgba(255,200,220,0.5);text-align:right;letter-spacing:1px;";
+      hint.textContent = "0 / 200";
+      ta.oninput = () => { hint.textContent = `${ta.value.length} / 200`; };
+      wrap.appendChild(hint);
+
+      const sendBtn = document.createElement("button");
+      sendBtn.textContent = "✉ 寄出";
+      sendBtn.className = "choice-btn";
+      sendBtn.style.cssText = "padding:12px 28px;background:linear-gradient(135deg, rgba(180,80,120,0.6), rgba(140,60,160,0.6));border:1px solid rgba(255,200,220,0.5);border-radius:10px;color:#ffd8e4;font-family:inherit;font-size:15px;letter-spacing:4px;cursor:pointer;";
+      sendBtn.onclick = () => {
+        const content = ta.value.trim();
+        if (!content) { flashHint("信件不能为空"); return; }
+        // 关键词检测：根据玩家输入的内容匹配关键词，决定回信分支
+        const matched = (letter.matchings || []).filter(m => m.keywords.some(kw => content.includes(kw)));
+        // 保存信件内容
+        Saves.saveLetter(letter.id, { content, matched: matched.map(m => m.id) });
+        // 给出回信
+        const reply = matched.length > 0 ? matched[0] : (letter.defaultReply || { next: currentNodeId });
+        el.choices.classList.add("hidden");
+        el.choices.innerHTML = "";
+        // 解锁记忆（如果配对中包含）
+        if (reply.memory && !Saves.isMemoryUnlocked(reply.memory)) {
+          Saves.saveMemory(reply.memory, content);
+        }
+        gotoNode(reply.next);
+      };
+      wrap.appendChild(sendBtn);
+      el.choices.appendChild(wrap);
+      return;
+    }
+
+    // 经典选项模式
+    let options = letter.options.slice();
+    if (letter.loopChoice && Array.isArray(letter.loopChoice)) {
+      letter.loopChoice.forEach((extra) => {
+        if (state.loopCount >= (extra.minLoop || 1)) options.push(extra);
+      });
+    }
+    options.forEach((opt) => {
+      if (opt.requires && !opt.requires()) return;
+      if (opt.requires_compose && !Saves.isComposed(opt.requires_compose)) return;
+      if (opt.requires_memory && !Saves.isMemoryUnlocked(opt.requires_memory)) return;
       const btn = document.createElement("button");
       btn.className = "choice-btn";
       btn.style.background = "linear-gradient(135deg, rgba(60,40,80,0.85), rgba(80,60,100,0.85))";
@@ -425,21 +575,48 @@
   function showEnding(ending) {
     const isNew = Saves.unlockEnding(ending.id);
     state.inGame = false;
-    // 多周目计数
+    // 循环系统：真结局打破循环，其他结局触发循环重置
     if (ending.id === "true_end") {
       Saves.setFlag("playCount", state.playCount + 1);
       state.playCount += 1;
+      // 真结局重置 loopCount
+      Saves.setFlag("loopCount", 0);
+      state.loopCount = 0;
+      flashHint("★ 循环打破 ★");
+    } else {
+      // 普通结局：循环+1
+      Saves.setFlag("loopCount", state.loopCount + 1);
+      state.loopCount += 1;
+      flashHint(`⟲ 时间回溯 · 第 ${state.loopCount} 次循环`);
     }
     el.endingType.textContent = ending.type;
     el.endingType.style.color = ending.type.includes("TRUE") ? "#ffd88a" : (ending.type.includes("BAD") ? "#a8a8a8" : "#ffb8c8");
     el.endingTitle.textContent = ending.title;
     el.endingText.textContent = ending.text;
+
+    // 循环提示
+    let loopHint = document.getElementById("ending-loop-hint");
+    if (!loopHint) {
+      loopHint = document.createElement("div");
+      loopHint.id = "ending-loop-hint";
+      loopHint.style.cssText = "text-align:center;margin-top:18px;font-size:13px;color:rgba(255,200,220,0.5);letter-spacing:4px;";
+      el.endingScreen.querySelector(".ending-content").appendChild(loopHint);
+    }
+    if (ending.id === "true_end") {
+      loopHint.textContent = "✦ 你打破了时间的循环 ✦";
+      loopHint.style.color = "#ffd88a";
+    } else {
+      loopHint.textContent = `⟲ 第 ${state.loopCount} 次循环 · 关键词与记忆将被保留`;
+      loopHint.style.color = "rgba(255,200,220,0.5)";
+    }
+
     el.endingScreen.classList.remove("hidden");
     el.topBar.classList.remove("show");
     el.dialogBox.classList.add("hidden");
     el.choices.classList.add("hidden");
     if (el.dayBar) el.dayBar.style.opacity = "0";
     if (el.heartBar) el.heartBar.style.opacity = "0";
+    if (perspectiveBtn) { perspectiveBtn.remove(); perspectiveBtn = null; }
   }
 
   /* ============ 新游戏 ============ */
@@ -623,10 +800,11 @@
       else stopBgm();
     };
     document.getElementById("cfg-clear").onclick = () => {
-      if (confirm("确定清空所有存档、图鉴、CG、关键词和设置吗？此操作不可撤销。")) {
+      if (confirm("确定清空所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。")) {
         Saves.clearAll();
         state.playCount = 0;
         state.visitedNodes = {};
+        state.loopCount = 0;
         flashHint("已清空");
         closeOverlay();
       }
@@ -662,25 +840,103 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v0.3.0 · Demo</p>
+        <p style="color:#e8e0d0;">v0.4.0 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
-        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个结局（含真结局）<br>3 个迷你游戏 · CG 图鉴 · 关键词收集<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
-        ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:20px;">已通关 ${state.playCount} 周目。彩蛋已开启 ♪</p>` : ""}
+        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个结局（含真结局）<br>3 个迷你游戏 · CG 图鉴 · 关键词收集<br>★ 时间循环系统 · 关键词合成 · 真实书写信件 · 视角切换<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
+        ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
+        ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
       </div>
     `;
   }
 
-  /* ============ 关键词面板 ============ */
+  /* ============ 关键词面板（含合成台） ============ */
   function renderKeywords() {
     const unlocked = Saves.getKeywords();
-    el.overlayBody.innerHTML = `<div class="gallery-grid">` + Object.entries(KEYWORDS).map(([kw, desc]) => {
+    const composed = Saves.getComposed();
+    const allAvailable = unlocked.concat(composed); // 合成产物也可作为新合成原料
+    const recipes = (window.COMPOSE_RECIPES || []).filter(r => allAvailable.includes(r.a) && allAvailable.includes(r.b));
+
+    let html = "";
+
+    // 合成台
+    if (recipes.length > 0) {
+      html += `<div style="margin-bottom:24px;padding:18px;background:linear-gradient(135deg, rgba(80,40,100,0.25), rgba(40,30,60,0.4));border:1px solid rgba(255,200,220,0.3);border-radius:14px;">
+        <div style="font-size:16px;color:#ffd8e4;letter-spacing:4px;margin-bottom:14px;">✦ 关键词合成台</div>
+        <div style="font-size:12px;color:rgba(255,200,220,0.6);margin-bottom:16px;letter-spacing:1px;">将两个关键词融合，得到新的概念。合成产物可作为隐藏对话选项。</div>
+        <div class="compose-list" style="display:flex;flex-direction:column;gap:10px;">`;
+      recipes.forEach(r => {
+        const isComposed = composed.includes(r.result);
+        html += `<div class="compose-item" style="display:flex;align-items:center;gap:14px;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,200,220,0.15);border-radius:10px;">
+          <span style="padding:4px 12px;background:rgba(168,197,232,0.2);border-radius:6px;color:#a8c5e8;font-size:13px;">${r.a}</span>
+          <span style="color:rgba(255,200,220,0.5);">＋</span>
+          <span style="padding:4px 12px;background:rgba(240,184,120,0.2);border-radius:6px;color:#f0b878;font-size:13px;">${r.b}</span>
+          <span style="color:rgba(255,200,220,0.5);">→</span>
+          <span style="padding:4px 12px;background:${isComposed ? 'rgba(255,216,138,0.25)' : 'rgba(255,255,255,0.06)'};border-radius:6px;color:${isComposed ? '#ffd88a' : 'rgba(255,255,255,0.5)'};font-size:13px;font-weight:600;">${isComposed ? r.resultName : '？？？？'}</span>
+          ${isComposed ? '<span style="font-size:11px;color:rgba(255,200,220,0.4);letter-spacing:2px;">已合成</span>' : `<button class="compose-btn" data-a="${r.a}" data-b="${r.b}" data-result="${r.result}" data-result-name="${r.resultName}" style="padding:6px 14px;background:rgba(180,80,120,0.4);border:1px solid rgba(255,200,220,0.5);border-radius:6px;color:#ffd8e4;cursor:pointer;font-family:inherit;font-size:12px;letter-spacing:2px;">合成</button>`}
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // 已合成产物
+    if (composed.length > 0) {
+      html += `<div style="margin-bottom:24px;">
+        <div style="font-size:14px;color:#ffd88a;letter-spacing:4px;margin-bottom:12px;">✦ 已合成概念</div>
+        <div class="gallery-grid">`;
+      composed.forEach(c => {
+        const recipe = (window.COMPOSE_RECIPES || []).find(r => r.result === c);
+        const name = recipe ? recipe.resultName : c;
+        const desc = recipe ? recipe.desc : "未知的概念。";
+        html += `<div class="gallery-card unlocked" style="background:linear-gradient(135deg, rgba(255,216,138,0.18), rgba(216,144,90,0.18));border-color:rgba(255,220,150,0.5);">
+          <div class="g-type" style="color:#ffd88a;">合成概念</div>
+          <div class="g-title" style="color:#ffe8c0;">${name}</div>
+          <div class="g-desc">${desc}</div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // 记忆片段
+    const memories = Saves.getMemories();
+    if (memories.length > 0) {
+      html += `<div style="margin-bottom:24px;">
+        <div style="font-size:14px;color:#c8a8e0;letter-spacing:4px;margin-bottom:12px;">✦ 记忆片段（循环保留）</div>
+        <div class="gallery-grid">`;
+      memories.forEach(m => {
+        html += `<div class="gallery-card unlocked" style="background:linear-gradient(135deg, rgba(200,168,224,0.18), rgba(140,100,180,0.18));border-color:rgba(200,168,224,0.5);">
+          <div class="g-type" style="color:#c8a8e0;">记忆</div>
+          <div class="g-title" style="color:#e8d8f0;">${m.id}</div>
+          <div class="g-desc">${escapeHtml(m.text.slice(0, 50))}${m.text.length > 50 ? '…' : ''}</div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    }
+
+    // 关键词列表
+    html += `<div style="font-size:14px;color:#ffd8e4;letter-spacing:4px;margin-bottom:12px;">✦ 已发现关键词</div><div class="gallery-grid">`;
+    html += Object.entries(KEYWORDS).map(([kw, desc]) => {
       const isUnlocked = unlocked.includes(kw);
       return `<div class="gallery-card ${isUnlocked ? "unlocked" : "locked"}">
         <div class="g-type">关键词</div>
         <div class="g-title">${isUnlocked ? kw : "？？？？"}</div>
         <div class="g-desc">${isUnlocked ? desc : "尚未发现"}</div>
       </div>`;
-    }).join("") + "</div>";
+    }).join("");
+    html += "</div>";
+
+    el.overlayBody.innerHTML = html;
+
+    // 绑定合成按钮
+    el.overlayBody.querySelectorAll(".compose-btn").forEach(btn => {
+      btn.onclick = () => {
+        const a = btn.dataset.a, b = btn.dataset.b;
+        const result = btn.dataset.result, resultName = btn.dataset.resultName;
+        if (Saves.composeKeyword(a, b, result)) {
+          flashHint(`✦ 合成成功：${resultName}`);
+          renderKeywords();
+        }
+      };
+    });
   }
 
   /* ============ CG 图鉴 ============ */
@@ -736,17 +992,20 @@
     state.skipMode = false;
     state.inGame = false;
     stopBgm();
+    if (perspectiveBtn) { perspectiveBtn.remove(); perspectiveBtn = null; }
+    const pLayer = document.getElementById("perspective-layer");
+    if (pLayer) pLayer.remove();
     el.titleScreen.classList.remove("hidden");
     el.endingScreen.classList.add("hidden");
     el.dialogBox.classList.add("hidden");
     el.choices.classList.add("hidden");
     el.topBar.classList.remove("show");
     el.charLayer.innerHTML = "";
-    if (el.dayBar) el.dayBar.style.opacity = "0";
+    if (el.dayBar) { el.dayBar.style.opacity = "0"; delete el.dayBar.dataset.loop; }
     if (el.heartBar) el.heartBar.style.opacity = "0";
     setScene("cherry_full");
-    // 真结局入口检查
     updateTrueEndAccess();
+    updateLoopBadge();
   }
 
   function updateTrueEndAccess() {

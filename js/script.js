@@ -144,6 +144,18 @@ const KEYWORDS = {
   "回信":   "你需要给出的答案",
 };
 
+/* ============ 关键词合成配方（摆脱传统收集：把收集变成创造） ============ */
+const COMPOSE_RECIPES = [
+  { a: "樱花祭", b: "回信",   result: "祭信",     resultName: "祭信",     desc: "在樱花祭之夜送出的回信。一种只属于此刻的承诺。" },
+  { a: "匿名信", b: "学姐",   result: "未寄信",   resultName: "未寄信",   desc: "学姐写给自己却没有寄出的信。" },
+  { a: "紫",     b: "挣",     result: "挣紫",     resultName: "挣紫",     desc: "从紫里挣出来——苏念真正想画的东西。" },
+  { a: "小说",   b: "角色A",  result: "她就是我", resultName: "她就是我", desc: "林诗雨稿纸上的角色A，其实是她自己。" },
+  { a: "全国赛", b: "特招",   result: "她的选择", resultName: "她的选择", desc: "夏织要的不是名次，而是被允许做选择。" },
+  { a: "学姐",   b: "回信",   result: "替她回",   resultName: "替她回",   desc: "替学姐回她没敢回给自己的那封信。" },
+  { a: "祭信",   b: "未寄信", result: "樱花信",   resultName: "樱花信",   desc: "把祭信与未寄信合在一起，就是打破循环的钥匙。" },
+];
+window.COMPOSE_RECIPES = COMPOSE_RECIPES;
+
 /* ============ CG 定义（SVG 字符画） ============ */
 const CGS = [
   { id: "cg_meet_shiyu", title: "走廊的初次相遇", heroine: "林诗雨", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="240" fill="#2a1a3a"/><rect y="180" width="400" height="60" fill="#1a0a2a"/><line x1="50" y1="0" x2="50" y2="180" stroke="#5a3a6a" stroke-width="2"/><line x1="350" y1="0" x2="350" y2="180" stroke="#5a3a6a" stroke-width="2"/><circle cx="120" cy="100" r="40" fill="#fde2cc"/><rect x="80" y="140" width="80" height="80" fill="#3a5a8a"/><circle cx="280" cy="100" r="40" fill="#fde0c8"/><rect x="240" y="140" width="80" height="80" fill="#4a5868"/><text x="200" y="220" text-anchor="middle" fill="#ffb8c8" font-size="14" font-family="serif">— 走廊的初次相遇 —</text></svg>` },
@@ -175,15 +187,41 @@ const ENDINGS = [
 /* ============ 剧本节点 ============ */
 const SCRIPT = {
 
-  /* ============ 序章（扩展：男主背景） ============ */
-  prologue_1: { day: 1, time: "morning", bg: "cherry_full", speaker: "", text: "四月，樱海学园。连风都染着粉白，从校门口一路铺到教学楼，像有人提前替我铺好了红毯。", next: "prologue_2" },
+  /* ============ 序章（扩展：男主背景 + 时间循环提示） ============ */
+  prologue_1: {
+    day: 1, time: "morning", bg: "cherry_full", speaker: "",
+    // 循环专属文本：根据 loopCount 显示不同开场
+    text: "四月，樱海学园。连风都染着粉白，从校门口一路铺到教学楼，像有人提前替我铺好了红毯。",
+    loopText: [
+      "四月，樱海学园。连风都染着粉白，从校门口一路铺到教学楼，像有人提前替我铺好了红毯。",
+      "——又是四月。樱花照旧开。风照旧从校门口铺到教学楼。可我明明记得，这一切已经发生过一次。",
+      "——第三次四月。我已经不再惊讶了。樱花、风、红毯，所有东西都和上一次一样。可这次我会带一些上次没带走的东西。",
+      "——又一次四月。我能背下每片樱花落下的位置。可樱花不是用来背的，它们是用来写的。这次我试着写。",
+      "——还是四月。我不再数这是第几次了。我只是想——这一次，能不能合成那封信。"
+    ],
+    next: "prologue_2"
+  },
   prologue_2: { day: 1, time: "morning", bg: "cherry_full", speaker: "", text: "我，沈屿。两周前父亲说工作调动，母亲说随你便。两个人已经冷战三个月。我选了住校。", next: "prologue_3" },
   prologue_3: { day: 1, time: "morning", bg: "school_gate", speaker: "", text: "手里攥着皱巴巴的入学通知书，胸口闷得发紧。教学楼的钟响起来时，我还没找到教务处。", next: "prologue_4" },
   prologue_4: { day: 1, time: "morning", bg: "hallway", chars: [{id:"shiyu", pos:"center"}], speaker: "???", text: "——同学，你挡在路中间了。", next: "prologue_5", keyword: "林诗雨" },
   prologue_5: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "", text: "回过头，是个戴眼镜的女生。黑长直，臂弯里抱着一摞作业本，神情是优等生特有的那种礼貌。", next: "prologue_6" },
   prologue_6: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨", text: "我是高二(3)班班长，林诗雨。你就是今天转来的沈屿吧？班主任让我来接你。", next: "prologue_7" },
   prologue_7: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "沈屿", text: "……麻烦你了。", next: "prologue_8" },
-  prologue_8: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨", text: "跟我来。座位在你前面，看不清黑板就说一声。", next: "prologue_9", add: { affection: { shiyu: 1 } }, cg_unlock: "cg_meet_shiyu" },
+  prologue_8: {
+    day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨",
+    text: "跟我来。座位在你前面，看不清黑板就说一声。",
+    next: "prologue_9",
+    add: { affection: { shiyu: 1 } },
+    cg_unlock: "cg_meet_shiyu",
+    memory: { id: "序章·诗雨", title: "走廊相遇", text: "她回头的时候，我以为她在看墙，其实她在看我。" },
+    // 视角切换：解锁记忆后可看诗雨内心
+    perspective: {
+      who: "林诗雨",
+      text: "——又是一个不敢抬头的转学生。我递出地图的时候手指在抖，他没看见。我也不想让他看见。其实那张地图我画了三遍。第一遍太潦草，第二遍太用力，第三遍——刚刚好。可我画了三遍这件事，谁也不知道。",
+      memory: "诗雨·走廊",
+      requiresMemory: false // 序章直接可看，不需要先解锁记忆
+    }
+  },
   prologue_9: { day: 1, time: "morning", bg: "classroom", char: null, speaker: "", text: "推开门的瞬间，整间教室的目光都甩了过来。班主任咳嗽一声，才把它们压回去。", next: "prologue_10" },
   prologue_10: { day: 1, time: "morning", bg: "classroom", speaker: "班主任", text: "都安静。这是新转来的沈屿同学，希望大家多照顾。诗雨，带他到座位。", next: "prologue_11" },
   prologue_11: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "", text: "我坐下的瞬间，前面的林诗雨回过头，把一张校园地图推到我桌上。地图画得极细致。", next: "prologue_12" },
@@ -233,9 +271,37 @@ const SCRIPT = {
           requires: () => window.__game && window.__game.state && window.__game.state.playCount >= 1,
           add: { affection: { shen: 2 } }
         },
+      ],
+      // 循环解锁的额外选项
+      loopChoice: [
+        {
+          minLoop: 1,
+          text: "⟲ 直接去樱花树下（循环记忆）",
+          next: "d2_loop_memory",
+          requires_memory: "序章·诗雨"
+        },
+        {
+          minLoop: 2,
+          text: "⟲⟲ 找学姐问个明白（深度循环）",
+          next: "d2_loop_senior",
+          requires_memory: "诗雨·走廊"
+        }
       ]
     }
   },
+  // 循环专属剧情：在樱花树下回忆
+  d2_loop_memory: { day: 2, time: "morning", bg: "cherry_full", char: null, speaker: "", text: "我去了樱花树下。这一次我不再急着走主线。我只是站一会儿，看看风。", next: "d2_loop_memory_2" },
+  d2_loop_memory_2: { day: 2, time: "morning", bg: "cherry_full", char: null, speaker: "沈屿", text: "——奇怪。上一次我也站在这里。可那一次，我没看见风的方向。", next: "d2_loop_memory_3" },
+  d2_loop_memory_3: { day: 2, time: "morning", bg: "cherry_full", char: null, speaker: "沈屿", text: "风是从海那边吹来的。它穿过樱花，穿过我，穿过身后那栋楼。它什么都没带走。可这次我听见它在说话。", next: "d2_loop_memory_4", memory: { id: "樱花树下的风", title: "听见风", text: "风是从海那边吹来的。它什么都没带走。可这次我听见它在说话。" } },
+  d2_loop_memory_4: { day: 2, time: "morning", bg: "cherry_full", char: null, speaker: "沈屿", text: "——它说，循环不是用来逃的。循环是用来写的。", next: "d2_loop_memory_5" },
+  d2_loop_memory_5: { day: 2, time: "morning", bg: "cherry_full", char: null, speaker: "", text: "我点点头。然后回去上课。今天该走哪条路，还是得选。", next: "d2_noon" },
+  // 循环专属剧情：找学姐
+  d2_loop_senior: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "——你又来了。这次是第几次？我自己都数不清了。", next: "d2_loop_senior_2" },
+  d2_loop_senior_2: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "沈屿", text: "学姐，你知道循环这件事？", next: "d2_loop_senior_3" },
+  d2_loop_senior_3: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "三年前我也知道。可知道没用。要合成「樱花信」，你必须先有「祭信」和「未寄信」。这两样——一样要你替别人回信，一样要你替自己回信。", next: "d2_loop_senior_4", memory: { id: "学姐·提示", title: "合成配方", text: "要合成「樱花信」，必须先有「祭信」和「未寄信」。" } },
+  d2_loop_senior_4: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "「祭信」= 樱花祭 + 回信。你只有在樱花祭之夜真的回了一封信，才会得到它。", next: "d2_loop_senior_5" },
+  d2_loop_senior_5: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "「未寄信」= 匿名信 + 学姐。也就是——你要把我留下来的那封信，读懂。", next: "d2_loop_senior_6" },
+  d2_loop_senior_6: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "去吧。这一次，别再走一半。", next: "d2_noon" },
   /* —— 二周目彩蛋：学姐的旧校舍 —— */
   d2_senior_easter: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "???", text: "——你来啦。我就知道，第二个春天你会再回来一次。", next: "d2_senior_easter_2", keyword: "学姐" },
   d2_senior_easter_2: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "三年前我也站在你这个位置。三条路我都走了一半。告诉你一些我没告诉过自己的话：", next: "d2_senior_easter_3" },
@@ -624,7 +690,7 @@ const SCRIPT = {
     ending: { id: "sunian_bad", type: "BAD ENDING", title: "按 住", text: "她松不开自己的手，于是连自己也一起按了下去。" }
   },
 
-  /* ============ 真结局入口 ============ */
+  /* ============ 真结局入口（需合成"樱花信"才能打破循环） ============ */
   true_end_entry: {
     // 仅在三女主 GOOD 全通后触发
     bg: "cherry_full", char: null, speaker: "",
@@ -643,9 +709,20 @@ const SCRIPT = {
         { text: "一个敢走进别人人生的人。",   next: "true_6" },
         { text: "一个敢写下自己的人。",       next: "true_6" },
         { text: "一个敢回头看的人。",         next: "true_6" },
+      ],
+      // 循环解锁的隐藏选项：必须合成"樱花信"才能打破循环
+      loopChoice: [
+        {
+          minLoop: 1,
+          text: "★ 「樱花信」—— 把祭信与未寄信合在一起 ★",
+          next: "true_break_loop",
+          requires_compose: "樱花信",
+          composed: true,
+        }
       ]
     }
   },
+  // 普通选项路径：循环未打破
   true_6: { bg: "festival", char: "shen", speaker: "", text: "樱花祭之夜。我在樱花树下，写下回信。然后，我写下自己人生的第一行字。", next: "true_7", cg_unlock: "cg_true", keyword: "回信" },
   true_7: { bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_8" },
   true_8: { bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_9" },
@@ -654,6 +731,46 @@ const SCRIPT = {
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。",
     ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信", text: "你替她回了一封信，也写下自己。" }
+  },
+
+  /* ============ 打破循环路径（合成"樱花信"后解锁） ============ */
+  true_break_loop: {
+    bg: "cherry_full", char: "senior", speaker: "学姐",
+    text: "——你做到了。你把祭信与未寄信合在了一起。这封信，我等了三年。",
+    next: "true_break_2",
+    memory: { id: "打破循环", title: "樱花信", text: "把祭信与未寄信合在一起，就是打破循环的钥匙。" }
+  },
+  true_break_2: { bg: "cherry_full", char: "senior", speaker: "学姐", text: "三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。", next: "true_break_3" },
+  true_break_3: { bg: "cherry_full", char: "senior", speaker: "学姐", text: "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。", next: "true_break_4" },
+  // 真实书写信件：玩家自己打字写信
+  true_break_4: {
+    bg: "festival", char: "shen", speaker: "",
+    text: "樱花树下，我把纸铺开。这一次，不是抄，不是选。是我自己写。",
+    letter: {
+      id: "true_letter_free",
+      type: "free",
+      prompt: "✦ 替学姐回信，也写给自己",
+      hint: "写下你想对三年前的学姐，或者三年后的自己说的话…",
+      matchings: [
+        { id: "勇敢", keywords: ["敢", "勇气", "走", "回头", "写下"], next: "true_break_5a", memory: "写信-勇敢" },
+        { id: "放手", keywords: ["放", "松", "不用", "算了", "没关系"], next: "true_break_5b", memory: "写信-放手" },
+        { id: "想念", keywords: ["想", "念", "记得", "樱花", "春"], next: "true_break_5c", memory: "写信-想念" },
+      ],
+      defaultReply: { next: "true_break_5d", memory: "写信-默认" }
+    },
+    next: "true_break_5d"
+  },
+  true_break_5a: { bg: "festival", char: "senior", speaker: "学姐", text: "「敢」——你写的第一个字是敢。我也想敢一次。今天起，我替自己敢。", next: "true_break_6" },
+  true_break_5b: { bg: "festival", char: "senior", speaker: "学姐", text: "「放」——你说得对。我也可以放下。放下这三年，放下那个没敢回信的自己。", next: "true_break_6" },
+  true_break_5c: { bg: "festival", char: "senior", speaker: "学姐", text: "「想念」——你说你想念。我也想念。可想念不该是停下的理由。", next: "true_break_6" },
+  true_break_5d: { bg: "festival", char: "senior", speaker: "学姐", text: "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。", next: "true_break_6" },
+  true_break_6: { bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_break_7", cg_unlock: "cg_true" },
+  true_break_7: { bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_break_8" },
+  true_break_8: { bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。这一次，是真的写下了。", next: "true_break_ending" },
+  true_break_ending: {
+    bg: "ending_true", char: null, speaker: "",
+    text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。",
+    ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信 · 破 环", text: "你合成了樱花信，打破了时间的循环。" }
   },
 };
 

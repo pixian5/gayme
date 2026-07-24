@@ -13,6 +13,8 @@ const KEYWORDS_KEY  = "sakura_letters_keywords_v2";
 const CG_KEY        = "sakura_letters_cg_v2";
 const LETTERS_KEY   = "sakura_letters_letters_v2";
 const FLAGS_KEY     = "sakura_letters_flags_v2";
+const COMPOSED_KEY  = "sakura_letters_composed_v2";
+const MEMORIES_KEY  = "sakura_letters_memories_v2";
 
 const Saves = {
   data: { slots: [], lastSlot: null },
@@ -193,6 +195,44 @@ const Saves = {
     this.saveSettings();
   },
 
+  /* ============ 合成关键词 ============ */
+  getComposed() {
+    try {
+      const raw = localStorage.getItem(COMPOSED_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  },
+  composeKeyword(a, b, recipe) {
+    const list = this.getComposed();
+    if (!list.includes(recipe)) {
+      list.push(recipe);
+      localStorage.setItem(COMPOSED_KEY, JSON.stringify(list));
+      return true;
+    }
+    return false;
+  },
+  isComposed(recipe) { return this.getComposed().includes(recipe); },
+
+  /* ============ 记忆片段（循环） ============ */
+  getMemories() {
+    try {
+      const raw = localStorage.getItem(MEMORIES_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  },
+  saveMemory(memoryId, text) {
+    const list = this.getMemories();
+    if (!list.find(m => m.id === memoryId)) {
+      list.push({ id: memoryId, text, ts: Date.now() });
+      localStorage.setItem(MEMORIES_KEY, JSON.stringify(list));
+      return true;
+    }
+    return false;
+  },
+  isMemoryUnlocked(memoryId) {
+    return !!this.getMemories().find(m => m.id === memoryId);
+  },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -208,6 +248,8 @@ const Saves = {
     localStorage.removeItem(LETTERS_KEY);
     localStorage.removeItem(FLAGS_KEY);
     localStorage.removeItem(SETTINGS_KEY);
+    localStorage.removeItem(COMPOSED_KEY);
+    localStorage.removeItem(MEMORIES_KEY);
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

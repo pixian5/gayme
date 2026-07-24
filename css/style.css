@@ -593,6 +593,36 @@ body {
   content: "🌸 ";
   filter: drop-shadow(0 0 4px rgba(255,184,200,0.6));
 }
+/* 循环徽章：data-loop 属性触发 */
+#day-bar[data-loop]::after {
+  content: " ⟲ 第 " attr(data-loop) " 次循环";
+  color: #c8a8e0;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-shadow: 0 0 6px rgba(200,168,224,0.6);
+}
+
+/* 视角切换按钮 */
+#perspective-btn {
+  animation: perspectivePulse 2s ease-in-out infinite;
+}
+@keyframes perspectivePulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(200,168,224,0.4); }
+  50% { box-shadow: 0 0 18px rgba(200,168,224,0.8); }
+}
+
+/* 合成选项高亮 */
+.composed-choice {
+  background: linear-gradient(135deg, rgba(255,216,138,0.25), rgba(216,144,90,0.2)) !important;
+  border-color: rgba(255,220,150,0.6) !important;
+  color: #ffe8c0 !important;
+  font-weight: 600;
+  letter-spacing: 3px;
+}
+.composed-choice::before {
+  content: "✦ ";
+  color: #ffd88a;
+}
 
 /* ============ 好感度心条（右上） ============ */
 #heart-bar {
