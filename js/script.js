@@ -1915,6 +1915,139 @@ const SCRIPT = {
     }
   },
 
+  /* ============ v1.7.0 新玩法触发节点 ============ */
+  // 风筝引线
+  d6_kite: {
+    day: 6, time: "afternoon", bg: "field", char: null, speaker: "",
+    text: "她带来一只风筝。她说——牵引它穿过云阵，到 80% 的高度。她说完就把线交给你，自己跑到远处去看。风起来了。",
+    next: "d6_lock",
+    kite: {
+      prompt: "按住风筝拖动——穿过云阵到达目标高度",
+      target: 80,
+      duration: 12000,
+      obstacles: 6,
+      thresholds: [
+        { max: 2, tag: "perfect",
+          label: "——飞得很稳",
+          text: "风筝穿过云阵，停在 80% 的高度。她说：你手很稳——稳的人，才能把线交出去又收回来。她想说的不是风筝。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { brave: 2, active: 1 },
+          memory: { id: "风筝·80%", title: "操场上的风筝", text: "你牵引风筝穿过云阵，停在 80% 的高度。" },
+          next: "d6_lock" },
+        { max: 6, tag: "ok",
+          label: "——飞起来了",
+          text: "风筝磕磕碰碰地到了目标高度。她说：磕碰也是飞——飞过的事，都算数。你把线还给她，她说：下次再放。",
+          add: { affection: { shen: 1 } },
+          personality: { active: 1 },
+          next: "d6_lock" }
+      ],
+      fallback: { tag: "miss",
+        label: "——线断了",
+        text: "风筝磕到了太多次云——线断了。她跑过来捡风筝，说：断了也没关系——至少你知道了风往哪边吹。",
+        next: "d6_lock" }
+    }
+  },
+
+  // 密码锁
+  d6_lock: {
+    day: 6, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "她递来一只旧木盒，上面挂着四位密码锁。她说——密码藏在我们说过的话里。三月、七月、二日、九时。她说完就不说话了。",
+    next: "d6_origami",
+    lock: {
+      prompt: "根据线索拨出四位密码",
+      target: "3729",
+      preview: 4000,
+      hints: ["三月", "七月", "二日", "九时"],
+      thresholds: [
+        { min: 4, tag: "perfect",
+          label: "——锁开了",
+          text: "锁咔哒一声开了。盒子里是她留的一张纸条——「你记住了。记住的人，才能再来。」你想：原来密码不是防人的，是等人的。",
+          add: { affection: { shiyu: 2, sunian: 1, shen: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "密码·3729", title: "木盒里的纸条", text: "你拨出 3-7-2-9，打开了她的木盒。" },
+          next: "d6_origami" },
+        { min: 2, tag: "ok",
+          label: "——开了两三个",
+          text: "你拨对了两位。她说：差两位——但你已经在想我了。这就够了。她把锁重新锁上。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d6_origami" }
+      ],
+      fallback: { tag: "miss",
+        label: "——锁没开",
+        text: "你完全拨错了。她说：没关系——下次再说。她把木盒收回去，没有给你看里面的东西。",
+        next: "d6_origami" }
+    }
+  },
+
+  // 折纸造型
+  d6_origami: {
+    day: 6, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "她递来一张方纸。她说——按顺序折四步，会折出一样东西。她不告诉你是什么。她说：你折出来，再解读它。",
+    next: "d6_orbit",
+    origami: {
+      prompt: "按顺序点击折叠步骤——折出造型",
+      min: 3,
+      steps: [
+        { id: "a", label: "对折", desc: "上下对折" },
+        { id: "b", label: "三角", desc: "对角折一次" },
+        { id: "c", label: "翻面", desc: "翻到背面" },
+        { id: "d", label: "内压", desc: "把两侧往内压" }
+      ],
+      targets: [
+        { steps: ["a", "b", "c", "d"], tag: "crane",
+          label: "——折出了鹤",
+          text: "你折出了一只纸鹤。她说：鹤是会飞的——会飞的东西，都先被人折过。她把鹤接过去，放在窗台上。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { kind: 2, active: 1 },
+          memory: { id: "折纸·鹤", title: "窗台上的纸鹤", text: "你按 a-b-c-d 顺序折出了一只纸鹤。" },
+          next: "d6_orbit" },
+        { steps: ["a", "c", "b", "d"], tag: "boat",
+          label: "——折出了船",
+          text: "你折出了一只小船。她说：船是会漂的——漂的东西，都不肯沉。她把船放在桌上。",
+          add: { affection: { shen: 1, sunian: 1 } },
+          personality: { honest: 1 },
+          next: "d6_orbit" }
+      ],
+      fallback: { tag: "default",
+        label: "——一张纸",
+        text: "你折了几下，没折出什么。她说：不是每一次折叠都能折成东西——有时候只是把纸弄皱了。她把纸展开，抚平。",
+        next: "d6_orbit" }
+    }
+  },
+
+  // 星轨追踪
+  d6_orbit: {
+    day: 6, time: "night", bg: "rooftop", char: null, speaker: "",
+    text: "她拉你到天台。她说——你看，那颗星在走。她让你跟着它的轨迹点过去。她说：点得准的人，能记住它走过的路。",
+    next: "d5_mimic",
+    orbit: {
+      prompt: "按住光标跟随星点轨迹——依次点亮采样点",
+      duration: 10000,
+      tolerance: 30,
+      samples: 6,
+      thresholds: [
+        { max: 20, tag: "perfect",
+          label: "——跟得很准",
+          text: "你一个不漏地点亮了六个采样点。她说：你眼睛很准——准的人，能记住回家的路。她想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "星轨·六点", title: "天台上的星轨", text: "你跟着那颗星，点亮了六个采样点。" },
+          next: "d5_mimic" },
+        { max: 60, tag: "ok",
+          label: "——跟了大半",
+          text: "你点亮了大部分采样点。她说：跟丢了也是真的——星走得快，眼睛跟不上。你已经尽力了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——星辰失散",
+        text: "你跟丢了大多数采样点。她说：没关系——星轨还在那里，只是你没看见。看不见的东西，也在走。",
+        next: "d5_mimic" }
+    }
+  },
+
   /* ============ v1.4.0 新玩法触发节点 ============ */
   // 拓印
   d3_rubbing: {

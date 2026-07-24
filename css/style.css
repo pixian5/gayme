@@ -4829,6 +4829,309 @@ body {
   line-height: 1.8; margin-bottom: 14px;
 }
 
+/* ============ v1.7.0 风筝引线 ============ */
+.kite-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: linear-gradient(180deg, #9ec9ff 0%, #fde8f0 100%);
+  backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.kt-prompt {
+  font-size: 18px; color: #5a3a52;
+  letter-spacing: 3px; text-align: center;
+  background: rgba(255,255,255,0.6); padding: 8px 20px;
+  border-radius: 20px;
+}
+.kt-stage { position: relative; width: min(95%, 480px); }
+.kt-canvas {
+  width: 100%; height: 420px;
+  background: transparent;
+  border: 1px solid rgba(90,60,90,0.2);
+  border-radius: 14px;
+  cursor: grab;
+  touch-action: none;
+}
+.kt-canvas:active { cursor: grabbing; }
+.kt-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #5a3a52;
+  background: rgba(255,255,255,0.7);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.kt-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.kt-actions button, .kt-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(255,140,170,0.7), rgba(200,100,140,0.6));
+  border: 1px solid rgba(255,200,220,0.6);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.kt-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.kt-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,150,180,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.kt-reading-title {
+  font-size: 17px; color: #b8608a;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.kt-reading-text {
+  font-size: 15px; color: #5a3a52;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.7.0 密码锁 ============ */
+.lock-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(35,28,40,0.95), rgba(10,6,12,0.98));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.lk-prompt {
+  font-size: 18px; color: #ffd8a0;
+  letter-spacing: 3px; text-align: center;
+}
+.lk-hints {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center;
+}
+.lk-hint {
+  font-size: 14px; color: #ffd8a0;
+  background: rgba(180,140,90,0.2);
+  border: 1px solid rgba(216,180,140,0.4);
+  padding: 6px 14px; border-radius: 16px;
+  letter-spacing: 2px;
+}
+.lk-dial {
+  display: flex; gap: 16px; flex-wrap: wrap;
+  justify-content: center;
+}
+.lk-digit {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+}
+.lk-digit button {
+  background: rgba(180,140,90,0.4);
+  border: 1px solid rgba(216,180,140,0.5);
+  color: #ffd8a0; width: 38px; height: 28px;
+  border-radius: 6px; cursor: pointer;
+  font-size: 14px;
+}
+.lk-digit button:hover { background: rgba(216,180,140,0.5); }
+.lk-val {
+  width: 56px; height: 72px;
+  background: linear-gradient(180deg, rgba(40,30,20,0.9), rgba(20,15,10,0.9));
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 8px;
+  color: #ffd8a0; font-size: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Courier New", monospace;
+  letter-spacing: 0;
+}
+.lk-val.preview { color: #7fff9d; border-color: rgba(127,255,157,0.6); }
+.lk-val.ok { color: #7fff9d; border-color: rgba(127,255,157,0.6); }
+.lk-val.err { color: #ff8a8a; border-color: rgba(255,138,138,0.6); }
+.lk-info {
+  font-size: 14px; color: rgba(255,216,160,0.8);
+  letter-spacing: 2px;
+}
+.lk-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.lk-actions button, .lk-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.6), rgba(140,100,60,0.5));
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.lk-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.lk-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.88);
+  border: 1px solid rgba(216,180,140,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.lk-reading-title {
+  font-size: 17px; color: #e8c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.lk-reading-text {
+  font-size: 15px; color: #e8d8b8;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.7.0 折纸造型 ============ */
+.origami-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(250,240,230,0.95), rgba(220,200,180,0.95));
+  backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.og-prompt {
+  font-size: 18px; color: #5a4030;
+  letter-spacing: 3px; text-align: center;
+}
+.og-paper {
+  position: relative;
+  width: 220px; height: 220px;
+  background: linear-gradient(135deg, #fff5f0, #ffe0d8);
+  border: 1px solid rgba(180,140,120,0.4);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  transition: transform 0.4s ease;
+  display: flex; align-items: center; justify-content: center;
+}
+.og-paper-text {
+  font-size: 16px; color: rgba(180,140,120,0.5);
+  letter-spacing: 4px;
+}
+.og-paper.origami-step-1 { transform: rotate(0deg) scale(0.95); }
+.og-paper.origami-step-2 { transform: rotate(0deg) scale(0.9) skewX(5deg); }
+.og-paper.origami-step-3 { transform: rotate(15deg) scale(0.85) skewY(5deg); }
+.og-paper.origami-step-4 {
+  transform: rotate(30deg) scale(0.8);
+  background: linear-gradient(135deg, #ffd8c8, #ff9d8a);
+}
+.og-crease {
+  position: absolute;
+  background: linear-gradient(90deg, transparent, rgba(120,80,60,0.4), transparent);
+  pointer-events: none;
+}
+.og-crease-1 { left: 0; right: 0; top: 50%; height: 1px; }
+.og-crease-2 {
+  left: 0; right: 0; top: 50%; height: 1px;
+  transform: rotate(45deg); transform-origin: center;
+}
+.og-crease-3 {
+  left: 50%; top: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(120,80,60,0.4), transparent);
+}
+.og-crease-4 {
+  left: 30%; right: 30%; top: 30%; bottom: 30%;
+  border: 1px dashed rgba(120,80,60,0.4);
+  background: transparent;
+}
+.og-actions {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center;
+}
+.og-action {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(255,240,220,0.9), rgba(255,220,200,0.9));
+  border: 1px solid rgba(180,140,120,0.5);
+  border-radius: 14px;
+  color: #5a4030;
+  font-family: inherit; font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+  min-width: 80px;
+  transition: all 0.2s ease;
+}
+.og-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(180,140,120,0.3); }
+.og-action.used { opacity: 0.4; cursor: not-allowed; transform: none; }
+.og-action-label { font-size: 14px; letter-spacing: 2px; }
+.og-action-desc { font-size: 11px; color: rgba(90,64,48,0.7); margin-top: 4px; }
+.og-controls { display: flex; gap: 10px; }
+.og-controls button, .og-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,90,0.5), rgba(140,100,60,0.4));
+  border: 1px solid rgba(180,140,120,0.5);
+  border-radius: 20px; color: #5a4030;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.og-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+.og-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(255,255,255,0.9);
+  border: 1px solid rgba(180,140,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.og-reading-title {
+  font-size: 17px; color: #b86050;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.og-reading-text {
+  font-size: 15px; color: #5a4030;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v1.7.0 星轨追踪 ============ */
+.orbit-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(15,10,30,0.96), rgba(2,2,10,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 16px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ob-prompt {
+  font-size: 18px; color: #b8c8ff;
+  letter-spacing: 3px; text-align: center;
+}
+.ob-stage { position: relative; width: min(95%, 520px); }
+.ob-canvas {
+  width: 100%; height: 440px;
+  background: #0a0a1f;
+  border: 1px solid rgba(180,200,255,0.3);
+  border-radius: 14px;
+  cursor: crosshair;
+  touch-action: none;
+}
+.ob-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #b8c8ff;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ob-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ob-actions button, .ob-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,120,200,0.6), rgba(80,90,180,0.5));
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ob-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.ob-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,20,40,0.88);
+  border: 1px solid rgba(180,200,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ob-reading-title {
+  font-size: 17px; color: #b8c8ff;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ob-reading-text {
+  font-size: 15px; color: #d8d8f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
 /* 移动端适配 */
 @media (max-width: 768px) {
   .collage-canvas, .collage-pool { width: 95%; }
@@ -4872,4 +5175,14 @@ body {
   .sm-card-icon { font-size: 24px; }
   .sm-card-name { font-size: 14px; }
   .sm-card-desc { font-size: 11px; }
+  /* v1.7.0 适配 */
+  .kt-canvas { height: 320px; }
+  .kt-prompt, .lk-prompt, .og-prompt, .ob-prompt { font-size: 16px; letter-spacing: 2px; }
+  .lk-val { width: 44px; height: 60px; font-size: 28px; }
+  .lk-digit button { width: 32px; height: 24px; }
+  .og-paper { width: 180px; height: 180px; }
+  .og-action { padding: 8px 12px; min-width: 70px; }
+  .og-action-label { font-size: 13px; }
+  .ob-canvas { height: 340px; }
+  .ob-stage, .kt-stage { width: 95%; }
 }

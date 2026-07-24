@@ -812,6 +812,46 @@
       return;
     }
 
+    // v1.7.0 风筝引线节点
+    if (node.kite) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runKite(node.kite, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.7.0 密码锁节点
+    if (node.lock) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runLock(node.lock, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.7.0 折纸造型节点
+    if (node.origami) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runOrigami(node.origami, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.7.0 星轨追踪节点
+    if (node.orbit) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runOrbit(node.orbit, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -8946,6 +8986,872 @@
     resize();
   }
 
+  /* ============================================================
+     v1.7.0 风筝引线 runKite
+     node.kite = {
+       prompt: "牵引风筝穿过云阵，到达指定高度——",
+       target: 80,        // 目标高度（百分比 0-100）
+       duration: 12000,   // 总时长
+       obstacles: 6,      // 障碍数量（云/鸟）
+       thresholds: [
+         { max: 5, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runKite(k, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "kite-layer";
+    layer.id = "kite-layer";
+    layer.innerHTML = `
+      <div class="kt-prompt">${k.prompt || "牵引风筝穿过云阵，到达指定高度——"}</div>
+      <div class="kt-stage">
+        <canvas class="kt-canvas" id="kt-canvas"></canvas>
+        <div class="kt-info" id="kt-info">按住风筝拖动 · 目标高度 ${(k.target ?? 80)}%</div>
+      </div>
+      <div class="kt-actions">
+        <button class="kt-start" id="kt-start">开始</button>
+        <button class="kt-confirm" id="kt-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#kt-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#kt-info");
+    const startBtn = layer.querySelector("#kt-start");
+    const confirmBtn = layer.querySelector("#kt-confirm");
+
+    let aborted = false;
+    let started = false;
+    let ended = false;
+    let startTime = 0;
+    let rafId = null;
+    const total = k.duration || 12000;
+    const targetH = (k.target ?? 80) / 100;
+    const obstacleCount = k.obstacles ?? 6;
+    let kite = { x: 0, y: 0.85, dragging: false, vx: 0, vy: 0 };
+    let obstacles = [];
+    let hits = 0;
+    let maxTopReached = 1.0;  // y越小越高
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width;
+      ch = canvas.height;
+      if (!started) {
+        kite.x = cw / 2;
+        kite.y = ch * 0.85;
+      }
+      buildObstacles();
+      draw();
+    }
+
+    function buildObstacles() {
+      obstacles = [];
+      const types = ["cloud", "bird"];
+      for (let i = 0; i < obstacleCount; i++) {
+        obstacles.push({
+          x: Math.random() * cw,
+          y: ch * (0.15 + Math.random() * 0.6),
+          r: 18 + Math.random() * 14,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: (Math.random() - 0.5) * 0.4,
+          type: types[Math.floor(Math.random() * types.length)],
+        });
+      }
+    }
+
+    function draw() {
+      const w = cw, h = ch;
+      // 天空渐变
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, "#9ec9ff");
+      grad.addColorStop(1, "#fde8f0");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      // 远山
+      ctx.fillStyle = "rgba(120, 100, 140, 0.4)";
+      ctx.beginPath();
+      ctx.moveTo(0, h * 0.85);
+      ctx.lineTo(w * 0.2, h * 0.7);
+      ctx.lineTo(w * 0.45, h * 0.82);
+      ctx.lineTo(w * 0.7, h * 0.68);
+      ctx.lineTo(w, h * 0.8);
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+      // 目标高度线
+      const targetY = h * (1 - targetH);
+      ctx.strokeStyle = "rgba(255, 100, 140, 0.5)";
+      ctx.setLineDash([6, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, targetY);
+      ctx.lineTo(w, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(255, 100, 140, 0.7)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText(`目标 ${Math.round(targetH * 100)}%`, 8, targetY - 4);
+
+      // 障碍
+      obstacles.forEach(o => {
+        if (o.type === "cloud") {
+          ctx.fillStyle = "rgba(255,255,255,0.85)";
+          ctx.beginPath();
+          ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2);
+          ctx.arc(o.x + o.r * 0.8, o.y + 2, o.r * 0.8, 0, Math.PI * 2);
+          ctx.arc(o.x - o.r * 0.8, o.y + 2, o.r * 0.8, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = "#444";
+          ctx.beginPath();
+          ctx.moveTo(o.x, o.y);
+          ctx.lineTo(o.x - o.r, o.y - o.r * 0.4);
+          ctx.lineTo(o.x - o.r * 0.4, o.y);
+          ctx.lineTo(o.x - o.r, o.y + o.r * 0.4);
+          ctx.closePath();
+          ctx.moveTo(o.x, o.y);
+          ctx.lineTo(o.x + o.r, o.y - o.r * 0.4);
+          ctx.lineTo(o.x + o.r * 0.4, o.y);
+          ctx.lineTo(o.x + o.r, o.y + o.r * 0.4);
+          ctx.closePath();
+          ctx.fill();
+        }
+      });
+
+      // 风筝线
+      ctx.strokeStyle = "rgba(80,60,80,0.7)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(w / 2, h);
+      ctx.lineTo(kite.x, kite.y);
+      ctx.stroke();
+      // 风筝
+      ctx.save();
+      ctx.translate(kite.x, kite.y);
+      ctx.fillStyle = "#ff6b9d";
+      ctx.beginPath();
+      ctx.moveTo(0, -16);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(0, 16);
+      ctx.lineTo(-12, 0);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // 飘带
+      ctx.strokeStyle = "rgba(255,200,220,0.8)";
+      ctx.beginPath();
+      ctx.moveTo(0, 16);
+      ctx.quadraticCurveTo(6, 24, 0, 32);
+      ctx.quadraticCurveTo(-6, 24, 0, 16);
+      ctx.stroke();
+      ctx.restore();
+
+      // 信息
+      const heightPct = Math.round((1 - kite.y / h) * 100);
+      const reachedTarget = (1 - kite.y / h) >= targetH;
+      info.textContent = `高度 ${heightPct}% · 碰撞 ${hits} 次${reachedTarget ? " · 已到达目标" : ""}${started && !ended ? " · 拖动风筝" : ""}`;
+    }
+
+    function loop(now) {
+      if (aborted) return;
+      // 障碍移动
+      obstacles.forEach(o => {
+        o.x += o.vx;
+        o.y += o.vy;
+        if (o.x < -o.r) o.x = cw + o.r;
+        if (o.x > cw + o.r) o.x = -o.r;
+        if (o.y < ch * 0.1) o.vy = Math.abs(o.vy);
+        if (o.y > ch * 0.8) o.vy = -Math.abs(o.vy);
+        // 碰撞检测
+        if (!ended) {
+          const dx = o.x - kite.x;
+          const dy = o.y - kite.y;
+          if (Math.hypot(dx, dy) < o.r + 14) {
+            hits++;
+            // 推开
+            o.vx = -o.vx;
+            o.x += o.vx * 6;
+            o.y += o.vy * 6;
+            kite.vy += 0.4;  // 略微下落
+          }
+        }
+      });
+      // 风筝重力（不下垂太多）
+      if (!kite.dragging && !ended) {
+        kite.vy += 0.05;
+        kite.y += kite.vy;
+        if (kite.y > ch - 20) { kite.y = ch - 20; kite.vy = 0; }
+        if (kite.y < 0) { kite.y = 0; kite.vy = 0; }
+      }
+      if (kite.y < maxTopReached) maxTopReached = kite.y;
+      draw();
+      // 时间到自动结束
+      if (started && !ended && (now - startTime) >= total) {
+        endGame();
+      }
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      if (ended) return;
+      ended = true;
+      confirmBtn.disabled = false;
+      startBtn.disabled = true;
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+
+    function onDown(e) {
+      if (!started || ended) return;
+      const p = getPos(e);
+      if (Math.hypot(p.x - kite.x, p.y - kite.y) < 30) {
+        kite.dragging = true;
+        kite.vx = 0; kite.vy = 0;
+      }
+    }
+    function onMove(e) {
+      if (!kite.dragging) return;
+      e.preventDefault();
+      const p = getPos(e);
+      kite.x = Math.max(20, Math.min(cw - 20, p.x));
+      kite.y = Math.max(20, Math.min(ch - 20, p.y));
+    }
+    function onUp() { kite.dragging = false; }
+
+    canvas.addEventListener("mousedown", onDown);
+    canvas.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("touchstart", onDown, { passive: false });
+    canvas.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      startBtn.disabled = true;
+      rafId = requestAnimationFrame(loop);
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      aborted = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      confirmBtn.disabled = true;
+      // 清理事件
+      canvas.removeEventListener("mousedown", onDown);
+      canvas.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("touchstart", onDown);
+      canvas.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+      const heightPct = (1 - kite.y / ch) * 100;
+      const reachedTarget = heightPct >= targetH * 100;
+      // 综合评分：碰撞次数 + 是否到达目标
+      const error = hits + (reachedTarget ? 0 : 10);
+      const thresholds = k.thresholds || [];
+      let matched = k.fallback || { tag: "miss", label: "——线断了", next: null };
+      for (const t of thresholds) {
+        if (error <= (t.max ?? 5)) { matched = t; break; }
+      }
+      Saves.saveKiteRecord(currentNodeId, reachedTarget, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "kt-reading";
+      reading.innerHTML = `<div class="kt-reading-title">${matched.label || "解读"} · 高度 ${Math.round(heightPct)}% · 碰撞 ${hits}</div>
+        <div class="kt-reading-text">${matched.text || ""}</div>
+        <button class="kt-reading-close">继续</button>`;
+      reading.querySelector(".kt-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.7.0 密码锁 runLock
+     node.lock = {
+       prompt: "根据线索拨出四位密码——",
+       target: "3-7-2-9",       // 目标密码（用-分隔）
+       preview: 4000,          // 预览毫秒（可选，0 表示不预览）
+       hints: ["三月", "七月", "二日", "九时"],
+       thresholds: [
+         { correct: 4, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runLock(lk, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "lock-layer";
+    layer.id = "lock-layer";
+    const target = String(lk.target || "0000").replace(/[^0-9]/g, "");
+    const len = target.length || 4;
+    const hints = lk.hints || [];
+    const previewMs = lk.preview ?? 4000;
+    layer.innerHTML = `
+      <div class="lk-prompt">${lk.prompt || "根据线索拨出密码——"}</div>
+      <div class="lk-hints" id="lk-hints"></div>
+      <div class="lk-dial" id="lk-dial"></div>
+      <div class="lk-info" id="lk-info">${previewMs > 0 ? "记住密码预览..." : "拨出密码"}</div>
+      <div class="lk-actions">
+        <button class="lk-start" id="lk-start">开始</button>
+        <button class="lk-confirm" id="lk-confirm" disabled>解锁</button>
+      </div>
+    `;
+    const dialEl = layer.querySelector("#lk-dial");
+    const infoEl = layer.querySelector("#lk-info");
+    const startBtn = layer.querySelector("#lk-start");
+    const confirmBtn = layer.querySelector("#lk-confirm");
+    const hintsEl = layer.querySelector("#lk-hints");
+
+    if (hints.length) {
+      hintsEl.innerHTML = hints.map(h => `<span class="lk-hint">${h}</span>`).join("");
+    } else {
+      hintsEl.innerHTML = `<span class="lk-hint">线索隐藏在剧情中</span>`;
+    }
+
+    // 构建 N 个数字盘
+    const digits = new Array(len).fill(0);
+    const digitEls = [];
+    for (let i = 0; i < len; i++) {
+      const wrap = document.createElement("div");
+      wrap.className = "lk-digit";
+      wrap.innerHTML = `
+        <button class="lk-up" data-i="${i}">▲</button>
+        <div class="lk-val" data-i="${i}">0</div>
+        <button class="lk-down" data-i="${i}">▼</button>
+      `;
+      dialEl.appendChild(wrap);
+      digitEls.push(wrap.querySelector(".lk-val"));
+      wrap.querySelector(".lk-up").onclick = () => {
+        digits[i] = (digits[i] + 1) % 10;
+        digitEls[i].textContent = digits[i];
+      };
+      wrap.querySelector(".lk-down").onclick = () => {
+        digits[i] = (digits[i] + 9) % 10;
+        digitEls[i].textContent = digits[i];
+      };
+    }
+
+    let started = false;
+    let previewing = false;
+    let aborted = false;
+
+    function showPreview() {
+      previewing = true;
+      infoEl.textContent = `密码预览：${target.split("").join(" ")}（${(previewMs / 1000).toFixed(1)}s）`;
+      for (let i = 0; i < len; i++) {
+        digitEls[i].textContent = target[i];
+        digitEls[i].classList.add("preview");
+      }
+      setTimeout(() => {
+        if (aborted) return;
+        previewing = false;
+        for (let i = 0; i < len; i++) {
+          digits[i] = 0;
+          digitEls[i].textContent = "0";
+          digitEls[i].classList.remove("preview");
+        }
+        infoEl.textContent = "拨出密码";
+        confirmBtn.disabled = false;
+      }, previewMs);
+    }
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startBtn.disabled = true;
+      if (previewMs > 0) showPreview();
+      else {
+        confirmBtn.disabled = false;
+        infoEl.textContent = "拨出密码";
+      }
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || previewing) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const input = digits.join("");
+      let correct = 0;
+      for (let i = 0; i < len; i++) {
+        if (digits[i] === parseInt(target[i])) correct++;
+        digitEls[i].classList.add(digits[i] === parseInt(target[i]) ? "ok" : "err");
+      }
+      Saves.saveLockRecord(currentNodeId, input, target, correct, correct === len ? "perfect" : correct >= 2 ? "good" : "miss");
+      const thresholds = lk.thresholds || [];
+      let matched = lk.fallback || { tag: "miss", label: "——锁没开", next: null };
+      for (const t of thresholds) {
+        if (correct >= (t.min ?? 4)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "lk-reading";
+      reading.innerHTML = `<div class="lk-reading-title">${matched.label || "解读"} · 正确 ${correct}/${len}</div>
+        <div class="lk-reading-text">${matched.text || ""}</div>
+        <button class="lk-reading-close">继续</button>`;
+      reading.querySelector(".lk-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.7.0 折纸造型 runOrigami
+     node.origami = {
+       prompt: "按步骤折叠纸张——",
+       steps: [ { id, label, desc } ],
+       targets: [
+         { steps: ["a","b","c","d"], tag, label, text, add?, personality?, memory?, next }
+       ],
+       min: 3,
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runOrigami(og, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "origami-layer";
+    layer.id = "origami-layer";
+    layer.innerHTML = `
+      <div class="og-prompt">${og.prompt || "按步骤折叠纸张——"}</div>
+      <div class="og-paper" id="og-paper">
+        <div class="og-paper-text">樱·时·信·笺</div>
+      </div>
+      <div class="og-actions" id="og-actions"></div>
+      <div class="og-controls">
+        <button class="og-reset">重置</button>
+        <button class="og-confirm" disabled>成型解读</button>
+      </div>
+    `;
+    const paper = layer.querySelector("#og-paper");
+    const actionsEl = layer.querySelector("#og-actions");
+    const confirmBtn = layer.querySelector(".og-confirm");
+    const resetBtn = layer.querySelector(".og-reset");
+
+    const steps = og.steps || [];
+    const sequence = [];
+
+    steps.forEach(s => {
+      const btn = document.createElement("button");
+      btn.className = "og-action";
+      btn.dataset.id = s.id;
+      btn.innerHTML = `<div class="og-action-label">${s.label}</div>
+        <div class="og-action-desc">${s.desc || ""}</div>`;
+      btn.onclick = () => {
+        if (btn.classList.contains("used")) return;
+        btn.classList.add("used");
+        sequence.push(s.id);
+        const crease = document.createElement("div");
+        crease.className = `og-crease og-crease-${sequence.length}`;
+        paper.appendChild(crease);
+        paper.classList.add(`origami-step-${sequence.length}`);
+        confirmBtn.disabled = sequence.length < Math.min(og.min || 3, steps.length);
+      };
+      actionsEl.appendChild(btn);
+    });
+
+    resetBtn.onclick = () => {
+      sequence.length = 0;
+      paper.className = "og-paper";
+      paper.querySelectorAll(".og-crease").forEach(c => c.remove());
+      actionsEl.querySelectorAll(".og-action.used").forEach(b => b.classList.remove("used"));
+      confirmBtn.disabled = true;
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const targets = og.targets || [];
+      let matched = og.fallback || { tag: "default", label: "——一张纸", next: null };
+      let bestScore = -1;
+      for (const t of targets) {
+        const tgt = t.steps || [];
+        let score = 0;
+        const minLen = Math.min(tgt.length, sequence.length);
+        for (let i = 0; i < minLen; i++) {
+          if (tgt[i] === sequence[i]) score++;
+        }
+        score = score - Math.abs(tgt.length - sequence.length) * 0.5;
+        if (score > bestScore) { bestScore = score; matched = t; }
+      }
+      Saves.saveOrigamiRecord(currentNodeId, sequence.slice(), matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "og-reading";
+      reading.innerHTML = `<div class="og-reading-title">${matched.label || "解读"}</div>
+        <div class="og-reading-text">${matched.text || ""}</div>
+        <button class="og-reading-close">继续</button>`;
+      reading.querySelector(".og-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.7.0 星轨追踪 runOrbit
+     node.orbit = {
+       prompt: "追踪星轨——点击移动光标，跟随星点轨迹",
+       duration: 10000,
+       tolerance: 30,    // 像素容差
+       samples: 6,       // 采样点数量
+       thresholds: [
+         { max: 50, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runOrbit(ob, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "orbit-layer";
+    layer.id = "orbit-layer";
+    layer.innerHTML = `
+      <div class="ob-prompt">${ob.prompt || "追踪星轨——"}</div>
+      <div class="ob-stage">
+        <canvas class="ob-canvas" id="ob-canvas"></canvas>
+        <div class="ob-info" id="ob-info">点击「开始」追踪星轨</div>
+      </div>
+      <div class="ob-actions">
+        <button class="ob-start" id="ob-start">开始</button>
+        <button class="ob-confirm" id="ob-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ob-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ob-info");
+    const startBtn = layer.querySelector("#ob-start");
+    const confirmBtn = layer.querySelector("#ob-confirm");
+
+    let aborted = false;
+    let started = false;
+    let ended = false;
+    let startTime = 0;
+    let rafId = null;
+    const total = ob.duration || 10000;
+    const tolerance = ob.tolerance ?? 30;
+    const samples = ob.samples ?? 6;
+    let cw = 0, ch = 0;
+    let stars = [];      // 背景星
+    let trail = [];      // 目标星轨迹采样点
+    let cursor = { x: 0, y: 0, visible: false };
+    let cursorTrail = [];
+    let sampleIndex = 0;
+    let errors = [];
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width;
+      ch = canvas.height;
+      buildStars();
+      buildTrail();
+      draw();
+    }
+
+    function buildStars() {
+      stars = [];
+      for (let i = 0; i < 60; i++) {
+        stars.push({
+          x: Math.random() * cw,
+          y: Math.random() * ch,
+          r: 0.5 + Math.random() * 1.5,
+          tw: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+
+    function buildTrail() {
+      trail = [];
+      // 生成椭圆/弧形轨迹
+      const cx = cw / 2, cy = ch / 2;
+      const rx = Math.min(cw, ch) * 0.35;
+      const ry = Math.min(cw, ch) * 0.25;
+      const startA = -Math.PI / 2;
+      const endA = startA + Math.PI * 1.4;
+      for (let i = 0; i < samples; i++) {
+        const t = i / (samples - 1);
+        const a = startA + (endA - startA) * t;
+        trail.push({
+          x: cx + Math.cos(a) * rx,
+          y: cy + Math.sin(a) * ry,
+          lit: false,
+        });
+      }
+    }
+
+    function draw() {
+      const w = cw, h = ch;
+      // 夜空背景
+      ctx.fillStyle = "#0a0a1f";
+      ctx.fillRect(0, 0, w, h);
+      // 星
+      stars.forEach(s => {
+        s.tw += 0.04;
+        const alpha = 0.4 + Math.sin(s.tw) * 0.3;
+        ctx.fillStyle = `rgba(255,255,220,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 目标轨迹连线（虚线）
+      if (started) {
+        ctx.strokeStyle = "rgba(180, 200, 255, 0.3)";
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        trail.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // 目标采样点
+        trail.forEach((p, i) => {
+          ctx.fillStyle = p.lit ? "#7fff9d" : "rgba(255,200,100,0.8)";
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, i === sampleIndex ? 12 : 8, 0, Math.PI * 2);
+          ctx.fill();
+          if (i === sampleIndex && !ended) {
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        });
+      }
+
+      // 玩家轨迹
+      if (cursorTrail.length > 1) {
+        ctx.strokeStyle = "rgba(255, 220, 255, 0.5)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        cursorTrail.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+      }
+      // 光标
+      if (cursor.visible) {
+        ctx.fillStyle = "#ff8ec7";
+        ctx.beginPath();
+        ctx.arc(cursor.x, cursor.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 200, 220, 0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cursor.x, cursor.y, 14, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      // 信息
+      const remain = started && !ended ? Math.max(0, total - (performance.now() - startTime)) : 0;
+      info.textContent = started && !ended
+        ? `采样 ${sampleIndex}/${samples} · 剩余 ${(remain / 1000).toFixed(1)}s`
+        : ended ? `完成 ${sampleIndex}/${samples} 采样` : "点击「开始」追踪星轨";
+    }
+
+    function loop() {
+      if (aborted) return;
+      draw();
+      if (started && !ended) {
+        const elapsed = performance.now() - startTime;
+        if (elapsed >= total) endGame();
+      }
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    function tryHit(x, y) {
+      if (!started || ended) return;
+      if (sampleIndex >= samples) return;
+      const t = trail[sampleIndex];
+      const d = Math.hypot(t.x - x, t.y - y);
+      if (d < tolerance + 16) {
+        t.lit = true;
+        errors.push(Math.max(0, d - 8));  // 记录误差
+        sampleIndex++;
+        if (sampleIndex >= samples) endGame();
+      }
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+
+    function onDown(e) {
+      const p = getPos(e);
+      cursor.x = p.x; cursor.y = p.y; cursor.visible = true;
+      cursorTrail.push({ x: p.x, y: p.y });
+      if (cursorTrail.length > 60) cursorTrail.shift();
+      tryHit(p.x, p.y);
+    }
+    function onMove(e) {
+      if (!cursor.visible) return;
+      e.preventDefault();
+      const p = getPos(e);
+      cursor.x = p.x; cursor.y = p.y;
+      cursorTrail.push({ x: p.x, y: p.y });
+      if (cursorTrail.length > 60) cursorTrail.shift();
+    }
+    function onUp() { cursor.visible = false; }
+
+    canvas.addEventListener("mousedown", onDown);
+    canvas.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("touchstart", onDown, { passive: false });
+    canvas.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+
+    function endGame() {
+      if (ended) return;
+      ended = true;
+      confirmBtn.disabled = false;
+    }
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      startBtn.disabled = true;
+      rafId = requestAnimationFrame(loop);
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      aborted = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      confirmBtn.disabled = true;
+      canvas.removeEventListener("mousedown", onDown);
+      canvas.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("touchstart", onDown);
+      canvas.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+      const avgError = errors.length ? errors.reduce((a, b) => a + b, 0) / errors.length : 999;
+      const missing = samples - sampleIndex;
+      const totalError = avgError + missing * 30;
+      Saves.saveOrbitRecord(currentNodeId, totalError, sampleIndex === samples ? "perfect" : sampleIndex >= samples / 2 ? "good" : "miss");
+      const thresholds = ob.thresholds || [];
+      let matched = ob.fallback || { tag: "miss", label: "——星辰失散", next: null };
+      for (const t of thresholds) {
+        if (totalError <= (t.max ?? 50)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ob-reading";
+      reading.innerHTML = `<div class="ob-reading-title">${matched.label || "解读"} · 采样 ${sampleIndex}/${samples} · 均偏 ${avgError.toFixed(1)}px</div>
+        <div class="ob-reading-text">${matched.text || ""}</div>
+        <button class="ob-reading-close">继续</button>`;
+      reading.querySelector(".ob-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -9043,6 +9949,10 @@
     document.querySelectorAll(".sugar-layer").forEach(e => e.remove());
     document.querySelectorAll(".chime-layer").forEach(e => e.remove());
     document.querySelectorAll(".hourglass-layer").forEach(e => e.remove());
+    document.querySelectorAll(".kite-layer").forEach(e => e.remove());
+    document.querySelectorAll(".lock-layer").forEach(e => e.remove());
+    document.querySelectorAll(".origami-layer").forEach(e => e.remove());
+    document.querySelectorAll(".orbit-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

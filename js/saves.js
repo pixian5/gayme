@@ -90,6 +90,12 @@ const SUGAR_KEY   = "sakura_letters_sugar_v2";     // 糖块拼图
 const CHIME_KEY   = "sakura_letters_chime_v2";     // 钟调共振
 const HOURGLASS_KEY = "sakura_letters_hourglass_v2"; // 沙漏计时
 
+/* v1.7.0 新玩法存储 */
+const KITE_KEY    = "sakura_letters_kite_v2";       // 风筝引线
+const LOCK_KEY    = "sakura_letters_lock_v2";       // 密码锁
+const ORIGAMI_KEY = "sakura_letters_origami_v2";   // 折纸造型
+const ORBIT_KEY   = "sakura_letters_orbit_v2";       // 星轨追踪
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1237,6 +1243,70 @@ const Saves = {
   },
   getHourglassRecord(nodeId) { return this.getHourglassRecords()[nodeId]; },
 
+  /* ============ v1.7.0 风筝引线 ============ */
+  // { nodeId: { match, tag, ts } }
+  getKiteRecords() {
+    try {
+      const raw = localStorage.getItem(KITE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveKiteRecord(nodeId, match, tag) {
+    const all = this.getKiteRecords();
+    all[nodeId] = { match, tag, ts: Date.now() };
+    localStorage.setItem(KITE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getKiteRecord(nodeId) { return this.getKiteRecords()[nodeId]; },
+
+  /* ============ v1.7.0 密码锁 ============ */
+  // { nodeId: { code, target, correct, tag, ts } }
+  getLockRecords() {
+    try {
+      const raw = localStorage.getItem(LOCK_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveLockRecord(nodeId, code, target, correct, tag) {
+    const all = this.getLockRecords();
+    all[nodeId] = { code, target, correct, tag, ts: Date.now() };
+    localStorage.setItem(LOCK_KEY, JSON.stringify(all));
+    return true;
+  },
+  getLockRecord(nodeId) { return this.getLockRecords()[nodeId]; },
+
+  /* ============ v1.7.0 折纸造型 ============ */
+  // { nodeId: { steps, tag, ts } }
+  getOrigamiRecords() {
+    try {
+      const raw = localStorage.getItem(ORIGAMI_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveOrigamiRecord(nodeId, steps, tag) {
+    const all = this.getOrigamiRecords();
+    all[nodeId] = { steps, tag, ts: Date.now() };
+    localStorage.setItem(ORIGAMI_KEY, JSON.stringify(all));
+    return true;
+  },
+  getOrigamiRecord(nodeId) { return this.getOrigamiRecords()[nodeId]; },
+
+  /* ============ v1.7.0 星轨追踪 ============ */
+  // { nodeId: { error, tag, ts } }
+  getOrbitRecords() {
+    try {
+      const raw = localStorage.getItem(ORBIT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveOrbitRecord(nodeId, error, tag) {
+    const all = this.getOrbitRecords();
+    all[nodeId] = { error, tag, ts: Date.now() };
+    localStorage.setItem(ORBIT_KEY, JSON.stringify(all));
+    return true;
+  },
+  getOrbitRecord(nodeId) { return this.getOrbitRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1266,7 +1336,8 @@ const Saves = {
      DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY,
      RUBBING_KEY, COLLECT_KEY, FOCUS_KEY, SCENTMEM_KEY,
      TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY,
-     FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY].forEach(k => localStorage.removeItem(k));
+     FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY,
+     KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
