@@ -652,6 +652,46 @@
       return;
     }
 
+    // v1.3.0 占星骰子节点
+    if (node.dice) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDice(node.dice, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.3.0 风向感知节点
+    if (node.wind) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runWind(node.wind, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.3.0 梦境解码节点
+    if (node.decode) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDecode(node.decode, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.3.0 雨滴节奏节点
+    if (node.rain) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runRain(node.rain, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -5561,6 +5601,667 @@
     document.getElementById("game").appendChild(layer);
   }
 
+  /* ============================================================
+     v1.3.0 占星骰子 runDice
+     node.dice = {
+       prompt: "掷三个骰子——解读命运",
+       rolls: 3,                    // 掷几次（保留最后一次或求和）
+       thresholds: [
+         { min: 15, tag, label, text, add?, memory?, next },   // sum >= 15
+         { min: 8,  tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runDice(d, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "dice-layer";
+    layer.id = "dice-layer";
+    layer.innerHTML = `
+      <div class="di-prompt">${d.prompt || "掷三个骰子——解读命运"}</div>
+      <div class="di-stage">
+        <div class="di-dice" id="di-dice"></div>
+        <div class="di-sum" id="di-sum">点数：——</div>
+      </div>
+      <div class="di-info" id="di-info">点击骰子掷出</div>
+      <div class="di-actions">
+        <button class="di-roll" id="di-roll">掷骰</button>
+        <button class="di-confirm" id="di-confirm" disabled>解读</button>
+      </div>
+    `;
+    const diceEl = layer.querySelector("#di-dice");
+    const sumEl = layer.querySelector("#di-sum");
+    const info = layer.querySelector("#di-info");
+    const rollBtn = layer.querySelector("#di-roll");
+    const confirmBtn = layer.querySelector("#di-confirm");
+
+    // 生成 3 个骰子
+    const dice = [1, 1, 1];
+    for (let i = 0; i < 3; i++) {
+      const die = document.createElement("div");
+      die.className = "di-die";
+      die.dataset.idx = i;
+      die.innerHTML = `<div class="di-die-face">?</div>`;
+      diceEl.appendChild(die);
+    }
+    const dieEls = diceEl.querySelectorAll(".di-die");
+
+    let rolled = false;
+    let rolling = false;
+    let aborted = false;
+
+    function renderDie(idx, val, rolling) {
+      const face = dieEls[idx].querySelector(".di-die-face");
+      dieEls[idx].classList.toggle("rolling", rolling);
+      face.textContent = rolling ? "?" : val;
+    }
+
+    function rollDice() {
+      if (rolling || aborted) return;
+      rolling = true;
+      rollBtn.disabled = true;
+      info.textContent = "骰子转动中……";
+      let ticks = 0;
+      const iv = setInterval(() => {
+        if (aborted || !document.body.contains(layer)) { clearInterval(iv); return; }
+        for (let i = 0; i < 3; i++) {
+          dice[i] = Math.floor(Math.random() * 6) + 1;
+          renderDie(i, dice[i], true);
+        }
+        ticks++;
+        if (ticks >= 10) {
+          clearInterval(iv);
+          for (let i = 0; i < 3; i++) renderDie(i, dice[i], false);
+          const sum = dice.reduce((a,b) => a+b, 0);
+          sumEl.textContent = `点数：${dice.join(" + ")} = ${sum}`;
+          info.textContent = `掷出 ${dice.join("、")}，总和 ${sum}——可以解读了`;
+          rolling = false;
+          rolled = true;
+          rollBtn.disabled = false;
+          confirmBtn.disabled = false;
+        }
+      }, 80);
+    }
+    rollBtn.onclick = rollDice;
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled || !rolled) return;
+      const sum = dice.reduce((a,b) => a+b, 0);
+      const thresholds = d.thresholds || [];
+      let matched = d.fallback || { tag: "miss", label: "——平淡", next: null };
+      for (const t of thresholds) {
+        if (sum >= t.min) { matched = t; break; }
+      }
+      Saves.saveDiceRecord(currentNodeId, dice.slice(), sum, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "di-reading";
+      reading.innerHTML = `<div class="di-reading-title">${matched.label || "解读"} · 总和 ${sum}</div>
+        <div class="di-reading-text">${matched.text || ""}</div>
+        <button class="di-reading-close">继续</button>`;
+      reading.querySelector(".di-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.3.0 风向感知 runWind
+     node.wind = {
+       prompt: "调整帆角度——借风前进",
+       target: 80,            // 目标进度（0~100）
+       maxAttempts: 6,        // 最多调整次数
+       thresholds: [
+         { min: 0.85, tag, label, text, add?, memory?, next },
+         { min: 0.5,  tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runWind(w, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "wind-layer";
+    layer.id = "wind-layer";
+    const target = w.target || 80;
+    const maxAttempts = w.maxAttempts || 6;
+    layer.innerHTML = `
+      <div class="wd-prompt">${w.prompt || "调整帆角度——借风前进"}</div>
+      <div class="wd-stage">
+        <canvas class="wd-canvas" id="wd-canvas"></canvas>
+        <div class="wd-info" id="wd-info">进度：0 / ${target} · 剩余 ${maxAttempts} 次</div>
+      </div>
+      <div class="wd-controls">
+        <div class="wd-row">
+          <label>帆角度</label>
+          <input type="range" id="wd-sail" min="-90" max="90" step="1" value="0">
+          <span id="wd-sail-val">0°</span>
+        </div>
+      </div>
+      <div class="wd-actions">
+        <button class="wd-sail-btn" id="wd-sail-btn">扬帆</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#wd-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#wd-info");
+    const sailEl = layer.querySelector("#wd-sail");
+    const sailVal = layer.querySelector("#wd-sail-val");
+    const sailBtn = layer.querySelector("#wd-sail-btn");
+
+    let progress = 0;
+    let attempts = 0;
+    let windDir = 30;  // 当前风向（度）
+    let aborted = false;
+    let finished = false;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      redraw();
+    }
+    function redraw() {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 海面
+      ctx.fillStyle = "rgba(60,120,160,0.4)";
+      ctx.fillRect(0, h*0.7, w, h*0.3);
+      // 进度条
+      const barW = w - 40;
+      const barH = 8;
+      const barY = 20;
+      ctx.fillStyle = "rgba(255,255,255,0.1)";
+      ctx.fillRect(20, barY, barW, barH);
+      ctx.fillStyle = "#ffb8c8";
+      ctx.fillRect(20, barY, barW * Math.min(1, progress / target), barH);
+      // 目标线
+      ctx.strokeStyle = "rgba(255,220,140,0.6)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(20 + barW * 0.95, barY - 4);
+      ctx.lineTo(20 + barW * 0.95, barY + barH + 4);
+      ctx.stroke();
+      // 船
+      const boatX = 60 + (w - 120) * Math.min(1, progress / target);
+      const boatY = h * 0.6;
+      ctx.fillStyle = "#d87090";
+      ctx.beginPath();
+      ctx.moveTo(boatX - 20, boatY);
+      ctx.lineTo(boatX + 20, boatY);
+      ctx.lineTo(boatX + 12, boatY + 12);
+      ctx.lineTo(boatX - 12, boatY + 12);
+      ctx.closePath();
+      ctx.fill();
+      // 桅杆
+      ctx.strokeStyle = "#f5e8d0";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(boatX, boatY);
+      ctx.lineTo(boatX, boatY - 30);
+      ctx.stroke();
+      // 帆（根据 sail 角度旋转）
+      const sailAngle = parseFloat(sailEl.value) * Math.PI / 180;
+      ctx.save();
+      ctx.translate(boatX, boatY - 20);
+      ctx.rotate(sailAngle);
+      ctx.fillStyle = "rgba(255,240,220,0.8)";
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(20, 0);
+      ctx.lineTo(0, 15);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      // 风向指示
+      const windRad = windDir * Math.PI / 180;
+      ctx.strokeStyle = "rgba(180,220,255,0.6)";
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 5; i++) {
+        const x = 40 + i * 30;
+        const y = h * 0.4;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + Math.cos(windRad) * 20, y + Math.sin(windRad) * 20);
+        ctx.stroke();
+      }
+    }
+    function updateInfo() {
+      info.textContent = `进度：${Math.round(progress)} / ${target} · 剩余 ${maxAttempts - attempts} 次`;
+    }
+    sailEl.addEventListener("input", () => {
+      sailVal.textContent = `${sailEl.value}°`;
+      redraw();
+    });
+
+    sailBtn.onclick = () => {
+      if (finished || aborted) return;
+      if (attempts >= maxAttempts) return;
+      attempts++;
+      // 风向：每次随机变化
+      windDir = Math.random() * 120 - 60;
+      const sailAngle = parseFloat(sailEl.value);
+      // 帆角度与风向夹角越小，前进越多
+      const diff = Math.abs(sailAngle - windDir);
+      const aligned = Math.max(0, 1 - diff / 90);
+      const gain = aligned * 20;
+      progress = Math.min(target + 10, progress + gain);
+      redraw();
+      updateInfo();
+      if (progress >= target) {
+        finished = true;
+        sailBtn.disabled = true;
+        setTimeout(() => finishWind(), 400);
+      } else if (attempts >= maxAttempts) {
+        finished = true;
+        sailBtn.disabled = true;
+        setTimeout(() => finishWind(), 400);
+      }
+    };
+
+    function finishWind() {
+      if (aborted) return;
+      const ratio = Math.min(1, progress / target);
+      const thresholds = w.thresholds || [];
+      let matched = w.fallback || { tag: "miss", label: "——没到", next: null };
+      for (const t of thresholds) {
+        if (ratio >= t.min) { matched = t; break; }
+      }
+      Saves.saveWindRecord(currentNodeId, progress, attempts, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "wd-reading";
+      reading.innerHTML = `<div class="wd-reading-title">${matched.label || "解读"} · 进度 ${Math.round(ratio * 100)}%</div>
+        <div class="wd-reading-text">${matched.text || ""}</div>
+        <button class="wd-reading-close">继续</button>`;
+      reading.querySelector(".wd-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+        if (ro) ro.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+    const ro = new ResizeObserver(() => { if (!aborted) resize(); });
+
+    document.getElementById("game").appendChild(layer);
+    ro.observe(canvas);
+    resize();
+    updateInfo();
+  }
+
+  /* ============================================================
+     v1.3.0 梦境解码 runDecode
+     node.decode = {
+       prompt: "把梦境碎片重排成一句完整的话——",
+       scrambled: ["雨","在","窗","外","停","了"],   // 乱序字符
+       answer: "雨在窗外停了",                       // 正确答案
+       thresholds: [
+         { min: 1.0, tag, label, text, add?, memory?, next },   // 完全正确
+         { min: 0.5, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runDecode(dc, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "decode-layer";
+    layer.id = "decode-layer";
+    const scrambled = dc.scrambled || [];
+    const answer = dc.answer || "";
+    layer.innerHTML = `
+      <div class="de-prompt">${dc.prompt || "把梦境碎片重排成一句完整的话——"}</div>
+      <div class="de-stage">
+        <div class="de-answer" id="de-answer"></div>
+        <div class="de-pool" id="de-pool"></div>
+      </div>
+      <div class="de-info" id="de-info">点击碎片排序——</div>
+      <div class="de-actions">
+        <button class="de-reset">重置</button>
+        <button class="de-confirm" id="de-confirm">解读</button>
+      </div>
+    `;
+    const answerEl = layer.querySelector("#de-answer");
+    const poolEl = layer.querySelector("#de-pool");
+    const info = layer.querySelector("#de-info");
+    const confirmBtn = layer.querySelector("#de-confirm");
+    const resetBtn = layer.querySelector(".de-reset");
+
+    // 打乱顺序
+    const order = scrambled.map((s, i) => ({ s, i })).sort(() => Math.random() - 0.5);
+    const picked = []; // [{s, idx}]
+    let aborted = false;
+
+    function renderPool() {
+      poolEl.innerHTML = "";
+      order.forEach((item, i) => {
+        if (picked.find(p => p.i === item.i)) return;
+        const chip = document.createElement("div");
+        chip.className = "de-chip";
+        chip.textContent = item.s;
+        chip.onclick = () => {
+          if (aborted) return;
+          picked.push(item);
+          renderPool();
+          renderAnswer();
+        };
+        poolEl.appendChild(chip);
+      });
+    }
+    function renderAnswer() {
+      answerEl.innerHTML = "";
+      picked.forEach((item, i) => {
+        const chip = document.createElement("div");
+        chip.className = "de-chip de-chip-picked";
+        chip.textContent = item.s;
+        chip.onclick = () => {
+          if (aborted) return;
+          picked.splice(i, 1);
+          renderPool();
+          renderAnswer();
+        };
+        answerEl.appendChild(chip);
+      });
+      const current = picked.map(p => p.s).join("");
+      info.textContent = current ? `当前：${current}` : "点击碎片排序——";
+    }
+    resetBtn.onclick = () => {
+      picked.length = 0;
+      renderPool();
+      renderAnswer();
+    };
+
+    confirmBtn.onclick = () => {
+      const current = picked.map(p => p.s).join("");
+      const correct = current === answer;
+      const score = correct ? 1 : (current.length > 0 ? Math.max(0, current.length / answer.length * 0.5) : 0);
+      const thresholds = dc.thresholds || [];
+      let matched = dc.fallback || { tag: "miss", label: "——没解开", next: null };
+      for (const t of thresholds) {
+        if (score >= t.min) { matched = t; break; }
+      }
+      Saves.saveDecodeRecord(currentNodeId, current, correct, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "de-reading";
+      reading.innerHTML = `<div class="de-reading-title">${matched.label || "解读"}${correct ? " · 正确" : ""}</div>
+        <div class="de-reading-text">${matched.text || ""}</div>
+        <button class="de-reading-close">继续</button>`;
+      reading.querySelector(".de-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    renderPool();
+    renderAnswer();
+  }
+
+  /* ============================================================
+     v1.3.0 雨滴节奏 runRain
+     node.rain = {
+       prompt: "听雨滴节奏——按节奏点击窗台",
+       drops: 8,                  // 雨滴数
+       interval: 1200,           // 雨滴间隔（ms）
+       tolerance: 0.25,          // 容差（占一拍比例）
+       thresholds: [
+         { min: 0.7, tag, label, text, add?, memory?, next },
+         { min: 0.4, tag, label, text, next }
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runRain(r, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "rain-layer";
+    layer.id = "rain-layer";
+    const totalDrops = r.drops || 8;
+    const interval = r.interval || 1200;
+    const tolerance = r.tolerance || 0.25;
+    layer.innerHTML = `
+      <div class="rn-prompt">${r.prompt || "听雨滴节奏——按节奏点击窗台"}</div>
+      <div class="rn-stage">
+        <canvas class="rn-canvas" id="rn-canvas"></canvas>
+        <div class="rn-info" id="rn-info">点击「开始」听雨——</div>
+      </div>
+      <div class="rn-actions">
+        <button class="rn-start" id="rn-start">开始</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#rn-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#rn-info");
+    const startBtn = layer.querySelector("#rn-start");
+
+    let hits = 0;
+    let dropCount = 0;
+    let started = false;
+    let aborted = false;
+    let rafId = null;
+    let dropTimers = [];
+    let dropTimes = [];   // 每滴雨的预期时间
+    let playerTaps = [];  // {time}
+    let startTime = 0;
+    let mo = null;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+    }
+    const ro = new ResizeObserver(() => { if (!aborted) resize(); });
+
+    function draw(now) {
+      if (aborted) return;
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      // 窗框
+      ctx.strokeStyle = "rgba(255,220,180,0.3)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(10, 10, w-20, h-20);
+      // 雨滴
+      const elapsed = now - startTime;
+      const activeDrops = [];
+      dropTimes.forEach((t, i) => {
+        const age = elapsed - t;
+        if (age > -200 && age < 800) {
+          activeDrops.push({ i, age });
+        }
+      });
+      activeDrops.forEach(({ i, age }) => {
+        const x = (w / (totalDrops + 1)) * (i + 1);
+        let y, alpha;
+        if (age < 0) {
+          y = -20;
+          alpha = 0;
+        } else {
+          y = (age / 800) * (h - 40);
+          alpha = 1 - age / 800;
+        }
+        ctx.fillStyle = `rgba(180,200,230,${alpha * 0.8})`;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 20, 3, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 落地涟漪
+        if (age > 0 && age < 300) {
+          ctx.strokeStyle = `rgba(200,220,240,${(1 - age/300) * 0.5})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(x, h - 30, age / 300 * 20, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+      // 命中窗口指示
+      const nextDrop = dropTimes.find(t => elapsed < t + 200);
+      if (nextDrop) {
+        const phase = (elapsed - nextDrop) / interval;
+        ctx.fillStyle = phase > -tolerance && phase < tolerance
+          ? "rgba(255,220,140,0.3)" : "rgba(255,255,255,0.05)";
+        ctx.fillRect(0, h - 35, w, 6);
+      }
+      if (dropCount < totalDrops || elapsed < dropTimes[dropTimes.length-1] + 1000) {
+        rafId = requestAnimationFrame(draw);
+      } else {
+        finishRain();
+      }
+    }
+
+    function startRain() {
+      if (started || aborted) return;
+      started = true;
+      startBtn.disabled = true;
+      startTime = performance.now();
+      // 生成雨滴时间表
+      for (let i = 0; i < totalDrops; i++) {
+        dropTimes.push(interval * (i + 1));
+      }
+      dropCount = totalDrops;
+      info.textContent = `听雨滴落地——按节奏点击 · 0 / ${totalDrops}`;
+      rafId = requestAnimationFrame(draw);
+    }
+    startBtn.onclick = startRain;
+
+    function onTap() {
+      if (!started || aborted) return;
+      const now = performance.now();
+      const elapsed = now - startTime;
+      playerTaps.push({ time: elapsed });
+      // 检查是否命中某个雨滴时间
+      let best = null, bestDist = Infinity;
+      for (const t of dropTimes) {
+        const d = Math.abs(elapsed - t);
+        if (d < bestDist) { bestDist = d; best = t; }
+      }
+      if (best && bestDist <= interval * tolerance) {
+        hits++;
+        flashHint("✓");
+      } else {
+        flashHint("✗");
+      }
+      info.textContent = `听雨滴落地——按节奏点击 · ${hits} / ${totalDrops}`;
+    }
+    canvas.addEventListener("click", onTap);
+    canvas.addEventListener("touchstart", e => { onTap(); e.preventDefault(); }, { passive: false });
+
+    function finishRain() {
+      if (aborted) return;
+      aborted = true;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      const accuracy = totalDrops ? hits / totalDrops : 0;
+      const thresholds = r.thresholds || [];
+      let matched = r.fallback || { tag: "miss", label: "——没跟上", next: null };
+      for (const t of thresholds) {
+        if (accuracy >= t.min) { matched = t; break; }
+      }
+      Saves.saveRainRecord(currentNodeId, hits, totalDrops, accuracy, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "rn-reading";
+      reading.innerHTML = `<div class="rn-reading-title">${matched.label || "解读"} · 命中率 ${Math.round(accuracy * 100)}%</div>
+        <div class="rn-reading-text">${matched.text || ""}</div>
+        <button class="rn-reading-close">继续</button>`;
+      reading.querySelector(".rn-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    }
+
+    mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        if (ro) ro.disconnect();
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    ro.observe(canvas);
+    resize();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -5642,6 +6343,10 @@
     document.querySelectorAll(".astronomy-layer").forEach(e => e.remove());
     document.querySelectorAll(".palette-layer").forEach(e => e.remove());
     document.querySelectorAll(".piano-layer").forEach(e => e.remove());
+    document.querySelectorAll(".dice-layer").forEach(e => e.remove());
+    document.querySelectorAll(".wind-layer").forEach(e => e.remove());
+    document.querySelectorAll(".decode-layer").forEach(e => e.remove());
+    document.querySelectorAll(".rain-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

@@ -1508,6 +1508,130 @@ const SCRIPT = {
     }
   },
 
+  /* ============ v1.3.0 新玩法触发节点 ============ */
+  // 占星骰子
+  d4_dice: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "桌上有一副旧骰子——她说过，三个骰子的总和，能掷出今夜的命运。你摇一摇，掷下去。",
+    next: "d4_wind",
+    dice: {
+      prompt: "掷三个骰子——解读命运",
+      thresholds: [
+        { min: 15, tag: "blessed",
+          label: "——大吉",
+          text: "三颗骰子高高低低加起来是个大数。你想起她说的：命好的人不是不摔跤，是摔跤的时候手还能握住东西。今夜，你握住了。",
+          add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
+          personality: { brave: 2, honest: 1 },
+          memory: { id: "骰子·大吉", title: "夜里掷出大吉", text: "你在夜里掷出一副大吉的骰子。" },
+          next: "d4_wind" },
+        { min: 8, tag: "ok",
+          label: "——平平",
+          text: "骰子加起来是个平平的数。不坏，也不好。她说：命就是这样，一半归你，一半归天。今夜归天的那一半，安安静静。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_wind" }
+      ],
+      fallback: { tag: "miss",
+        label: "——小凶",
+        text: "骰子加起来是个小数。她说：凶的时候不要怕——怕的不是命，是自己把自己吓住。今夜，你被吓住了一点点。",
+        next: "d4_wind" }
+    }
+  },
+
+  // 风向感知
+  d4_wind: {
+    day: 4, time: "night", bg: "rooftop", char: null, speaker: "",
+    text: "天台上风很大。她说过——风是给愿意借的人的。你拿起一只小纸船，调整它帆的角度，看它能走多远。",
+    next: "d4_decode",
+    wind: {
+      prompt: "调整帆角度——借风让纸船前进",
+      target: 80,
+      maxAttempts: 6,
+      thresholds: [
+        { min: 0.85, tag: "arrived",
+          label: "——到了",
+          text: "纸船借着风，一寸一寸到了对岸。你想起她说过的：到不了的人，不是没风，是没把自己的帆摆对方向。今夜，你摆对了。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { brave: 2, kind: 1 },
+          memory: { id: "风向·到岸", title: "夜里纸船到岸", text: "你在天台上让纸船借着风到了对岸。" },
+          next: "d4_decode" },
+        { min: 0.5, tag: "halfway",
+          label: "——走了一半",
+          text: "纸船走了一半就停了。风没给够，或者帆没摆对——一半一半。她说：走一半也是走。明天再走一半。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_decode" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没动",
+        text: "纸船几乎没动。风从一边吹来，帆却朝着另一边。她说：人和命，常常是这样错过的。今夜错过了——明天再调。",
+        next: "d4_decode" }
+    }
+  },
+
+  // 梦境解码
+  d4_decode: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "睡前，梦里飘来几个字——乱七八糟的，像撕碎的信。你试着把它们排成一句话。",
+    next: "d4_rain",
+    decode: {
+      prompt: "把梦境碎片重排成一句完整的话——",
+      scrambled: ["雨","在","窗","外","停","了"],
+      answer: "雨在窗外停了",
+      thresholds: [
+        { min: 1.0, tag: "decoded",
+          label: "——解开了",
+          text: "你把碎片排成一句完整的话：「雨在窗外停了」。你想起来了——她说过的：梦是夜里写的诗，醒来读得懂，就懂了一半的自己。今夜，你懂了。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "梦境·解码", title: "雨在窗外停了", text: "你在梦里把碎片排成「雨在窗外停了」。" },
+          next: "d4_rain" },
+        { min: 0.5, tag: "half",
+          label: "——排了一半",
+          text: "你只排出了一半的字。另一半还在梦里飘着——也许明天醒来，它们自己会找到位置。她说：不必一次排完。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d4_rain" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没排出",
+        text: "你排不出完整的句子。碎片在你手里转了又转，最后还是散了。她说：有些梦，本来就是读不懂的。读不懂就让它待着。",
+        next: "d4_rain" }
+    }
+  },
+
+  // 雨滴节奏
+  d4_rain: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "窗外开始下雨。雨滴打在窗台上，有它自己的节奏。她说：雨是天上敲的鼓——你跟着敲，就接住了它的意思。",
+    next: "common_day5_morning",
+    rain: {
+      prompt: "听雨滴落地的节奏——按节奏点击窗台",
+      drops: 8,
+      interval: 1200,
+      tolerance: 0.3,
+      thresholds: [
+        { min: 0.7, tag: "synced",
+          label: "——接住了",
+          text: "你的点击一拍一拍接住了雨。她说：接住雨的人，也接住了夜。今夜，你接住了——也终于能睡了。",
+          add: { affection: { shiyu: 2, shen: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "雨滴·接住", title: "夜里接住的雨", text: "你在夜里跟着雨的节奏点击，接住了它的拍子。" },
+          next: "common_day5_morning" },
+        { min: 0.4, tag: "ok",
+          label: "——接了几拍",
+          text: "你只接住了几拍。她说：接不住也是真的——雨是天上敲的，地上的人跟不上是常事。你已经尽力了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "common_day5_morning" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没接住",
+        text: "你完全没接住雨的节奏。雨自己敲它的，你敲你的——两个节奏错开了。她说：错开也是好的——证明你和雨不一样。",
+        next: "common_day5_morning" }
+    }
+  },
+
   /* ============ 第 5 日 · 路线决定日 ============ */
   common_day5_morning: { day: 5, time: "morning", bg: "rooftop", char: null, speaker: "", text: "第 5 日清晨。我爬上天台透气。海风把樱花吹成一场粉色的雨。", next: "d5_route_check" },
   d5_route_check: {

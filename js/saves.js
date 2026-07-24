@@ -66,6 +66,12 @@ const ASTRONOMY_KEY = "sakura_letters_astronomy_v2";   // 星象观测
 const PALETTE_KEY   = "sakura_letters_palette_v2";     // 颜料调配
 const PIANO_KEY     = "sakura_letters_piano_v2";       // 琴键演奏
 
+/* v1.3.0 新玩法存储 */
+const DICE_KEY    = "sakura_letters_dice_v2";        // 占星骰子
+const WIND_KEY    = "sakura_letters_wind_v2";        // 风向感知
+const DECODE_KEY  = "sakura_letters_decode_v2";      // 梦境解码
+const RAIN_KEY    = "sakura_letters_rain_v2";        // 雨滴节奏
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -957,6 +963,70 @@ const Saves = {
   },
   getPianoRecord(nodeId) { return this.getPianoRecords()[nodeId]; },
 
+  /* ============ v1.3.0 占星骰子 ============ */
+  // 记录每次掷骰：{ nodeId: { dice:[a,b,c], sum, tag, ts } }
+  getDiceRecords() {
+    try {
+      const raw = localStorage.getItem(DICE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveDiceRecord(nodeId, dice, sum, tag) {
+    const all = this.getDiceRecords();
+    all[nodeId] = { dice, sum, tag, ts: Date.now() };
+    localStorage.setItem(DICE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getDiceRecord(nodeId) { return this.getDiceRecords()[nodeId]; },
+
+  /* ============ v1.3.0 风向感知 ============ */
+  // 记录每次航行：{ nodeId: { progress, attempts, tag, ts } }
+  getWindRecords() {
+    try {
+      const raw = localStorage.getItem(WIND_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveWindRecord(nodeId, progress, attempts, tag) {
+    const all = this.getWindRecords();
+    all[nodeId] = { progress, attempts, tag, ts: Date.now() };
+    localStorage.setItem(WIND_KEY, JSON.stringify(all));
+    return true;
+  },
+  getWindRecord(nodeId) { return this.getWindRecords()[nodeId]; },
+
+  /* ============ v1.3.0 梦境解码 ============ */
+  // 记录每次解码：{ nodeId: { answer, correct, tag, ts } }
+  getDecodeRecords() {
+    try {
+      const raw = localStorage.getItem(DECODE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveDecodeRecord(nodeId, answer, correct, tag) {
+    const all = this.getDecodeRecords();
+    all[nodeId] = { answer, correct, tag, ts: Date.now() };
+    localStorage.setItem(DECODE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getDecodeRecord(nodeId) { return this.getDecodeRecords()[nodeId]; },
+
+  /* ============ v1.3.0 雨滴节奏 ============ */
+  // 记录每次雨滴：{ nodeId: { hits, total, accuracy, tag, ts } }
+  getRainRecords() {
+    try {
+      const raw = localStorage.getItem(RAIN_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveRainRecord(nodeId, hits, total, accuracy, tag) {
+    const all = this.getRainRecords();
+    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(RAIN_KEY, JSON.stringify(all));
+    return true;
+  },
+  getRainRecord(nodeId) { return this.getRainRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -982,7 +1052,8 @@ const Saves = {
      CONSTELLATION_KEY, STETHOSCOPE_KEY, PUZZLE_KEY, PERFUME_KEY,
      BREATH_KEY, TIMECAPSULE_KEY, FOLD_KEY, REFLECTION_KEY,
      LIGHTDRAW_KEY, MIMIC_KEY, SEASON_KEY, PULSE_KEY,
-     TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY].forEach(k => localStorage.removeItem(k));
+     TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY,
+     DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
