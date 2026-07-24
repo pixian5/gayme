@@ -2048,6 +2048,133 @@ const SCRIPT = {
     }
   },
 
+  /* ============ v1.8.0 新玩法触发节点 ============ */
+  // 萤火引路
+  d7_firefly: {
+    day: 7, time: "night", bg: "forest", char: null, speaker: "",
+    text: "她拉你到树林里。她说——你看，萤火虫散了。她递给你一盏小灯：把它们引回来。她不说回到哪里——但你看向她指的方向。",
+    next: "d7_windchime",
+    firefly: {
+      prompt: "按住光点拖动——引导萤火虫归队",
+      total: 8,
+      duration: 15000,
+      tolerance: 40,
+      thresholds: [
+        { max: 30, tag: "perfect",
+          label: "——都回来了",
+          text: "八只萤火虫都回到了你画的光圈里。她说：你引得动它们——你引得动的，都不肯走远。她想说的不是萤火虫。",
+          add: { affection: { shiyu: 2, sunian: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "萤火·八只", title: "树林里的萤火", text: "你用一盏小灯引回了八只萤火虫。" },
+          next: "d7_windchime" },
+        { max: 90, tag: "ok",
+          label: "——回来大半",
+          text: "大部分萤火虫回到了光圈里。她说：散了几只也没关系——散了的，也算见过光。你想她说的是对的。",
+          add: { affection: { shen: 1 } },
+          personality: { kind: 1 },
+          next: "d7_windchime" }
+      ],
+      fallback: { tag: "miss",
+        label: "——萤火散了",
+        text: "萤火虫都散了，没几只回来。她说：散了就散了——光引不动的时候，硬引也没用。她把灯收起来。",
+        next: "d7_windchime" }
+    }
+  },
+
+  // 风铃调音
+  d7_windchime: {
+    day: 7, time: "afternoon", bg: "home_room", char: null, speaker: "",
+    text: "窗台上挂着一只旧风铃。她说——四个铃片错位了。她让你把它们拖回各自的高度，敲出来才合拍。她不告诉你哪个是哪个。",
+    next: "d7_bottle",
+    windchime: {
+      prompt: "拖动四个铃片——对齐虚线目标高度",
+      target: [0.2, 0.4, 0.55, 0.7],
+      tolerance: 0.05,
+      thresholds: [
+        { max: 0.1, tag: "perfect",
+          label: "——音对了",
+          text: "四个铃片都回到了自己的位置。她敲了一下——风铃响了，音是对的。她说：你听出来了——听得出的人，才肯把铃给你。",
+          add: { affection: { shiyu: 2, xiazhi: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "风铃·四音", title: "窗台上的风铃", text: "你把四个铃片拖回原位，风铃重新响了。" },
+          next: "d7_bottle" },
+        { max: 0.3, tag: "ok",
+          label: "——音差不多",
+          text: "铃片大致对齐了。她敲了一下——音差不多，但偏一点。她说：偏一点也是音——只是没那么准。你已经尽力了。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d7_bottle" }
+      ],
+      fallback: { tag: "miss",
+        label: "——音散了",
+        text: "铃片完全没对上。她敲了一下——音散了。她说：散了也是真的——有些音，对不上就是对不上。她把风铃挂回去。",
+        next: "d7_bottle" }
+    }
+  },
+
+  // 瓶中信
+  d7_bottle: {
+    day: 7, time: "afternoon", bg: "river", char: null, speaker: "",
+    text: "她带你去河边。她从口袋里拿出一只瓶子——里面卷着一张纸条。她说——投到对岸去。她不告诉你该用多大力气。",
+    next: "d7_echoloc",
+    bottle: {
+      prompt: "拖动滑块调整力度——把瓶子投到对岸目标线",
+      target: 0.7,
+      tolerance: 0.08,
+      thresholds: [
+        { max: 0.08, tag: "perfect",
+          label: "——投到了",
+          text: "瓶子落在了目标线上。她说：你力气用得正好——刚好到对岸的力气，是最难的那种。你想：原来她让你练的是这个。",
+          add: { affection: { shiyu: 2, shen: 1, xiazhi: 1 } },
+          personality: { brave: 2, active: 1 },
+          memory: { id: "瓶中信·对岸", title: "河边的瓶子", text: "你把瓶子投到了对岸的目标线。" },
+          next: "d7_echoloc" },
+        { max: 0.2, tag: "ok",
+          label: "——差一点",
+          text: "瓶子差一点到目标线。她说：差一点也是好的——你想过头了，但你想过。她把瓶子捡回来，递给你。",
+          add: { affection: { shen: 1 } },
+          personality: { active: 1 },
+          next: "d7_echoloc" }
+      ],
+      fallback: { tag: "miss",
+        label: "——瓶沉了",
+        text: "瓶子没到对岸，沉了下去。她说：沉了就沉了——沉下去的东西，也会被冲到别处。她没让你再投一次。",
+        next: "d7_echoloc" }
+    }
+  },
+
+  // 回声定位
+  d7_echoloc: {
+    day: 7, time: "night", bg: "tunnel", char: null, speaker: "",
+    text: "她带你去一条隧道。她说——前面有东西，但你看不见。她让你发出声音，听回声，再点出你估算的位置。她说：听得出的人，能看不见也能知道。",
+    next: "d5_mimic",
+    echoloc: {
+      prompt: "点「发出」听回声——再点画面估算障碍位置",
+      actual: 0.6,
+      tolerance: 0.08,
+      duration: 8000,
+      thresholds: [
+        { max: 0.08, tag: "perfect",
+          label: "——听准了",
+          text: "你估算的位置就是它的位置。她说：你听得很准——听得准的人，闭着眼也能找到路。她想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, brave: 1 },
+          memory: { id: "回声·60%", title: "隧道里的回声", text: "你在隧道里靠回声估算出了障碍的位置。" },
+          next: "d5_mimic" },
+        { max: 0.2, tag: "ok",
+          label: "——差一点",
+          text: "你估算的位置差了一点。她说：差一点也行——你听出了大概。大概也是真的。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——听偏了",
+        text: "你估算的位置完全偏了。她说：听偏了也没关系——回声有时候会骗人。她不让你再试一次。",
+        next: "d5_mimic" }
+    }
+  },
+
   /* ============ v1.4.0 新玩法触发节点 ============ */
   // 拓印
   d3_rubbing: {

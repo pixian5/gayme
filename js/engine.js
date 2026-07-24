@@ -852,6 +852,46 @@
       return;
     }
 
+    // v1.8.0 萤火引路节点
+    if (node.firefly) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runFirefly(node.firefly, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.8.0 风铃调音节点
+    if (node.windchime) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runWindchime(node.windchime, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.8.0 瓶中信节点
+    if (node.bottle) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runBottle(node.bottle, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v1.8.0 回声定位节点
+    if (node.echoloc) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runEcholoc(node.echoloc, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -9852,6 +9892,1002 @@
     resize();
   }
 
+  /* ============================================================
+     v1.8.0 萤火引路 runFirefly
+     node.firefly = {
+       prompt: "拖动光点引导萤火虫归队——",
+       total: 8,            // 萤火虫总数
+       duration: 15000,
+       tolerance: 40,       // 拖动到萤火虫附近的吸引半径
+       thresholds: [
+         { max: 2, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runFirefly(ff, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "firefly-layer";
+    layer.id = "firefly-layer";
+    layer.innerHTML = `
+      <div class="ff-prompt">${ff.prompt || "拖动光点引导萤火虫归队——"}</div>
+      <div class="ff-stage">
+        <canvas class="ff-canvas" id="ff-canvas"></canvas>
+        <div class="ff-info" id="ff-info">点击「开始」放出光点</div>
+      </div>
+      <div class="ff-actions">
+        <button class="ff-start" id="ff-start">开始</button>
+        <button class="ff-confirm" id="ff-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ff-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ff-info");
+    const startBtn = layer.querySelector("#ff-start");
+    const confirmBtn = layer.querySelector("#ff-confirm");
+
+    let aborted = false;
+    let started = false;
+    let ended = false;
+    let startTime = 0;
+    let rafId = null;
+    const total = ff.total ?? 8;
+    const duration = ff.duration || 15000;
+    const tolerance = ff.tolerance ?? 40;
+    let cw = 0, ch = 0;
+    let fireflies = [];
+    let lure = { x: 0, y: 0, visible: false };
+    let trail = [];
+    let gathered = 0;
+    let totalDeviation = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width;
+      ch = canvas.height;
+      buildFireflies();
+      draw();
+    }
+
+    function buildFireflies() {
+      fireflies = [];
+      for (let i = 0; i < total; i++) {
+        fireflies.push({
+          x: Math.random() * cw,
+          y: Math.random() * ch,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          r: 3 + Math.random() * 2,
+          twinkle: Math.random() * Math.PI * 2,
+          gathered: false,
+        });
+      }
+    }
+
+    function draw() {
+      // 夜林背景
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#0a1a10");
+      grad.addColorStop(1, "#02080a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      // 远处树林剪影
+      ctx.fillStyle = "rgba(20,40,30,0.6)";
+      ctx.beginPath();
+      ctx.moveTo(0, ch * 0.9);
+      for (let i = 0; i <= 10; i++) {
+        const x = (cw / 10) * i;
+        const y = ch * 0.9 - Math.sin(i * 1.3) * 30 - Math.random() * 5;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(cw, ch);
+      ctx.lineTo(0, ch);
+      ctx.closePath();
+      ctx.fill();
+
+      // 萤火虫
+      fireflies.forEach(f => {
+        if (f.gathered) return;
+        f.twinkle += 0.06;
+        const alpha = 0.5 + Math.sin(f.twinkle) * 0.4;
+        // 光晕
+        const glow = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, f.r * 5);
+        glow.addColorStop(0, `rgba(255,240,150,${alpha * 0.8})`);
+        glow.addColorStop(1, "rgba(255,240,150,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.r * 5, 0, Math.PI * 2);
+        ctx.fill();
+        // 核心
+        ctx.fillStyle = `rgba(255,255,200,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 已归队的萤火虫（聚集点）
+      ctx.fillStyle = "rgba(255,255,200,0.3)";
+      for (let i = 0; i < gathered; i++) {
+        const a = (i / Math.max(1, total)) * Math.PI * 2;
+        const gx = cw * 0.5 + Math.cos(a) * 18;
+        const gy = ch * 0.92 + Math.sin(a) * 8;
+        ctx.beginPath();
+        ctx.arc(gx, gy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 归队目标圈
+      ctx.strokeStyle = "rgba(255,240,150,0.4)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.arc(cw * 0.5, ch * 0.92, 24, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 玩家光点轨迹
+      if (trail.length > 1) {
+        ctx.strokeStyle = "rgba(255,255,220,0.4)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        trail.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+      }
+      // 光点
+      if (lure.visible) {
+        const lureGlow = ctx.createRadialGradient(lure.x, lure.y, 0, lure.x, lure.y, 28);
+        lureGlow.addColorStop(0, "rgba(255,255,255,0.9)");
+        lureGlow.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = lureGlow;
+        ctx.beginPath();
+        ctx.arc(lure.x, lure.y, 28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(lure.x, lure.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 信息
+      const remain = started && !ended ? Math.max(0, duration - (performance.now() - startTime)) : 0;
+      info.textContent = started && !ended
+        ? `归队 ${gathered}/${total} · 剩余 ${(remain / 1000).toFixed(1)}s`
+        : ended ? `归队 ${gathered}/${total}` : "点击「开始」放出光点";
+    }
+
+    function loop() {
+      if (aborted) return;
+      // 萤火虫移动 + 被光点吸引
+      fireflies.forEach(f => {
+        if (f.gathered) return;
+        f.x += f.vx; f.y += f.vy;
+        if (f.x < 10) f.vx = Math.abs(f.vx);
+        if (f.x > cw - 10) f.vx = -Math.abs(f.vx);
+        if (f.y < 10) f.vy = Math.abs(f.vy);
+        if (f.y > ch - 10) f.vy = -Math.abs(f.vy);
+        // 光点吸引
+        if (lure.visible) {
+          const dx = lure.x - f.x;
+          const dy = lure.y - f.y;
+          const d = Math.hypot(dx, dy);
+          if (d < tolerance * 2.5) {
+            f.vx += (dx / d) * 0.15;
+            f.vy += (dy / d) * 0.15;
+            // 限速
+            const sp = Math.hypot(f.vx, f.vy);
+            if (sp > 1.8) { f.vx = (f.vx / sp) * 1.8; f.vy = (f.vy / sp) * 1.8; }
+          }
+        }
+        // 到达归队圈
+        const dToGoal = Math.hypot(cw * 0.5 - f.x, ch * 0.92 - f.y);
+        if (dToGoal < 24) {
+          f.gathered = true;
+          gathered++;
+          totalDeviation += dToGoal;
+          if (gathered >= total) endGame();
+        }
+      });
+      draw();
+      if (started && !ended && (performance.now() - startTime) >= duration) endGame();
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      if (ended) return;
+      ended = true;
+      confirmBtn.disabled = false;
+    }
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+    }
+    function onDown(e) {
+      if (!started || ended) return;
+      const p = getPos(e);
+      lure.x = p.x; lure.y = p.y; lure.visible = true;
+      trail.push({ x: p.x, y: p.y });
+      if (trail.length > 50) trail.shift();
+    }
+    function onMove(e) {
+      if (!lure.visible) return;
+      e.preventDefault();
+      const p = getPos(e);
+      lure.x = p.x; lure.y = p.y;
+      trail.push({ x: p.x, y: p.y });
+      if (trail.length > 50) trail.shift();
+    }
+    function onUp() { lure.visible = false; }
+
+    canvas.addEventListener("mousedown", onDown);
+    canvas.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    canvas.addEventListener("touchstart", onDown, { passive: false });
+    canvas.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      startBtn.disabled = true;
+      rafId = requestAnimationFrame(loop);
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      aborted = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      confirmBtn.disabled = true;
+      canvas.removeEventListener("mousedown", onDown);
+      canvas.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      canvas.removeEventListener("touchstart", onDown);
+      canvas.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+      const avgDev = gathered ? totalDeviation / gathered : 999;
+      const missing = total - gathered;
+      const error = avgDev + missing * 30;
+      Saves.saveFireflyRecord(currentNodeId, gathered, total, avgDev, gathered === total ? "perfect" : gathered >= total / 2 ? "good" : "miss");
+      const thresholds = ff.thresholds || [];
+      let matched = ff.fallback || { tag: "miss", label: "——萤火散了", next: null };
+      for (const t of thresholds) {
+        if (error <= (t.max ?? 30)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ff-reading";
+      reading.innerHTML = `<div class="ff-reading-title">${matched.label || "解读"} · 归队 ${gathered}/${total}</div>
+        <div class="ff-reading-text">${matched.text || ""}</div>
+        <button class="ff-reading-close">继续</button>`;
+      reading.querySelector(".ff-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v1.8.0 风铃调音 runWindchime
+     node.windchime = {
+       prompt: "拖动风铃片到对应高度——和目标音阶对齐",
+       target: [0.2, 0.35, 0.5, 0.65],   // 目标高度比例（按顺序对应 4 个铃）
+       tolerance: 0.05,
+       thresholds: [
+         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runWindchime(wc, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "windchime-layer";
+    layer.id = "windchime-layer";
+    const target = wc.target || [0.2, 0.35, 0.5, 0.65];
+    const tolerance = wc.tolerance ?? 0.05;
+    layer.innerHTML = `
+      <div class="wc-prompt">${wc.prompt || "拖动风铃片到对应高度"}</div>
+      <div class="wc-stage">
+        <div class="wc-bar" id="wc-bar"></div>
+        <div class="wc-targets" id="wc-targets"></div>
+      </div>
+      <div class="wc-info" id="wc-info">参考目标线 · 拖动铃片对齐</div>
+      <div class="wc-actions">
+        <button class="wc-reset">重置</button>
+        <button class="wc-confirm" disabled>敲击试音</button>
+      </div>
+    `;
+    const bar = layer.querySelector("#wc-bar");
+    const targetsEl = layer.querySelector("#wc-targets");
+    const confirmBtn = layer.querySelector(".wc-confirm");
+    const resetBtn = layer.querySelector(".wc-reset");
+    const infoEl = layer.querySelector("#wc-info");
+
+    // 构建目标线（虚线）
+    target.forEach((h, i) => {
+      const line = document.createElement("div");
+      line.className = "wc-target-line";
+      line.style.top = `${h * 100}%`;
+      line.dataset.i = i;
+      targetsEl.appendChild(line);
+    });
+
+    // 构建 4 个铃片（位置随机打乱）
+    const positions = target.map((_, i) => i);
+    // 随机打乱初始位置
+    for (let i = positions.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    const chimes = [];
+    target.forEach((_, i) => {
+      const chime = document.createElement("div");
+      chime.className = "wc-chime";
+      chime.dataset.i = i;
+      // 初始位置打乱
+      const initH = 0.1 + Math.random() * 0.7;
+      chime.style.top = `${initH * 100}%`;
+      chime.innerHTML = `<div class="wc-chime-cap"></div><div class="wc-chime-rod"></div>`;
+      bar.appendChild(chime);
+      chimes.push({ el: chime, h: initH, dragging: false });
+
+      const onDown = (e) => {
+        e.preventDefault();
+        const t = e.touches ? e.touches[0] : e;
+        chime.dataset.dragging = "1";
+        chime.classList.add("dragging");
+        chime._startY = t.clientY;
+        chime._startH = chimes[i].h;
+      };
+      chime.addEventListener("mousedown", onDown);
+      chime.addEventListener("touchstart", onDown, { passive: false });
+    });
+
+    function onMove(e) {
+      const dragging = bar.querySelector('.wc-chime[data-dragging="1"]');
+      if (!dragging) return;
+      e.preventDefault();
+      const t = e.touches ? e.touches[0] : e;
+      const dy = t.clientY - parseFloat(dragging._startY);
+      const barRect = bar.getBoundingClientRect();
+      const dh = dy / barRect.height;
+      let newH = parseFloat(dragging._startH) + dh;
+      newH = Math.max(0.05, Math.min(0.95, newH));
+      const idx = parseInt(dragging.dataset.i);
+      chimes[idx].h = newH;
+      dragging.style.top = `${newH * 100}%`;
+      updateInfo();
+    }
+    function onUp() {
+      const dragging = bar.querySelector('.wc-chime[data-dragging="1"]');
+      if (dragging) {
+        dragging.removeAttribute("data-dragging");
+        dragging.classList.remove("dragging");
+      }
+      updateInfo();
+    }
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchend", onUp);
+
+    function updateInfo() {
+      // 计算每个铃片偏离最近目标线的距离
+      let matched = 0;
+      let totalDev = 0;
+      const usedTargets = new Set();
+      chimes.forEach(c => {
+        let bestD = 999, bestIdx = -1;
+        target.forEach((h, idx) => {
+          if (usedTargets.has(idx)) return;
+          const d = Math.abs(c.h - h);
+          if (d < bestD) { bestD = d; bestIdx = idx; }
+        });
+        if (bestIdx >= 0) {
+          usedTargets.add(bestIdx);
+          totalDev += bestD;
+          if (bestD <= tolerance) matched++;
+        }
+      });
+      confirmBtn.disabled = matched < target.length;
+      infoEl.textContent = `对齐 ${matched}/${target.length} · 总偏差 ${(totalDev * 100).toFixed(1)}%`;
+    }
+
+    resetBtn.onclick = () => {
+      chimes.forEach(c => {
+        c.h = 0.1 + Math.random() * 0.7;
+        c.el.style.top = `${c.h * 100}%`;
+      });
+      updateInfo();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchend", onUp);
+      // 计算匹配度和偏差
+      let matched = 0;
+      let totalDev = 0;
+      const usedTargets = new Set();
+      chimes.forEach(c => {
+        let bestD = 999, bestIdx = -1;
+        target.forEach((h, idx) => {
+          if (usedTargets.has(idx)) return;
+          const d = Math.abs(c.h - h);
+          if (d < bestD) { bestD = d; bestIdx = idx; }
+        });
+        if (bestIdx >= 0) {
+          usedTargets.add(bestIdx);
+          totalDev += bestD;
+          if (bestD <= tolerance) matched++;
+        }
+      });
+      Saves.saveWindchimeRecord(currentNodeId, matched, target.length, totalDev, matched === target.length ? "perfect" : matched >= target.length / 2 ? "good" : "miss");
+      const thresholds = wc.thresholds || [];
+      let matchedT = wc.fallback || { tag: "miss", label: "——音散了", next: null };
+      for (const t of thresholds) {
+        if (totalDev <= (t.max ?? 0.2)) { matchedT = t; break; }
+      }
+      if (matchedT.add) { applyAdd(matchedT.add); updateHeartBar(); }
+      if (matchedT.personality) {
+        for (const dim in matchedT.personality) Saves.addPersonality(dim, matchedT.personality[dim]);
+      }
+      if (matchedT.memory) {
+        if (!Saves.isMemoryUnlocked(matchedT.memory.id)) {
+          Saves.saveMemory(matchedT.memory.id, matchedT.memory.text);
+          flashHint(`✦ 新记忆：${matchedT.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "wc-reading";
+      reading.innerHTML = `<div class="wc-reading-title">${matchedT.label || "解读"} · 对齐 ${matched}/${target.length}</div>
+        <div class="wc-reading-text">${matchedT.text || ""}</div>
+        <button class="wc-reading-close">继续</button>`;
+      reading.querySelector(".wc-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matchedT.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    updateInfo();
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v1.8.0 瓶中信 runBottle
+     node.bottle = {
+       prompt: "调整力度把瓶子投到对岸——",
+       target: 0.7,         // 目标距离比例（0-1）
+       tolerance: 0.08,
+       power: 1.0,          // 力度上限
+       thresholds: [
+         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runBottle(bt, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "bottle-layer";
+    layer.id = "bottle-layer";
+    const target = bt.target ?? 0.7;
+    const tolerance = bt.tolerance ?? 0.08;
+    layer.innerHTML = `
+      <div class="bt-prompt">${bt.prompt || "调整力度把瓶子投到对岸"}</div>
+      <div class="bt-stage">
+        <canvas class="bt-canvas" id="bt-canvas"></canvas>
+        <div class="bt-info" id="bt-info">拖动滑块调整力度，点「投出」</div>
+      </div>
+      <div class="bt-controls">
+        <div class="bt-slider-wrap">
+          <span>力度</span>
+          <input type="range" class="bt-slider" id="bt-slider" min="0" max="100" value="50">
+          <span class="bt-power-val" id="bt-power-val">0.50</span>
+        </div>
+      </div>
+      <div class="bt-actions">
+        <button class="bt-reset">重置</button>
+        <button class="bt-throw" id="bt-throw">投出</button>
+        <button class="bt-confirm" id="bt-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#bt-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#bt-info");
+    const slider = layer.querySelector("#bt-slider");
+    const powerVal = layer.querySelector("#bt-power-val");
+    const throwBtn = layer.querySelector("#bt-throw");
+    const confirmBtn = layer.querySelector("#bt-confirm");
+    const resetBtn = layer.querySelector(".bt-reset");
+
+    let aborted = false;
+    let thrown = false;
+    let landed = false;
+    let power = 0.5;
+    let rafId = null;
+    // 瓶子状态
+    let bottle = { x: 0, y: 0, vx: 0, vy: 0, rot: 0, vrot: 0, landed: false, distRatio: 0 };
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width;
+      ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      // 海平面背景
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#9ec9ff");
+      grad.addColorStop(0.6, "#7da8d8");
+      grad.addColorStop(1, "#3a5a8a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      // 起点岸
+      ctx.fillStyle = "#d8a878";
+      ctx.fillRect(0, ch * 0.7, cw * 0.1, ch * 0.3);
+      // 对岸（目标）
+      const targetX = cw * (0.1 + target * 0.8);
+      ctx.fillStyle = "#a89078";
+      ctx.fillRect(targetX - 8, ch * 0.65, 16, ch * 0.35);
+      // 目标范围
+      ctx.fillStyle = "rgba(255,180,140,0.3)";
+      ctx.fillRect(cw * (0.1 + (target - tolerance) * 0.8), ch * 0.65, cw * tolerance * 1.6, ch * 0.35);
+      // 目标线
+      ctx.strokeStyle = "rgba(255,100,140,0.7)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(targetX, ch * 0.5);
+      ctx.lineTo(targetX, ch);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 轨迹（投出后）
+      if (thrown && trail.length > 1) {
+        ctx.strokeStyle = "rgba(255,200,150,0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        trail.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.stroke();
+      }
+      // 瓶子
+      ctx.save();
+      ctx.translate(bottle.x, bottle.y);
+      ctx.rotate(bottle.rot);
+      ctx.fillStyle = "#a8d8e8";
+      ctx.strokeStyle = "#5a8a98";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-8, -4, 16, 8, 2);
+      ctx.fill();
+      ctx.stroke();
+      // 瓶颈
+      ctx.fillStyle = "#88b8c8";
+      ctx.fillRect(-2, -8, 4, 4);
+      // 瓶中信
+      ctx.fillStyle = "#f8e8c0";
+      ctx.fillRect(-4, -3, 8, 5);
+      ctx.restore();
+
+      // 信息
+      info.textContent = thrown && !landed
+        ? "飞行中..."
+        : landed ? `落在 ${(bottle.distRatio * 100).toFixed(0)}% 处` : `力度 ${(power).toFixed(2)} · 目标 ${(target * 100).toFixed(0)}%`;
+    }
+
+    let trail = [];
+
+    function loop() {
+      if (aborted) return;
+      if (thrown && !landed) {
+        // 物理模拟：水平速度 vx，垂直 vy 受重力
+        bottle.x += bottle.vx;
+        bottle.y += bottle.vy;
+        bottle.vy += 0.35;
+        bottle.rot += bottle.vrot;
+        trail.push({ x: bottle.x, y: bottle.y });
+        if (trail.length > 80) trail.shift();
+        // 着陆判定：到达对岸高度
+        if (bottle.y >= ch * 0.7) {
+          bottle.y = ch * 0.7;
+          landed = true;
+          // 计算落点比例（基于x位置）
+          const startX = cw * 0.1;
+          const endX = cw * 0.9;
+          bottle.distRatio = Math.max(0, Math.min(1, (bottle.x - startX) / (endX - startX)));
+          confirmBtn.disabled = false;
+          throwBtn.disabled = true;
+        }
+        draw();
+      }
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    slider.addEventListener("input", () => {
+      if (thrown) return;
+      power = parseFloat(slider.value) / 100;
+      powerVal.textContent = power.toFixed(2);
+      draw();
+    });
+
+    throwBtn.onclick = () => {
+      if (thrown) return;
+      thrown = true;
+      throwBtn.disabled = true;
+      slider.disabled = true;
+      bottle.x = cw * 0.1;
+      bottle.y = ch * 0.65;
+      // 力度映射：力度 0.5 时大约飞到 target
+      // 简化：水平速度与 power 成正比
+      bottle.vx = power * 6 + 1;
+      bottle.vy = -(power * 8 + 4);
+      bottle.vrot = (Math.random() - 0.5) * 0.2;
+      trail = [];
+      rafId = requestAnimationFrame(loop);
+    };
+
+    resetBtn.onclick = () => {
+      thrown = false;
+      landed = false;
+      bottle = { x: cw * 0.1, y: ch * 0.65, vx: 0, vy: 0, rot: 0, vrot: 0, landed: false, distRatio: 0 };
+      trail = [];
+      slider.disabled = false;
+      throwBtn.disabled = false;
+      confirmBtn.disabled = true;
+      draw();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      aborted = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      confirmBtn.disabled = true;
+      const error = Math.abs(bottle.distRatio - target);
+      const reached = error <= tolerance;
+      Saves.saveBottleRecord(currentNodeId, power, reached ? 1 : 0, reached ? "perfect" : Math.abs(bottle.distRatio - target) <= tolerance * 2 ? "good" : "miss");
+      const thresholds = bt.thresholds || [];
+      let matched = bt.fallback || { tag: "miss", label: "——瓶沉了", next: null };
+      for (const t of thresholds) {
+        if (error <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "bt-reading";
+      reading.innerHTML = `<div class="bt-reading-title">${matched.label || "解读"} · 落点 ${(bottle.distRatio * 100).toFixed(0)}% · 偏差 ${(error * 100).toFixed(1)}%</div>
+        <div class="bt-reading-text">${matched.text || ""}</div>
+        <button class="bt-reading-close">继续</button>`;
+      reading.querySelector(".bt-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+    bottle.x = cw * 0.1;
+    bottle.y = ch * 0.65;
+    draw();
+  }
+
+  /* ============================================================
+     v1.8.0 回声定位 runEcholoc
+     node.echoloc = {
+       prompt: "听回声估算距离——按「发出」按钮，再点你估计的位置",
+       actual: 0.6,        // 实际距离比例（0-1）
+       duration: 8000,     // 等待玩家估算的时间
+       tolerance: 0.08,
+       thresholds: [
+         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runEcholoc(ec, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "echoloc-layer";
+    layer.id = "echoloc-layer";
+    const actual = ec.actual ?? 0.6;
+    const tolerance = ec.tolerance ?? 0.08;
+    const duration = ec.duration || 8000;
+    layer.innerHTML = `
+      <div class="ec-prompt">${ec.prompt || "听回声估算距离"}</div>
+      <div class="ec-stage">
+        <canvas class="ec-canvas" id="ec-canvas"></canvas>
+        <div class="ec-info" id="ec-info">点「发出」听到回声，再点画面估算位置</div>
+      </div>
+      <div class="ec-actions">
+        <button class="ec-emit" id="ec-emit">发出</button>
+        <button class="ec-confirm" id="ec-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ec-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ec-info");
+    const emitBtn = layer.querySelector("#ec-emit");
+    const confirmBtn = layer.querySelector("#ec-confirm");
+
+    let aborted = false;
+    let emitted = false;
+    let estimated = false;
+    let emitTime = 0;
+    let echoReturnTime = 0;
+    let listenTimer = null;
+    let estimate = -1;
+    let estimateX = -1;
+    let rafId = null;
+    let cw = 0, ch = 0;
+    // 波纹动画
+    let waveFront = 0;
+    let waveReturning = false;
+    let waveBack = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width;
+      ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      // 隧道/夜空背景
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#0a0a1f");
+      grad.addColorStop(1, "#02020a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      // 地平线
+      ctx.strokeStyle = "rgba(180,200,255,0.2)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, ch * 0.5);
+      ctx.lineTo(cw, ch * 0.5);
+      ctx.stroke();
+      // 起点（你）
+      ctx.fillStyle = "#ff8ec7";
+      ctx.beginPath();
+      ctx.arc(cw * 0.1, ch * 0.5, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,142,199,0.3)";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("你", cw * 0.1 - 8, ch * 0.5 + 24);
+      // 障碍（实际位置 - 隐藏不显示）
+      const obstacleX = cw * (0.1 + actual * 0.8);
+      ctx.fillStyle = estimated ? "rgba(180,200,255,0.6)" : "rgba(180,200,255,0.0)";
+      ctx.beginPath();
+      ctx.arc(obstacleX, ch * 0.5, 10, 0, Math.PI * 2);
+      ctx.fill();
+      if (estimated) {
+        ctx.strokeStyle = "rgba(180,200,255,0.5)";
+        ctx.beginPath();
+        ctx.arc(obstacleX, ch * 0.5, 16, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // 玩家估算点
+      if (estimateX >= 0) {
+        ctx.strokeStyle = "#7fff9d";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(estimateX, ch * 0.5 - 18);
+        ctx.lineTo(estimateX, ch * 0.5 + 18);
+        ctx.stroke();
+        ctx.fillStyle = "#7fff9d";
+        ctx.beginPath();
+        ctx.arc(estimateX, ch * 0.5, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 波纹
+      if (emitted && waveFront > 0) {
+        const sx = cw * 0.1;
+        ctx.strokeStyle = waveReturning ? "rgba(255,200,150,0.6)" : "rgba(180,200,255,0.6)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sx, ch * 0.5, waveFront, -Math.PI / 2, Math.PI / 2);
+        ctx.stroke();
+        if (waveReturning) {
+          ctx.strokeStyle = "rgba(255,200,150,0.4)";
+          ctx.beginPath();
+          ctx.arc(obstacleX, ch * 0.5, waveBack, Math.PI / 2, -Math.PI / 2);
+          ctx.stroke();
+        }
+      }
+      // 信息
+      info.textContent = !emitted ? "点「发出」听到回声"
+        : (waveReturning || (waveFront > 0 && !waveReturning)) ? "听..."
+        : estimate >= 0 ? `估算 ${(estimate * 100).toFixed(0)}% · 点「确认」` : "回声消失——点画面估算位置";
+    }
+
+    function loop() {
+      if (aborted) return;
+      if (emitted) {
+        const obstacleX = cw * (0.1 + actual * 0.8);
+        const startX = cw * 0.1;
+        const distance = obstacleX - startX;
+        if (!waveReturning) {
+          waveFront += 4;
+          if (waveFront >= distance) {
+            waveReturning = true;
+            waveBack = 0;
+            echoReturnTime = performance.now();
+          }
+        } else {
+          waveBack += 4;
+          if (waveBack >= distance) {
+            // 回声回到起点
+            emitted = false; // 停止波纹
+            waveFront = 0;
+            waveBack = 0;
+            waveReturning = false;
+            info.textContent = "回声消失——点画面估算位置";
+          }
+        }
+        draw();
+      }
+      if (!aborted) rafId = requestAnimationFrame(loop);
+    }
+
+    emitBtn.onclick = () => {
+      if (emitted) return;
+      emitted = true;
+      estimated = false;
+      estimate = -1;
+      estimateX = -1;
+      waveFront = 0;
+      waveReturning = false;
+      emitTime = performance.now();
+      emitBtn.disabled = true;
+      rafId = requestAnimationFrame(loop);
+      // 自动启用确认（也可以等回声回来）
+      setTimeout(() => {
+        if (!aborted) confirmBtn.disabled = false;
+      }, 1500);
+    };
+
+    function onClick(e) {
+      if (!emitted && performance.now() - emitTime > 1000) {
+        // 已发出且回声已过，可以估算
+      }
+      if (emitBtn.disabled) {
+        // 已发出，可以估算
+        const rect = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        const x = t.clientX - rect.left;
+        estimateX = x;
+        const startX = cw * 0.1;
+        const endX = cw * 0.9;
+        estimate = Math.max(0, Math.min(1, (x - startX) / (endX - startX)));
+        draw();
+      }
+    }
+    canvas.addEventListener("click", onClick);
+    canvas.addEventListener("touchstart", onClick, { passive: false });
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      if (estimate < 0) {
+        info.textContent = "请先点画面估算位置";
+        return;
+      }
+      aborted = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      confirmBtn.disabled = true;
+      const error = Math.abs(estimate - actual);
+      Saves.saveEcholocRecord(currentNodeId, estimate, actual, error, error <= tolerance ? "perfect" : error <= tolerance * 2 ? "good" : "miss");
+      const thresholds = ec.thresholds || [];
+      let matched = ec.fallback || { tag: "miss", label: "——估算偏差", next: null };
+      for (const t of thresholds) {
+        if (error <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ec-reading";
+      reading.innerHTML = `<div class="ec-reading-title">${matched.label || "解读"} · 估算 ${(estimate * 100).toFixed(0)}% · 实际 ${(actual * 100).toFixed(0)}%</div>
+        <div class="ec-reading-text">${matched.text || ""}</div>
+        <button class="ec-reading-close">继续</button>`;
+      reading.querySelector(".ec-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (rafId) cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
@@ -9953,6 +10989,10 @@
     document.querySelectorAll(".lock-layer").forEach(e => e.remove());
     document.querySelectorAll(".origami-layer").forEach(e => e.remove());
     document.querySelectorAll(".orbit-layer").forEach(e => e.remove());
+    document.querySelectorAll(".firefly-layer").forEach(e => e.remove());
+    document.querySelectorAll(".windchime-layer").forEach(e => e.remove());
+    document.querySelectorAll(".bottle-layer").forEach(e => e.remove());
+    document.querySelectorAll(".echoloc-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

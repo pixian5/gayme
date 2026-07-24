@@ -96,6 +96,12 @@ const LOCK_KEY    = "sakura_letters_lock_v2";       // 密码锁
 const ORIGAMI_KEY = "sakura_letters_origami_v2";   // 折纸造型
 const ORBIT_KEY   = "sakura_letters_orbit_v2";       // 星轨追踪
 
+/* v1.8.0 新玩法存储 */
+const FIREFLY_KEY    = "sakura_letters_firefly_v2";    // 萤火引路
+const WINDCHIME_KEY  = "sakura_letters_windchime_v2"; // 风铃调音
+const BOTTLE_KEY     = "sakura_letters_bottle_v2";    // 瓶中信
+const ECHOLOC_KEY    = "sakura_letters_echoloc_v2";   // 回声定位
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1307,6 +1313,70 @@ const Saves = {
   },
   getOrbitRecord(nodeId) { return this.getOrbitRecords()[nodeId]; },
 
+  /* ============ v1.8.0 萤火引路 ============ */
+  // { nodeId: { gathered, total, deviation, tag, ts } }
+  getFireflyRecords() {
+    try {
+      const raw = localStorage.getItem(FIREFLY_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveFireflyRecord(nodeId, gathered, total, deviation, tag) {
+    const all = this.getFireflyRecords();
+    all[nodeId] = { gathered, total, deviation, tag, ts: Date.now() };
+    localStorage.setItem(FIREFLY_KEY, JSON.stringify(all));
+    return true;
+  },
+  getFireflyRecord(nodeId) { return this.getFireflyRecords()[nodeId]; },
+
+  /* ============ v1.8.0 风铃调音 ============ */
+  // { nodeId: { matched, total, deviation, tag, ts } }
+  getWindchimeRecords() {
+    try {
+      const raw = localStorage.getItem(WINDCHIME_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveWindchimeRecord(nodeId, matched, total, deviation, tag) {
+    const all = this.getWindchimeRecords();
+    all[nodeId] = { matched, total, deviation, tag, ts: Date.now() };
+    localStorage.setItem(WINDCHIME_KEY, JSON.stringify(all));
+    return true;
+  },
+  getWindchimeRecord(nodeId) { return this.getWindchimeRecords()[nodeId]; },
+
+  /* ============ v1.8.0 瓶中信 ============ */
+  // { nodeId: { power, reached, tag, ts } }
+  getBottleRecords() {
+    try {
+      const raw = localStorage.getItem(BOTTLE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveBottleRecord(nodeId, power, reached, tag) {
+    const all = this.getBottleRecords();
+    all[nodeId] = { power, reached, tag, ts: Date.now() };
+    localStorage.setItem(BOTTLE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getBottleRecord(nodeId) { return this.getBottleRecords()[nodeId]; },
+
+  /* ============ v1.8.0 回声定位 ============ */
+  // { nodeId: { estimate, actual, error, tag, ts } }
+  getEcholocRecords() {
+    try {
+      const raw = localStorage.getItem(ECHOLOC_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveEcholocRecord(nodeId, estimate, actual, error, tag) {
+    const all = this.getEcholocRecords();
+    all[nodeId] = { estimate, actual, error, tag, ts: Date.now() };
+    localStorage.setItem(ECHOLOC_KEY, JSON.stringify(all));
+    return true;
+  },
+  getEcholocRecord(nodeId) { return this.getEcholocRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1337,7 +1407,8 @@ const Saves = {
      RUBBING_KEY, COLLECT_KEY, FOCUS_KEY, SCENTMEM_KEY,
      TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY,
      FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY,
-     KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY].forEach(k => localStorage.removeItem(k));
+     KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY,
+     FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
