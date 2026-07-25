@@ -3077,7 +3077,7 @@ const SCRIPT = {
   d14_vane: {
     day: 14, time: "evening", bg: "rooftop", char: null, speaker: "",
     text: "天台上的旧风向标还在转。她说——拖动指针对齐目标方位，风才会找到该去的方向。她说：指针不会自己对上，对上的是手。",
-    next: "d5_mimic",
+    next: "d15_clepsydra",
     vane: {
       prompt: "旋转风向标对齐目标方位",
       target: 135,
@@ -3089,17 +3089,147 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, calm: 1 },
           memory: { id: "风向·对位", title: "天台的旧风向标", text: "你旋转指针对齐目标方位，风顺着方向吹过来。" },
-          next: "d5_mimic" },
+          next: "d15_clepsydra" },
         { max: 20, tag: "ok",
           label: "——差不多对",
           text: "指针差不多对准方位。她说：差不多——也算对上了。她没再说什么。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d5_mimic" }
+          next: "d15_clepsydra" }
       ],
       fallback: { tag: "miss",
         label: "——没对上",
         text: "指针完全没对上方位。她说：没对上——也不是错，只是这次没看清。她把风向标松开。",
+        next: "d15_clepsydra" }
+    }
+  },
+
+  /* ============ v2.6.0 新玩法触发节点 ============ */
+  // 漏刻计时
+  d15_clepsydra: {
+    day: 15, time: "morning", bg: "courtyard", char: null, speaker: "",
+    text: "庭角立着一只旧漏刻。她说——放水，在目标时刻停住，时辰才会准。她说：水不会自己停，停的是手。",
+    next: "d15_jigsaw",
+    clepsydra: {
+      prompt: "放水，在目标时刻停止水流",
+      target: 5000,
+      tolerance: 250,
+      duration: 10000,
+      thresholds: [
+        { max: 250, tag: "perfect",
+          label: "——停准了",
+          text: "水流在目标时刻稳稳停住。她说：你看——停准了，时辰就对了。她想说的不只是时辰。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "漏刻·停时", title: "庭角的旧漏刻", text: "你放水在目标时刻停住，时辰对了。" },
+          next: "d15_jigsaw" },
+        { max: 600, tag: "ok",
+          label: "——差不多对",
+          text: "水流差不多在目标时刻停住。她说：差不多——也算停准了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d15_jigsaw" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没停准",
+        text: "水流完全没在目标时刻停住。她说：没停准——也不是错，只是这次没数清。她把漏刻倒空。",
+        next: "d15_jigsaw" }
+    }
+  },
+
+  // 拼图归位
+  d15_jigsaw: {
+    day: 15, time: "noon", bg: "art_room", char: null, speaker: "",
+    text: "美术室桌上一盒碎片。她说——点两个交换位置，图案才会完整。她说：碎片不会自己归位，归位的是手。",
+    next: "d15_chess",
+    jigsaw: {
+      prompt: "点击两个碎片交换位置，拼出完整图案",
+      target: [1, 2, 3, 0],
+      tolerance: 0,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——拼好了",
+          text: "碎片一一归位，图案完整地浮出来。她说：你看——拼好了，画就完整了。她想说的不只是画。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, patient: 1 },
+          memory: { id: "拼图·归位", title: "美术室的碎片", text: "你交换碎片让图案完整归位。" },
+          next: "d15_chess" },
+        { max: 1, tag: "ok",
+          label: "——差不多对",
+          text: "碎片差不多归位。她说：差不多——也算拼了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d15_chess" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没拼好",
+        text: "碎片完全没归位。她说：没拼好——也不是错，只是这次没看清。她把碎片推散。",
+        next: "d15_chess" }
+    }
+  },
+
+  // 棋局推演
+  d15_chess: {
+    day: 15, time: "afternoon", bg: "club_room", char: null, speaker: "",
+    text: "棋社桌上摆着一盘残局。她说——移动棋子到目标格，每步一格，不能越障。她说：棋子不会自己走，走的是手。",
+    next: "d15_flag",
+    chess: {
+      prompt: "移动棋子到目标格（每步一格，不能越障）",
+      size: 4,
+      start: { x: 0, y: 0 },
+      target: { x: 3, y: 3 },
+      obstacles: [ { x: 1, y: 1 }, { x: 2, y: 2 } ],
+      maxMoves: 8,
+      tolerance: 0,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——走到了",
+          text: "棋子稳稳落在目标格。她说：你看——走到了，局就破了。她想说的不只是棋。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "棋局·破残", title: "棋社的残局", text: "你移动棋子到目标格，破了残局。" },
+          next: "d15_flag" },
+        { max: 1, tag: "ok",
+          label: "——差不多到",
+          text: "棋子差不多到目标格。她说：差不多——也算到了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d15_flag" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没走到",
+        text: "棋子完全没到目标格。她说：没走到——也不是错，只是这次没算准。她把棋子归位。",
+        next: "d15_flag" }
+    }
+  },
+
+  // 旗阵辨识
+  d15_flag: {
+    day: 15, time: "evening", bg: "courtyard", char: null, speaker: "",
+    text: "庭院旗杆上挂着四面旗。她说——按我说的图案选对那一面，旗才会认你。她说：旗不会自己认人，认人的是眼。",
+    next: "d5_mimic",
+    flag: {
+      prompt: "按描述选择正确的旗帜",
+      description: "红底白圆居中",
+      target: 0,
+      options: [
+        { id: 0, label: "红底白圆居中", pattern: 0 },
+        { id: 1, label: "上蓝下白", pattern: 1 },
+        { id: 2, label: "红白条纹", pattern: 2 },
+        { id: 3, label: "蓝底金星", pattern: 3 }
+      ],
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——选对了",
+          text: "你选对了那一面。她说：你看——选对了，旗就认你了。她想说的不只是旗。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "旗阵·辨识", title: "庭院的旗杆", text: "你按描述选对了一面红底白圆的旗。" },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——选错了",
+        text: "你选错了那一面。她说：选错了——也不是错，只是这次没看清。她把旗降下来。",
         next: "d5_mimic" }
     }
   },

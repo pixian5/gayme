@@ -7601,3 +7601,385 @@ body {
     padding: 8px 18px; font-size: 13px;
   }
 }
+
+/* ============ v2.6.0 漏刻计时 ============ */
+.clepsydra-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(20,40,50,0.96), rgba(5,15,20,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.cl-prompt {
+  font-size: 18px; color: #b0d8e0;
+  letter-spacing: 3px; text-align: center;
+}
+.cl-stage {
+  width: min(95%, 480px);
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center;
+}
+.cl-canvas {
+  width: 100%; height: 360px;
+  background: linear-gradient(180deg, rgba(20,40,50,0.4), rgba(10,20,30,0.6));
+  border: 1px solid rgba(160,220,240,0.3);
+  border-radius: 12px;
+}
+.cl-info {
+  font-size: 13px; color: #b0d8e0;
+  text-align: center; letter-spacing: 2px;
+}
+.cl-target-display {
+  font-size: 14px; color: #ffd080;
+  letter-spacing: 3px;
+}
+.cl-current {
+  font-size: 14px; color: #b0d8e0;
+  letter-spacing: 3px;
+}
+.cl-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.cl-start, .cl-stop, .cl-confirm, .cl-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(80,160,180,0.5), rgba(60,120,140,0.4));
+  border: 1px solid rgba(160,220,240,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.cl-start:disabled, .cl-stop:disabled, .cl-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.cl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,40,50,0.92);
+  border: 1px solid rgba(160,220,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.cl-reading-title {
+  font-size: 17px; color: #b0d8e0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.cl-reading-text {
+  font-size: 15px; color: #d0e8f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.6.0 拼图归位 ============ */
+.jigsaw-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,50,0.96), rgba(15,10,20,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ji-prompt {
+  font-size: 18px; color: #d8b0ff;
+  letter-spacing: 3px; text-align: center;
+}
+.ji-stage {
+  width: min(95%, 520px);
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center;
+}
+.ji-slots {
+  display: grid; gap: 8px;
+  width: 100%;
+}
+.ji-slot {
+  width: 100%; aspect-ratio: 1;
+  background: linear-gradient(135deg, rgba(80,60,100,0.6), rgba(60,40,80,0.4));
+  border: 2px solid rgba(200,160,240,0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.ji-slot:hover { transform: translateY(-3px); border-color: rgba(220,180,255,0.7); }
+.ji-slot.ji-selected {
+  border-color: #d8a0ff;
+  box-shadow: 0 0 16px rgba(216,160,255,0.6);
+}
+.ji-slot.ji-correct {
+  border-color: #b0e890;
+  background: linear-gradient(135deg, rgba(80,120,60,0.5), rgba(60,90,40,0.4));
+}
+.ji-fragment {
+  width: 80%; height: 80%;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: #fff;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(0,0,0,0.5);
+}
+.ji-frag-0 { background: linear-gradient(135deg, #ff8060, #c04020); }
+.ji-frag-1 { background: linear-gradient(135deg, #60a0ff, #2040c0); }
+.ji-frag-2 { background: linear-gradient(135deg, #80e060, #40a020); }
+.ji-frag-3 { background: linear-gradient(135deg, #ffd060, #c08020); }
+.ji-correct .ji-fragment { box-shadow: 0 0 12px rgba(180,240,150,0.6); }
+.ji-info {
+  font-size: 13px; color: #d8b0ff;
+  text-align: center; letter-spacing: 2px;
+}
+.ji-progress {
+  font-size: 14px; color: #d8b0ff;
+  letter-spacing: 3px;
+}
+.ji-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ji-reset, .ji-confirm, .ji-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(160,100,200,0.5), rgba(120,80,160,0.4));
+  border: 1px solid rgba(220,180,255,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ji-confirm:disabled, .ji-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.ji-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,50,0.92);
+  border: 1px solid rgba(220,180,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ji-reading-title {
+  font-size: 17px; color: #d8b0ff;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ji-reading-text {
+  font-size: 15px; color: #e0d0f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.6.0 棋局推演 ============ */
+.chess-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,20,0.96), rgba(15,10,5,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ch-prompt {
+  font-size: 18px; color: #e0c890;
+  letter-spacing: 3px; text-align: center;
+}
+.ch-stage {
+  width: min(95%, 420px);
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center;
+}
+.ch-board {
+  display: grid; gap: 2px;
+  width: 100%; aspect-ratio: 1;
+  background: rgba(80,60,40,0.5);
+  padding: 4px; border-radius: 8px;
+  border: 2px solid rgba(180,140,80,0.5);
+}
+.ch-cell {
+  background: rgba(60,40,20,0.6);
+  cursor: default;
+  transition: background 0.15s;
+  position: relative;
+}
+.ch-cell.ch-light { background: rgba(180,140,80,0.5); }
+.ch-cell.ch-dark { background: rgba(80,50,20,0.7); }
+.ch-cell.ch-obstacle {
+  background: repeating-linear-gradient(45deg, rgba(80,40,20,0.8), rgba(80,40,20,0.8) 4px, rgba(120,60,30,0.8) 4px, rgba(120,60,30,0.8) 8px);
+  cursor: not-allowed;
+}
+.ch-cell.ch-target::after {
+  content: "◎";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255,180,80,0.9);
+  font-size: 24px;
+}
+.ch-cell.ch-piece::before {
+  content: "●";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #80c0ff;
+  font-size: 28px;
+  text-shadow: 0 0 12px rgba(128,192,255,0.8);
+}
+.ch-cell.ch-movable {
+  cursor: pointer;
+  background: rgba(120,180,200,0.4);
+  box-shadow: inset 0 0 8px rgba(160,220,240,0.5);
+}
+.ch-cell.ch-movable:hover { background: rgba(160,220,240,0.6); }
+.ch-info {
+  font-size: 13px; color: #e0c890;
+  text-align: center; letter-spacing: 2px;
+}
+.ch-progress {
+  font-size: 14px; color: #e0c890;
+  letter-spacing: 3px;
+}
+.ch-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ch-reset, .ch-confirm, .ch-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,80,0.5), rgba(140,100,60,0.4));
+  border: 1px solid rgba(220,180,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ch-confirm:disabled, .ch-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.ch-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.92);
+  border: 1px solid rgba(220,180,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ch-reading-title {
+  font-size: 17px; color: #e0c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ch-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.6.0 旗阵辨识 ============ */
+.flag-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(30,40,50,0.96), rgba(10,15,20,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.fl-prompt {
+  font-size: 18px; color: #b0d8c0;
+  letter-spacing: 3px; text-align: center;
+}
+.fl-description {
+  font-size: 15px; color: #ffd080;
+  letter-spacing: 2px; text-align: center;
+  padding: 10px 20px;
+  background: rgba(40,30,20,0.5);
+  border-radius: 10px;
+  border: 1px solid rgba(220,180,120,0.3);
+}
+.fl-stage {
+  width: min(95%, 540px);
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center;
+}
+.fl-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+.fl-flag {
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  padding: 10px;
+  border: 2px solid rgba(160,220,200,0.3);
+  border-radius: 10px;
+  background: rgba(40,50,60,0.4);
+  transition: transform 0.15s, border-color 0.15s;
+}
+.fl-flag:hover { transform: translateY(-3px); border-color: rgba(180,240,220,0.6); }
+.fl-flag.fl-selected {
+  border-color: #80e0c0;
+  box-shadow: 0 0 16px rgba(128,224,192,0.6);
+}
+.fl-flag-canvas {
+  width: 100%; aspect-ratio: 4/3;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.fl-pattern {
+  width: 100%; height: 100%;
+}
+.fl-pattern-0 {
+  background: linear-gradient(135deg, #c04030, #802010);
+}
+.fl-pattern-0::after {
+  content: "○";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff; font-size: 36px;
+}
+.fl-pattern-1 {
+  background: linear-gradient(180deg, #2050a0 50%, #f0f0f0 50%);
+}
+.fl-pattern-2 {
+  background: repeating-linear-gradient(90deg, #c02020, #c02020 8px, #f0f0f0 8px, #f0f0f0 16px);
+}
+.fl-pattern-3 {
+  background: linear-gradient(135deg, #2050a0, #104090);
+}
+.fl-pattern-3::after {
+  content: "✦";
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffd080; font-size: 32px;
+}
+.fl-flag-label {
+  font-size: 13px; color: #b0d8c0;
+  letter-spacing: 2px;
+}
+.fl-info {
+  font-size: 13px; color: #b0d8c0;
+  text-align: center; letter-spacing: 2px;
+}
+.fl-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.fl-confirm, .fl-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(80,180,140,0.5), rgba(60,140,100,0.4));
+  border: 1px solid rgba(160,240,200,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.fl-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.fl-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(30,40,50,0.92);
+  border: 1px solid rgba(160,240,200,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.fl-reading-title {
+  font-size: 17px; color: #b0d8c0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.fl-reading-text {
+  font-size: 15px; color: #d0f0e0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.6.0 移动端适配 ============ */
+@media (max-width: 768px) {
+  .cl-canvas { height: 280px; }
+  .ji-slots { gap: 6px; }
+  .ji-fragment { font-size: 14px; }
+  .ch-board { padding: 2px; }
+  .ch-cell.ch-cell.ch-piece::before { font-size: 22px; }
+  .ch-cell.ch-target::after { font-size: 18px; }
+  .fl-options { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .cl-prompt, .ji-prompt, .ch-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
+  .fl-description { font-size: 14px; }
+  .cl-actions button, .cl-reading-close,
+  .ji-actions button, .ji-reading-close,
+  .ch-actions button, .ch-reading-close,
+  .fl-actions button, .fl-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+}

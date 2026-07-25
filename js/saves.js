@@ -144,6 +144,12 @@ const CELESTIAL_KEY   = "sakura_letters_celestial_v2";   // 星轨推演
 const DRUM_KEY        = "sakura_letters_drum_v2";        // 节拍鼓点
 const VANE_KEY        = "sakura_letters_vane_v2";        // 风向标
 
+/* v2.6.0 新玩法存储 */
+const CLEPSYDRA_KEY   = "sakura_letters_clepsydra_v2";   // 漏刻计时
+const JIGSAW_KEY      = "sakura_letters_jigsaw_v2";      // 拼图归位
+const CHESS_KEY       = "sakura_letters_chess_v2";       // 棋局推演
+const FLAG_KEY        = "sakura_letters_flag_v2";        // 旗阵辨识
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1867,6 +1873,70 @@ const Saves = {
   },
   getVaneRecord(nodeId) { return this.getVaneRecords()[nodeId]; },
 
+  /* ============ v2.6.0 漏刻计时 ============ */
+  // { nodeId: { stopTime, target, error, tag, ts } }
+  getClepsydraRecords() {
+    try {
+      const raw = localStorage.getItem(CLEPSYDRA_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveClepsydraRecord(nodeId, stopTime, target, error, tag) {
+    const all = this.getClepsydraRecords();
+    all[nodeId] = { stopTime, target, error, tag, ts: Date.now() };
+    localStorage.setItem(CLEPSYDRA_KEY, JSON.stringify(all));
+    return true;
+  },
+  getClepsydraRecord(nodeId) { return this.getClepsydraRecords()[nodeId]; },
+
+  /* ============ v2.6.0 拼图归位 ============ */
+  // { nodeId: { placed, target, matched, tag, ts } }
+  getJigsawRecords() {
+    try {
+      const raw = localStorage.getItem(JIGSAW_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveJigsawRecord(nodeId, placed, target, matched, tag) {
+    const all = this.getJigsawRecords();
+    all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(JIGSAW_KEY, JSON.stringify(all));
+    return true;
+  },
+  getJigsawRecord(nodeId) { return this.getJigsawRecords()[nodeId]; },
+
+  /* ============ v2.6.0 棋局推演 ============ */
+  // { nodeId: { moves, target, matched, tag, ts } }
+  getChessRecords() {
+    try {
+      const raw = localStorage.getItem(CHESS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveChessRecord(nodeId, moves, target, matched, tag) {
+    const all = this.getChessRecords();
+    all[nodeId] = { moves, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(CHESS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getChessRecord(nodeId) { return this.getChessRecords()[nodeId]; },
+
+  /* ============ v2.6.0 旗阵辨识 ============ */
+  // { nodeId: { selected, target, matched, tag, ts } }
+  getFlagRecords() {
+    try {
+      const raw = localStorage.getItem(FLAG_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveFlagRecord(nodeId, selected, target, matched, tag) {
+    const all = this.getFlagRecords();
+    all[nodeId] = { selected, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(FLAG_KEY, JSON.stringify(all));
+    return true;
+  },
+  getFlagRecord(nodeId) { return this.getFlagRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1905,7 +1975,8 @@ const Saves = {
      KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
      SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
      MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
-     STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY].forEach(k => localStorage.removeItem(k));
+     STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY,
+     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

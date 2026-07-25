@@ -1172,6 +1172,46 @@
       return;
     }
 
+    // v2.6.0 漏刻计时节点
+    if (node.clepsydra) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runClepsydra(node.clepsydra, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.6.0 拼图归位节点
+    if (node.jigsaw) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runJigsaw(node.jigsaw, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.6.0 棋局推演节点
+    if (node.chess) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runChess(node.chess, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.6.0 旗阵辨识节点
+    if (node.flag) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runFlag(node.flag, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -15758,6 +15798,580 @@
   }
 
   /* ============================================================
+     v2.6.0 漏刻计时 runClepsydra
+     node.clepsydra = {
+       prompt: "在目标时刻停止水流",
+       target: 5000,      // 目标毫秒
+       tolerance: 200,     // 允许误差毫秒
+       duration: 10000,   // 漏完总时长
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runClepsydra(cl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "clepsydra-layer";
+    layer.id = "clepsydra-layer";
+    const target = cl.target ?? 5000;
+    const tolerance = cl.tolerance ?? 200;
+    const duration = cl.duration ?? 10000;
+    let startTime = 0;
+    let stopped = false;
+    let stoppedAt = 0;
+    let rafId = 0;
+    layer.innerHTML = `
+      <div class="cl-prompt">${cl.prompt || "在目标时刻停止水流"}</div>
+      <div class="cl-stage">
+        <canvas class="cl-canvas" id="cl-canvas"></canvas>
+        <div class="cl-info" id="cl-info">点击「开始」放水，再点击「停止」</div>
+      </div>
+      <div class="cl-target-display">目标：${(target/1000).toFixed(1)}s · 误差 ≤ ${(tolerance/1000).toFixed(1)}s</div>
+      <div class="cl-current" id="cl-current">当前：0.0s</div>
+      <div class="cl-actions">
+        <button class="cl-start" id="cl-start">开始</button>
+        <button class="cl-stop" id="cl-stop" disabled>停止</button>
+        <button class="cl-confirm" id="cl-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#cl-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#cl-info");
+    const currentEl = layer.querySelector("#cl-current");
+    const startBtn = layer.querySelector("#cl-start");
+    const stopBtn = layer.querySelector("#cl-stop");
+    const confirmBtn = layer.querySelector("#cl-confirm");
+
+    let aborted = false;
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+    }
+
+    function draw() {
+      if (aborted) return;
+      const elapsed = stopped ? stoppedAt : (startTime ? Date.now() - startTime : 0);
+      const ratio = Math.min(1, elapsed / duration);
+      // 背景
+      ctx.fillStyle = "rgba(20,30,40,0.6)";
+      ctx.fillRect(0, 0, cw, ch);
+      // 漏刻容器
+      const cx = cw / 2;
+      const topY = ch * 0.15;
+      const botY = ch * 0.85;
+      const W = Math.min(cw * 0.4, 120);
+      // 上瓶
+      ctx.strokeStyle = "rgba(200,220,255,0.6)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - W/2, topY);
+      ctx.lineTo(cx - W/2, topY + (botY - topY) * 0.4);
+      ctx.lineTo(cx - W/4, topY + (botY - topY) * 0.5);
+      ctx.lineTo(cx - W/4, botY - 10);
+      ctx.lineTo(cx + W/4, botY - 10);
+      ctx.lineTo(cx + W/4, topY + (botY - topY) * 0.5);
+      ctx.lineTo(cx + W/2, topY + (botY - topY) * 0.4);
+      ctx.lineTo(cx + W/2, topY);
+      ctx.closePath();
+      ctx.stroke();
+      // 上瓶水位
+      const waterTop = topY + (botY - topY) * 0.4 * (1 - ratio);
+      const grad = ctx.createLinearGradient(0, waterTop, 0, botY - 10);
+      grad.addColorStop(0, "rgba(120,180,220,0.7)");
+      grad.addColorStop(1, "rgba(80,140,200,0.9)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(cx - W/2 + 2, waterTop, W - 4, botY - 10 - waterTop);
+      // 水流
+      if (startTime && !stopped && ratio < 1) {
+        ctx.strokeStyle = "rgba(120,180,220,0.8)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx, topY + (botY - topY) * 0.5);
+        ctx.lineTo(cx, botY - 12);
+        ctx.stroke();
+      }
+      // 目标线
+      const targetY = topY + (botY - topY) * 0.4 * (1 - Math.min(1, target / duration));
+      ctx.strokeStyle = "rgba(255,180,80,0.8)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx - W/2 - 10, targetY);
+      ctx.lineTo(cx + W/2 + 10, targetY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 时间显示
+      currentEl.textContent = `当前：${(elapsed/1000).toFixed(1)}s · 目标：${(target/1000).toFixed(1)}s`;
+      if (!stopped && startTime) {
+        const diff = Math.abs(elapsed - target);
+        info.textContent = diff <= tolerance ? "——可以停了！" : "继续放水…";
+      } else if (stopped) {
+        const diff = Math.abs(stoppedAt - target);
+        info.textContent = `停止于 ${(stoppedAt/1000).toFixed(1)}s · 差 ${(diff/1000).toFixed(1)}s`;
+      }
+      rafId = requestAnimationFrame(draw);
+    }
+
+    startBtn.onclick = () => {
+      if (aborted || startTime) return;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      startTime = Date.now();
+    };
+
+    stopBtn.onclick = () => {
+      if (aborted || stopped || !startTime) return;
+      stopped = true;
+      stoppedAt = Date.now() - startTime;
+      stopBtn.disabled = true;
+      confirmBtn.disabled = false;
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      cancelAnimationFrame(rafId);
+      const diff = Math.abs(stoppedAt - target);
+      const thresholds = cl.thresholds || [];
+      let matched = cl.fallback || { tag: "miss", label: "——没停准", next: null };
+      for (const t of thresholds) {
+        if (diff <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveClepsydraRecord(currentNodeId, stoppedAt, target, diff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "cl-reading";
+      reading.innerHTML = `<div class="cl-reading-title">${matched.label || "解读"} · 差 ${(diff/1000).toFixed(1)}s</div>
+        <div class="cl-reading-text">${matched.text || ""}</div>
+        <button class="cl-reading-close">继续</button>`;
+      reading.querySelector(".cl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        cancelAnimationFrame(rafId);
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+    draw();
+  }
+
+  /* ============================================================
+     v2.6.0 拼图归位 runJigsaw
+     node.jigsaw = {
+       prompt: "点击碎片归位，拼出完整图案",
+       target: [1, 2, 0, 3],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
+       tolerance: 0,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runJigsaw(jg, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "jigsaw-layer";
+    layer.id = "jigsaw-layer";
+    const target = jg.target || [0,1,2,3];
+    const count = target.length;
+    const tolerance = jg.tolerance ?? 0;
+    const placed = target.map((_, i) => i);
+    layer.innerHTML = `
+      <div class="ji-prompt">${jg.prompt || "点击碎片归位，拼出完整图案"}</div>
+      <div class="ji-stage">
+        <div class="ji-slots" id="ji-slots"></div>
+        <div class="ji-info" id="ji-info">点击两个碎片交换位置</div>
+      </div>
+      <div class="ji-progress" id="ji-progress">0 / ${count}</div>
+      <div class="ji-actions">
+        <button class="ji-reset">重置</button>
+        <button class="ji-confirm" id="ji-confirm">确认</button>
+      </div>
+    `;
+    const slotsEl = layer.querySelector("#ji-slots");
+    const info = layer.querySelector("#ji-info");
+    const progressEl = layer.querySelector("#ji-progress");
+    const confirmBtn = layer.querySelector(".ji-confirm");
+    const resetBtn = layer.querySelector(".ji-reset");
+
+    let aborted = false;
+    let selected = -1;
+
+    slotsEl.style.gridTemplateColumns = `repeat(${Math.ceil(count/2)}, 1fr)`;
+
+    function render() {
+      slotsEl.innerHTML = "";
+      let correctCount = 0;
+      for (let i = 0; i < count; i++) {
+        const slot = document.createElement("div");
+        slot.className = "ji-slot";
+        const fragIdx = placed[i];
+        const isCorrect = (target[i] === fragIdx);
+        if (isCorrect) { slot.classList.add("ji-correct"); correctCount++; }
+        if (selected === i) slot.classList.add("ji-selected");
+        const frag = document.createElement("div");
+        frag.className = "ji-fragment ji-frag-" + (fragIdx % 4);
+        frag.textContent = "片" + (fragIdx + 1);
+        slot.appendChild(frag);
+        slot.addEventListener("click", () => {
+          if (aborted) return;
+          if (selected === -1) {
+            selected = i;
+          } else if (selected === i) {
+            selected = -1;
+          } else {
+            const tmp = placed[selected];
+            placed[selected] = placed[i];
+            placed[i] = tmp;
+            selected = -1;
+          }
+          render();
+        });
+        slotsEl.appendChild(slot);
+      }
+      progressEl.textContent = `${correctCount} / ${count}`;
+      info.textContent = `已对 ${correctCount}/${count} · ${selected === -1 ? "点击碎片选择" : "点击另一碎片交换"}`;
+    }
+    render();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let i = 0; i < count; i++) placed[i] = i;
+      selected = -1;
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let i = 0; i < count; i++) {
+        if (placed[i] !== target[i]) mismatched++;
+      }
+      const thresholds = jg.thresholds || [];
+      let matched = jg.fallback || { tag: "miss", label: "——没拼上", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = count - mismatched;
+      Saves.saveJigsawRecord(currentNodeId, placed.slice(), target, matchedCount, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ji-reading";
+      reading.innerHTML = `<div class="ji-reading-title">${matched.label || "解读"} · 对 ${matchedCount}/${count} · 错 ${mismatched}</div>
+        <div class="ji-reading-text">${matched.text || ""}</div>
+        <button class="ji-reading-close">继续</button>`;
+      reading.querySelector(".ji-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.6.0 棋局推演 runChess
+     node.chess = {
+       prompt: "移动棋子到目标位置",
+       size: 4,
+       start: { x: 0, y: 0 },
+       target: { x: 3, y: 3 },
+       obstacles: [ { x: 1, y: 1 } ],
+       maxMoves: 8,
+       tolerance: 2,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runChess(ch, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "chess-layer";
+    layer.id = "chess-layer";
+    const size = ch.size || 4;
+    const start = ch.start || { x: 0, y: 0 };
+    const target = ch.target || { x: size - 1, y: size - 1 };
+    const obstacles = ch.obstacles || [];
+    const maxMoves = ch.maxMoves || size * 2;
+    const tolerance = ch.tolerance ?? 2;
+    const moves = [];
+    let piece = { x: start.x, y: start.y };
+    layer.innerHTML = `
+      <div class="ch-prompt">${ch.prompt || "移动棋子到目标位置"}</div>
+      <div class="ch-stage">
+        <div class="ch-board" id="ch-board"></div>
+        <div class="ch-info" id="ch-info">点击格子移动棋子（每步一格）</div>
+      </div>
+      <div class="ch-progress" id="ch-progress">0 / ${maxMoves} 步</div>
+      <div class="ch-actions">
+        <button class="ch-reset">重置</button>
+        <button class="ch-confirm" id="ch-confirm">确认</button>
+      </div>
+    `;
+    const boardEl = layer.querySelector("#ch-board");
+    const info = layer.querySelector("#ch-info");
+    const progressEl = layer.querySelector("#ch-progress");
+    const confirmBtn = layer.querySelector(".ch-confirm");
+    const resetBtn = layer.querySelector(".ch-reset");
+
+    let aborted = false;
+
+    boardEl.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+
+    function isObstacle(x, y) {
+      return obstacles.some(o => o.x === x && o.y === y);
+    }
+    function isAdjacent(x, y) {
+      return Math.abs(x - piece.x) + Math.abs(y - piece.y) === 1;
+    }
+
+    function render() {
+      boardEl.innerHTML = "";
+      for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+          const cell = document.createElement("div");
+          cell.className = "ch-cell";
+          if ((x + y) % 2 === 0) cell.classList.add("ch-light");
+          else cell.classList.add("ch-dark");
+          if (isObstacle(x, y)) cell.classList.add("ch-obstacle");
+          if (x === target.x && y === target.y) cell.classList.add("ch-target");
+          if (piece.x === x && piece.y === y) cell.classList.add("ch-piece");
+          if (isAdjacent(x, y) && !isObstacle(x, y)) cell.classList.add("ch-movable");
+          cell.addEventListener("click", () => {
+            if (aborted) return;
+            if (moves.length >= maxMoves) return;
+            if (!isAdjacent(x, y)) return;
+            if (isObstacle(x, y)) return;
+            piece = { x, y };
+            moves.push({ x, y });
+            render();
+            if (x === target.x && y === target.y) {
+              info.textContent = "到达目标！点确认查看结果";
+            } else {
+              info.textContent = `移动到 (${x},${y}) · 剩余 ${maxMoves - moves.length} 步`;
+            }
+          });
+          boardEl.appendChild(cell);
+        }
+      }
+      const dist = Math.abs(piece.x - target.x) + Math.abs(piece.y - target.y);
+      progressEl.textContent = `${moves.length} / ${maxMoves} 步 · 距目标 ${dist}`;
+    }
+    render();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      piece = { x: start.x, y: start.y };
+      moves.length = 0;
+      render();
+      info.textContent = "点击格子移动棋子（每步一格）";
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const dist = Math.abs(piece.x - target.x) + Math.abs(piece.y - target.y);
+      const reached = (piece.x === target.x && piece.y === target.y);
+      const thresholds = ch.thresholds || [];
+      let matched = ch.fallback || { tag: "miss", label: "——没走到", next: null };
+      for (const t of thresholds) {
+        if (dist <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveChessRecord(currentNodeId, moves.slice(), target, reached ? 1 : 0, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ch-reading";
+      reading.innerHTML = `<div class="ch-reading-title">${matched.label || "解读"} · 距目标 ${dist} · ${moves.length} 步</div>
+        <div class="ch-reading-text">${matched.text || ""}</div>
+        <button class="ch-reading-close">继续</button>`;
+      reading.querySelector(".ch-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.6.0 旗阵辨识 runFlag
+     node.flag = {
+       prompt: "按描述选择正确的旗帜",
+       description: "红底白圆居中",
+       options: [ { id: 0, label: "红底白圆居中" }, ... ],
+       target: 0,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runFlag(fl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "flag-layer";
+    layer.id = "flag-layer";
+    const options = fl.options || [];
+    const target = fl.target ?? 0;
+    layer.innerHTML = `
+      <div class="fl-prompt">${fl.prompt || "按描述选择正确的旗帜"}</div>
+      <div class="fl-description">${fl.description || ""}</div>
+      <div class="fl-stage">
+        <div class="fl-options" id="fl-options"></div>
+      </div>
+      <div class="fl-info" id="fl-info">点击选择一面旗帜</div>
+      <div class="fl-actions">
+        <button class="fl-confirm" id="fl-confirm" disabled>确认</button>
+      </div>
+    `;
+    const optionsEl = layer.querySelector("#fl-options");
+    const info = layer.querySelector("#fl-info");
+    const confirmBtn = layer.querySelector(".fl-confirm");
+
+    let aborted = false;
+    let selected = -1;
+
+    function renderFlags() {
+      optionsEl.innerHTML = "";
+      options.forEach((opt, i) => {
+        const flag = document.createElement("div");
+        flag.className = "fl-flag fl-pattern-" + (opt.pattern || i % 4);
+        if (selected === i) flag.classList.add("fl-selected");
+        flag.innerHTML = `
+          <div class="fl-flag-canvas">
+            <div class="fl-pattern fl-pattern-${opt.pattern || (i % 4)}"></div>
+          </div>
+          <div class="fl-flag-label">${opt.label || ("旗" + (i + 1))}</div>
+        `;
+        flag.addEventListener("click", () => {
+          if (aborted) return;
+          selected = i;
+          renderFlags();
+          info.textContent = `已选：${opt.label || ("旗" + (i + 1))}`;
+          confirmBtn.disabled = false;
+        });
+        optionsEl.appendChild(flag);
+      });
+    }
+    renderFlags();
+
+    confirmBtn.onclick = () => {
+      if (aborted || selected === -1) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const correct = (selected === target);
+      const thresholds = fl.thresholds || [];
+      let matched = fl.fallback || { tag: "miss", label: "——选错了", next: null };
+      for (const t of thresholds) {
+        if (t.max === 0 && correct) { matched = t; break; }
+        if (t.max === 1 && !correct) { matched = t; break; }
+      }
+      Saves.saveFlagRecord(currentNodeId, selected, target, correct ? 1 : 0, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "fl-reading";
+      reading.innerHTML = `<div class="fl-reading-title">${matched.label || "解读"} · ${correct ? "选对" : "选错"}</div>
+        <div class="fl-reading-text">${matched.text || ""}</div>
+        <button class="fl-reading-close">继续</button>`;
+      reading.querySelector(".fl-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -16095,6 +16709,10 @@
     document.querySelectorAll(".celestial-layer").forEach(e => e.remove());
     document.querySelectorAll(".drum-layer").forEach(e => e.remove());
     document.querySelectorAll(".vane-layer").forEach(e => e.remove());
+    document.querySelectorAll(".clepsydra-layer").forEach(e => e.remove());
+    document.querySelectorAll(".jigsaw-layer").forEach(e => e.remove());
+    document.querySelectorAll(".chess-layer").forEach(e => e.remove());
+    document.querySelectorAll(".flag-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
