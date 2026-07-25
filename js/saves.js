@@ -108,6 +108,12 @@ const TELEGRAPH_KEY  = "sakura_letters_telegraph_v2";  // 密码电报
 const BALANCE_KEY    = "sakura_letters_balance_v2";    // 天平称重
 const PENDULUM_KEY   = "sakura_letters_pendulum_v2";   // 钟摆节奏
 
+/* v2.0.0 新玩法存储 */
+const METRONOME_KEY  = "sakura_letters_metronome_v2";  // 节拍器同步
+const STARCHART_KEY  = "sakura_letters_starchart_v2";  // 星图连线
+const LENS_KEY        = "sakura_letters_lens_v2";        // 透镜聚焦
+const TUNING_KEY      = "sakura_letters_tuning_v2";      // 弦音调音
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1447,6 +1453,70 @@ const Saves = {
   },
   getPendulumRecord(nodeId) { return this.getPendulumRecords()[nodeId]; },
 
+  /* ============ v2.0.0 节拍器同步 ============ */
+  // { nodeId: { hits, total, accuracy, tag, ts } }
+  getMetronomeRecords() {
+    try {
+      const raw = localStorage.getItem(METRONOME_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveMetronomeRecord(nodeId, hits, total, accuracy, tag) {
+    const all = this.getMetronomeRecords();
+    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
+    localStorage.setItem(METRONOME_KEY, JSON.stringify(all));
+    return true;
+  },
+  getMetronomeRecord(nodeId) { return this.getMetronomeRecords()[nodeId]; },
+
+  /* ============ v2.0.0 星图连线 ============ */
+  // { nodeId: { sequence, matched, total, tag, ts } }
+  getStarchartRecords() {
+    try {
+      const raw = localStorage.getItem(STARCHART_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveStarchartRecord(nodeId, sequence, matched, total, tag) {
+    const all = this.getStarchartRecords();
+    all[nodeId] = { sequence, matched, total, tag, ts: Date.now() };
+    localStorage.setItem(STARCHART_KEY, JSON.stringify(all));
+    return true;
+  },
+  getStarchartRecord(nodeId) { return this.getStarchartRecords()[nodeId]; },
+
+  /* ============ v2.0.0 透镜聚焦 ============ */
+  // { nodeId: { focus, target, error, tag, ts } }
+  getLensRecords() {
+    try {
+      const raw = localStorage.getItem(LENS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveLensRecord(nodeId, focus, target, error, tag) {
+    const all = this.getLensRecords();
+    all[nodeId] = { focus, target, error, tag, ts: Date.now() };
+    localStorage.setItem(LENS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getLensRecord(nodeId) { return this.getLensRecords()[nodeId]; },
+
+  /* ============ v2.0.0 弦音调音 ============ */
+  // { nodeId: { stringIdx, tension, diff, tag, ts } }
+  getTuningRecords() {
+    try {
+      const raw = localStorage.getItem(TUNING_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTuningRecord(nodeId, stringIdx, tension, diff, tag) {
+    const all = this.getTuningRecords();
+    all[nodeId] = { stringIdx, tension, diff, tag, ts: Date.now() };
+    localStorage.setItem(TUNING_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTuningRecord(nodeId) { return this.getTuningRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1479,7 +1549,8 @@ const Saves = {
      FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY,
      KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY,
      FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY,
-     COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY].forEach(k => localStorage.removeItem(k));
+     COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY,
+     METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

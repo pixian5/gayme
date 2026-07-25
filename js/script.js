@@ -2267,7 +2267,7 @@ const SCRIPT = {
   d8_pendulum: {
     day: 8, time: "night", bg: "clock_room", char: null, speaker: "",
     text: "她带你去钟楼。一只老钟摆在摆动。她说——它在找一个位置。她让你在它到那个位置的时候点「停」。她说：时机不对，就什么都不是。",
-    next: "d5_mimic",
+    next: "d9_metronome",
     pendulum: {
       prompt: "钟摆摆到目标位置时——点「停」",
       target: 0.85,
@@ -2280,17 +2280,154 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { honest: 2, brave: 1 },
           memory: { id: "钟摆·85%", title: "钟楼里的钟摆", text: "你在钟摆到目标位置时点停，时机很准。" },
-          next: "d5_mimic" },
+          next: "d9_metronome" },
         { max: 0.15, tag: "ok",
           label: "——差一点",
           text: "钟摆差一点。她说：差一点也是停——只是没那么对。她不让你再试一次。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d9_metronome" }
       ],
       fallback: { tag: "miss",
         label: "——停早了",
         text: "钟摆完全没停对位置。她说：时机不对——不对就是不对。她把钟摆按住，让它停下。",
+        next: "d9_metronome" }
+    }
+  },
+
+  /* ============ v2.0.0 新玩法触发节点 ============ */
+  // 节拍器同步
+  d9_metronome: {
+    day: 9, time: "morning", bg: "music_room", char: null, speaker: "",
+    text: "她带你去音乐教室。一台老节拍器在桌上。她说——它会响十二下，你跟着响声点「同步」。她说：人跟不跟得上节奏，听一耳朵就明白。",
+    next: "d9_starchart",
+    metronome: {
+      prompt: "跟着节拍器响声点「同步」——共 12 拍",
+      bpm: 80,
+      total: 12,
+      tolerance: 0.12,
+      thresholds: [
+        { min: 0.85, tag: "perfect",
+          label: "——节奏稳",
+          text: "你几乎每一拍都踩在节拍器响的那一瞬。她说：你的节奏稳——稳的人，能等，也能抓住。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { active: 2, honest: 1 },
+          memory: { id: "节拍·同步", title: "音乐教室的节拍器", text: "你跟着节拍器同步了十二拍，节奏稳。" },
+          next: "d9_starchart" },
+        { min: 0.6, tag: "ok",
+          label: "——还跟得上",
+          text: "你跟得上，但不算稳。她说：人不必每一拍都准——但你这种节奏，能走，跑不行。",
+          add: { affection: { shen: 1 } },
+          personality: { active: 1 },
+          next: "d9_starchart" }
+      ],
+      fallback: { tag: "miss",
+        label: "——节奏乱了",
+        text: "你完全跟不上。她说：节奏乱了——乱也没关系，但你不是会等节拍的人。她把节拍器关掉。",
+        next: "d9_starchart" }
+    }
+  },
+
+  // 星图连线
+  d9_starchart: {
+    day: 9, time: "night", bg: "rooftop", char: null, speaker: "",
+    text: "她拉你去天台看星星。她说——按亮度，从最亮到最暗，把这五颗连起来。她说：星图不是随便画的，顺序错了，整个星座就不再是星座。",
+    next: "d9_lens",
+    starchart: {
+      prompt: "按亮度从亮到暗连接五颗星",
+      stars: [
+        { id: "s1", x: 0.20, y: 0.30, brightness: 0.95, label: "α" },
+        { id: "s2", x: 0.45, y: 0.20, brightness: 0.70, label: "β" },
+        { id: "s3", x: 0.65, y: 0.50, brightness: 0.50, label: "γ" },
+        { id: "s4", x: 0.80, y: 0.30, brightness: 0.30, label: "δ" },
+        { id: "s5", x: 0.55, y: 0.75, brightness: 0.15, label: "ε" }
+      ],
+      expectedOrder: ["s1", "s2", "s3", "s4", "s5"],
+      tolerance: 1,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——星图画对了",
+          text: "你按亮度从亮到暗，一笔连完。她说：你看，星图就得这样画——先最亮的，再最暗的。她也想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, kind: 1 },
+          memory: { id: "星图·亮度序", title: "天台上的星图", text: "你按亮度顺序连出五颗星，画出了她想要的星图。" },
+          next: "d9_lens" },
+        { max: 1, tag: "ok",
+          label: "——画得差不多",
+          text: "你画错了一颗。她说：差一颗，整个星座就不一样——但你说它是什么，它就是什么。她笑了一下。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d9_lens" }
+      ],
+      fallback: { tag: "miss",
+        label: "——画错了星图",
+        text: "你画的星图她没认出来。她说：这不对——但没关系，你画的，也可以是你的星座。她没说更多。",
+        next: "d9_lens" }
+    }
+  },
+
+  // 透镜聚焦
+  d9_lens: {
+    day: 9, time: "afternoon", bg: "lab", char: null, speaker: "",
+    text: "她带你去实验室。一束光，一个透镜，一块屏。她说——把焦距调到光刚好落在屏上那条线。她说：对焦是耐心活，急不得。",
+    next: "d9_tuning",
+    lens: {
+      prompt: "拖动滑块调节透镜焦距——让焦点对准目标红线",
+      target: 0.62,
+      tolerance: 0.04,
+      thresholds: [
+        { max: 0.04, tag: "perfect",
+          label: "——对准了",
+          text: "光点稳稳落在红线上。她说：你看，光不会自己找路——是你让它过去的。她想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { brave: 2, honest: 1 },
+          memory: { id: "透镜·62%", title: "实验室的对焦", text: "你把透镜焦距调到 0.62，光点落在红线上。" },
+          next: "d9_tuning" },
+        { max: 0.10, tag: "ok",
+          label: "——差不多",
+          text: "光点差一点。她说：差一点也能看见——只是没那么亮。她不再说。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d9_tuning" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对焦",
+        text: "光点散在屏上，没落在线上。她说：没对焦——但你试过了。她把透镜收起来。",
+        next: "d9_tuning" }
+    }
+  },
+
+  // 弦音调音
+  d9_tuning: {
+    day: 9, time: "evening", bg: "music_room", char: null, speaker: "",
+    text: "她递给你一把旧琴。她说——三根弦，张力都不对。你把它们调到目标张力。她说：调音是慢活，弦绷太紧会断，太松不响。",
+    next: "d5_mimic",
+    tuning: {
+      prompt: "依次调三根琴弦——让张力接近目标值",
+      strings: [
+        { id: "str1", target: 0.35, label: "宫" },
+        { id: "str2", target: 0.55, label: "商" },
+        { id: "str3", target: 0.78, label: "角" }
+      ],
+      tolerance: 0.06,
+      thresholds: [
+        { max: 0.06, tag: "perfect",
+          label: "——调准了",
+          text: "三根弦都调到了目标张力。她拨了一下，弦响了干净的一声。她说：你听——这才是它该有的声音。她想说的是另一件事。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { kind: 2, honest: 1 },
+          memory: { id: "弦音·三弦齐", title: "音乐教室的旧琴", text: "你把三根琴弦调到目标张力，弦音干净。" },
+          next: "d5_mimic" },
+        { max: 0.12, tag: "ok",
+          label: "——差不多准",
+          text: "弦音差不多准。她说：差不多——也是一种准。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——音不准",
+        text: "弦音不准。她说：弦没调好——也没关系，你可以慢慢调。她把琴收回琴盒。",
         next: "d5_mimic" }
     }
   },

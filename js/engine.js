@@ -932,6 +932,46 @@
       return;
     }
 
+    // v2.0.0 节拍器同步节点
+    if (node.metronome) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runMetronome(node.metronome, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.0.0 星图连线节点
+    if (node.starchart) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runStarchart(node.starchart, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.0.0 透镜聚焦节点
+    if (node.lens) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runLens(node.lens, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.0.0 弦音调音节点
+    if (node.tuning) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runTuning(node.tuning, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -11552,6 +11592,782 @@
   }
 
   /* ============================================================
+     v2.0.0 节拍器同步 runMetronome
+     node.metronome = {
+       prompt: "跟着节拍点击——节拍器每响一下，点一次「同步」",
+       bpm: 80,             // 节拍速度
+       total: 12,            // 总节拍数
+       tolerance: 0.12,     // 误差容忍（占周期比例）
+       thresholds: [
+         { min, tag, label, text, add?, personality?, memory?, next },
+         ...
+       ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runMetronome(mt, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "metronome-layer";
+    layer.id = "metronome-layer";
+    const bpm = mt.bpm || 80;
+    const total = mt.total || 12;
+    const tolerance = mt.tolerance ?? 0.12;
+    layer.innerHTML = `
+      <div class="mt-prompt">${mt.prompt || "跟着节拍点击——每响一次，点一次「同步」"}</div>
+      <div class="mt-stage">
+        <canvas class="mt-canvas" id="mt-canvas"></canvas>
+        <div class="mt-info" id="mt-info">点「开始」启动节拍器</div>
+      </div>
+      <div class="mt-progress" id="mt-progress">0 / ${total}</div>
+      <div class="mt-actions">
+        <button class="mt-start" id="mt-start">开始</button>
+        <button class="mt-sync" id="mt-sync" disabled>同步</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#mt-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#mt-info");
+    const progressEl = layer.querySelector("#mt-progress");
+    const startBtn = layer.querySelector("#mt-start");
+    const syncBtn = layer.querySelector("#mt-sync");
+
+    let aborted = false;
+    let started = false;
+    let finished = false;
+    let startTime = 0;
+    let nextBeatAt = 0;
+    let beatIdx = 0;
+    let hits = 0;
+    const hitRecords = [];
+    const period = 60000 / bpm;
+    let cw = 0, ch = 0;
+    let lastBeatFlash = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#1a2438");
+      grad.addColorStop(1, "#0a0e1a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cx = cw / 2;
+      const cy = ch * 0.18;
+      const len = Math.min(cw * 0.3, ch * 0.45);
+      let angle = 0;
+      if (started && !finished) {
+        const t = (performance.now() - startTime) % period / period;
+        angle = Math.sin(t * Math.PI * 2) * 0.6;
+      }
+      ctx.strokeStyle = "#c8a880";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      const px = cx + Math.sin(angle) * len;
+      const py = cy + Math.cos(angle) * len;
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      const flash = (performance.now() - lastBeatFlash) < 120;
+      ctx.fillStyle = flash ? "#fff080" : "#ffd060";
+      ctx.beginPath();
+      ctx.arc(px, py, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ffe890";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 节拍刻度
+      for (let i = 0; i < total; i++) {
+        const ix = (cw * 0.1) + i * ((cw * 0.8) / Math.max(1, total - 1));
+        const filled = i < hitRecords.length;
+        ctx.fillStyle = filled ? "#ff8090" : "rgba(200,168,128,0.3)";
+        ctx.beginPath();
+        ctx.arc(ix, ch * 0.85, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (!started) info.textContent = "点「开始」启动节拍器";
+      else if (finished) {
+        const acc = hits / total;
+        info.textContent = `同步 ${hits}/${total} · 准确率 ${(acc * 100).toFixed(0)}%`;
+      } else {
+        info.textContent = `节拍 ${beatIdx + 1}/${total} · ${bpm} BPM`;
+      }
+    }
+
+    function loop() {
+      if (aborted) return;
+      if (started && !finished) {
+        const now = performance.now();
+        while (now >= nextBeatAt) {
+          lastBeatFlash = now;
+          beatIdx++;
+          if (beatIdx >= total) {
+            finished = true;
+            syncBtn.disabled = true;
+            break;
+          }
+          nextBeatAt += period;
+        }
+        draw();
+      }
+      if (!aborted) requestAnimationFrame(loop);
+    }
+
+    startBtn.onclick = () => {
+      if (started) return;
+      started = true;
+      startTime = performance.now();
+      nextBeatAt = startTime + period;
+      beatIdx = 0;
+      startBtn.disabled = true;
+      syncBtn.disabled = false;
+      lastBeatFlash = startTime;
+      requestAnimationFrame(loop);
+    };
+
+    syncBtn.onclick = () => {
+      if (aborted || !started || finished) return;
+      const now = performance.now();
+      const elapsed = now - startTime;
+      const beatCount = Math.floor(elapsed / period);
+      const targetTime = startTime + beatCount * period;
+      const err = Math.abs(now - targetTime) / period;
+      hitRecords.push({ beatIdx: beatCount, error: err });
+      if (err <= tolerance) hits++;
+      progressEl.textContent = `${hitRecords.length} / ${total}`;
+      if (hitRecords.length >= total) {
+        finished = true;
+        syncBtn.disabled = true;
+        draw();
+        const accuracy = hits / total;
+        const confirmBtn = document.createElement("button");
+        confirmBtn.className = "mt-confirm";
+        confirmBtn.textContent = "确认";
+        confirmBtn.onclick = () => {
+          if (aborted) return;
+          aborted = true;
+          confirmBtn.disabled = true;
+          const thresholds = mt.thresholds || [];
+          let matched = mt.fallback || { tag: "miss", label: "——节奏乱了", next: null };
+          for (const t of thresholds) {
+            if (accuracy >= (t.min ?? 0)) { matched = t; break; }
+          }
+          Saves.saveMetronomeRecord(currentNodeId, hits, total, accuracy, matched.tag);
+          if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+          if (matched.personality) {
+            for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+          }
+          if (matched.memory) {
+            if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+              Saves.saveMemory(matched.memory.id, matched.memory.text);
+              flashHint(`✦ 新记忆：${matched.memory.title}`);
+            }
+          }
+          const reading = document.createElement("div");
+          reading.className = "mt-reading";
+          reading.innerHTML = `<div class="mt-reading-title">${matched.label || "解读"} · 准确率 ${(accuracy * 100).toFixed(0)}%</div>
+            <div class="mt-reading-text">${matched.text || ""}</div>
+            <button class="mt-reading-close">继续</button>`;
+          reading.querySelector(".mt-reading-close").onclick = () => {
+            reading.remove();
+            layer.remove();
+            const node = SCRIPT[currentNodeId];
+            const jumpTo = matched.next || (node && node.next);
+            if (jumpTo) gotoNode(jumpTo);
+          };
+          layer.appendChild(reading);
+        };
+        layer.querySelector(".mt-actions").appendChild(confirmBtn);
+      } else {
+        draw();
+      }
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.0.0 星图连线 runStarchart
+     node.starchart = {
+       prompt: "按亮度顺序连接星星——画出她想要的星图",
+       stars: [ { id, x, y, brightness, label? } ],
+       expectedOrder: ["s1","s2","s3"],
+       tolerance: 1,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runStarchart(sc, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "starchart-layer";
+    layer.id = "starchart-layer";
+    const stars = sc.stars || [];
+    const expected = sc.expectedOrder || [];
+    const tolerance = sc.tolerance ?? 1;
+    layer.innerHTML = `
+      <div class="sc-prompt">${sc.prompt || "按亮度顺序连接星星"}</div>
+      <div class="sc-stage">
+        <canvas class="sc-canvas" id="sc-canvas"></canvas>
+        <div class="sc-info" id="sc-info">点击星星连线</div>
+      </div>
+      <div class="sc-progress" id="sc-progress">0 / ${expected.length}</div>
+      <div class="sc-actions">
+        <button class="sc-reset">重置</button>
+        <button class="sc-confirm" id="sc-confirm" disabled>确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#sc-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#sc-info");
+    const progressEl = layer.querySelector("#sc-progress");
+    const confirmBtn = layer.querySelector("#sc-confirm");
+    const resetBtn = layer.querySelector(".sc-reset");
+
+    let aborted = false;
+    let sequence = [];
+    let cw = 0, ch = 0;
+    let starPositions = {};
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      starPositions = {};
+      stars.forEach(s => {
+        starPositions[s.id] = {
+          x: s.x * cw,
+          y: s.y * ch,
+          brightness: s.brightness,
+          label: s.label
+        };
+      });
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch));
+      grad.addColorStop(0, "#0a1430");
+      grad.addColorStop(1, "#020410");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.strokeStyle = "rgba(255,230,150,0.7)";
+      ctx.lineWidth = 2;
+      for (let i = 1; i < sequence.length; i++) {
+        const a = starPositions[sequence[i - 1]];
+        const b = starPositions[sequence[i]];
+        if (a && b) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+      stars.forEach(s => {
+        const p = starPositions[s.id];
+        if (!p) return;
+        const r = 2 + s.brightness * 6;
+        const isSelected = sequence.includes(s.id);
+        const halo = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, r * 4);
+        halo.addColorStop(0, `rgba(255,240,180,${0.4 + s.brightness * 0.3})`);
+        halo.addColorStop(1, "rgba(255,240,180,0)");
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = isSelected ? "#ff9050" : "#fff8d0";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+        if (s.label) {
+          ctx.fillStyle = "rgba(200,180,140,0.7)";
+          ctx.font = "11px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(s.label, p.x, p.y + r + 14);
+        }
+      });
+      progressEl.textContent = `${sequence.length} / ${expected.length}`;
+      confirmBtn.disabled = sequence.length !== expected.length;
+      info.textContent = sequence.length < expected.length
+        ? `点击星星（已选 ${sequence.length}）`
+        : "可点击「确认」提交";
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (aborted) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      let hit = null;
+      let minD = 20;
+      for (const s of stars) {
+        const p = starPositions[s.id];
+        if (!p) continue;
+        const d = Math.hypot(p.x - x, p.y - y);
+        if (d < minD) { minD = d; hit = s; }
+      }
+      if (!hit) return;
+      if (sequence.includes(hit.id)) {
+        const idx = sequence.indexOf(hit.id);
+        sequence = sequence.slice(0, idx);
+      } else {
+        if (sequence.length >= expected.length) return;
+        sequence.push(hit.id);
+      }
+      draw();
+    });
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      sequence = [];
+      draw();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let matched = 0;
+      for (let i = 0; i < expected.length; i++) {
+        if (sequence[i] === expected[i]) matched++;
+      }
+      const errors = expected.length - matched;
+      const thresholds = sc.thresholds || [];
+      let matchedOpt = sc.fallback || { tag: "miss", label: "——画错了星图", next: null };
+      for (const t of thresholds) {
+        if (errors <= (t.max ?? tolerance)) { matchedOpt = t; break; }
+      }
+      Saves.saveStarchartRecord(currentNodeId, sequence, matched, expected.length, matchedOpt.tag);
+      if (matchedOpt.add) { applyAdd(matchedOpt.add); updateHeartBar(); }
+      if (matchedOpt.personality) {
+        for (const dim in matchedOpt.personality) Saves.addPersonality(dim, matchedOpt.personality[dim]);
+      }
+      if (matchedOpt.memory) {
+        if (!Saves.isMemoryUnlocked(matchedOpt.memory.id)) {
+          Saves.saveMemory(matchedOpt.memory.id, matchedOpt.memory.text);
+          flashHint(`✦ 新记忆：${matchedOpt.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "sc-reading";
+      reading.innerHTML = `<div class="sc-reading-title">${matchedOpt.label || "解读"} · 匹配 ${matched}/${expected.length}</div>
+        <div class="sc-reading-text">${matchedOpt.text || ""}</div>
+        <button class="sc-reading-close">继续</button>`;
+      reading.querySelector(".sc-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matchedOpt.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.0.0 透镜聚焦 runLens
+     node.lens = {
+       prompt: "调节透镜焦距——让光线汇聚到目标点",
+       target: 0.6,
+       tolerance: 0.05,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runLens(ln, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "lens-layer";
+    layer.id = "lens-layer";
+    layer.innerHTML = `
+      <div class="ln-prompt">${ln.prompt || "调节透镜焦距——让光线汇聚到目标点"}</div>
+      <div class="ln-stage">
+        <canvas class="ln-canvas" id="ln-canvas"></canvas>
+        <div class="ln-info" id="ln-info">拖动滑块调节焦距</div>
+      </div>
+      <div class="ln-slider-wrap">
+        <input type="range" class="ln-slider" id="ln-slider" min="0" max="100" value="50">
+        <span class="ln-value" id="ln-value">50</span>
+      </div>
+      <div class="ln-actions">
+        <button class="ln-confirm" id="ln-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ln-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ln-info");
+    const slider = layer.querySelector("#ln-slider");
+    const valueEl = layer.querySelector("#ln-value");
+    const confirmBtn = layer.querySelector("#ln-confirm");
+
+    let aborted = false;
+    const target = ln.target ?? 0.6;
+    const tolerance = ln.tolerance ?? 0.05;
+    let focus = 0.5;
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#0a1a2a");
+      grad.addColorStop(1, "#04060a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const axisY = ch * 0.5;
+      ctx.strokeStyle = "rgba(180,180,200,0.2)";
+      ctx.setLineDash([4, 6]);
+      ctx.beginPath();
+      ctx.moveTo(0, axisY);
+      ctx.lineTo(cw, axisY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const srcX = cw * 0.1;
+      ctx.fillStyle = "#ffe890";
+      ctx.beginPath();
+      ctx.arc(srcX, axisY, 8, 0, Math.PI * 2);
+      ctx.fill();
+      const lensX = cw * 0.35;
+      ctx.strokeStyle = "rgba(150,200,255,0.8)";
+      ctx.fillStyle = "rgba(120,180,255,0.15)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(lensX, axisY, 12, ch * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const targetX = cw * 0.1 + target * cw * 0.8;
+      ctx.strokeStyle = "rgba(255,150,150,0.6)";
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(targetX, axisY - 20);
+      ctx.lineTo(targetX, axisY + 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      const focusX = cw * 0.1 + focus * cw * 0.8;
+      ctx.strokeStyle = "rgba(255,240,150,0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(srcX, axisY);
+      ctx.lineTo(lensX, axisY);
+      ctx.lineTo(focusX, axisY);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(srcX, axisY);
+      ctx.lineTo(lensX, axisY - ch * 0.2);
+      ctx.lineTo(focusX, axisY);
+      ctx.lineTo(lensX, axisY + ch * 0.2);
+      ctx.lineTo(srcX, axisY);
+      ctx.stroke();
+      const err = Math.abs(focus - target);
+      const inTol = err <= tolerance;
+      const halo = ctx.createRadialGradient(focusX, axisY, 0, focusX, axisY, 24);
+      halo.addColorStop(0, inTol ? "rgba(150,255,150,0.8)" : "rgba(255,180,100,0.6)");
+      halo.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(focusX, axisY, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = inTol ? "#80ff80" : "#ffb060";
+      ctx.beginPath();
+      ctx.arc(focusX, axisY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      info.textContent = `焦距 ${focus.toFixed(2)} · 目标 ${target.toFixed(2)} · 偏差 ${err.toFixed(3)}`;
+    }
+
+    slider.addEventListener("input", () => {
+      if (aborted) return;
+      focus = parseInt(slider.value, 10) / 100;
+      valueEl.textContent = slider.value;
+      draw();
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const err = Math.abs(focus - target);
+      const thresholds = ln.thresholds || [];
+      let matched = ln.fallback || { tag: "miss", label: "——没对焦", next: null };
+      for (const t of thresholds) {
+        if (err <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveLensRecord(currentNodeId, focus, target, err, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ln-reading";
+      reading.innerHTML = `<div class="ln-reading-title">${matched.label || "解读"} · 偏差 ${err.toFixed(3)}</div>
+        <div class="ln-reading-text">${matched.text || ""}</div>
+        <button class="ln-reading-close">继续</button>`;
+      reading.querySelector(".ln-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.0.0 弦音调音 runTuning
+     node.tuning = {
+       prompt: "调节琴弦张力——让它接近目标音高",
+       strings: [ { id, target, label } ],
+       tolerance: 0.05,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runTuning(tn, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "tuning-layer";
+    layer.id = "tuning-layer";
+    const strings = tn.strings || [];
+    const tolerance = tn.tolerance ?? 0.05;
+    layer.innerHTML = `
+      <div class="tn-prompt">${tn.prompt || "调节琴弦张力——让它接近目标音高"}</div>
+      <div class="tn-stage">
+        <canvas class="tn-canvas" id="tn-canvas"></canvas>
+        <div class="tn-info" id="tn-info">点选琴弦，拖动张力滑块</div>
+      </div>
+      <div class="tn-list" id="tn-list"></div>
+      <div class="tn-slider-wrap">
+        <input type="range" class="tn-slider" id="tn-slider" min="0" max="100" value="50" disabled>
+        <span class="tn-value" id="tn-value">—</span>
+        <button class="tn-pluck" id="tn-pluck" disabled>弹一下</button>
+      </div>
+      <div class="tn-actions">
+        <button class="tn-confirm" id="tn-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#tn-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#tn-info");
+    const listEl = layer.querySelector("#tn-list");
+    const slider = layer.querySelector("#tn-slider");
+    const valueEl = layer.querySelector("#tn-value");
+    const pluckBtn = layer.querySelector("#tn-pluck");
+    const confirmBtn = layer.querySelector("#tn-confirm");
+
+    let aborted = false;
+    let currentIdx = -1;
+    const tensions = strings.map(() => 0.5);
+    let cw = 0, ch = 0;
+    let pluckAnim = { idx: -1, t: 0 };
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#2a1a1a");
+      grad.addColorStop(1, "#0a0505");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      ctx.fillStyle = "#3a2a1a";
+      ctx.strokeStyle = "#8a6040";
+      ctx.lineWidth = 4;
+      ctx.fillRect(cw * 0.1, ch * 0.15, cw * 0.8, ch * 0.7);
+      ctx.strokeRect(cw * 0.1, ch * 0.15, cw * 0.8, ch * 0.7);
+      const stringSpacing = (ch * 0.7) / Math.max(1, strings.length + 1);
+      strings.forEach((s, i) => {
+        const sy = ch * 0.15 + stringSpacing * (i + 1);
+        const isSelected = i === currentIdx;
+        let amp = 0;
+        if (pluckAnim.idx === i) {
+          const elapsed = performance.now() - pluckAnim.t;
+          if (elapsed < 800) {
+            amp = Math.sin(elapsed * 0.04) * 8 * (1 - elapsed / 800);
+          } else {
+            pluckAnim.idx = -1;
+          }
+        }
+        ctx.strokeStyle = isSelected ? "#ffd060" : "#c0a070";
+        ctx.lineWidth = isSelected ? 2.5 : 1.5;
+        ctx.beginPath();
+        const startX = cw * 0.1;
+        const endX = cw * 0.9;
+        if (amp === 0) {
+          ctx.moveTo(startX, sy);
+          ctx.lineTo(endX, sy);
+        } else {
+          ctx.moveTo(startX, sy);
+          for (let x = startX; x <= endX; x += 4) {
+            const phase = (x - startX) / (endX - startX) * Math.PI;
+            ctx.lineTo(x, sy + Math.sin(phase) * amp);
+          }
+        }
+        ctx.stroke();
+        ctx.fillStyle = "rgba(200,168,128,0.7)";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "left";
+        ctx.fillText(s.label || `弦 ${i + 1}`, 8, sy + 4);
+      });
+      if (currentIdx === -1) {
+        info.textContent = "请选择一根琴弦进行调音";
+      } else {
+        const s = strings[currentIdx];
+        const t = tensions[currentIdx];
+        const err = Math.abs(t - s.target);
+        info.textContent = `${s.label || "弦 " + (currentIdx + 1)} · 张力 ${t.toFixed(2)} · 目标 ${s.target.toFixed(2)} · 偏差 ${err.toFixed(3)}`;
+      }
+      if (pluckAnim.idx !== -1) {
+        requestAnimationFrame(draw);
+      }
+    }
+
+    function renderList() {
+      listEl.innerHTML = "";
+      strings.forEach((s, i) => {
+        const btn = document.createElement("button");
+        btn.className = "tn-string" + (currentIdx === i ? " selected" : "");
+        btn.textContent = s.label || `弦 ${i + 1}`;
+        btn.onclick = () => {
+          if (aborted) return;
+          currentIdx = i;
+          slider.disabled = false;
+          pluckBtn.disabled = false;
+          slider.value = Math.round(tensions[i] * 100);
+          valueEl.textContent = slider.value;
+          renderList();
+          draw();
+        };
+        listEl.appendChild(btn);
+      });
+    }
+
+    slider.addEventListener("input", () => {
+      if (aborted || currentIdx === -1) return;
+      tensions[currentIdx] = parseInt(slider.value, 10) / 100;
+      valueEl.textContent = slider.value;
+      draw();
+    });
+
+    pluckBtn.onclick = () => {
+      if (aborted || currentIdx === -1) return;
+      pluckAnim = { idx: currentIdx, t: performance.now() };
+      draw();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let totalDiff = 0;
+      let worstIdx = 0;
+      let worstDiff = 0;
+      strings.forEach((s, i) => {
+        const d = Math.abs(tensions[i] - s.target);
+        totalDiff += d;
+        if (d > worstDiff) { worstDiff = d; worstIdx = i; }
+      });
+      const avgDiff = totalDiff / Math.max(1, strings.length);
+      const thresholds = tn.thresholds || [];
+      let matched = tn.fallback || { tag: "miss", label: "——音不准", next: null };
+      for (const t of thresholds) {
+        if (avgDiff <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveTuningRecord(currentNodeId, worstIdx, tensions[worstIdx], avgDiff, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "tn-reading";
+      reading.innerHTML = `<div class="tn-reading-title">${matched.label || "解读"} · 平均偏差 ${avgDiff.toFixed(3)}</div>
+        <div class="tn-reading-text">${matched.text || ""}</div>
+        <button class="tn-reading-close">继续</button>`;
+      reading.querySelector(".tn-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    renderList();
+    resize();
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -11865,6 +12681,10 @@
     document.querySelectorAll(".telegraph-layer").forEach(e => e.remove());
     document.querySelectorAll(".balance-layer").forEach(e => e.remove());
     document.querySelectorAll(".pendulum-layer").forEach(e => e.remove());
+    document.querySelectorAll(".metronome-layer").forEach(e => e.remove());
+    document.querySelectorAll(".starchart-layer").forEach(e => e.remove());
+    document.querySelectorAll(".lens-layer").forEach(e => e.remove());
+    document.querySelectorAll(".tuning-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
