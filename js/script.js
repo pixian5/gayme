@@ -2801,7 +2801,7 @@ const SCRIPT = {
   d12_weave: {
     day: 12, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "她拿出一只旧织布框。她说——按图上的经纬交替点选，布才会织出该有的纹。她说：经纬不会自己成纹，成纹的是手。",
-    next: "d5_mimic",
+    next: "d13_mirror",
     weave: {
       prompt: "交替点选经纬线，编织目标图案",
       pattern: [
@@ -2818,17 +2818,159 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, kind: 1 },
           memory: { id: "编织·棋盘纹", title: "宿舍里的织框", text: "你按图交替点选经纬，织出一片棋盘纹的布。" },
-          next: "d5_mimic" },
+          next: "d13_mirror" },
         { max: 4, tag: "ok",
           label: "——差不多对",
           text: "经纬差不多到位。她说：差不多——也是一种对。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d5_mimic" }
+          next: "d13_mirror" }
       ],
       fallback: { tag: "miss",
         label: "——织错了",
         text: "经纬完全没按图。她说：织错了——也不是错，只是这次没数清。她把布拆掉。",
+        next: "d13_mirror" }
+    }
+  },
+
+  /* ============ v2.4.0 新玩法触发节点 ============ */
+  // 镜面对称
+  d13_mirror: {
+    day: 13, time: "morning", bg: "art_room", char: null, speaker: "",
+    text: "她拿出一面旧铜镜。她说——点选格子让左半镜像右半，图案才会完整。她说：镜子不会自己对称，对称的是手。",
+    next: "d13_lantern",
+    mirror: {
+      prompt: "点选格子让左半镜像右半",
+      pattern: [
+        [1, 0, 0, 1],
+        [0, 1, 1, 0],
+        [1, 0, 0, 1],
+        [0, 1, 1, 0]
+      ],
+      tolerance: 1,
+      thresholds: [
+        { max: 1, tag: "perfect",
+          label: "——对称了",
+          text: "格子左右完全对称。她说：你看——对称了，镜子就完整了。她想说的不只是镜子。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "镜面·对称", title: "美术室的铜镜", text: "你点选格子让左半镜像右半，图案完整了。" },
+          next: "d13_lantern" },
+        { max: 4, tag: "ok",
+          label: "——差不多对称",
+          text: "格子左右差不多对称。她说：差不多——也算对称。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d13_lantern" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对称",
+        text: "格子左右完全不对称。她说：没对称——也不是错，只是这次没看清楚。她把镜子放下。",
+        next: "d13_lantern" }
+    }
+  },
+
+  // 灯笼排列
+  d13_lantern: {
+    day: 13, time: "noon", bg: "festival", char: null, speaker: "",
+    text: "她指向檐下四盏熄着的灯笼。她说——按我念的顺序点亮它们，光才会一路走到尾。她说：顺序错了，灯也会熄。",
+    next: "d13_ripple",
+    lantern: {
+      prompt: "按顺序点亮灯笼，还原目标序列",
+      target: [2, 0, 3, 1],
+      count: 4,
+      tolerance: 0,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——点亮了",
+          text: "灯笼按顺序一一点亮，光从檐头走到檐尾。她说：你看——顺序对了，光就通了。她想说的不只是灯。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, kind: 1 },
+          memory: { id: "灯笼·顺序", title: "祭典的檐下", text: "你按她念的顺序点亮四盏灯笼，光一路走到尾。" },
+          next: "d13_ripple" },
+        { max: 1, tag: "ok",
+          label: "——差不多对",
+          text: "灯笼顺序差不多对。她说：差不多——也算记住了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d13_ripple" }
+      ],
+      fallback: { tag: "miss",
+        label: "——排错了",
+        text: "灯笼顺序完全错了。她说：排错了——也不是错，只是这次没记清。她把灯笼一盏盏熄掉。",
+        next: "d13_ripple" }
+    }
+  },
+
+  // 水波纹
+  d13_ripple: {
+    day: 13, time: "afternoon", bg: "pond", char: null, speaker: "",
+    text: "她蹲在池边。她说——点击水面，让波纹一圈圈扩散出去，盖住所有浮着的莲瓣。她说：波纹不会自己走，走的是手。",
+    next: "d13_mosaic",
+    ripple: {
+      prompt: "点击水面，让波纹覆盖所有目标点",
+      targets: [
+        { x: 0.25, y: 0.35 },
+        { x: 0.65, y: 0.30 },
+        { x: 0.45, y: 0.60 },
+        { x: 0.80, y: 0.70 }
+      ],
+      tolerance: 0.08,
+      duration: 8000,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——盖住了",
+          text: "波纹一圈圈扩散，每一瓣莲瓣都被轻轻盖住。她说：你看——盖住了，水就完整了。她想说的不只是水。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "波纹·覆盖", title: "校园后的池边", text: "你点击水面，波纹一圈圈扩散，盖住所有莲瓣。" },
+          next: "d13_mosaic" },
+        { max: 1, tag: "ok",
+          label: "——差不多盖住",
+          text: "波纹差不多盖住了莲瓣。她说：差不多——也算盖住了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d13_mosaic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没盖住",
+        text: "波纹完全没盖住莲瓣。她说：没盖住——也不是错，只是这次没算准。她把水搅浑。",
+        next: "d13_mosaic" }
+    }
+  },
+
+  // 马赛克拼图
+  d13_mosaic: {
+    day: 13, time: "evening", bg: "art_room", char: null, speaker: "",
+    text: "她推过来一盒彩色小方块。她说——按图填出形状，马赛克才会成画。她说：方块不会自己成画，成画的是手。",
+    next: "d5_mimic",
+    mosaic: {
+      prompt: "点选小方块，拼出目标图案",
+      pattern: [
+        [0, 1, 1, 0],
+        [1, 1, 1, 1],
+        [1, 1, 1, 1],
+        [0, 1, 1, 0]
+      ],
+      tolerance: 2,
+      thresholds: [
+        { max: 1, tag: "perfect",
+          label: "——拼出来了",
+          text: "方块按图一一落下，马赛克成了一朵花。她说：你看——拼出来了，画就出来了。她想说的不只是画。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, creative: 1 },
+          memory: { id: "马赛克·花", title: "美术室的碎片", text: "你点选彩色方块拼出一朵花的马赛克。" },
+          next: "d5_mimic" },
+        { max: 4, tag: "ok",
+          label: "——差不多拼出",
+          text: "方块差不多拼出形状。她说：差不多——也算拼了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——拼错了",
+        text: "方块完全没按图。她说：拼错了——也不是错，只是这次没看清。她把方块推散。",
         next: "d5_mimic" }
     }
   },

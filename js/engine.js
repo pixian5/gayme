@@ -1092,6 +1092,46 @@
       return;
     }
 
+    // v2.4.0 镜面对称节点
+    if (node.mirror) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runMirror(node.mirror, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.4.0 灯笼排列节点
+    if (node.lantern) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runLantern(node.lantern, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.4.0 水波纹节点
+    if (node.ripple) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runRipple(node.ripple, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.4.0 马赛克拼图节点
+    if (node.mosaic) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runMosaic(node.mosaic, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -14466,6 +14506,551 @@
   }
 
   /* ============================================================
+     v2.4.0 镜面对称 runMirror
+     node.mirror = {
+       prompt: "点选格子让左半镜像右半",
+       pattern: [ [1,0,0,1], [0,1,1,0], [1,0,0,1], [0,1,1,0] ],  // 目标对称图案
+       tolerance: 1,            // 允许错误格数
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runMirror(mi, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "mirror-layer";
+    layer.id = "mirror-layer";
+    const pattern = mi.pattern || [[1,0,0,1],[0,1,1,0],[1,0,0,1],[0,1,1,0]];
+    const rows = pattern.length;
+    const cols = pattern[0].length;
+    const tolerance = mi.tolerance ?? 1;
+    const grid = pattern.map(row => row.map(() => 0));
+    layer.innerHTML = `
+      <div class="mi-prompt">${mi.prompt || "点选格子让左半镜像右半"}</div>
+      <div class="mi-stage">
+        <div class="mi-grid" id="mi-grid"></div>
+        <div class="mi-info" id="mi-info">点击格子切换亮/灭，让图案左右对称</div>
+      </div>
+      <div class="mi-progress" id="mi-progress">0 / ${rows * cols}</div>
+      <div class="mi-actions">
+        <button class="mi-reset">重置</button>
+        <button class="mi-confirm" id="mi-confirm">确认</button>
+      </div>
+    `;
+    const gridEl = layer.querySelector("#mi-grid");
+    const info = layer.querySelector("#mi-info");
+    const progressEl = layer.querySelector("#mi-progress");
+    const confirmBtn = layer.querySelector(".mi-confirm");
+    const resetBtn = layer.querySelector(".mi-reset");
+
+    let aborted = false;
+
+    gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    function render() {
+      gridEl.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "mi-cell";
+          if (grid[r][c] === 1) cell.classList.add("mi-on");
+          cell.addEventListener("click", () => {
+            if (aborted) return;
+            grid[r][c] = grid[r][c] ? 0 : 1;
+            render();
+          });
+          gridEl.appendChild(cell);
+        }
+      }
+      let filled = 0;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (grid[r][c]) filled++;
+      progressEl.textContent = `${filled} / ${rows * cols}`;
+      info.textContent = `已亮 ${filled}/${rows * cols} 格`;
+    }
+    render();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) grid[r][c] = 0;
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] !== pattern[r][c]) mismatched++;
+        }
+      }
+      const thresholds = mi.thresholds || [];
+      let matched = mi.fallback || { tag: "miss", label: "——没对称", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = rows * cols - mismatched;
+      Saves.saveMirrorRecord(currentNodeId, grid, matchedCount, rows * cols, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "mi-reading";
+      reading.innerHTML = `<div class="mi-reading-title">${matched.label || "解读"} · 匹配 ${matchedCount}/${rows * cols} · 错 ${mismatched}</div>
+        <div class="mi-reading-text">${matched.text || ""}</div>
+        <button class="mi-reading-close">继续</button>`;
+      reading.querySelector(".mi-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.4.0 灯笼排列 runLantern
+     node.lantern = {
+       prompt: "按顺序点亮灯笼，还原目标序列",
+       target: [2, 0, 3, 1],     // 目标索引序列
+       count: 4,                  // 灯笼总数
+       tolerance: 0,              // 允许错位数
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runLantern(la, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "lantern-layer";
+    layer.id = "lantern-layer";
+    const target = la.target || [0,1,2,3];
+    const count = la.count || target.length;
+    const tolerance = la.tolerance ?? 0;
+    const order = []; // 玩家点亮的索引
+    layer.innerHTML = `
+      <div class="la-prompt">${la.prompt || "按顺序点亮灯笼，还原目标序列"}</div>
+      <div class="la-stage">
+        <div class="la-target">目标顺序：${target.map(i => "灯" + (i+1)).join(" → ")}</div>
+        <div class="la-lanterns" id="la-lanterns"></div>
+        <div class="la-info" id="la-info">点击灯笼按顺序点亮</div>
+      </div>
+      <div class="la-progress" id="la-progress">0 / ${count}</div>
+      <div class="la-actions">
+        <button class="la-reset">重置</button>
+        <button class="la-confirm" id="la-confirm">确认</button>
+      </div>
+    `;
+    const lanternsEl = layer.querySelector("#la-lanterns");
+    const info = layer.querySelector("#la-info");
+    const progressEl = layer.querySelector("#la-progress");
+    const confirmBtn = layer.querySelector(".la-confirm");
+    const resetBtn = layer.querySelector(".la-reset");
+
+    let aborted = false;
+
+    for (let i = 0; i < count; i++) {
+      const lantern = document.createElement("div");
+      lantern.className = "la-lantern";
+      lantern.dataset.idx = i;
+      lantern.innerHTML = `<div class="la-body">灯${i+1}</div>`;
+      lantern.addEventListener("click", () => {
+        if (aborted) return;
+        if (lantern.classList.contains("la-lit")) return;
+        lantern.classList.add("la-lit");
+        order.push(i);
+        progressEl.textContent = `${order.length} / ${count}`;
+        info.textContent = `已点 ${order.length}/${count}`;
+      });
+      lanternsEl.appendChild(lantern);
+    }
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      order.length = 0;
+      lanternsEl.querySelectorAll(".la-lantern").forEach(l => l.classList.remove("la-lit"));
+      progressEl.textContent = `0 / ${count}`;
+      info.textContent = `点击灯笼按顺序点亮`;
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let i = 0; i < target.length; i++) {
+        if (order[i] !== target[i]) mismatched++;
+      }
+      const thresholds = la.thresholds || [];
+      let matched = la.fallback || { tag: "miss", label: "——排错了", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = target.length - mismatched;
+      Saves.saveLanternRecord(currentNodeId, order, target, matchedCount, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "la-reading";
+      reading.innerHTML = `<div class="la-reading-title">${matched.label || "解读"} · 对 ${matchedCount}/${target.length} · 错 ${mismatched}</div>
+        <div class="la-reading-text">${matched.text || ""}</div>
+        <button class="la-reading-close">继续</button>`;
+      reading.querySelector(".la-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.4.0 水波纹 runRipple
+     node.ripple = {
+       prompt: "点击水面，让波纹覆盖所有目标点",
+       targets: [ {x:0.3,y:0.4}, {x:0.7,y:0.5}, {x:0.5,y:0.7} ],   // 目标位置
+       tolerance: 0.08,
+       duration: 8000,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runRipple(rp, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "ripple-layer";
+    layer.id = "ripple-layer";
+    const targets = rp.targets || [];
+    const tolerance = rp.tolerance ?? 0.08;
+    const duration = rp.duration || 8000;
+    layer.innerHTML = `
+      <div class="ri-prompt">${rp.prompt || "点击水面，让波纹覆盖所有目标点"}</div>
+      <div class="ri-stage">
+        <canvas class="ri-canvas" id="ri-canvas"></canvas>
+        <div class="ri-info" id="ri-info">点击水面产生波纹</div>
+      </div>
+      <div class="ri-progress" id="ri-progress">0 / ${targets.length}</div>
+      <div class="ri-actions">
+        <button class="ri-confirm" id="ri-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ri-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ri-info");
+    const progressEl = layer.querySelector("#ri-progress");
+    const confirmBtn = layer.querySelector("#ri-confirm");
+
+    let aborted = false;
+    const ripples = [];     // { x, y, t }
+    const covered = new Array(targets.length).fill(false);
+    let startTime = Date.now();
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+    }
+
+    function draw() {
+      if (aborted) return;
+      const now = Date.now();
+      const elapsed = now - startTime;
+      ctx.fillStyle = "rgba(10,30,50,0.3)";
+      ctx.fillRect(0, 0, cw, ch);
+      // 目标点
+      targets.forEach((p, i) => {
+        const x = p.x * cw;
+        const y = p.y * ch;
+        ctx.fillStyle = covered[i] ? "rgba(160,240,255,0.9)" : "rgba(255,180,80,0.6)";
+        ctx.beginPath();
+        ctx.arc(x, y, 12, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // 波纹
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const rip = ripples[i];
+        const age = (now - rip.t) / 1000;
+        if (age > 2.5) { ripples.splice(i, 1); continue; }
+        const r = age * 120;
+        ctx.strokeStyle = `rgba(160,240,255,${Math.max(0, 0.7 - age * 0.3)})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(rip.x, rip.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // 检测覆盖
+      targets.forEach((p, i) => {
+        if (covered[i]) return;
+        const px = p.x * cw;
+        const py = p.y * ch;
+        for (const rip of ripples) {
+          const age = (now - rip.t) / 1000;
+          const r = age * 120;
+          const dist = Math.hypot(px - rip.x, py - rip.y);
+          if (Math.abs(dist - r) < 18) {
+            covered[i] = true;
+            break;
+          }
+        }
+      });
+      const coveredCount = covered.filter(c => c).length;
+      progressEl.textContent = `${coveredCount} / ${targets.length}`;
+      info.textContent = `已覆盖 ${coveredCount}/${targets.length} · 时间 ${Math.max(0, (duration - elapsed) / 1000).toFixed(1)}s`;
+      if (elapsed > duration) {
+        confirmBtn.click();
+        return;
+      }
+      requestAnimationFrame(draw);
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (aborted) return;
+      const rect = canvas.getBoundingClientRect();
+      ripples.push({
+        x: (e.clientX - rect.left) * (cw / rect.width),
+        y: (e.clientY - rect.top) * (ch / rect.height),
+        t: Date.now()
+      });
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const coveredCount = covered.filter(c => c).length;
+      const thresholds = rp.thresholds || [];
+      let matched = rp.fallback || { tag: "miss", label: "——没覆盖", next: null };
+      for (const t of thresholds) {
+        if ((targets.length - coveredCount) <= (t.max ?? tolerance * targets.length)) { matched = t; break; }
+      }
+      Saves.saveRippleRecord(currentNodeId, ripples.length, targets.length, targets.length - coveredCount, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ri-reading";
+      reading.innerHTML = `<div class="ri-reading-title">${matched.label || "解读"} · 覆盖 ${coveredCount}/${targets.length}</div>
+        <div class="ri-reading-text">${matched.text || ""}</div>
+        <button class="ri-reading-close">继续</button>`;
+      reading.querySelector(".ri-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+    draw();
+  }
+
+  /* ============================================================
+     v2.4.0 马赛克拼图 runMosaic
+     node.mosaic = {
+       prompt: "点选小方块，拼出目标图案",
+       pattern: [ [0,1,1,0], [1,1,1,1], [1,1,1,1], [0,1,1,0] ],  // 1=填，0=空
+       tolerance: 2,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runMosaic(mo_, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "mosaic-layer";
+    layer.id = "mosaic-layer";
+    const pattern = mo_.pattern || [[0,1,1,0],[1,1,1,1],[1,1,1,1],[0,1,1,0]];
+    const rows = pattern.length;
+    const cols = pattern[0].length;
+    const tolerance = mo_.tolerance ?? 2;
+    const grid = pattern.map(row => row.map(() => 0));
+    layer.innerHTML = `
+      <div class="mo-prompt">${mo_.prompt || "点选小方块，拼出目标图案"}</div>
+      <div class="mo-stage">
+        <div class="mo-target-wrap">
+          <div class="mo-grid mo-target" id="mo-target"></div>
+          <div class="mo-label">目标</div>
+        </div>
+        <div class="mo-current-wrap">
+          <div class="mo-grid mo-current" id="mo-current"></div>
+          <div class="mo-label">当前</div>
+        </div>
+      </div>
+      <div class="mo-info" id="mo-info">点击格子切换填/空</div>
+      <div class="mo-progress" id="mo-progress">0 / ${rows * cols}</div>
+      <div class="mo-actions">
+        <button class="mo-reset">重置</button>
+        <button class="mo-confirm" id="mo-confirm">确认</button>
+      </div>
+    `;
+    const targetEl = layer.querySelector("#mo-target");
+    const currentEl = layer.querySelector("#mo-current");
+    const info = layer.querySelector("#mo-info");
+    const progressEl = layer.querySelector("#mo-progress");
+    const confirmBtn = layer.querySelector(".mo-confirm");
+    const resetBtn = layer.querySelector(".mo-reset");
+
+    let aborted = false;
+
+    [targetEl, currentEl].forEach(el => {
+      el.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      el.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    });
+
+    function renderTarget() {
+      targetEl.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "mo-cell" + (pattern[r][c] ? " mo-on" : "");
+          targetEl.appendChild(cell);
+        }
+      }
+    }
+
+    function renderCurrent() {
+      currentEl.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "mo-cell" + (grid[r][c] ? " mo-on" : "");
+          cell.addEventListener("click", () => {
+            if (aborted) return;
+            grid[r][c] = grid[r][c] ? 0 : 1;
+            renderCurrent();
+          });
+          currentEl.appendChild(cell);
+        }
+      }
+      let filled = 0;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (grid[r][c]) filled++;
+      progressEl.textContent = `${filled} / ${rows * cols}`;
+      info.textContent = `已填 ${filled}/${rows * cols} 格`;
+    }
+    renderTarget();
+    renderCurrent();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) grid[r][c] = 0;
+      renderCurrent();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] !== pattern[r][c]) mismatched++;
+        }
+      }
+      const thresholds = mo_.thresholds || [];
+      let matched = mo_.fallback || { tag: "miss", label: "——拼错了", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = rows * cols - mismatched;
+      Saves.saveMosaicRecord(currentNodeId, grid, matchedCount, rows * cols, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "mo-reading";
+      reading.innerHTML = `<div class="mo-reading-title">${matched.label || "解读"} · 匹配 ${matchedCount}/${rows * cols} · 错 ${mismatched}</div>
+        <div class="mo-reading-text">${matched.text || ""}</div>
+        <button class="mo-reading-close">继续</button>`;
+      reading.querySelector(".mo-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -14795,6 +15380,10 @@
     document.querySelectorAll(".dye-layer").forEach(e => e.remove());
     document.querySelectorAll(".windmill-layer").forEach(e => e.remove());
     document.querySelectorAll(".weave-layer").forEach(e => e.remove());
+    document.querySelectorAll(".mirror-layer").forEach(e => e.remove());
+    document.querySelectorAll(".lantern-layer").forEach(e => e.remove());
+    document.querySelectorAll(".ripple-layer").forEach(e => e.remove());
+    document.querySelectorAll(".mosaic-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

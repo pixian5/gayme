@@ -132,6 +132,12 @@ const DYE_KEY         = "sakura_letters_dye_v2";         // 染缸调色
 const WINDMILL_KEY    = "sakura_letters_windmill_v2";    // 风车叶片
 const WEAVE_KEY       = "sakura_letters_weave_v2";       // 经纬编织
 
+/* v2.4.0 新玩法存储 */
+const MIRROR_KEY      = "sakura_letters_mirror_v2";      // 镜面对称
+const LANTERN_KEY     = "sakura_letters_lantern_v2";     // 灯笼排列
+const RIPPLE_KEY      = "sakura_letters_ripple_v2";      // 水波纹
+const MOSAIC_KEY      = "sakura_letters_mosaic_v2";      // 马赛克拼图
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1727,6 +1733,70 @@ const Saves = {
   },
   getWeaveRecord(nodeId) { return this.getWeaveRecords()[nodeId]; },
 
+  /* ============ v2.4.0 镜面对称 ============ */
+  // { nodeId: { grid, matched, total, tag, ts } }
+  getMirrorRecords() {
+    try {
+      const raw = localStorage.getItem(MIRROR_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveMirrorRecord(nodeId, grid, matched, total, tag) {
+    const all = this.getMirrorRecords();
+    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
+    localStorage.setItem(MIRROR_KEY, JSON.stringify(all));
+    return true;
+  },
+  getMirrorRecord(nodeId) { return this.getMirrorRecords()[nodeId]; },
+
+  /* ============ v2.4.0 灯笼排列 ============ */
+  // { nodeId: { order, target, matched, tag, ts } }
+  getLanternRecords() {
+    try {
+      const raw = localStorage.getItem(LANTERN_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveLanternRecord(nodeId, order, target, matched, tag) {
+    const all = this.getLanternRecords();
+    all[nodeId] = { order, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(LANTERN_KEY, JSON.stringify(all));
+    return true;
+  },
+  getLanternRecord(nodeId) { return this.getLanternRecords()[nodeId]; },
+
+  /* ============ v2.4.0 水波纹 ============ */
+  // { nodeId: { clicks, target, error, tag, ts } }
+  getRippleRecords() {
+    try {
+      const raw = localStorage.getItem(RIPPLE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveRippleRecord(nodeId, clicks, target, error, tag) {
+    const all = this.getRippleRecords();
+    all[nodeId] = { clicks, target, error, tag, ts: Date.now() };
+    localStorage.setItem(RIPPLE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getRippleRecord(nodeId) { return this.getRippleRecords()[nodeId]; },
+
+  /* ============ v2.4.0 马赛克拼图 ============ */
+  // { nodeId: { grid, matched, total, tag, ts } }
+  getMosaicRecords() {
+    try {
+      const raw = localStorage.getItem(MOSAIC_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveMosaicRecord(nodeId, grid, matched, total, tag) {
+    const all = this.getMosaicRecords();
+    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
+    localStorage.setItem(MOSAIC_KEY, JSON.stringify(all));
+    return true;
+  },
+  getMosaicRecord(nodeId) { return this.getMosaicRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1763,7 +1833,8 @@ const Saves = {
      METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY,
      ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY,
      KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
-     SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY].forEach(k => localStorage.removeItem(k));
+     SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
+     MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
