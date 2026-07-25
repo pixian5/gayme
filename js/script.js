@@ -2943,7 +2943,7 @@ const SCRIPT = {
   d13_mosaic: {
     day: 13, time: "evening", bg: "art_room", char: null, speaker: "",
     text: "她推过来一盒彩色小方块。她说——按图填出形状，马赛克才会成画。她说：方块不会自己成画，成画的是手。",
-    next: "d5_mimic",
+    next: "d14_stele",
     mosaic: {
       prompt: "点选小方块，拼出目标图案",
       pattern: [
@@ -2960,17 +2960,146 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, creative: 1 },
           memory: { id: "马赛克·花", title: "美术室的碎片", text: "你点选彩色方块拼出一朵花的马赛克。" },
-          next: "d5_mimic" },
+          next: "d14_stele" },
         { max: 4, tag: "ok",
           label: "——差不多拼出",
           text: "方块差不多拼出形状。她说：差不多——也算拼了。她没再说什么。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d5_mimic" }
+          next: "d14_stele" }
       ],
       fallback: { tag: "miss",
         label: "——拼错了",
         text: "方块完全没按图。她说：拼错了——也不是错，只是这次没看清。她把方块推散。",
+        next: "d14_stele" }
+    }
+  },
+
+  /* ============ v2.5.0 新玩法触发节点 ============ */
+  // 碑帖拼合
+  d14_stele: {
+    day: 14, time: "morning", bg: "library", char: null, speaker: "",
+    text: "图书馆后院立着一块断碑。她说——碎片散了，点两个交换位置，碑文才会重新连上。她说：字不会自己归位，归位的是手。",
+    next: "d14_celestial",
+    stele: {
+      prompt: "点击两个碎片交换位置，拼合碑文",
+      target: [2, 0, 3, 1],
+      tolerance: 0,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——拼上了",
+          text: "碎片一一归位，碑文重新连成一行。她说：你看——拼上了，字就连起来了。她想说的不只是字。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "碑帖·归位", title: "图书馆后院", text: "你交换碎片让碑文重新连成一行。" },
+          next: "d14_celestial" },
+        { max: 1, tag: "ok",
+          label: "——差不多对",
+          text: "碎片差不多归位。她说：差不多——也算拼了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d14_celestial" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没拼上",
+        text: "碎片完全没归位。她说：没拼上——也不是错，只是这次没看清。她把碎片推散。",
+        next: "d14_celestial" }
+    }
+  },
+
+  // 星轨推演
+  d14_celestial: {
+    day: 14, time: "noon", bg: "observatory", char: null, speaker: "",
+    text: "天文社的旧仪还亮着。她说——拖动行星到目标角度，星轨才会对上。她说：行星不会自己走，走的是手。",
+    next: "d14_drum",
+    celestial: {
+      prompt: "拖动行星到目标角度",
+      planets: [
+        { target: 90,  color: "#ff8060" },
+        { target: 200, color: "#80a0ff" },
+        { target: 320, color: "#c0e080" }
+      ],
+      tolerance: 12,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——对上了",
+          text: "行星一一滑到目标角度，星轨连成一线。她说：你看——对上了，星就连起来了。她想说的不只是星。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "星轨·对位", title: "天文社的旧仪", text: "你拖动行星到目标角度，星轨连成一线。" },
+          next: "d14_drum" },
+        { max: 1, tag: "ok",
+          label: "——差不多对",
+          text: "行星差不多到位。她说：差不多——也算对上了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d14_drum" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "行星完全没到位。她说：没对上——也不是错，只是这次没算准。她把仪盘擦了擦。",
+        next: "d14_drum" }
+    }
+  },
+
+  // 节拍鼓点
+  d14_drum: {
+    day: 14, time: "afternoon", bg: "music_room", char: null, speaker: "",
+    text: "音乐教室角落有面旧鼓。她说——听完一遍节奏，再敲出来，鼓才会跟上你。她说：节拍不会自己出来，出来的是手。",
+    next: "d14_vane",
+    drum: {
+      prompt: "按节拍敲击鼓面，复现目标节奏",
+      sequence: [600, 400, 600, 400, 800],
+      tolerance: 160,
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——跟上了",
+          text: "鼓点一拍拍落下，节奏稳稳跟上。她说：你看——跟上了，鼓就活了。她想说的不只是鼓。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "鼓点·节拍", title: "音乐教室的旧鼓", text: "你按节拍敲击鼓面，节奏稳稳跟上。" },
+          next: "d14_vane" },
+        { max: 1, tag: "ok",
+          label: "——差不多跟上",
+          text: "鼓点差不多跟上节奏。她说：差不多——也算跟上了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d14_vane" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没跟上",
+        text: "鼓点完全没跟上节奏。她说：没跟上——也不是错，只是这次没数清。她把鼓收起来。",
+        next: "d14_vane" }
+    }
+  },
+
+  // 风向标
+  d14_vane: {
+    day: 14, time: "evening", bg: "rooftop", char: null, speaker: "",
+    text: "天台上的旧风向标还在转。她说——拖动指针对齐目标方位，风才会找到该去的方向。她说：指针不会自己对上，对上的是手。",
+    next: "d5_mimic",
+    vane: {
+      prompt: "旋转风向标对齐目标方位",
+      target: 135,
+      tolerance: 10,
+      thresholds: [
+        { max: 8, tag: "perfect",
+          label: "——对准了",
+          text: "指针稳稳停在目标方位，风顺着方向吹过来。她说：你看——对准了，风就来了。她想说的不只是风。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, calm: 1 },
+          memory: { id: "风向·对位", title: "天台的旧风向标", text: "你旋转指针对齐目标方位，风顺着方向吹过来。" },
+          next: "d5_mimic" },
+        { max: 20, tag: "ok",
+          label: "——差不多对",
+          text: "指针差不多对准方位。她说：差不多——也算对上了。她没再说什么。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "指针完全没对上方位。她说：没对上——也不是错，只是这次没看清。她把风向标松开。",
         next: "d5_mimic" }
     }
   },

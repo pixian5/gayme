@@ -1132,6 +1132,46 @@
       return;
     }
 
+    // v2.5.0 碑帖拼合节点
+    if (node.stele) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runStele(node.stele, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.5.0 星轨推演节点
+    if (node.celestial) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runCelestial(node.celestial, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.5.0 节拍鼓点节点
+    if (node.drum) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDrum(node.drum, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.5.0 风向标节点
+    if (node.vane) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runVane(node.vane, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -15051,6 +15091,673 @@
   }
 
   /* ============================================================
+     v2.5.0 碑帖拼合 runStele
+     node.stele = {
+       prompt: "拖动碎片到正确位置，拼合碑文",
+       target: [2, 0, 3, 1],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
+       tolerance: 0,           // 允许错位数
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runStele(st, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "stele-layer";
+    layer.id = "stele-layer";
+    const target = st.target || [0,1,2,3];
+    const count = target.length;
+    const tolerance = st.tolerance ?? 0;
+    // 当前每个位置上的碎片索引（初始化为 [0,1,2,3]，玩家点击两个位置交换）
+    const placed = target.map((_, i) => i);
+    layer.innerHTML = `
+      <div class="st-prompt">${st.prompt || "拖动碎片到正确位置，拼合碑文"}</div>
+      <div class="st-stage">
+        <div class="st-slots" id="st-slots"></div>
+        <div class="st-info" id="st-info">点击两个碎片交换位置</div>
+      </div>
+      <div class="st-progress" id="st-progress">0 / ${count}</div>
+      <div class="st-actions">
+        <button class="st-reset">重置</button>
+        <button class="st-confirm" id="st-confirm">确认</button>
+      </div>
+    `;
+    const slotsEl = layer.querySelector("#st-slots");
+    const info = layer.querySelector("#st-info");
+    const progressEl = layer.querySelector("#st-progress");
+    const confirmBtn = layer.querySelector(".st-confirm");
+    const resetBtn = layer.querySelector(".st-reset");
+
+    let aborted = false;
+    let selected = -1;
+
+    slotsEl.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+
+    function render() {
+      slotsEl.innerHTML = "";
+      let correctCount = 0;
+      for (let i = 0; i < count; i++) {
+        const slot = document.createElement("div");
+        slot.className = "st-slot";
+        const fragIdx = placed[i];
+        const isCorrect = (target[i] === fragIdx);
+        if (isCorrect) { slot.classList.add("st-correct"); correctCount++; }
+        if (selected === i) slot.classList.add("st-selected");
+        const frag = document.createElement("div");
+        frag.className = "st-fragment";
+        frag.textContent = "碑" + (fragIdx + 1);
+        slot.appendChild(frag);
+        slot.addEventListener("click", () => {
+          if (aborted) return;
+          if (selected === -1) {
+            selected = i;
+          } else if (selected === i) {
+            selected = -1;
+          } else {
+            // 交换
+            const tmp = placed[selected];
+            placed[selected] = placed[i];
+            placed[i] = tmp;
+            selected = -1;
+          }
+          render();
+        });
+        slotsEl.appendChild(slot);
+      }
+      progressEl.textContent = `${correctCount} / ${count}`;
+      info.textContent = `已对 ${correctCount}/${count} · ${selected === -1 ? "点击碎片选择" : "点击另一碎片交换"}`;
+    }
+    render();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let i = 0; i < count; i++) placed[i] = i;
+      selected = -1;
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let i = 0; i < count; i++) {
+        if (placed[i] !== target[i]) mismatched++;
+      }
+      const thresholds = st.thresholds || [];
+      let matched = st.fallback || { tag: "miss", label: "——没拼上", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = count - mismatched;
+      Saves.saveSteleRecord(currentNodeId, placed, target, matchedCount, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "st-reading";
+      reading.innerHTML = `<div class="st-reading-title">${matched.label || "解读"} · 对 ${matchedCount}/${count} · 错 ${mismatched}</div>
+        <div class="st-reading-text">${matched.text || ""}</div>
+        <button class="st-reading-close">继续</button>`;
+      reading.querySelector(".st-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.5.0 星轨推演 runCelestial
+     node.celestial = {
+       prompt: "滑动行星到目标角度",
+       planets: [ { target: 90, color: "#ff8060" }, { target: 270, color: "#80a0ff" } ],  // 目标角度 0-360
+       tolerance: 8,     // 允许误差度
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runCelestial(ce, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "celestial-layer";
+    layer.id = "celestial-layer";
+    const planets = ce.planets || [];
+    const tolerance = ce.tolerance ?? 8;
+    const angles = planets.map(() => 0);  // 初始角度都为 0
+    layer.innerHTML = `
+      <div class="ce-prompt">${ce.prompt || "滑动行星到目标角度"}</div>
+      <div class="ce-stage">
+        <canvas class="ce-canvas" id="ce-canvas"></canvas>
+        <div class="ce-info" id="ce-info">拖动行星调整角度</div>
+      </div>
+      <div class="ce-progress" id="ce-progress">0 / ${planets.length}</div>
+      <div class="ce-actions">
+        <button class="ce-reset">重置</button>
+        <button class="ce-confirm" id="ce-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ce-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ce-info");
+    const progressEl = layer.querySelector("#ce-progress");
+    const confirmBtn = layer.querySelector(".ce-confirm");
+    const resetBtn = layer.querySelector(".ce-reset");
+
+    let aborted = false;
+    let draggingIdx = -1;
+    let cw = 0, ch = 0, cx = 0, cy = 0, orbitR = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      cx = cw / 2; cy = ch / 2;
+      orbitR = Math.min(cw, ch) * 0.38;
+    }
+
+    function draw() {
+      if (aborted) return;
+      ctx.fillStyle = "rgba(5,10,25,0.6)";
+      ctx.fillRect(0, 0, cw, ch);
+      // 星空背景
+      ctx.fillStyle = "rgba(200,220,255,0.5)";
+      for (let i = 0; i < 40; i++) {
+        const sx = ((i * 73) % cw);
+        const sy = ((i * 137) % ch);
+        ctx.fillRect(sx, sy, 1, 1);
+      }
+      // 轨道
+      ctx.strokeStyle = "rgba(160,200,240,0.3)";
+      ctx.lineWidth = 1;
+      planets.forEach((p, i) => {
+        const r = orbitR * (0.5 + i * 0.25);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      // 中心
+      ctx.fillStyle = "rgba(255,220,150,0.9)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+      ctx.fill();
+      // 行星
+      let correctCount = 0;
+      planets.forEach((p, i) => {
+        const r = orbitR * (0.5 + i * 0.25);
+        const rad = (angles[i] - 90) * Math.PI / 180;
+        const x = cx + Math.cos(rad) * r;
+        const y = cy + Math.sin(rad) * r;
+        const diff = Math.abs(((angles[i] - p.target + 540) % 360) - 180);
+        if (diff <= tolerance) correctCount++;
+        ctx.fillStyle = p.color || "#a0d8ff";
+        ctx.beginPath();
+        ctx.arc(x, y, 10, 0, Math.PI * 2);
+        ctx.fill();
+        if (draggingIdx === i) {
+          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y, 14, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+      progressEl.textContent = `${correctCount} / ${planets.length}`;
+      info.textContent = `已对 ${correctCount}/${planets.length} · ${draggingIdx >= 0 ? "拖动中" : "拖动行星调整角度"}`;
+      requestAnimationFrame(draw);
+    }
+
+    function getPlanetAt(x, y) {
+      for (let i = 0; i < planets.length; i++) {
+        const r = orbitR * (0.5 + i * 0.25);
+        const rad = (angles[i] - 90) * Math.PI / 180;
+        const px = cx + Math.cos(rad) * r;
+        const py = cy + Math.sin(rad) * r;
+        if (Math.hypot(x - px, y - py) < 18) return i;
+      }
+      return -1;
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (aborted) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (cw / rect.width);
+      const y = (e.clientY - rect.top) * (ch / rect.height);
+      draggingIdx = getPlanetAt(x, y);
+    });
+    canvas.addEventListener("mousemove", (e) => {
+      if (aborted || draggingIdx < 0) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (cw / rect.width);
+      const y = (e.clientY - rect.top) * (ch / rect.height);
+      const r = orbitR * (0.5 + draggingIdx * 0.25);
+      // 只在轨道上移动
+      const ang = Math.atan2(y - cy, x - cx) * 180 / Math.PI + 90;
+      angles[draggingIdx] = (ang + 360) % 360;
+    });
+    const stopDrag = () => { draggingIdx = -1; };
+    canvas.addEventListener("mouseup", stopDrag);
+    canvas.addEventListener("mouseleave", stopDrag);
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let i = 0; i < angles.length; i++) angles[i] = 0;
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let totalError = 0;
+      let correctCount = 0;
+      planets.forEach((p, i) => {
+        const diff = Math.abs(((angles[i] - p.target + 540) % 360) - 180);
+        if (diff <= tolerance) correctCount++;
+        totalError += diff;
+      });
+      const thresholds = ce.thresholds || [];
+      let matched = ce.fallback || { tag: "miss", label: "——没对上", next: null };
+      for (const t of thresholds) {
+        if ((planets.length - correctCount) <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveCelestialRecord(currentNodeId, angles.slice(), planets.map(p => p.target), totalError, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ce-reading";
+      reading.innerHTML = `<div class="ce-reading-title">${matched.label || "解读"} · 对 ${correctCount}/${planets.length}</div>
+        <div class="ce-reading-text">${matched.text || ""}</div>
+        <button class="ce-reading-close">继续</button>`;
+      reading.querySelector(".ce-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+    draw();
+  }
+
+  /* ============================================================
+     v2.5.0 节拍鼓点 runDrum
+     node.drum = {
+       prompt: "按节拍敲击鼓面，复现目标节奏",
+       sequence: [800, 400, 800, 400, 400],   // 每次敲击间隔（毫秒）
+       tolerance: 150,    // 允许时间误差毫秒
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runDrum(dr, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "drum-layer";
+    layer.id = "drum-layer";
+    const sequence = dr.sequence || [800, 400, 800];
+    const tolerance = dr.tolerance ?? 150;
+    const hits = [];   // 玩家敲击时间戳
+    let startTime = 0;
+    let listening = false;
+    layer.innerHTML = `
+      <div class="dr-prompt">${dr.prompt || "按节拍敲击鼓面，复现目标节奏"}</div>
+      <div class="dr-stage">
+        <div class="dr-target">目标节奏：${sequence.length} 拍</div>
+        <div class="dr-drum" id="dr-drum">击鼓</div>
+        <div class="dr-info" id="dr-info">点「开始」后按节奏敲击鼓面</div>
+      </div>
+      <div class="dr-progress" id="dr-progress">0 / ${sequence.length}</div>
+      <div class="dr-actions">
+        <button class="dr-start" id="dr-start">开始</button>
+        <button class="dr-confirm" id="dr-confirm" disabled>确认</button>
+      </div>
+    `;
+    const drum = layer.querySelector("#dr-drum");
+    const info = layer.querySelector("#dr-info");
+    const progressEl = layer.querySelector("#dr-progress");
+    const startBtn = layer.querySelector("#dr-start");
+    const confirmBtn = layer.querySelector("#dr-confirm");
+
+    let aborted = false;
+
+    // 演示目标节奏
+    let demoTimers = [];
+    function playDemo() {
+      info.textContent = "听一遍目标节奏…";
+      let t = 0;
+      sequence.forEach((interval, i) => {
+        t += interval;
+        const timer = setTimeout(() => {
+          if (aborted) return;
+          drum.classList.add("dr-flash");
+          setTimeout(() => drum.classList.remove("dr-flash"), 200);
+          if (i === sequence.length - 1) {
+            setTimeout(() => {
+              if (aborted) return;
+              info.textContent = "现在按节奏敲击鼓面！";
+              listening = true;
+              startTime = Date.now();
+            }, 400);
+          }
+        }, t);
+        demoTimers.push(timer);
+      });
+    }
+
+    startBtn.onclick = () => {
+      if (aborted || listening) return;
+      startBtn.disabled = true;
+      playDemo();
+    };
+
+    drum.addEventListener("click", () => {
+      if (aborted || !listening) return;
+      const t = Date.now() - startTime;
+      hits.push(t);
+      progressEl.textContent = `${hits.length} / ${sequence.length}`;
+      drum.classList.add("dr-hit");
+      setTimeout(() => drum.classList.remove("dr-hit"), 100);
+      if (hits.length >= sequence.length) {
+        listening = false;
+        confirmBtn.disabled = false;
+        info.textContent = "完成！点确认查看结果";
+      }
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      // 计算累计误差
+      let totalError = 0;
+      let correctCount = 0;
+      let expected = 0;
+      sequence.forEach((interval, i) => {
+        expected += interval;
+        const actual = hits[i] || 0;
+        const diff = Math.abs(actual - expected);
+        if (diff <= tolerance) correctCount++;
+        totalError += diff;
+      });
+      const thresholds = dr.thresholds || [];
+      let matched = dr.fallback || { tag: "miss", label: "——没跟上", next: null };
+      for (const t of thresholds) {
+        if ((sequence.length - correctCount) <= (t.max ?? 0)) { matched = t; break; }
+      }
+      Saves.saveDrumRecord(currentNodeId, hits.slice(), sequence, correctCount, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "dr-reading";
+      reading.innerHTML = `<div class="dr-reading-title">${matched.label || "解读"} · 对 ${correctCount}/${sequence.length}</div>
+        <div class="dr-reading-text">${matched.text || ""}</div>
+        <button class="dr-reading-close">继续</button>`;
+      reading.querySelector(".dr-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+        demoTimers.forEach(t => clearTimeout(t));
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.5.0 风向标 runVane
+     node.vane = {
+       prompt: "旋转风向标对齐目标方位",
+       target: 135,       // 目标角度 0-360
+       tolerance: 8,     // 允许误差度
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runVane(va, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "vane-layer";
+    layer.id = "vane-layer";
+    const target = va.target ?? 90;
+    const tolerance = va.tolerance ?? 8;
+    let angle = 0;
+    let dragging = false;
+    layer.innerHTML = `
+      <div class="va-prompt">${va.prompt || "旋转风向标对齐目标方位"}</div>
+      <div class="va-stage">
+        <div class="va-target-display">目标方位：${target}°</div>
+        <canvas class="va-canvas" id="va-canvas"></canvas>
+        <div class="va-info" id="va-info">拖动指针调整角度</div>
+      </div>
+      <div class="va-current" id="va-current">当前：0°</div>
+      <div class="va-actions">
+        <button class="va-reset">重置</button>
+        <button class="va-confirm" id="va-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#va-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#va-info");
+    const currentEl = layer.querySelector("#va-current");
+    const confirmBtn = layer.querySelector(".va-confirm");
+    const resetBtn = layer.querySelector(".va-reset");
+
+    let aborted = false;
+    let cw = 0, ch = 0, cx = 0, cy = 0, R = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      cx = cw / 2; cy = ch / 2;
+      R = Math.min(cw, ch) * 0.4;
+    }
+
+    function draw() {
+      if (aborted) return;
+      ctx.fillStyle = "rgba(10,20,30,0.6)";
+      ctx.fillRect(0, 0, cw, ch);
+      // 罗盘外圈
+      ctx.strokeStyle = "rgba(200,220,255,0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, R, 0, Math.PI * 2);
+      ctx.stroke();
+      // 刻度
+      for (let i = 0; i < 360; i += 15) {
+        const rad = (i - 90) * Math.PI / 180;
+        const r1 = R;
+        const r2 = R - (i % 90 === 0 ? 18 : 10);
+        ctx.strokeStyle = i % 90 === 0 ? "rgba(255,220,150,0.9)" : "rgba(180,200,240,0.5)";
+        ctx.lineWidth = i % 90 === 0 ? 2 : 1;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(rad) * r1, cy + Math.sin(rad) * r1);
+        ctx.lineTo(cx + Math.cos(rad) * r2, cy + Math.sin(rad) * r2);
+        ctx.stroke();
+      }
+      // 方位字
+      ctx.fillStyle = "rgba(255,220,150,0.9)";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ["北","东","南","西"].forEach((dir, i) => {
+        const rad = (i * 90 - 90) * Math.PI / 180;
+        ctx.fillText(dir, cx + Math.cos(rad) * (R - 28), cy + Math.sin(rad) * (R - 28));
+      });
+      // 目标角度（虚线）
+      const trad = (target - 90) * Math.PI / 180;
+      ctx.strokeStyle = "rgba(255,180,80,0.8)";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(trad) * R * 0.85, cy + Math.sin(trad) * R * 0.85);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 当前指针
+      const arad = (angle - 90) * Math.PI / 180;
+      ctx.strokeStyle = "#80e0ff";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(arad) * R * 0.85, cy + Math.sin(arad) * R * 0.85);
+      ctx.stroke();
+      // 指针箭头
+      ctx.fillStyle = "#80e0ff";
+      ctx.beginPath();
+      const tipX = cx + Math.cos(arad) * R * 0.85;
+      const tipY = cy + Math.sin(arad) * R * 0.85;
+      ctx.arc(tipX, tipY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 中心
+      ctx.fillStyle = "rgba(180,220,255,0.9)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.fill();
+
+      const diff = Math.abs(((angle - target + 540) % 360) - 180);
+      currentEl.textContent = `当前：${Math.round(angle)}° · 目标：${target}° · 差 ${Math.round(diff)}°`;
+      info.textContent = diff <= tolerance ? "——对齐了！" : "拖动指针调整角度";
+      requestAnimationFrame(draw);
+    }
+
+    function angleFromEvent(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (cw / rect.width);
+      const y = (e.clientY - rect.top) * (ch / rect.height);
+      const ang = Math.atan2(y - cy, x - cx) * 180 / Math.PI + 90;
+      return (ang + 360) % 360;
+    }
+
+    canvas.addEventListener("mousedown", (e) => {
+      if (aborted) return;
+      dragging = true;
+      angle = angleFromEvent(e);
+    });
+    canvas.addEventListener("mousemove", (e) => {
+      if (aborted || !dragging) return;
+      angle = angleFromEvent(e);
+    });
+    const stopDrag = () => { dragging = false; };
+    canvas.addEventListener("mouseup", stopDrag);
+    canvas.addEventListener("mouseleave", stopDrag);
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      angle = 0;
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const diff = Math.abs(((angle - target + 540) % 360) - 180);
+      const thresholds = va.thresholds || [];
+      let matched = va.fallback || { tag: "miss", label: "——没对上", next: null };
+      for (const t of thresholds) {
+        if (diff <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveVaneRecord(currentNodeId, Math.round(angle), target, Math.round(diff), matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "va-reading";
+      reading.innerHTML = `<div class="va-reading-title">${matched.label || "解读"} · 差 ${Math.round(diff)}°</div>
+        <div class="va-reading-text">${matched.text || ""}</div>
+        <button class="va-reading-close">继续</button>`;
+      reading.querySelector(".va-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+    draw();
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -15384,6 +16091,10 @@
     document.querySelectorAll(".lantern-layer").forEach(e => e.remove());
     document.querySelectorAll(".ripple-layer").forEach(e => e.remove());
     document.querySelectorAll(".mosaic-layer").forEach(e => e.remove());
+    document.querySelectorAll(".stele-layer").forEach(e => e.remove());
+    document.querySelectorAll(".celestial-layer").forEach(e => e.remove());
+    document.querySelectorAll(".drum-layer").forEach(e => e.remove());
+    document.querySelectorAll(".vane-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

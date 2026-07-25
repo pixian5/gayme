@@ -7291,3 +7291,313 @@ body {
     padding: 8px 18px; font-size: 13px;
   }
 }
+
+/* ============ v2.5.0 碑帖拼合 ============ */
+.stele-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,30,20,0.96), rgba(15,10,5,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.st-prompt {
+  font-size: 18px; color: #e0c890;
+  letter-spacing: 3px; text-align: center;
+}
+.st-stage {
+  width: min(95%, 540px);
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center;
+}
+.st-slots {
+  display: grid; gap: 8px;
+  width: 100%;
+}
+.st-slot {
+  width: 100%; aspect-ratio: 3/4;
+  background: linear-gradient(180deg, rgba(80,60,40,0.6), rgba(60,40,20,0.4));
+  border: 2px solid rgba(180,140,80,0.4);
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.st-slot:hover { transform: translateY(-3px); border-color: rgba(220,180,120,0.7); }
+.st-slot.st-selected {
+  border-color: #ffd080;
+  box-shadow: 0 0 16px rgba(255,200,120,0.6);
+}
+.st-slot.st-correct {
+  border-color: #b0e890;
+  background: linear-gradient(180deg, rgba(80,120,60,0.5), rgba(60,90,40,0.4));
+}
+.st-fragment {
+  font-size: 18px; color: #ffe8b0;
+  letter-spacing: 4px;
+  text-shadow: 0 0 8px rgba(255,200,100,0.5);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+}
+.st-correct .st-fragment { color: #c0ffb0; }
+.st-info {
+  font-size: 13px; color: #e0c890;
+  text-align: center; letter-spacing: 2px;
+}
+.st-progress {
+  font-size: 14px; color: #e0c890;
+  letter-spacing: 3px;
+}
+.st-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.st-reset, .st-confirm, .st-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(180,140,80,0.5), rgba(140,100,60,0.4));
+  border: 1px solid rgba(220,180,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.st-confirm:disabled, .st-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.st-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,30,20,0.92);
+  border: 1px solid rgba(220,180,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.st-reading-title {
+  font-size: 17px; color: #e0c890;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.st-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.5.0 星轨推演 ============ */
+.celestial-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(15,15,40,0.96), rgba(5,5,15,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ce-prompt {
+  font-size: 18px; color: #b0c8ff;
+  letter-spacing: 3px; text-align: center;
+}
+.ce-stage {
+  width: min(95%, 540px);
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center;
+}
+.ce-canvas {
+  width: 100%; height: 400px;
+  background: linear-gradient(180deg, rgba(10,10,30,0.4), rgba(5,5,15,0.6));
+  border: 1px solid rgba(160,200,255,0.3);
+  border-radius: 12px;
+  cursor: grab;
+}
+.ce-canvas:active { cursor: grabbing; }
+.ce-info {
+  font-size: 13px; color: #b0c8ff;
+  text-align: center; letter-spacing: 2px;
+}
+.ce-progress {
+  font-size: 14px; color: #b0c8ff;
+  letter-spacing: 3px;
+}
+.ce-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ce-reset, .ce-confirm, .ce-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(80,120,200,0.5), rgba(60,90,160,0.4));
+  border: 1px solid rgba(160,200,255,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ce-confirm:disabled, .ce-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.ce-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(15,15,40,0.92);
+  border: 1px solid rgba(160,200,255,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ce-reading-title {
+  font-size: 17px; color: #b0c8ff;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ce-reading-text {
+  font-size: 15px; color: #d0e0ff;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.5.0 节拍鼓点 ============ */
+.drum-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,20,20,0.96), rgba(20,8,8,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.dr-prompt {
+  font-size: 18px; color: #ffb080;
+  letter-spacing: 3px; text-align: center;
+}
+.dr-stage {
+  width: min(95%, 480px);
+  display: flex; flex-direction: column; gap: 14px;
+  align-items: center;
+}
+.dr-target {
+  font-size: 13px; color: #ffb080;
+  letter-spacing: 2px;
+}
+.dr-drum {
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 30% 30%, #c08060, #804020);
+  border: 6px solid #604030;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4), inset 0 0 24px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #ffd8a0;
+  letter-spacing: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.1s, box-shadow 0.2s;
+}
+.dr-drum:hover { box-shadow: 0 12px 32px rgba(0,0,0,0.5), inset 0 0 24px rgba(0,0,0,0.3); }
+.dr-drum.dr-flash {
+  background: radial-gradient(ellipse at 30% 30%, #ffd080, #c06030);
+  transform: scale(1.04);
+  box-shadow: 0 0 40px rgba(255,180,100,0.8);
+}
+.dr-drum.dr-hit {
+  transform: scale(0.96);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5), inset 0 0 32px rgba(0,0,0,0.4);
+}
+.dr-info {
+  font-size: 13px; color: #ffb080;
+  text-align: center; letter-spacing: 2px;
+}
+.dr-progress {
+  font-size: 14px; color: #ffb080;
+  letter-spacing: 3px;
+}
+.dr-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.dr-start, .dr-confirm, .dr-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,120,80,0.5), rgba(160,80,60,0.4));
+  border: 1px solid rgba(255,180,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.dr-start:disabled, .dr-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.dr-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,20,20,0.92);
+  border: 1px solid rgba(255,180,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.dr-reading-title {
+  font-size: 17px; color: #ffb080;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.dr-reading-text {
+  font-size: 15px; color: #f0d0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.5.0 风向标 ============ */
+.vane-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(20,30,40,0.96), rgba(5,15,25,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.va-prompt {
+  font-size: 18px; color: #b0d8e0;
+  letter-spacing: 3px; text-align: center;
+}
+.va-stage {
+  width: min(95%, 480px);
+  display: flex; flex-direction: column; gap: 10px;
+  align-items: center;
+}
+.va-target-display {
+  font-size: 14px; color: #ffd080;
+  letter-spacing: 3px;
+}
+.va-canvas {
+  width: 100%; aspect-ratio: 1;
+  max-height: 400px;
+  background: radial-gradient(ellipse at center, rgba(20,40,50,0.6), rgba(10,20,30,0.4));
+  border: 1px solid rgba(160,220,240,0.3);
+  border-radius: 50%;
+  cursor: grab;
+}
+.va-canvas:active { cursor: grabbing; }
+.va-info {
+  font-size: 13px; color: #b0d8e0;
+  text-align: center; letter-spacing: 2px;
+}
+.va-current {
+  font-size: 14px; color: #b0d8e0;
+  letter-spacing: 3px;
+}
+.va-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.va-reset, .va-confirm, .va-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(80,160,180,0.5), rgba(60,120,140,0.4));
+  border: 1px solid rgba(160,220,240,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.va-confirm:disabled, .va-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.va-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,30,40,0.92);
+  border: 1px solid rgba(160,220,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.va-reading-title {
+  font-size: 17px; color: #b0d8e0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.va-reading-text {
+  font-size: 15px; color: #d0e8f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.5.0 移动端适配 ============ */
+@media (max-width: 768px) {
+  .st-slots { gap: 6px; }
+  .st-fragment { font-size: 14px; letter-spacing: 2px; }
+  .ce-canvas { height: 320px; }
+  .dr-drum { width: 160px; height: 160px; font-size: 18px; }
+  .va-canvas { max-height: 320px; }
+  .st-prompt, .ce-prompt, .dr-prompt, .va-prompt { font-size: 16px; letter-spacing: 2px; }
+  .st-actions button, .st-reading-close,
+  .ce-actions button, .ce-reading-close,
+  .dr-actions button, .dr-reading-close,
+  .va-actions button, .va-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+}

@@ -136,7 +136,13 @@ const WEAVE_KEY       = "sakura_letters_weave_v2";       // 经纬编织
 const MIRROR_KEY      = "sakura_letters_mirror_v2";      // 镜面对称
 const LANTERN_KEY     = "sakura_letters_lantern_v2";     // 灯笼排列
 const RIPPLE_KEY      = "sakura_letters_ripple_v2";      // 水波纹
-const MOSAIC_KEY      = "sakura_letters_mosaic_v2";      // 马赛克拼图
+const MOSAIC_KEY     = "sakura_letters_mosaic_v2";      // 马赛克拼图
+
+/* v2.5.0 新玩法存储 */
+const STELE_KEY       = "sakura_letters_stele_v2";       // 碑帖拼合
+const CELESTIAL_KEY   = "sakura_letters_celestial_v2";   // 星轨推演
+const DRUM_KEY        = "sakura_letters_drum_v2";        // 节拍鼓点
+const VANE_KEY        = "sakura_letters_vane_v2";        // 风向标
 
 const Saves = {
   data: { slots: [], lastSlot: null },
@@ -1797,6 +1803,70 @@ const Saves = {
   },
   getMosaicRecord(nodeId) { return this.getMosaicRecords()[nodeId]; },
 
+  /* ============ v2.5.0 碑帖拼合 ============ */
+  // { nodeId: { placed, target, matched, tag, ts } }
+  getSteleRecords() {
+    try {
+      const raw = localStorage.getItem(STELE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSteleRecord(nodeId, placed, target, matched, tag) {
+    const all = this.getSteleRecords();
+    all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(STELE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSteleRecord(nodeId) { return this.getSteleRecords()[nodeId]; },
+
+  /* ============ v2.5.0 星轨推演 ============ */
+  // { nodeId: { positions, target, error, tag, ts } }
+  getCelestialRecords() {
+    try {
+      const raw = localStorage.getItem(CELESTIAL_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveCelestialRecord(nodeId, positions, target, error, tag) {
+    const all = this.getCelestialRecords();
+    all[nodeId] = { positions, target, error, tag, ts: Date.now() };
+    localStorage.setItem(CELESTIAL_KEY, JSON.stringify(all));
+    return true;
+  },
+  getCelestialRecord(nodeId) { return this.getCelestialRecords()[nodeId]; },
+
+  /* ============ v2.5.0 节拍鼓点 ============ */
+  // { nodeId: { hits, target, matched, tag, ts } }
+  getDrumRecords() {
+    try {
+      const raw = localStorage.getItem(DRUM_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveDrumRecord(nodeId, hits, target, matched, tag) {
+    const all = this.getDrumRecords();
+    all[nodeId] = { hits, target, matched, tag, ts: Date.now() };
+    localStorage.setItem(DRUM_KEY, JSON.stringify(all));
+    return true;
+  },
+  getDrumRecord(nodeId) { return this.getDrumRecords()[nodeId]; },
+
+  /* ============ v2.5.0 风向标 ============ */
+  // { nodeId: { angle, target, error, tag, ts } }
+  getVaneRecords() {
+    try {
+      const raw = localStorage.getItem(VANE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveVaneRecord(nodeId, angle, target, error, tag) {
+    const all = this.getVaneRecords();
+    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
+    localStorage.setItem(VANE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getVaneRecord(nodeId) { return this.getVaneRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1834,7 +1904,8 @@ const Saves = {
      ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY,
      KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
      SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
-     MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY].forEach(k => localStorage.removeItem(k));
+     MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
+     STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
