@@ -5513,6 +5513,23 @@ body {
   .mt-reading-text, .sc-reading-text, .ln-reading-text, .tn-reading-text { font-size: 13px; }
   .tn-list { gap: 6px; }
   .tn-string { padding: 6px 12px; font-size: 13px; }
+  /* v2.1.0 适配 */
+  .ec-canvas { height: 280px; }
+  .st-canvas { height: 280px; }
+  .ab-canvas { height: 280px; }
+  .sp-canvas { height: 280px; }
+  .ec-prompt, .st-prompt, .ab-prompt, .sp-prompt { font-size: 16px; letter-spacing: 2px; }
+  .ec-confirm, .ec-reading-close,
+  .st-confirm, .st-reading-close,
+  .ab-confirm, .ab-reading-close,
+  .sp-actions button, .sp-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+  .ec-reading, .st-reading, .ab-reading, .sp-reading { max-width: 92%; padding: 14px 18px; }
+  .ec-reading-title, .st-reading-title, .ab-reading-title, .sp-reading-title { font-size: 15px; }
+  .ec-reading-text, .st-reading-text, .ab-reading-text, .sp-reading-text { font-size: 13px; }
+  .ab-slider-row { gap: 4px; }
+  .ab-slider-label, .ab-slider-value { font-size: 11px; min-width: 24px; }
 }
 
 /* ============ v1.9.0 罗盘导航 ============ */
@@ -6083,6 +6100,268 @@ body {
   letter-spacing: 4px; margin-bottom: 10px;
 }
 .tn-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.1.0 日蚀对位 ============ */
+.eclipse-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(15,15,40,0.96), rgba(2,2,10,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ec-prompt {
+  font-size: 18px; color: #d8d8e0;
+  letter-spacing: 3px; text-align: center;
+}
+.ec-stage { position: relative; width: min(95%, 560px); }
+.ec-canvas {
+  width: 100%; height: 320px;
+  background: #02020a;
+  border: 1px solid rgba(180,180,220,0.3);
+  border-radius: 14px;
+}
+.ec-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #d8d8e0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ec-slider-wrap {
+  display: flex; align-items: center; gap: 10px;
+  width: min(95%, 560px);
+}
+.ec-slider { flex: 1; accent-color: #d8d8e0; }
+.ec-value {
+  font-size: 14px; color: #d8d8e0;
+  min-width: 30px; text-align: right;
+  letter-spacing: 2px;
+}
+.ec-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ec-confirm, .ec-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(150,150,200,0.5), rgba(100,100,160,0.4));
+  border: 1px solid rgba(200,200,240,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ec-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.ec-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(20,20,40,0.92);
+  border: 1px solid rgba(200,200,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ec-reading-title {
+  font-size: 17px; color: #d8d8e0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ec-reading-text {
+  font-size: 15px; color: #c8c8e0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.1.0 印章对齐 ============ */
+.stamp-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(40,25,15,0.96), rgba(10,5,3,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.st-prompt {
+  font-size: 18px; color: #ffd060;
+  letter-spacing: 3px; text-align: center;
+}
+.st-stage { position: relative; width: min(95%, 560px); }
+.st-canvas {
+  width: 100%; height: 320px;
+  background: #0a0505;
+  border: 1px solid rgba(200,168,128,0.3);
+  border-radius: 14px;
+}
+.st-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd060;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.st-slider-wrap {
+  display: flex; align-items: center; gap: 10px;
+  width: min(95%, 560px);
+}
+.st-slider { flex: 1; accent-color: #ffd060; }
+.st-value {
+  font-size: 14px; color: #ffd060;
+  min-width: 40px; text-align: right;
+  letter-spacing: 2px;
+}
+.st-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.st-confirm, .st-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,80,60,0.6), rgba(160,60,40,0.5));
+  border: 1px solid rgba(220,160,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.st-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.st-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(40,25,15,0.92);
+  border: 1px solid rgba(220,160,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.st-reading-title {
+  font-size: 17px; color: #ffd060;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.st-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.1.0 星盘仪 ============ */
+.astrolabe-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(15,25,40,0.96), rgba(2,5,15,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ab-prompt {
+  font-size: 18px; color: #80d0d0;
+  letter-spacing: 3px; text-align: center;
+}
+.ab-stage { position: relative; width: min(95%, 560px); }
+.ab-canvas {
+  width: 100%; height: 320px;
+  background: #020410;
+  border: 1px solid rgba(120,200,200,0.3);
+  border-radius: 14px;
+}
+.ab-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #80d0d0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ab-sliders {
+  display: flex; flex-direction: column; gap: 6px;
+  width: min(95%, 560px);
+}
+.ab-slider-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.ab-slider-label {
+  font-size: 13px; color: #80d0d0;
+  min-width: 36px; letter-spacing: 2px;
+}
+.ab-slider { flex: 1; accent-color: #80d0d0; }
+.ab-slider-value {
+  font-size: 13px; color: #80d0d0;
+  min-width: 40px; text-align: right;
+  letter-spacing: 2px;
+}
+.ab-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ab-confirm, .ab-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,180,200,0.5), rgba(80,140,180,0.4));
+  border: 1px solid rgba(140,220,240,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ab-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.ab-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(15,25,40,0.92);
+  border: 1px solid rgba(140,220,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ab-reading-title {
+  font-size: 17px; color: #80d0d0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ab-reading-text {
+  font-size: 15px; color: #b0e0e0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.1.0 沙画凝形 ============ */
+.sandpaint-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(50,35,20,0.96), rgba(15,8,3,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.sp-prompt {
+  font-size: 18px; color: #ffd060;
+  letter-spacing: 3px; text-align: center;
+}
+.sp-stage { position: relative; width: min(95%, 560px); }
+.sp-canvas {
+  width: 100%; height: 320px;
+  background: #1a0a05;
+  border: 1px solid rgba(220,180,100,0.3);
+  border-radius: 14px;
+  cursor: crosshair;
+}
+.sp-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd060;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.sp-progress {
+  font-size: 14px; color: #ffd060;
+  letter-spacing: 3px;
+}
+.sp-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.sp-reset, .sp-confirm, .sp-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,168,80,0.5), rgba(160,128,60,0.4));
+  border: 1px solid rgba(220,200,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.sp-confirm:disabled, .sp-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.sp-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(50,35,20,0.92);
+  border: 1px solid rgba(220,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.sp-reading-title {
+  font-size: 17px; color: #ffd060;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.sp-reading-text {
   font-size: 15px; color: #f0e0c0;
   line-height: 1.8; margin-bottom: 14px;
 }

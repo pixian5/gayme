@@ -972,6 +972,46 @@
       return;
     }
 
+    // v2.1.0 日蚀对位节点
+    if (node.eclipse) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runEclipse(node.eclipse, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.1.0 印章对齐节点
+    if (node.stamp) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runStamp(node.stamp, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.1.0 星盘仪节点
+    if (node.astrolabe) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runAstrolabe(node.astrolabe, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.1.0 沙画凝形节点
+    if (node.sandpaint) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runSandpaint(node.sandpaint, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -12368,6 +12408,669 @@
   }
 
   /* ============================================================
+     v2.1.0 日蚀对位 runEclipse
+     node.eclipse = {
+       prompt: "拖动月亮，让它的影子遮住那颗星",
+       target: 0.65,        // 目标位置（0-1）
+       tolerance: 0.05,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runEclipse(ec, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "eclipse-layer";
+    layer.id = "eclipse-layer";
+    layer.innerHTML = `
+      <div class="ec-prompt">${ec.prompt || "拖动月亮，让它的影子遮住那颗星"}</div>
+      <div class="ec-stage">
+        <canvas class="ec-canvas" id="ec-canvas"></canvas>
+        <div class="ec-info" id="ec-info">拖动月亮对齐目标</div>
+      </div>
+      <div class="ec-slider-wrap">
+        <input type="range" class="ec-slider" id="ec-slider" min="0" max="100" value="50">
+        <span class="ec-value" id="ec-value">50</span>
+      </div>
+      <div class="ec-actions">
+        <button class="ec-confirm" id="ec-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ec-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ec-info");
+    const slider = layer.querySelector("#ec-slider");
+    const valueEl = layer.querySelector("#ec-value");
+    const confirmBtn = layer.querySelector("#ec-confirm");
+
+    let aborted = false;
+    const target = ec.target ?? 0.65;
+    const tolerance = ec.tolerance ?? 0.05;
+    let moon = 0.5;
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#0a0a20");
+      grad.addColorStop(1, "#02020a");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cy = ch * 0.5;
+      // 星空
+      for (let i = 0; i < 40; i++) {
+        const sx = (i * 137) % cw;
+        const sy = ((i * 71) % ch);
+        ctx.fillStyle = `rgba(220,220,255,${0.3 + (i % 5) * 0.1})`;
+        ctx.fillRect(sx, sy, 1.5, 1.5);
+      }
+      // 目标星
+      const targetX = cw * 0.1 + target * cw * 0.8;
+      ctx.fillStyle = "#fff080";
+      ctx.beginPath();
+      ctx.arc(targetX, cy, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,240,128,0.4)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(targetX, cy, 22, 0, Math.PI * 2);
+      ctx.stroke();
+      // 月亮
+      const moonX = cw * 0.1 + moon * cw * 0.8;
+      ctx.fillStyle = "#d8d8e0";
+      ctx.beginPath();
+      ctx.arc(moonX, cy, 24, 0, Math.PI * 2);
+      ctx.fill();
+      // 阴影
+      const err = Math.abs(moon - target);
+      const inTol = err <= tolerance;
+      ctx.fillStyle = inTol ? "rgba(40,40,80,0.95)" : "rgba(80,30,30,0.5)";
+      ctx.beginPath();
+      ctx.arc(moonX, cy, 24, 0, Math.PI * 2);
+      ctx.fill();
+      info.textContent = `月亮 ${moon.toFixed(2)} · 目标 ${target.toFixed(2)} · 偏差 ${err.toFixed(3)}`;
+    }
+
+    slider.addEventListener("input", () => {
+      if (aborted) return;
+      moon = parseInt(slider.value, 10) / 100;
+      valueEl.textContent = slider.value;
+      draw();
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const err = Math.abs(moon - target);
+      const thresholds = ec.thresholds || [];
+      let matched = ec.fallback || { tag: "miss", label: "——没遮住", next: null };
+      for (const t of thresholds) {
+        if (err <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveEclipseRecord(currentNodeId, moon, target, err, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ec-reading";
+      reading.innerHTML = `<div class="ec-reading-title">${matched.label || "解读"} · 偏差 ${err.toFixed(3)}</div>
+        <div class="ec-reading-text">${matched.text || ""}</div>
+        <button class="ec-reading-close">继续</button>`;
+      reading.querySelector(".ec-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.1.0 印章对齐 runStamp
+     node.stamp = {
+       prompt: "旋转印章，让图案对齐目标角度",
+       target: 135,          // 目标角度（0-359）
+       tolerance: 5,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runStamp(st, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "stamp-layer";
+    layer.id = "stamp-layer";
+    layer.innerHTML = `
+      <div class="st-prompt">${st.prompt || "旋转印章，让图案对齐目标角度"}</div>
+      <div class="st-stage">
+        <canvas class="st-canvas" id="st-canvas"></canvas>
+        <div class="st-info" id="st-info">拖动滑块调节角度</div>
+      </div>
+      <div class="st-slider-wrap">
+        <input type="range" class="st-slider" id="st-slider" min="0" max="359" value="0">
+        <span class="st-value" id="st-value">0°</span>
+      </div>
+      <div class="st-actions">
+        <button class="st-confirm" id="st-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#st-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#st-info");
+    const slider = layer.querySelector("#st-slider");
+    const valueEl = layer.querySelector("#st-value");
+    const confirmBtn = layer.querySelector("#st-confirm");
+
+    let aborted = false;
+    const target = st.target ?? 135;
+    const tolerance = st.tolerance ?? 5;
+    let angle = 0;
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch));
+      grad.addColorStop(0, "#2a1a0a");
+      grad.addColorStop(1, "#0a0505");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const r = Math.min(cw, ch) * 0.38;
+      // 目标圈
+      ctx.strokeStyle = "rgba(255,150,150,0.6)";
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 目标指示
+      const targetRad = (target - 90) * Math.PI / 180;
+      ctx.strokeStyle = "#ff8080";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(targetRad) * r, cy + Math.sin(targetRad) * r);
+      ctx.stroke();
+      ctx.fillStyle = "#ff5050";
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(targetRad) * r, cy + Math.sin(targetRad) * r, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // 印章圆盘
+      ctx.fillStyle = "rgba(180,60,40,0.85)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#c8a060";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      // 印章图案（三角形指向上）
+      const angleRad = (angle - 90) * Math.PI / 180;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(angleRad);
+      ctx.fillStyle = "#fff0c0";
+      ctx.beginPath();
+      ctx.moveTo(0, -r * 0.6);
+      ctx.lineTo(r * 0.45, r * 0.4);
+      ctx.lineTo(-r * 0.45, r * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      // 印章中心字
+      ctx.fillStyle = "#3a1a0a";
+      ctx.font = `${r * 0.25}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("樱", 0, 0);
+      ctx.restore();
+      // 角度刻度
+      for (let i = 0; i < 12; i++) {
+        const a = i * 30 * Math.PI / 180;
+        const x1 = cx + Math.cos(a) * r * 0.95;
+        const y1 = cy + Math.sin(a) * r * 0.95;
+        const x2 = cx + Math.cos(a) * r * 1.05;
+        const y2 = cy + Math.sin(a) * r * 1.05;
+        ctx.strokeStyle = "rgba(200,168,128,0.5)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      const err = Math.min(Math.abs(angle - target), 360 - Math.abs(angle - target));
+      const inTol = err <= tolerance;
+      ctx.strokeStyle = inTol ? "#80ff80" : "#ffb060";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.88, 0, Math.PI * 2);
+      ctx.stroke();
+      info.textContent = `角度 ${angle}° · 目标 ${target}° · 偏差 ${err.toFixed(1)}°`;
+    }
+
+    slider.addEventListener("input", () => {
+      if (aborted) return;
+      angle = parseInt(slider.value, 10);
+      valueEl.textContent = angle + "°";
+      draw();
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const err = Math.min(Math.abs(angle - target), 360 - Math.abs(angle - target));
+      const thresholds = st.thresholds || [];
+      let matched = st.fallback || { tag: "miss", label: "——盖歪了", next: null };
+      for (const t of thresholds) {
+        if (err <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveStampRecord(currentNodeId, angle, target, err, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "st-reading";
+      reading.innerHTML = `<div class="st-reading-title">${matched.label || "解读"} · 偏差 ${err.toFixed(1)}°</div>
+        <div class="st-reading-text">${matched.text || ""}</div>
+        <button class="st-reading-close">继续</button>`;
+      reading.querySelector(".st-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.1.0 星盘仪 runAstrolabe
+     node.astrolabe = {
+       prompt: "调整三层星盘，对齐目标刻度",
+       targets: [45, 120, 210],  // 三层目标角度
+       tolerance: 6,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runAstrolabe(ab_data, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "astrolabe-layer";
+    layer.id = "astrolabe-layer";
+    const targets = ab_data.targets || [0, 0, 0];
+    layer.innerHTML = `
+      <div class="ab-prompt">${ab_data.prompt || "调整三层星盘，对齐目标刻度"}</div>
+      <div class="ab-stage">
+        <canvas class="ab-canvas" id="ab-canvas"></canvas>
+        <div class="ab-info" id="ab-info">拖动三个滑块对齐目标</div>
+      </div>
+      <div class="ab-sliders" id="ab-sliders"></div>
+      <div class="ab-actions">
+        <button class="ab-confirm" id="ab-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#ab-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#ab-info");
+    const slidersWrap = layer.querySelector("#ab-sliders");
+    const confirmBtn = layer.querySelector("#ab-confirm");
+
+    let aborted = false;
+    const tolerance = ab_data.tolerance ?? 6;
+    const angles = targets.map(() => 0);
+    let cw = 0, ch = 0;
+
+    // 构建三个滑块
+    targets.forEach((t, i) => {
+      const wrap = document.createElement("div");
+      wrap.className = "ab-slider-row";
+      wrap.innerHTML = `
+        <span class="ab-slider-label">层 ${i + 1}</span>
+        <input type="range" class="ab-slider" min="0" max="359" value="0" data-idx="${i}">
+        <span class="ab-slider-value" data-idx="${i}">0°</span>
+      `;
+      slidersWrap.appendChild(wrap);
+      const sl = wrap.querySelector(".ab-slider");
+      const vl = wrap.querySelector(".ab-slider-value");
+      sl.addEventListener("input", () => {
+        if (aborted) return;
+        angles[i] = parseInt(sl.value, 10);
+        vl.textContent = angles[i] + "°";
+        draw();
+      });
+    });
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch));
+      grad.addColorStop(0, "#0a1a2a");
+      grad.addColorStop(1, "#020410");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const r = Math.min(cw, ch) * 0.45;
+      // 三层环
+      const colors = ["#c060c0", "#60c0c0", "#c0c060"];
+      const targetColors = ["#ff6080", "#60ff80", "#ffe060"];
+      for (let i = 0; i < 3; i++) {
+        const layerR = r * (1 - i * 0.28);
+        // 目标
+        const tRad = (targets[i] - 90) * Math.PI / 180;
+        ctx.fillStyle = targetColors[i] + "60";
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(tRad) * layerR, cy + Math.sin(tRad) * layerR, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = targetColors[i];
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(tRad) * layerR, cy + Math.sin(tRad) * layerR);
+        ctx.stroke();
+        // 当前
+        const aRad = (angles[i] - 90) * Math.PI / 180;
+        const err = Math.min(Math.abs(angles[i] - targets[i]), 360 - Math.abs(angles[i] - targets[i]));
+        const inTol = err <= tolerance;
+        ctx.strokeStyle = colors[i];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, layerR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = inTol ? targetColors[i] : colors[i];
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(aRad) * layerR, cy + Math.sin(aRad) * layerR, 7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // 总偏差
+      let totalErr = 0;
+      for (let i = 0; i < 3; i++) {
+        totalErr += Math.min(Math.abs(angles[i] - targets[i]), 360 - Math.abs(angles[i] - targets[i]));
+      }
+      const avgErr = totalErr / 3;
+      info.textContent = `平均偏差 ${avgErr.toFixed(1)}°`;
+    }
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let totalErr = 0;
+      for (let i = 0; i < 3; i++) {
+        totalErr += Math.min(Math.abs(angles[i] - targets[i]), 360 - Math.abs(angles[i] - targets[i]));
+      }
+      const avgErr = totalErr / 3;
+      const thresholds = ab_data.thresholds || [];
+      let matched = ab_data.fallback || { tag: "miss", label: "——没对齐", next: null };
+      for (const t of thresholds) {
+        if (avgErr <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveAstrolabeRecord(currentNodeId, angles, targets, avgErr, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "ab-reading";
+      reading.innerHTML = `<div class="ab-reading-title">${matched.label || "解读"} · 平均偏差 ${avgErr.toFixed(1)}°</div>
+        <div class="ab-reading-text">${matched.text || ""}</div>
+        <button class="ab-reading-close">继续</button>`;
+      reading.querySelector(".ab-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.1.0 沙画凝形 runSandpaint
+     node.sandpaint = {
+       prompt: "在沙盘上点选格子，还原星图",
+       pattern: 5x5 (0/1),     // 目标图案
+       tolerance: 4,            // 允许偏差数
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runSandpaint(sp, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "sandpaint-layer";
+    layer.id = "sandpaint-layer";
+    const pattern = sp.pattern || [];
+    const rows = pattern.length;
+    const cols = pattern[0] ? pattern[0].length : 0;
+    const totalCells = rows * cols;
+    const targetCount = pattern.flat().filter(v => v === 1).length;
+    layer.innerHTML = `
+      <div class="sp-prompt">${sp.prompt || "在沙盘上点选格子，还原星图"}</div>
+      <div class="sp-stage">
+        <canvas class="sp-canvas" id="sp-canvas"></canvas>
+        <div class="sp-info" id="sp-info">点击格子放沙</div>
+      </div>
+      <div class="sp-progress" id="sp-progress">0 / ${targetCount}</div>
+      <div class="sp-actions">
+        <button class="sp-reset">重置</button>
+        <button class="sp-confirm" id="sp-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#sp-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#sp-info");
+    const progressEl = layer.querySelector("#sp-progress");
+    const confirmBtn = layer.querySelector(".sp-confirm");
+    const resetBtn = layer.querySelector(".sp-reset");
+
+    let aborted = false;
+    const tolerance = sp.tolerance ?? 4;
+    const grid = pattern.map(row => row.map(() => 0));
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "#3a2a1a");
+      grad.addColorStop(1, "#1a0a05");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cellW = cw / cols;
+      const cellH = ch / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const x = c * cellW;
+          const y = r * cellH;
+          ctx.strokeStyle = "rgba(200,168,128,0.3)";
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, y, cellW, cellH);
+          if (grid[r][c]) {
+            // 沙粒
+            for (let i = 0; i < 6; i++) {
+              const px = x + cellW * (0.2 + Math.random() * 0.6);
+              const py = y + cellH * (0.2 + Math.random() * 0.6);
+              ctx.fillStyle = "#ffd060";
+              ctx.beginPath();
+              ctx.arc(px, py, 1.8, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+      }
+      const filled = grid.flat().filter(v => v === 1).length;
+      progressEl.textContent = `${filled} / ${targetCount}`;
+      info.textContent = `点选格子放沙（已放 ${filled}）`;
+    }
+
+    canvas.addEventListener("click", (e) => {
+      if (aborted) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const c = Math.floor(x / (cw / cols));
+      const r = Math.floor(y / (ch / rows));
+      if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+      grid[r][c] = grid[r][c] ? 0 : 1;
+      draw();
+    });
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) grid[r][c] = 0;
+      draw();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let matched = 0;
+      let mismatched = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] === pattern[r][c]) {
+            if (pattern[r][c] === 1) matched++;
+          } else {
+            mismatched++;
+          }
+        }
+      }
+      const thresholds = sp.thresholds || [];
+      let matchedOpt = sp.fallback || { tag: "miss", label: "——画错了", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matchedOpt = t; break; }
+      }
+      Saves.saveSandpaintRecord(currentNodeId, grid, matched, targetCount, matchedOpt.tag);
+      if (matchedOpt.add) { applyAdd(matchedOpt.add); updateHeartBar(); }
+      if (matchedOpt.personality) {
+        for (const dim in matchedOpt.personality) Saves.addPersonality(dim, matchedOpt.personality[dim]);
+      }
+      if (matchedOpt.memory) {
+        if (!Saves.isMemoryUnlocked(matchedOpt.memory.id)) {
+          Saves.saveMemory(matchedOpt.memory.id, matchedOpt.memory.text);
+          flashHint(`✦ 新记忆：${matchedOpt.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "sp-reading";
+      reading.innerHTML = `<div class="sp-reading-title">${matchedOpt.label || "解读"} · 匹配 ${matched}/${targetCount} · 偏差 ${mismatched}</div>
+        <div class="sp-reading-text">${matchedOpt.text || ""}</div>
+        <button class="sp-reading-close">继续</button>`;
+      reading.querySelector(".sp-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matchedOpt.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -12685,6 +13388,10 @@
     document.querySelectorAll(".starchart-layer").forEach(e => e.remove());
     document.querySelectorAll(".lens-layer").forEach(e => e.remove());
     document.querySelectorAll(".tuning-layer").forEach(e => e.remove());
+    document.querySelectorAll(".eclipse-layer").forEach(e => e.remove());
+    document.querySelectorAll(".stamp-layer").forEach(e => e.remove());
+    document.querySelectorAll(".astrolabe-layer").forEach(e => e.remove());
+    document.querySelectorAll(".sandpaint-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

@@ -114,6 +114,12 @@ const STARCHART_KEY  = "sakura_letters_starchart_v2";  // 星图连线
 const LENS_KEY        = "sakura_letters_lens_v2";        // 透镜聚焦
 const TUNING_KEY      = "sakura_letters_tuning_v2";      // 弦音调音
 
+/* v2.1.0 新玩法存储 */
+const ECLIPSE_KEY     = "sakura_letters_eclipse_v2";     // 日蚀对位
+const STAMP_KEY       = "sakura_letters_stamp_v2";       // 印章对齐
+const ASTROLABE_KEY   = "sakura_letters_astrolabe_v2";   // 星盘仪
+const SANDPAINT_KEY   = "sakura_letters_sandpaint_v2";   // 沙画凝形
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1517,6 +1523,70 @@ const Saves = {
   },
   getTuningRecord(nodeId) { return this.getTuningRecords()[nodeId]; },
 
+  /* ============ v2.1.0 日蚀对位 ============ */
+  // { nodeId: { moon, target, error, tag, ts } }
+  getEclipseRecords() {
+    try {
+      const raw = localStorage.getItem(ECLIPSE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveEclipseRecord(nodeId, moon, target, error, tag) {
+    const all = this.getEclipseRecords();
+    all[nodeId] = { moon, target, error, tag, ts: Date.now() };
+    localStorage.setItem(ECLIPSE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getEclipseRecord(nodeId) { return this.getEclipseRecords()[nodeId]; },
+
+  /* ============ v2.1.0 印章对齐 ============ */
+  // { nodeId: { angle, target, error, tag, ts } }
+  getStampRecords() {
+    try {
+      const raw = localStorage.getItem(STAMP_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveStampRecord(nodeId, angle, target, error, tag) {
+    const all = this.getStampRecords();
+    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
+    localStorage.setItem(STAMP_KEY, JSON.stringify(all));
+    return true;
+  },
+  getStampRecord(nodeId) { return this.getStampRecords()[nodeId]; },
+
+  /* ============ v2.1.0 星盘仪 ============ */
+  // { nodeId: { angles, targets, avgError, tag, ts } }
+  getAstrolabeRecords() {
+    try {
+      const raw = localStorage.getItem(ASTROLABE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveAstrolabeRecord(nodeId, angles, targets, avgError, tag) {
+    const all = this.getAstrolabeRecords();
+    all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
+    localStorage.setItem(ASTROLABE_KEY, JSON.stringify(all));
+    return true;
+  },
+  getAstrolabeRecord(nodeId) { return this.getAstrolabeRecords()[nodeId]; },
+
+  /* ============ v2.1.0 沙画凝形 ============ */
+  // { nodeId: { grid, matched, total, tag, ts } }
+  getSandpaintRecords() {
+    try {
+      const raw = localStorage.getItem(SANDPAINT_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveSandpaintRecord(nodeId, grid, matched, total, tag) {
+    const all = this.getSandpaintRecords();
+    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
+    localStorage.setItem(SANDPAINT_KEY, JSON.stringify(all));
+    return true;
+  },
+  getSandpaintRecord(nodeId) { return this.getSandpaintRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1550,7 +1620,8 @@ const Saves = {
      KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY,
      FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY,
      COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY,
-     METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY].forEach(k => localStorage.removeItem(k));
+     METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY,
+     ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();

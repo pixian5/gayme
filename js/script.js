@@ -2401,7 +2401,7 @@ const SCRIPT = {
   d9_tuning: {
     day: 9, time: "evening", bg: "music_room", char: null, speaker: "",
     text: "她递给你一把旧琴。她说——三根弦，张力都不对。你把它们调到目标张力。她说：调音是慢活，弦绷太紧会断，太松不响。",
-    next: "d5_mimic",
+    next: "d10_eclipse",
     tuning: {
       prompt: "依次调三根琴弦——让张力接近目标值",
       strings: [
@@ -2417,17 +2417,148 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "弦音·三弦齐", title: "音乐教室的旧琴", text: "你把三根琴弦调到目标张力，弦音干净。" },
-          next: "d5_mimic" },
+          next: "d10_eclipse" },
         { max: 0.12, tag: "ok",
           label: "——差不多准",
           text: "弦音差不多准。她说：差不多——也是一种准。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d10_eclipse" }
       ],
       fallback: { tag: "miss",
         label: "——音不准",
         text: "弦音不准。她说：弦没调好——也没关系，你可以慢慢调。她把琴收回琴盒。",
+        next: "d10_eclipse" }
+    }
+  },
+
+  /* ============ v2.1.0 新玩法触发节点 ============ */
+  // 日蚀对位
+  d10_eclipse: {
+    day: 10, time: "night", bg: "rooftop", char: null, speaker: "",
+    text: "她拉你去天台。一轮月亮，一颗星。她说——把月亮拖到那颗星上，让影子把它遮住。她说：遮住不是消失，遮住是另一种看见。",
+    next: "d10_stamp",
+    eclipse: {
+      prompt: "拖动月亮，让影子遮住目标星",
+      target: 0.65,
+      tolerance: 0.05,
+      thresholds: [
+        { max: 0.05, tag: "perfect",
+          label: "——遮住了",
+          text: "月亮稳稳遮住星。她说：你看——遮住也是一种对齐。她想说的不只是星。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, calm: 1 },
+          memory: { id: "日蚀·遮星", title: "天台的月亮", text: "你把月亮拖到星上，让影子遮住光。" },
+          next: "d10_stamp" },
+        { max: 0.12, tag: "ok",
+          label: "——差一点",
+          text: "影子差一点。她说：差一点也是遮——只是没那么干净。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d10_stamp" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没遮住",
+        text: "影子完全没遮住星。她说：你没遮住——也没关系，星还在。她把月亮推回去。",
+        next: "d10_stamp" }
+    }
+  },
+
+  // 印章对齐
+  d10_stamp: {
+    day: 10, time: "morning", bg: "library", char: null, speaker: "",
+    text: "她递给你一枚旧印章。她说——把它转到正确的角度，盖下去，樱字才会正。她说：盖歪了，字就不再是字。",
+    next: "d10_astrolabe",
+    stamp: {
+      prompt: "旋转印章，让图案对齐目标角度",
+      target: 135,
+      tolerance: 5,
+      thresholds: [
+        { max: 5, tag: "perfect",
+          label: "——盖正了",
+          text: "印章稳稳落在 135°，樱字端端正正。她说：你看——正了，就是正了。她想说的不只是印章。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { honest: 2, careful: 1 },
+          memory: { id: "印章·135°", title: "图书馆的旧印章", text: "你把印章转到 135°，樱字盖得端端正正。" },
+          next: "d10_astrolabe" },
+        { max: 12, tag: "ok",
+          label: "——差不多正",
+          text: "印章差不多正。她说：差不多——也是一种正。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { honest: 1 },
+          next: "d10_astrolabe" }
+      ],
+      fallback: { tag: "miss",
+        label: "——盖歪了",
+        text: "印章盖歪了。她说：歪了——歪了也不是错，只是这一次没对上。她把印章收回盒里。",
+        next: "d10_astrolabe" }
+    }
+  },
+
+  // 星盘仪
+  d10_astrolabe: {
+    day: 10, time: "afternoon", bg: "rooftop", char: null, speaker: "",
+    text: "她拿出一台旧星盘。三层环，三层刻度。她说——把三层都对到目标刻度，星盘才会开口。她说：星盘不会乱指，乱的是拿它的人。",
+    next: "d10_sandpaint",
+    astrolabe: {
+      prompt: "调整三层星盘，对齐目标刻度",
+      targets: [45, 120, 210],
+      tolerance: 6,
+      thresholds: [
+        { max: 6, tag: "perfect",
+          label: "——三层齐",
+          text: "三层环都对上了。她说：你看——三层齐了，星盘才开口。她想说的不只是星盘。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "星盘·三层齐", title: "天台的星盘仪", text: "你把三层星盘都对到目标刻度，星盘开口了。" },
+          next: "d10_sandpaint" },
+        { max: 15, tag: "ok",
+          label: "——差不多齐",
+          text: "三层环差不多齐。她说：差不多——也是一种齐。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d10_sandpaint" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对齐",
+        text: "三层环都没对上。她说：没对齐——也没关系，星盘不会怪你。她把星盘合上。",
+        next: "d10_sandpaint" }
+    }
+  },
+
+  // 沙画凝形
+  d10_sandpaint: {
+    day: 10, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "她拿出一盘沙。一盘沙，一个漏斗，一张暗格纸。她说——按纸上的图，把沙铺回它该在的地方。她说：沙不会自己成图，成图的是手。",
+    next: "d5_mimic",
+    sandpaint: {
+      prompt: "在沙盘上点选格子，还原星图",
+      pattern: [
+        [0, 0, 1, 0, 0],
+        [0, 1, 0, 1, 0],
+        [1, 0, 0, 0, 1],
+        [0, 1, 0, 1, 0],
+        [0, 0, 1, 0, 0]
+      ],
+      tolerance: 4,
+      thresholds: [
+        { max: 1, tag: "perfect",
+          label: "——画对了",
+          text: "沙稳稳落在每一格该在的位置。她说：你看——沙不会撒谎，撒谎的是手。你的手这次没撒谎。她想说的话压在沙下。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, kind: 1 },
+          memory: { id: "沙画·星图", title: "沙盘里的星图", text: "你把沙铺回它该在的地方，星图出现了。" },
+          next: "d5_mimic" },
+        { max: 4, tag: "ok",
+          label: "——差不多对",
+          text: "沙差不多对。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——画错了",
+        text: "沙完全没铺对位置。她说：画错了——错了也不是结束，你可以再铺一次。她把沙推平。",
         next: "d5_mimic" }
     }
   },
