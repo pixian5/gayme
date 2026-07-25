@@ -2530,7 +2530,7 @@ const SCRIPT = {
   d10_sandpaint: {
     day: 10, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "她拿出一盘沙。一盘沙，一个漏斗，一张暗格纸。她说——按纸上的图，把沙铺回它该在的地方。她说：沙不会自己成图，成图的是手。",
-    next: "d5_mimic",
+    next: "d11_kaleido",
     sandpaint: {
       prompt: "在沙盘上点选格子，还原星图",
       pattern: [
@@ -2548,17 +2548,156 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, kind: 1 },
           memory: { id: "沙画·星图", title: "沙盘里的星图", text: "你把沙铺回它该在的地方，星图出现了。" },
-          next: "d5_mimic" },
+          next: "d11_kaleido" },
         { max: 4, tag: "ok",
           label: "——差不多对",
           text: "沙差不多对。她说：差不多——也是一种对。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d5_mimic" }
+          next: "d11_kaleido" }
       ],
       fallback: { tag: "miss",
         label: "——画错了",
         text: "沙完全没铺对位置。她说：画错了——错了也不是结束，你可以再铺一次。她把沙推平。",
+        next: "d11_kaleido" }
+    }
+  },
+
+  /* ============ v2.2.0 新玩法触发节点 ============ */
+  // 万花筒
+  d11_kaleido: {
+    day: 11, time: "morning", bg: "home_room", char: null, speaker: "",
+    text: "她递来一只旧万花筒。她说——转到最后一片彩玻璃归位，图案才会齐。她说：你看到的不是玻璃，是你转出来的对称。",
+    next: "d11_abacus",
+    kaleido: {
+      prompt: "旋转万花筒，让彩色玻璃归位拼出对称图案",
+      target: 240,
+      tolerance: 8,
+      thresholds: [
+        { max: 8, tag: "perfect",
+          label: "——齐了",
+          text: "彩色玻璃一片片归位，对称图案浮现。她说：你看——你转对了，它就齐了。她想说的不只是玻璃。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "万花筒·240°", title: "晨光里的万花筒", text: "你把万花筒转到 240°，对称图案浮现。" },
+          next: "d11_abacus" },
+        { max: 18, tag: "ok",
+          label: "——差不多齐",
+          text: "玻璃差不多归位。她说：差不多——也是一种齐。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d11_abacus" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没齐",
+        text: "玻璃没归位，图案散着。她说：散着——也不是散，只是没转够。她把万花筒轻轻转回去。",
+        next: "d11_abacus" }
+    }
+  },
+
+  // 算盘珠
+  d11_abacus: {
+    day: 11, time: "noon", bg: "library", char: null, speaker: "",
+    text: "她推来一把旧算盘。她说——按我念的数，把珠子拨到对的地方。她说：珠子不会算账，算账的是手和心。",
+    next: "d11_gear",
+    abacus: {
+      prompt: "按目标数拨动算珠",
+      targets: [3, 7, 2],
+      tolerance: 1,
+      thresholds: [
+        { max: 1, tag: "perfect",
+          label: "——拨对了",
+          text: "算珠稳稳停在目标位。她说：你看——拨对了，数就对了。她想说的不只是数。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "算盘·3-7-2", title: "图书馆里的算盘", text: "你把算珠拨到 3-7-2 三个目标位。" },
+          next: "d11_gear" },
+        { max: 3, tag: "ok",
+          label: "——差不多对",
+          text: "算珠差不多到位。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d11_gear" }
+      ],
+      fallback: { tag: "miss",
+        label: "——拨错了",
+        text: "算珠完全没到位。她说：拨错了——也不是错，只是这次没数清。她把算珠拨回原位。",
+        next: "d11_gear" }
+    }
+  },
+
+  // 齿轮咬合
+  d11_gear: {
+    day: 11, time: "afternoon", bg: "workshop", char: null, speaker: "",
+    text: "她拿出一组旧齿轮。她说——把每个齿轮的标记齿都转到顶部，它们才会一起咬住。她说：齿轮不会自己转，转它们的是手。",
+    next: "d11_topo",
+    gear: {
+      prompt: "旋转每个齿轮，让标记齿对齐顶部",
+      teeth: [10, 8, 6],
+      tolerance: 8,
+      thresholds: [
+        { max: 8, tag: "perfect",
+          label: "——咬上了",
+          text: "齿轮一个接一个咬合。她说：你看——咬上了，整组就活了。她想说的不只是齿轮。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "齿轮·三咬合", title: "工坊里的齿轮组", text: "你把三个齿轮的标记齿都转到顶部，整组咬合。" },
+          next: "d11_topo" },
+        { max: 20, tag: "ok",
+          label: "——差不多咬",
+          text: "齿轮差不多咬上。她说：差不多——也是一种咬。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d11_topo" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没咬上",
+        text: "齿轮完全没咬住。她说：没咬上——也不是错，只是这次没对齐。她把齿轮复位。",
+        next: "d11_topo" }
+    }
+  },
+
+  // 等高线
+  d11_topo: {
+    day: 11, time: "evening", bg: "rooftop", char: null, speaker: "",
+    text: "她铺开一张旧地图。她说——在海拔接近目标值的点上做记号，地形才会显出来。她说：等高线不会自己说话，说话的是你做的记号。",
+    next: "d5_mimic",
+    topo: {
+      prompt: "点击海拔接近目标值的点做记号",
+      targetH: 0.6,
+      tolerance: 0.05,
+      points: [
+        { x: 0.20, y: 0.30, h: 0.40 },
+        { x: 0.40, y: 0.25, h: 0.58 },
+        { x: 0.60, y: 0.35, h: 0.62 },
+        { x: 0.80, y: 0.30, h: 0.45 },
+        { x: 0.25, y: 0.55, h: 0.60 },
+        { x: 0.50, y: 0.50, h: 0.55 },
+        { x: 0.75, y: 0.55, h: 0.62 },
+        { x: 0.30, y: 0.75, h: 0.35 },
+        { x: 0.55, y: 0.70, h: 0.58 },
+        { x: 0.75, y: 0.75, h: 0.60 },
+        { x: 0.15, y: 0.50, h: 0.50 },
+        { x: 0.85, y: 0.50, h: 0.55 }
+      ],
+      thresholds: [
+        { max: 0, tag: "perfect",
+          label: "——标对了",
+          text: "记号稳稳落在每一个目标海拔点。她说：你看——你标对了，地形就显出来了。她想说的不只是地形。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, kind: 1 },
+          memory: { id: "等高线·目标海拔", title: "天台上的旧地图", text: "你在海拔 0.6 的目标点上做了记号。" },
+          next: "d5_mimic" },
+        { max: 2, tag: "ok",
+          label: "——差不多对",
+          text: "记号差不多到位。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——标错了",
+        text: "记号完全没落在目标海拔点。她说：标错了——也不是错，只是这次没看清。她把地图折起。",
         next: "d5_mimic" }
     }
   },

@@ -6365,3 +6365,277 @@ body {
   font-size: 15px; color: #f0e0c0;
   line-height: 1.8; margin-bottom: 14px;
 }
+
+/* ============ v2.2.0 万花筒 ============ */
+.kaleido-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(26,10,42,0.96), rgba(5,2,8,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ka-prompt {
+  font-size: 18px; color: #ffa0d0;
+  letter-spacing: 3px; text-align: center;
+}
+.ka-stage { position: relative; width: min(95%, 560px); }
+.ka-canvas {
+  width: 100%; height: 320px;
+  background: #050208;
+  border: 1px solid rgba(220,150,200,0.3);
+  border-radius: 14px;
+}
+.ka-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffa0d0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ka-slider-wrap {
+  display: flex; align-items: center; gap: 14px;
+  width: min(95%, 560px);
+}
+.ka-slider {
+  flex: 1; accent-color: #ffa0d0;
+}
+.ka-value {
+  min-width: 56px; text-align: right;
+  font-size: 14px; color: #ffa0d0;
+  letter-spacing: 2px;
+}
+.ka-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ka-confirm, .ka-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,100,200,0.5), rgba(100,150,255,0.4));
+  border: 1px solid rgba(220,180,220,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ka-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.ka-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(26,10,42,0.92);
+  border: 1px solid rgba(220,180,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ka-reading-title {
+  font-size: 17px; color: #ffa0d0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ka-reading-text {
+  font-size: 15px; color: #f0d0f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.2.0 算盘珠 ============ */
+.abacus-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: linear-gradient(180deg, rgba(58,42,26,0.96), rgba(26,10,5,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.ab_ac-prompt {
+  font-size: 18px; color: #ffd060;
+  letter-spacing: 3px; text-align: center;
+}
+.ab_ac-stage { position: relative; width: min(95%, 560px); }
+.ab_ac-canvas {
+  width: 100%; height: 320px;
+  background: #1a0a05;
+  border: 1px solid rgba(220,180,100,0.3);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.ab_ac-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd060;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.ab_ac-progress {
+  font-size: 14px; color: #ffd060;
+  letter-spacing: 3px;
+}
+.ab_ac-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.ab_ac-confirm, .ab_ac-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,168,80,0.5), rgba(160,128,60,0.4));
+  border: 1px solid rgba(220,200,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.ab_ac-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.ab_ac-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(58,42,26,0.92);
+  border: 1px solid rgba(220,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.ab_ac-reading-title {
+  font-size: 17px; color: #ffd060;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.ab_ac-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.2.0 齿轮咬合 ============ */
+.gear-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(26,42,58,0.96), rgba(5,10,21,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.gr-prompt {
+  font-size: 18px; color: #a0d0ff;
+  letter-spacing: 3px; text-align: center;
+}
+.gr-stage { position: relative; width: min(95%, 560px); }
+.gr-canvas {
+  width: 100%; height: 320px;
+  background: #050a15;
+  border: 1px solid rgba(150,180,220,0.3);
+  border-radius: 14px;
+}
+.gr-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #a0d0ff;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.gr-sliders {
+  display: flex; flex-direction: column; gap: 8px;
+  width: min(95%, 560px);
+}
+.gr-slider-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.gr-slider-label {
+  min-width: 56px; font-size: 13px; color: #a0d0ff;
+  letter-spacing: 2px;
+}
+.gr-slider { flex: 1; accent-color: #a0d0ff; }
+.gr-slider-value {
+  min-width: 56px; text-align: right;
+  font-size: 13px; color: #a0d0ff;
+  letter-spacing: 2px;
+}
+.gr-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.gr-confirm, .gr-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,160,200,0.5), rgba(80,128,160,0.4));
+  border: 1px solid rgba(150,200,240,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.gr-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.gr-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(26,42,58,0.92);
+  border: 1px solid rgba(150,200,240,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.gr-reading-title {
+  font-size: 17px; color: #a0d0ff;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.gr-reading-text {
+  font-size: 15px; color: #d0e0f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.2.0 等高线 ============ */
+.topo-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: linear-gradient(180deg, rgba(26,58,42,0.96), rgba(10,26,21,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.to-prompt {
+  font-size: 18px; color: #a0ffc0;
+  letter-spacing: 3px; text-align: center;
+}
+.to-stage { position: relative; width: min(95%, 560px); }
+.to-canvas {
+  width: 100%; height: 320px;
+  background: #0a1a15;
+  border: 1px solid rgba(150,220,170,0.3);
+  border-radius: 14px;
+  cursor: crosshair;
+}
+.to-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #a0ffc0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.to-progress {
+  font-size: 14px; color: #a0ffc0;
+  letter-spacing: 3px;
+}
+.to-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.to-reset, .to-confirm, .to-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,200,140,0.5), rgba(80,160,100,0.4));
+  border: 1px solid rgba(160,240,180,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.to-confirm:disabled, .to-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.to-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(26,58,42,0.92);
+  border: 1px solid rgba(160,240,180,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.to-reading-title {
+  font-size: 17px; color: #a0ffc0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.to-reading-text {
+  font-size: 15px; color: #d0f0e0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.2.0 移动端适配 ============ */
+@media (max-width: 768px) {
+  .ka-canvas, .ab_ac-canvas, .gr-canvas, .to-canvas { height: 280px; }
+  .ka-prompt, .ab_ac-prompt, .gr-prompt, .to-prompt { font-size: 16px; letter-spacing: 2px; }
+  .ka-actions button, .ka-confirm, .ka-reading-close,
+  .ab_ac-actions button, .ab_ac-reading-close,
+  .gr-actions button, .gr-reading-close,
+  .to-actions button, .to-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+  .gr-sliders { gap: 6px; }
+  .gr-slider-row { gap: 8px; }
+  .gr-slider-label, .gr-slider-value { min-width: 44px; font-size: 12px; }
+}

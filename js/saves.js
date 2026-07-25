@@ -120,6 +120,12 @@ const STAMP_KEY       = "sakura_letters_stamp_v2";       // 印章对齐
 const ASTROLABE_KEY   = "sakura_letters_astrolabe_v2";   // 星盘仪
 const SANDPAINT_KEY   = "sakura_letters_sandpaint_v2";   // 沙画凝形
 
+/* v2.2.0 新玩法存储 */
+const KALEIDO_KEY     = "sakura_letters_kaleido_v2";     // 万花筒
+const ABACUS_KEY      = "sakura_letters_abacus_v2";      // 算盘珠
+const GEAR_KEY        = "sakura_letters_gear_v2";        // 齿轮咬合
+const TOPO_KEY        = "sakura_letters_topo_v2";        // 等高线
+
 const Saves = {
   data: { slots: [], lastSlot: null },
   endings: { unlocked: [], count: 0 },
@@ -1587,6 +1593,70 @@ const Saves = {
   },
   getSandpaintRecord(nodeId) { return this.getSandpaintRecords()[nodeId]; },
 
+  /* ============ v2.2.0 万花筒 ============ */
+  // { nodeId: { angle, target, error, tag, ts } }
+  getKaleidoRecords() {
+    try {
+      const raw = localStorage.getItem(KALEIDO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveKaleidoRecord(nodeId, angle, target, error, tag) {
+    const all = this.getKaleidoRecords();
+    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
+    localStorage.setItem(KALEIDO_KEY, JSON.stringify(all));
+    return true;
+  },
+  getKaleidoRecord(nodeId) { return this.getKaleidoRecords()[nodeId]; },
+
+  /* ============ v2.2.0 算盘珠 ============ */
+  // { nodeId: { counts, targets, diff, tag, ts } }
+  getAbacusRecords() {
+    try {
+      const raw = localStorage.getItem(ABACUS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveAbacusRecord(nodeId, counts, targets, diff, tag) {
+    const all = this.getAbacusRecords();
+    all[nodeId] = { counts, targets, diff, tag, ts: Date.now() };
+    localStorage.setItem(ABACUS_KEY, JSON.stringify(all));
+    return true;
+  },
+  getAbacusRecord(nodeId) { return this.getAbacusRecords()[nodeId]; },
+
+  /* ============ v2.2.0 齿轮咬合 ============ */
+  // { nodeId: { angles, targets, avgError, tag, ts } }
+  getGearRecords() {
+    try {
+      const raw = localStorage.getItem(GEAR_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveGearRecord(nodeId, angles, targets, avgError, tag) {
+    const all = this.getGearRecords();
+    all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
+    localStorage.setItem(GEAR_KEY, JSON.stringify(all));
+    return true;
+  },
+  getGearRecord(nodeId) { return this.getGearRecords()[nodeId]; },
+
+  /* ============ v2.2.0 等高线 ============ */
+  // { nodeId: { points, matched, total, tag, ts } }
+  getTopoRecords() {
+    try {
+      const raw = localStorage.getItem(TOPO_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) { return {}; }
+  },
+  saveTopoRecord(nodeId, points, matched, total, tag) {
+    const all = this.getTopoRecords();
+    all[nodeId] = { points, matched, total, tag, ts: Date.now() };
+    localStorage.setItem(TOPO_KEY, JSON.stringify(all));
+    return true;
+  },
+  getTopoRecord(nodeId) { return this.getTopoRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1621,7 +1691,8 @@ const Saves = {
      FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY,
      COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY,
      METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY,
-     ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY].forEach(k => localStorage.removeItem(k));
+     ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY,
+     KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY].forEach(k => localStorage.removeItem(k));
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
