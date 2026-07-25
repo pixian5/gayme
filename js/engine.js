@@ -1052,6 +1052,46 @@
       return;
     }
 
+    // v2.3.0 日晷对时节点
+    if (node.sundial) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runSundial(node.sundial, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.3.0 染缸调色节点
+    if (node.dye) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runDye(node.dye, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.3.0 风车叶片节点
+    if (node.windmill) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runWindmill(node.windmill, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.3.0 经纬编织节点
+    if (node.weave) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runWeave(node.weave, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -13807,6 +13847,625 @@
   }
 
   /* ============================================================
+     v2.3.0 日晷对时 runSundial
+     node.sundial = {
+       prompt: "旋转日晷指针，对齐目标时间刻度",
+       target: 135,            // 目标角度
+       tolerance: 8,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runSundial(sd, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "sundial-layer";
+    layer.id = "sundial-layer";
+    layer.innerHTML = `
+      <div class="su-prompt">${sd.prompt || "旋转日晷指针，对齐目标时间刻度"}</div>
+      <div class="su-stage">
+        <canvas class="su-canvas" id="su-canvas"></canvas>
+        <div class="su-info" id="su-info">拖动滑块对齐目标时间</div>
+      </div>
+      <div class="su-slider-wrap">
+        <input type="range" class="su-slider" id="su-slider" min="0" max="359" value="0">
+        <span class="su-value" id="su-value">0°</span>
+      </div>
+      <div class="su-actions">
+        <button class="su-confirm" id="su-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#su-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#su-info");
+    const slider = layer.querySelector("#su-slider");
+    const valueEl = layer.querySelector("#su-value");
+    const confirmBtn = layer.querySelector("#su-confirm");
+
+    let aborted = false;
+    const target = sd.target ?? 90;
+    const tolerance = sd.tolerance ?? 8;
+    let angle = 0;
+    let cw = 0, ch = 0;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch));
+      grad.addColorStop(0, "#3a2a1a");
+      grad.addColorStop(1, "#0f0805");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const r = Math.min(cw, ch) * 0.42;
+      // 日晷盘刻度
+      ctx.strokeStyle = "rgba(220,180,100,0.4)";
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r * 0.85, cy + Math.sin(a) * r * 0.85);
+        ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+        ctx.stroke();
+      }
+      // 外圆
+      ctx.strokeStyle = "#ffd060";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      // 目标指针（虚线）
+      const targetRad = (target - 90) * Math.PI / 180;
+      ctx.strokeStyle = "rgba(255,180,80,0.7)";
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(targetRad) * r * 0.9, cy + Math.sin(targetRad) * r * 0.9);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 当前指针
+      const angleRad = (angle - 90) * Math.PI / 180;
+      ctx.strokeStyle = "#ffe080";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(angleRad) * r * 0.9, cy + Math.sin(angleRad) * r * 0.9);
+      ctx.stroke();
+      // 中心
+      const err = Math.min(Math.abs(angle - target), 360 - Math.abs(angle - target));
+      const inTol = err <= tolerance;
+      ctx.fillStyle = inTol ? "#80ff80" : "#ffd060";
+      ctx.beginPath();
+      ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+      ctx.fill();
+      // 时间刻度文本
+      ctx.fillStyle = "rgba(255,208,96,0.7)";
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "center";
+      const hourLabels = ["12","3","6","9"];
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
+        ctx.fillText(hourLabels[i], cx + Math.cos(a) * r * 1.12, cy + Math.sin(a) * r * 1.12 + 4);
+      }
+      info.textContent = `角度 ${angle}° · 目标 ${target}° · 偏差 ${err.toFixed(1)}°`;
+    }
+
+    slider.addEventListener("input", () => {
+      if (aborted) return;
+      angle = parseInt(slider.value, 10);
+      valueEl.textContent = angle + "°";
+      draw();
+    });
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const err = Math.min(Math.abs(angle - target), 360 - Math.abs(angle - target));
+      const thresholds = sd.thresholds || [];
+      let matched = sd.fallback || { tag: "miss", label: "——没对上", next: null };
+      for (const t of thresholds) {
+        if (err <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveSundialRecord(currentNodeId, angle, target, err, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "su-reading";
+      reading.innerHTML = `<div class="su-reading-title">${matched.label || "解读"} · 偏差 ${err.toFixed(1)}°</div>
+        <div class="su-reading-text">${matched.text || ""}</div>
+        <button class="su-reading-close">继续</button>`;
+      reading.querySelector(".su-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.3.0 染缸调色 runDye
+     node.dye = {
+       prompt: "调节三色染缸，调出目标颜色",
+       target: { r: 200, g: 100, b: 80 },
+       tolerance: 30,            // 单通道容差
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runDye(dy, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "dye-layer";
+    layer.id = "dye-layer";
+    const target = dy.target || { r: 200, g: 100, b: 80 };
+    layer.innerHTML = `
+      <div class="dy-prompt">${dy.prompt || "调节三色染缸，调出目标颜色"}</div>
+      <div class="dy-stage">
+        <div class="dy-swatches">
+          <div class="dy-target">
+            <div class="dy-swatch" id="dy-target-swatch"></div>
+            <div class="dy-label">目标</div>
+          </div>
+          <div class="dy-current">
+            <div class="dy-swatch" id="dy-current-swatch"></div>
+            <div class="dy-label">当前</div>
+          </div>
+        </div>
+        <div class="dy-sliders" id="dy-sliders"></div>
+        <div class="dy-info" id="dy-info">拖动滑块调节颜色</div>
+      </div>
+      <div class="dy-actions">
+        <button class="dy-confirm" id="dy-confirm">确认</button>
+      </div>
+    `;
+    const targetSwatch = layer.querySelector("#dy-target-swatch");
+    const currentSwatch = layer.querySelector("#dy-current-swatch");
+    const slidersWrap = layer.querySelector("#dy-sliders");
+    const info = layer.querySelector("#dy-info");
+    const confirmBtn = layer.querySelector("#dy-confirm");
+
+    let aborted = false;
+    const tolerance = dy.tolerance ?? 30;
+    const rgb = { r: 128, g: 128, b: 128 };
+
+    targetSwatch.style.background = `rgb(${target.r}, ${target.g}, ${target.b})`;
+    currentSwatch.style.background = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+
+    ["r", "g", "b"].forEach(ch => {
+      const wrap = document.createElement("div");
+      wrap.className = "dy-slider-row";
+      const labels = { r: "红", g: "绿", b: "蓝" };
+      wrap.innerHTML = `
+        <span class="dy-slider-label">${labels[ch]}</span>
+        <input type="range" class="dy-slider dy-slider-${ch}" min="0" max="255" value="128" data-ch="${ch}">
+        <span class="dy-slider-value" data-ch="${ch}">128</span>
+      `;
+      slidersWrap.appendChild(wrap);
+      const sl = wrap.querySelector(".dy-slider");
+      const vl = wrap.querySelector(".dy-slider-value");
+      sl.addEventListener("input", () => {
+        if (aborted) return;
+        rgb[ch] = parseInt(sl.value, 10);
+        vl.textContent = rgb[ch];
+        currentSwatch.style.background = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+        updateInfo();
+      });
+    });
+
+    function updateInfo() {
+      const dr = rgb.r - target.r;
+      const dg = rgb.g - target.g;
+      const db = rgb.b - target.b;
+      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+      info.textContent = `色差 ${dist.toFixed(0)}（目标 ≤ ${tolerance * 3}）`;
+    }
+    updateInfo();
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      const dr = rgb.r - target.r;
+      const dg = rgb.g - target.g;
+      const db = rgb.b - target.b;
+      const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+      const thresholds = dy.thresholds || [];
+      let matched = dy.fallback || { tag: "miss", label: "——调错了", next: null };
+      for (const t of thresholds) {
+        if (dist <= (t.max ?? tolerance * 3)) { matched = t; break; }
+      }
+      Saves.saveDyeRecord(currentNodeId, rgb, target, dist, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "dy-reading";
+      reading.innerHTML = `<div class="dy-reading-title">${matched.label || "解读"} · 色差 ${dist.toFixed(0)}</div>
+        <div class="dy-reading-text">${matched.text || ""}</div>
+        <button class="dy-reading-close">继续</button>`;
+      reading.querySelector(".dy-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.3.0 风车叶片 runWindmill
+     node.windmill = {
+       prompt: "旋转每个叶片，让风车正对风向",
+       blades: 4,               // 叶片数
+       target: 90,              // 目标角度（风向）
+       tolerance: 8,
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runWindmill(wm, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "windmill-layer";
+    layer.id = "windmill-layer";
+    const blades = wm.blades || 4;
+    const target = wm.target ?? 90;
+    layer.innerHTML = `
+      <div class="wm-prompt">${wm.prompt || "旋转每个叶片，让风车正对风向"}</div>
+      <div class="wm-stage">
+        <canvas class="wm-canvas" id="wm-canvas"></canvas>
+        <div class="wm-info" id="wm-info">拖动滑块对齐风向</div>
+      </div>
+      <div class="wm-sliders" id="wm-sliders"></div>
+      <div class="wm-actions">
+        <button class="wm-confirm" id="wm-confirm">确认</button>
+      </div>
+    `;
+    const canvas = layer.querySelector("#wm-canvas");
+    const ctx = canvas.getContext("2d");
+    const info = layer.querySelector("#wm-info");
+    const slidersWrap = layer.querySelector("#wm-sliders");
+    const confirmBtn = layer.querySelector("#wm-confirm");
+
+    let aborted = false;
+    const tolerance = wm.tolerance ?? 8;
+    const angles = new Array(blades).fill(0);
+    let cw = 0, ch = 0;
+
+    for (let i = 0; i < blades; i++) {
+      const wrap = document.createElement("div");
+      wrap.className = "wm-slider-row";
+      wrap.innerHTML = `
+        <span class="wm-slider-label">叶 ${i + 1}</span>
+        <input type="range" class="wm-slider" min="0" max="359" value="0" data-idx="${i}">
+        <span class="wm-slider-value" data-idx="${i}">0°</span>
+      `;
+      slidersWrap.appendChild(wrap);
+      const sl = wrap.querySelector(".wm-slider");
+      const vl = wrap.querySelector(".wm-slider-value");
+      sl.addEventListener("input", () => {
+        if (aborted) return;
+        angles[i] = parseInt(sl.value, 10);
+        vl.textContent = angles[i] + "°";
+        draw();
+      });
+    }
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = Math.max(1, rect.width);
+      canvas.height = Math.max(1, rect.height);
+      cw = canvas.width; ch = canvas.height;
+      draw();
+    }
+
+    function draw() {
+      const grad = ctx.createRadialGradient(cw / 2, ch / 2, 0, cw / 2, ch / 2, Math.max(cw, ch));
+      grad.addColorStop(0, "#1a3a3a");
+      grad.addColorStop(1, "#051515");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, cw, ch);
+      const cx = cw / 2;
+      const cy = ch / 2;
+      const r = Math.min(cw, ch) * 0.36;
+      // 风向指示
+      const windRad = (target - 90) * Math.PI / 180;
+      ctx.strokeStyle = "rgba(255,200,100,0.6)";
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(cx - Math.cos(windRad) * r * 1.3, cy - Math.sin(windRad) * r * 1.3);
+      ctx.lineTo(cx + Math.cos(windRad) * r * 1.3, cy + Math.sin(windRad) * r * 1.3);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 风向箭头
+      ctx.fillStyle = "#ffd060";
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(windRad) * r * 1.3, cy + Math.sin(windRad) * r * 1.3);
+      ctx.lineTo(cx + Math.cos(windRad + 2.5) * r * 1.15, cy + Math.sin(windRad + 2.5) * r * 1.15);
+      ctx.lineTo(cx + Math.cos(windRad - 2.5) * r * 1.15, cy + Math.sin(windRad - 2.5) * r * 1.15);
+      ctx.closePath();
+      ctx.fill();
+      // 叶片
+      for (let i = 0; i < blades; i++) {
+        const baseAngle = (i / blades) * Math.PI * 2;
+        const angleRad = (angles[i] - 90) * Math.PI / 180;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(baseAngle + angleRad);
+        const bladeGrad = ctx.createLinearGradient(0, 0, r, 0);
+        bladeGrad.addColorStop(0, "rgba(160,220,200,0.9)");
+        bladeGrad.addColorStop(1, "rgba(80,160,140,0.7)");
+        ctx.fillStyle = bladeGrad;
+        ctx.strokeStyle = "#a0d0c0";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, -r * 0.12);
+        ctx.quadraticCurveTo(r * 0.5, -r * 0.18, r, -r * 0.05);
+        ctx.lineTo(r, r * 0.05);
+        ctx.quadraticCurveTo(r * 0.5, r * 0.18, 0, r * 0.12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+      // 中心轴
+      ctx.fillStyle = "#a0d0c0";
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#60807a";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // 平均偏差
+      let totalErr = 0;
+      for (let i = 0; i < angles.length; i++) {
+        totalErr += Math.min(Math.abs(angles[i] - target), 360 - Math.abs(angles[i] - target));
+      }
+      const avgErr = totalErr / angles.length;
+      info.textContent = `平均偏差 ${avgErr.toFixed(1)}°`;
+    }
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let totalErr = 0;
+      for (let i = 0; i < angles.length; i++) {
+        totalErr += Math.min(Math.abs(angles[i] - target), 360 - Math.abs(angles[i] - target));
+      }
+      const avgErr = totalErr / angles.length;
+      const thresholds = wm.thresholds || [];
+      let matched = wm.fallback || { tag: "miss", label: "——没对齐", next: null };
+      for (const t of thresholds) {
+        if (avgErr <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      Saves.saveWindmillRecord(currentNodeId, angles, target, avgErr, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "wm-reading";
+      reading.innerHTML = `<div class="wm-reading-title">${matched.label || "解读"} · 平均偏差 ${avgErr.toFixed(1)}°</div>
+        <div class="wm-reading-text">${matched.text || ""}</div>
+        <button class="wm-reading-close">继续</button>`;
+      reading.querySelector(".wm-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+    resize();
+  }
+
+  /* ============================================================
+     v2.3.0 经纬编织 runWeave
+     node.weave = {
+       prompt: "交替点选经纬线，编织目标图案",
+       pattern: [ [0,1,0,1], [1,0,1,0], [0,1,0,1], [1,0,1,0] ], // 目标图案，1=经，0=纬
+       tolerance: 2,            // 允许错误格数
+       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
+       fallback: { tag, next }
+     }
+     ============================================================ */
+  function runWeave(wv, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "weave-layer";
+    layer.id = "weave-layer";
+    const pattern = wv.pattern || [[0,1],[1,0]];
+    const rows = pattern.length;
+    const cols = pattern[0].length;
+    const tolerance = wv.tolerance ?? 2;
+    // 玩家选择：0=未定, 1=经(深色), 2=纬(浅色)
+    const grid = pattern.map(row => row.map(() => 0));
+    layer.innerHTML = `
+      <div class="wv-prompt">${wv.prompt || "交替点选经纬线，编织目标图案"}</div>
+      <div class="wv-stage">
+        <div class="wv-grid" id="wv-grid"></div>
+        <div class="wv-info" id="wv-info">点击格子切换经纬</div>
+      </div>
+      <div class="wv-progress" id="wv-progress">0 / ${rows * cols}</div>
+      <div class="wv-actions">
+        <button class="wv-reset">重置</button>
+        <button class="wv-confirm" id="wv-confirm">确认</button>
+      </div>
+    `;
+    const gridEl = layer.querySelector("#wv-grid");
+    const info = layer.querySelector("#wv-info");
+    const progressEl = layer.querySelector("#wv-progress");
+    const confirmBtn = layer.querySelector(".wv-confirm");
+    const resetBtn = layer.querySelector(".wv-reset");
+
+    let aborted = false;
+
+    gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    gridEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+    function render() {
+      gridEl.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = document.createElement("div");
+          cell.className = "wv-cell";
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          if (grid[r][c] === 1) cell.classList.add("wv-warp");
+          else if (grid[r][c] === 2) cell.classList.add("wv-weft");
+          cell.addEventListener("click", () => {
+            if (aborted) return;
+            grid[r][c] = (grid[r][c] + 1) % 3;
+            render();
+          });
+          gridEl.appendChild(cell);
+        }
+      }
+      // 进度
+      let filled = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (grid[r][c] !== 0) filled++;
+        }
+      }
+      progressEl.textContent = `${filled} / ${rows * cols}`;
+      info.textContent = `已填 ${filled}/${rows * cols} 格`;
+    }
+    render();
+
+    resetBtn.onclick = () => {
+      if (aborted) return;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) grid[r][c] = 0;
+      }
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (aborted) return;
+      aborted = true;
+      confirmBtn.disabled = true;
+      let mismatched = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const expected = pattern[r][c];
+          const actual = grid[r][c] === 1 ? 1 : (grid[r][c] === 2 ? 0 : -1);
+          if (actual === -1 || actual !== expected) mismatched++;
+        }
+      }
+      const thresholds = wv.thresholds || [];
+      let matched = wv.fallback || { tag: "miss", label: "——编错了", next: null };
+      for (const t of thresholds) {
+        if (mismatched <= (t.max ?? tolerance)) { matched = t; break; }
+      }
+      const matchedCount = rows * cols - mismatched;
+      Saves.saveWeaveRecord(currentNodeId, grid, matchedCount, rows * cols, matched.tag);
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      if (matched.memory) {
+        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
+          Saves.saveMemory(matched.memory.id, matched.memory.text);
+          flashHint(`✦ 新记忆：${matched.memory.title}`);
+        }
+      }
+      const reading = document.createElement("div");
+      reading.className = "wv-reading";
+      reading.innerHTML = `<div class="wv-reading-title">${matched.label || "解读"} · 匹配 ${matchedCount}/${rows * cols} · 错 ${mismatched}</div>
+        <div class="wv-reading-text">${matched.text || ""}</div>
+        <button class="wv-reading-close">继续</button>`;
+      reading.querySelector(".wv-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    const mo = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        aborted = true;
+        if (mo) mo.disconnect();
+      }
+    });
+    mo.observe(document.getElementById("game"), { childList: true });
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -14132,6 +14791,10 @@
     document.querySelectorAll(".abacus-layer").forEach(e => e.remove());
     document.querySelectorAll(".gear-layer").forEach(e => e.remove());
     document.querySelectorAll(".topo-layer").forEach(e => e.remove());
+    document.querySelectorAll(".sundial-layer").forEach(e => e.remove());
+    document.querySelectorAll(".dye-layer").forEach(e => e.remove());
+    document.querySelectorAll(".windmill-layer").forEach(e => e.remove());
+    document.querySelectorAll(".weave-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

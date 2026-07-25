@@ -2661,7 +2661,7 @@ const SCRIPT = {
   d11_topo: {
     day: 11, time: "evening", bg: "rooftop", char: null, speaker: "",
     text: "她铺开一张旧地图。她说——在海拔接近目标值的点上做记号，地形才会显出来。她说：等高线不会自己说话，说话的是你做的记号。",
-    next: "d5_mimic",
+    next: "d12_sundial",
     topo: {
       prompt: "点击海拔接近目标值的点做记号",
       targetH: 0.6,
@@ -2687,17 +2687,148 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, kind: 1 },
           memory: { id: "等高线·目标海拔", title: "天台上的旧地图", text: "你在海拔 0.6 的目标点上做了记号。" },
-          next: "d5_mimic" },
+          next: "d12_sundial" },
         { max: 2, tag: "ok",
           label: "——差不多对",
           text: "记号差不多到位。她说：差不多——也是一种对。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d5_mimic" }
+          next: "d12_sundial" }
       ],
       fallback: { tag: "miss",
         label: "——标错了",
         text: "记号完全没落在目标海拔点。她说：标错了——也不是错，只是这次没看清。她把地图折起。",
+        next: "d12_sundial" }
+    }
+  },
+
+  /* ============ v2.3.0 新玩法触发节点 ============ */
+  // 日晷对时
+  d12_sundial: {
+    day: 12, time: "morning", bg: "rooftop", char: null, speaker: "",
+    text: "她搬来一座旧日晷。她说——把晷针转到目标刻度，时间才会回到该回的位置。她说：时间不会自己走，走它的是拿晷针的人。",
+    next: "d12_dye",
+    sundial: {
+      prompt: "旋转日晷指针，对齐目标时间刻度",
+      target: 135,
+      tolerance: 8,
+      thresholds: [
+        { max: 8, tag: "perfect",
+          label: "——对上了",
+          text: "晷针稳稳落在 135°，影子指向正确的时间。她说：你看——对上了，时间就回来了。她想说的不只是时间。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "日晷·135°", title: "天台上的日晷", text: "你把晷针转到 135°，影子指向正确的时间。" },
+          next: "d12_dye" },
+        { max: 18, tag: "ok",
+          label: "——差不多对",
+          text: "晷针差不多对上。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d12_dye" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没对上",
+        text: "晷针完全没对上目标。她说：没对上——也不是错，只是这次没看清时辰。她把日晷转回去。",
+        next: "d12_dye" }
+    }
+  },
+
+  // 染缸调色
+  d12_dye: {
+    day: 12, time: "noon", bg: "art_room", char: null, speaker: "",
+    text: "她推来一口染缸。她说——把三种染料按对的比例倒进去，布才会染出该有的颜色。她说：颜色不会自己出来，出来的是调它的人。",
+    next: "d12_windmill",
+    dye: {
+      prompt: "调节三色染料，染出目标颜色",
+      target: { r: 180, g: 80, b: 140 },
+      tolerance: 25,
+      thresholds: [
+        { max: 75, tag: "perfect",
+          label: "——染对了",
+          text: "染料在缸中融成目标色，布浸下去浮上来一片正色。她说：你看——染对了，色就对了。她想说的不只是颜色。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, kind: 1 },
+          memory: { id: "染缸·玫红", title: "美术室的染缸", text: "你把染料调到目标色，染出一块玫红的布。" },
+          next: "d12_windmill" },
+        { max: 150, tag: "ok",
+          label: "——差不多对",
+          text: "染料差不多到位。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d12_windmill" }
+      ],
+      fallback: { tag: "miss",
+        label: "——染错了",
+        text: "颜色完全不对。她说：染错了——也不是错，只是这次没调准。她把布拧干。",
+        next: "d12_windmill" }
+    }
+  },
+
+  // 风车叶片
+  d12_windmill: {
+    day: 12, time: "afternoon", bg: "field", char: null, speaker: "",
+    text: "她带你到操场边的小风车前。她说——把每个叶片都转到正对风向，风车才会真正转起来。她说：风不会自己找叶片，找叶片的是手。",
+    next: "d12_weave",
+    windmill: {
+      prompt: "旋转每个叶片，让风车正对风向",
+      blades: 4,
+      target: 90,
+      tolerance: 8,
+      thresholds: [
+        { max: 8, tag: "perfect",
+          label: "——正了",
+          text: "四片叶片一齐正对风向，风车开始稳稳转动。她说：你看——正了，风就愿意来了。她想说的不只是风车。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, honest: 1 },
+          memory: { id: "风车·四叶正", title: "操场边的风车", text: "你把四片叶片都正对风向，风车开始转动。" },
+          next: "d12_weave" },
+        { max: 20, tag: "ok",
+          label: "——差不多正",
+          text: "叶片差不多正。她说：差不多——也是一种正。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d12_weave" }
+      ],
+      fallback: { tag: "miss",
+        label: "——没正",
+        text: "叶片完全没对上风向。她说：没正——也不是错，只是这次没找到风。她把风车停下。",
+        next: "d12_weave" }
+    }
+  },
+
+  // 经纬编织
+  d12_weave: {
+    day: 12, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "她拿出一只旧织布框。她说——按图上的经纬交替点选，布才会织出该有的纹。她说：经纬不会自己成纹，成纹的是手。",
+    next: "d5_mimic",
+    weave: {
+      prompt: "交替点选经纬线，编织目标图案",
+      pattern: [
+        [0, 1, 0, 1],
+        [1, 0, 1, 0],
+        [0, 1, 0, 1],
+        [1, 0, 1, 0]
+      ],
+      tolerance: 2,
+      thresholds: [
+        { max: 1, tag: "perfect",
+          label: "——织对了",
+          text: "经纬稳稳按图交替，布纹浮现出来。她说：你看——织对了，纹就出来了。她想说的不只是布。",
+          add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
+          personality: { careful: 2, kind: 1 },
+          memory: { id: "编织·棋盘纹", title: "宿舍里的织框", text: "你按图交替点选经纬，织出一片棋盘纹的布。" },
+          next: "d5_mimic" },
+        { max: 4, tag: "ok",
+          label: "——差不多对",
+          text: "经纬差不多到位。她说：差不多——也是一种对。她不再多说。",
+          add: { affection: { shen: 1 } },
+          personality: { careful: 1 },
+          next: "d5_mimic" }
+      ],
+      fallback: { tag: "miss",
+        label: "——织错了",
+        text: "经纬完全没按图。她说：织错了——也不是错，只是这次没数清。她把布拆掉。",
         next: "d5_mimic" }
     }
   },

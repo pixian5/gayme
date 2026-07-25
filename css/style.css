@@ -6639,3 +6639,318 @@ body {
   .gr-slider-row { gap: 8px; }
   .gr-slider-label, .gr-slider-value { min-width: 44px; font-size: 12px; }
 }
+
+/* ============ v2.3.0 日晷对时 ============ */
+.sundial-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(58,42,26,0.96), rgba(15,8,5,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.su-prompt {
+  font-size: 18px; color: #ffd060;
+  letter-spacing: 3px; text-align: center;
+}
+.su-stage { position: relative; width: min(95%, 560px); }
+.su-canvas {
+  width: 100%; height: 320px;
+  background: #0f0805;
+  border: 1px solid rgba(220,180,100,0.3);
+  border-radius: 14px;
+}
+.su-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #ffd060;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.su-slider-wrap {
+  display: flex; align-items: center; gap: 14px;
+  width: min(95%, 560px);
+}
+.su-slider { flex: 1; accent-color: #ffd060; }
+.su-value {
+  min-width: 56px; text-align: right;
+  font-size: 14px; color: #ffd060;
+  letter-spacing: 2px;
+}
+.su-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.su-confirm, .su-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(220,168,80,0.5), rgba(180,128,60,0.4));
+  border: 1px solid rgba(240,200,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.su-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.su-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(58,42,26,0.92);
+  border: 1px solid rgba(240,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.su-reading-title {
+  font-size: 17px; color: #ffd060;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.su-reading-text {
+  font-size: 15px; color: #f0e0c0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.3.0 染缸调色 ============ */
+.dye-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(42,26,58,0.96), rgba(8,5,15,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.dy-prompt {
+  font-size: 18px; color: #ffa0d0;
+  letter-spacing: 3px; text-align: center;
+}
+.dy-stage {
+  width: min(95%, 560px);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.dy-swatches {
+  display: flex; gap: 24px; justify-content: center;
+}
+.dy-target, .dy-current {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.dy-swatch {
+  width: 100px; height: 100px;
+  border-radius: 14px;
+  border: 2px solid rgba(220,180,220,0.4);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+}
+.dy-label {
+  font-size: 13px; color: #ffa0d0;
+  letter-spacing: 2px;
+}
+.dy-sliders {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.dy-slider-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.dy-slider-label {
+  min-width: 36px; font-size: 13px; color: #ffa0d0;
+  letter-spacing: 2px;
+}
+.dy-slider { flex: 1; }
+.dy-slider-r { accent-color: #ff6060; }
+.dy-slider-g { accent-color: #60ff60; }
+.dy-slider-b { accent-color: #6080ff; }
+.dy-slider-value {
+  min-width: 40px; text-align: right;
+  font-size: 13px; color: #ffa0d0;
+  letter-spacing: 2px;
+}
+.dy-info {
+  font-size: 13px; color: #ffa0d0;
+  text-align: center; letter-spacing: 2px;
+}
+.dy-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.dy-confirm, .dy-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(200,100,200,0.5), rgba(100,80,200,0.4));
+  border: 1px solid rgba(220,180,220,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.dy-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.dy-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(42,26,58,0.92);
+  border: 1px solid rgba(220,180,220,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.dy-reading-title {
+  font-size: 17px; color: #ffa0d0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.dy-reading-text {
+  font-size: 15px; color: #f0d0f0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.3.0 风车叶片 ============ */
+.windmill-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(26,58,58,0.96), rgba(5,21,21,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.wm-prompt {
+  font-size: 18px; color: #a0d0c0;
+  letter-spacing: 3px; text-align: center;
+}
+.wm-stage { position: relative; width: min(95%, 560px); }
+.wm-canvas {
+  width: 100%; height: 320px;
+  background: #051515;
+  border: 1px solid rgba(150,220,200,0.3);
+  border-radius: 14px;
+}
+.wm-info {
+  position: absolute; left: 12px; bottom: 12px;
+  font-size: 13px; color: #a0d0c0;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 10px; border-radius: 8px;
+  letter-spacing: 2px;
+}
+.wm-sliders {
+  display: flex; flex-direction: column; gap: 8px;
+  width: min(95%, 560px);
+}
+.wm-slider-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.wm-slider-label {
+  min-width: 48px; font-size: 13px; color: #a0d0c0;
+  letter-spacing: 2px;
+}
+.wm-slider { flex: 1; accent-color: #a0d0c0; }
+.wm-slider-value {
+  min-width: 48px; text-align: right;
+  font-size: 13px; color: #a0d0c0;
+  letter-spacing: 2px;
+}
+.wm-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.wm-confirm, .wm-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(100,200,160,0.5), rgba(80,160,120,0.4));
+  border: 1px solid rgba(160,240,200,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.wm-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.wm-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(26,58,58,0.92);
+  border: 1px solid rgba(160,240,200,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.wm-reading-title {
+  font-size: 17px; color: #a0d0c0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.wm-reading-text {
+  font-size: 15px; color: #d0f0e0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.3.0 经纬编织 ============ */
+.weave-layer {
+  position: absolute; inset: 0; z-index: 38;
+  background: radial-gradient(ellipse at center, rgba(58,42,26,0.96), rgba(15,8,5,0.99));
+  backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px; gap: 14px;
+  animation: scentFadeIn 0.5s ease;
+}
+.wv-prompt {
+  font-size: 18px; color: #ffd0a0;
+  letter-spacing: 3px; text-align: center;
+}
+.wv-stage {
+  width: min(95%, 480px);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.wv-grid {
+  display: grid; gap: 3px;
+  width: 100%; aspect-ratio: 1;
+  background: rgba(60,40,20,0.5);
+  padding: 6px; border-radius: 10px;
+  border: 1px solid rgba(220,180,120,0.3);
+}
+.wv-cell {
+  background: rgba(80,60,30,0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.wv-cell:hover { background: rgba(120,90,50,0.6); }
+.wv-cell.wv-warp {
+  background: linear-gradient(135deg, #6a4020, #4a2810);
+  border: 1px solid rgba(220,180,120,0.5);
+}
+.wv-cell.wv-weft {
+  background: linear-gradient(135deg, #d8b070, #b89050);
+  border: 1px solid rgba(255,220,150,0.5);
+}
+.wv-info {
+  font-size: 13px; color: #ffd0a0;
+  text-align: center; letter-spacing: 2px;
+}
+.wv-progress {
+  font-size: 14px; color: #ffd0a0;
+  letter-spacing: 3px;
+}
+.wv-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.wv-reset, .wv-confirm, .wv-reading-close {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(220,168,80,0.5), rgba(180,128,60,0.4));
+  border: 1px solid rgba(240,200,120,0.5);
+  border-radius: 20px; color: #fff;
+  font-family: inherit; font-size: 14px;
+  letter-spacing: 3px; cursor: pointer;
+}
+.wv-confirm:disabled, .wv-reset:disabled { opacity: 0.4; cursor: not-allowed; }
+.wv-reading {
+  margin-top: 14px; padding: 18px 24px;
+  background: rgba(58,42,26,0.92);
+  border: 1px solid rgba(240,200,120,0.4);
+  border-radius: 14px;
+  text-align: center;
+  max-width: 80%;
+}
+.wv-reading-title {
+  font-size: 17px; color: #ffd0a0;
+  letter-spacing: 4px; margin-bottom: 10px;
+}
+.wv-reading-text {
+  font-size: 15px; color: #f0e0d0;
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* ============ v2.3.0 移动端适配 ============ */
+@media (max-width: 768px) {
+  .su-canvas, .wm-canvas { height: 280px; }
+  .su-prompt, .wm-prompt, .wv-prompt { font-size: 16px; letter-spacing: 2px; }
+  .dy-prompt { font-size: 16px; letter-spacing: 2px; }
+  .dy-swatch { width: 80px; height: 80px; }
+  .dy-swatches { gap: 16px; }
+  .su-actions button, .su-reading-close,
+  .dy-actions button, .dy-reading-close,
+  .wm-actions button, .wm-reading-close,
+  .wv-actions button, .wv-reading-close {
+    padding: 8px 18px; font-size: 13px;
+  }
+  .wm-sliders, .dy-sliders { gap: 6px; }
+  .wm-slider-row, .dy-slider-row { gap: 8px; }
+  .wm-slider-label, .wm-slider-value { min-width: 40px; font-size: 12px; }
+  .dy-slider-label, .dy-slider-value { min-width: 32px; font-size: 12px; }
+}
