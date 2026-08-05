@@ -122,8 +122,21 @@ const SCENE_LABELS = {
   rain: "雨天·檐下",
   cafeteria: "食堂",
   seaside: "海边",
+  sea: "海边",
   festival: "学园祭",
   sportsmeet: "运动会",
+  attic: "旧阁楼",
+  clock_room: "钟楼计时室",
+  club_room: "社团活动室",
+  courtyard: "校园庭院",
+  forest: "林间小路",
+  lab: "实验室",
+  music_room: "音乐教室",
+  observatory: "天文台",
+  pond: "校园池塘",
+  river: "河岸",
+  tunnel: "旧隧道",
+  workshop: "手作工坊",
   ending_good: "结局",
   ending_normal: "结局",
   ending_bad: "结局",
@@ -326,7 +339,7 @@ const SCRIPT = {
   prologue_32: { day: 1, time: "evening", bg: "school_gate", speaker: "", text: "书包侧袋里多了一样东西——一张折成樱花瓣形状的信纸，没有署名。", next: "prologue_33", keyword: "匿名信", cg_unlock: "cg_letter" },
   prologue_33: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "「致转学生：第一个周末，请你做一个选择。樱海有三条未走完的路，你会走哪一条？」", next: "prologue_34" },
   prologue_34: { day: 1, time: "evening", bg: "home_room", speaker: "沈屿", text: "……谁放的？", next: "prologue_35" },
-  prologue_35: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "没有人回答。窗外樱花簌簌。我决定先睡，第二天再看。", next: "common_day2_morning" },
+  prologue_35: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "没有人回答。窗外樱花簌簌。我决定先睡，第二天再看。", next: "d1_night_stars" },
 
   /* ============ 共通线 · 第 2 日 ============ */
   common_day2_morning: {
@@ -674,6 +687,11 @@ const SCRIPT = {
         next: "common_day3_afternoon" }
     }
   },
+  common_day3_afternoon: {
+    day: 3, time: "afternoon", bg: "sportsmeet", char: null, speaker: "",
+    text: "预选赛的人群渐渐散去。掌心里那阵急促的心跳还没平复，我陪她们走到医务室门口，才独自回宿舍。",
+    next: "d3_evening"
+  },
 
   /* ============ v0.9.0 信物拼图 ============ */
   d4_puzzle: {
@@ -756,6 +774,11 @@ const SCRIPT = {
         next: "common_day5_afternoon" }
     }
   },
+  common_day5_afternoon: {
+    day: 5, time: "afternoon", bg: "art_room", char: null, speaker: "",
+    text: "香水在窗边慢慢沉下来。离开美术室时，我终于决定，接下来的路要认真走完。",
+    next: "common_day5_morning"
+  },
   d3_choice: {
     day: 3, time: "morning", bg: "classroom",
     choice: {
@@ -794,7 +817,7 @@ const SCRIPT = {
   d3_noon_3: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "", text: "——但 60 米处，她左脚一软。她踉跄了一下，咬着牙没倒，最后第二名冲线。", next: "d3_noon_4" },
   d3_noon_4: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "夏织", text: "……没事。没事！只是崴了一下。", next: "d3_noon_5" },
   d3_noon_5: { day: 3, time: "noon", bg: "sportsmeet", chars: [{id:"shiyu", pos:"left"}, {id:"sunian", pos:"right"}], speaker: "", text: "我看到林诗雨和苏念都站在场边。林诗雨手里攥着冰袋，苏念抱着画本，谁都没说话。", next: "d3_noon_6" },
-  d3_noon_6: { day: 3, time: "noon", bg: "sportsmeet", speaker: "", text: "夏织抬头看到她们，愣了一下，然后笑得眼睛弯成月亮：「都来啦？」", next: "d3_evening" },
+  d3_noon_6: { day: 3, time: "noon", bg: "sportsmeet", speaker: "", text: "夏织抬头看到她们，愣了一下，然后笑得眼睛弯成月亮：「都来啦？」", next: "d3_stethoscope" },
   d3_evening: {
     day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "回宿舍。我打开抽屉，匿名信旁边又多了一封。我忽然想起白天画在林诗雨稿纸上的那一笔——一个字，从指尖跑了出去。",
@@ -1022,7 +1045,7 @@ const SCRIPT = {
     // v0.5.0 朋友圈：三女主同时发动态
     moment: ["m_d4_shiyu", "m_d3_group"]
   },
-  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。", next: "d4_evening_scent" },
+  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。", next: "d4_puzzle" },
 
   /* ============ v0.7.0 气味收集 ============ */
   d4_evening_scent: {
@@ -1358,7 +1381,7 @@ const SCRIPT = {
   d5_pulse: {
     day: 5, time: "morning", bg: "rooftop", char: "shiyu", speaker: "林诗雨",
     text: "她把手腕伸过来——你也伸过去。「……试试看，能不能跟上我的脉搏。」她的心跳不快。",
-    next: "common_day5_morning",
+    next: "d5_perfume",
     pulse: {
       prompt: "点击让心跳跟上她——",
       bpm: 68,
@@ -1371,18 +1394,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2 } },
           personality: { kind: 2, honest: 2 },
           memory: { id: "脉搏·对上", title: "天台上的脉搏", text: "你在天台上让心跳跟上林诗雨。" },
-          next: "common_day5_morning" },
+          next: "d5_perfume" },
         { min: 0.4, tag: "ok",
           label: "——半对上",
           text: "你的心跳只对上了几拍。她笑了一下：「……没关系。听不见也是真的——你不必每次都跟得上。」",
           add: { affection: { shiyu: 1 } },
           personality: { honest: 1 },
-          next: "common_day5_morning" }
+          next: "d5_perfume" }
       ],
       fallback: { tag: "miss",
         label: "——没对上",
         text: "你的心跳完全跟不上。她抽回手，没生气：「你的心跳是你的。别为了跟谁，把它丢掉。」",
-        next: "common_day5_morning" }
+        next: "d5_perfume" }
     }
   },
 
@@ -1887,7 +1910,7 @@ const SCRIPT = {
   d5_hourglass: {
     day: 5, time: "afternoon", bg: "home_room", char: null, speaker: "",
     text: "她拿出一只沙漏。她说——在 5 秒的时候翻一次，让沙在 5 秒后落完。她说完就走了。你拿着沙漏。",
-    next: "d5_mimic",
+    next: "d6_kite",
     hourglass: {
       prompt: "点「开始」计时，到 5 秒时点「翻转」",
       target: 5000,
@@ -1900,18 +1923,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
           personality: { brave: 2, honest: 2 },
           memory: { id: "沙漏·5秒", title: "卡住的时间", text: "你在 5 秒的时候翻转了沙漏，让沙再落一次。" },
-          next: "d5_mimic" },
+          next: "d6_kite" },
         { max: 1000, tag: "ok",
           label: "——差一点",
           text: "你差了一点。沙没在 5 秒落完。她说：差一点也是好的——证明你想过它。你想她说的是对的。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d6_kite" }
       ],
       fallback: { tag: "miss",
         label: "——没卡上",
         text: "你完全没卡上。沙落完了，没翻转。她说：没卡上也是真的——有些事错过了，就是错过了。你看着空了的沙漏。",
-        next: "d5_mimic" }
+        next: "d6_kite" }
     }
   },
 
@@ -2020,7 +2043,7 @@ const SCRIPT = {
   d6_orbit: {
     day: 6, time: "night", bg: "rooftop", char: null, speaker: "",
     text: "她拉你到天台。她说——你看，那颗星在走。她让你跟着它的轨迹点过去。她说：点得准的人，能记住它走过的路。",
-    next: "d5_mimic",
+    next: "d7_firefly",
     orbit: {
       prompt: "按住光标跟随星点轨迹——依次点亮采样点",
       duration: 10000,
@@ -2033,18 +2056,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { honest: 2, brave: 1 },
           memory: { id: "星轨·六点", title: "天台上的星轨", text: "你跟着那颗星，点亮了六个采样点。" },
-          next: "d5_mimic" },
+          next: "d7_firefly" },
         { max: 60, tag: "ok",
           label: "——跟了大半",
           text: "你点亮了大部分采样点。她说：跟丢了也是真的——星走得快，眼睛跟不上。你已经尽力了。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_mimic" }
+          next: "d7_firefly" }
       ],
       fallback: { tag: "miss",
         label: "——星辰失散",
         text: "你跟丢了大多数采样点。她说：没关系——星轨还在那里，只是你没看见。看不见的东西，也在走。",
-        next: "d5_mimic" }
+        next: "d7_firefly" }
     }
   },
 
@@ -2352,9 +2375,9 @@ const SCRIPT = {
           personality: { honest: 2, kind: 1 },
           memory: { id: "星图·亮度序", title: "天台上的星图", text: "你按亮度顺序连出五颗星，画出了她想要的星图。" },
           next: "d9_lens" },
-        { max: 1, tag: "ok",
+        { max: 2, tag: "ok",
           label: "——画得差不多",
-          text: "你画错了一颗。她说：差一颗，整个星座就不一样——但你说它是什么，它就是什么。她笑了一下。",
+          text: "你把一组星的先后连反了。她说：顺序一变，整个星座就不一样——但你说它是什么，它就是什么。她笑了一下。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
           next: "d9_lens" }
@@ -2993,7 +3016,7 @@ const SCRIPT = {
           personality: { careful: 2, honest: 1 },
           memory: { id: "碑帖·归位", title: "图书馆后院", text: "你交换碎片让碑文重新连成一行。" },
           next: "d14_celestial" },
-        { max: 1, tag: "ok",
+        { max: 2, tag: "ok",
           label: "——差不多对",
           text: "碎片差不多归位。她说：差不多——也算拼了。她没再说什么。",
           add: { affection: { shen: 1 } },
@@ -3154,7 +3177,7 @@ const SCRIPT = {
           personality: { careful: 2, patient: 1 },
           memory: { id: "拼图·归位", title: "美术室的碎片", text: "你交换碎片让图案完整归位。" },
           next: "d15_chess" },
-        { max: 1, tag: "ok",
+        { max: 2, tag: "ok",
           label: "——差不多对",
           text: "碎片差不多归位。她说：差不多——也算拼了。她没再说什么。",
           add: { affection: { shen: 1 } },

@@ -150,16 +150,66 @@ const JIGSAW_KEY      = "sakura_letters_jigsaw_v2";      // 拼图归位
 const CHESS_KEY       = "sakura_letters_chess_v2";       // 棋局推演
 const FLAG_KEY        = "sakura_letters_flag_v2";        // 旗阵辨识
 
+const DEFAULT_SETTINGS = Object.freeze({
+  textSpeed: 30,
+  autoDelay: 1200,
+  bgmVolume: 0.4,
+  sfxVolume: 0.6,
+  particles: true,
+  bgm: true,
+});
+
+function createDefaultSaveData() {
+  return { slots: new Array(SAVE_SLOTS).fill(null), lastSlot: null };
+}
+
+function createDefaultEndings() {
+  return { unlocked: [], count: 0 };
+}
+
+function createDefaultSettings() {
+  return Object.assign({}, DEFAULT_SETTINGS);
+}
+
 const Saves = {
-  data: { slots: [], lastSlot: null },
-  endings: { unlocked: [], count: 0 },
-  settings: {
-    textSpeed: 30,
-    autoDelay: 1200,
-    bgmVolume: 0.4,
-    sfxVolume: 0.6,
-    particles: true,
-    bgm: true,
+  data: createDefaultSaveData(),
+  endings: createDefaultEndings(),
+  settings: createDefaultSettings(),
+  lastStorageError: null,
+
+  _write(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      this.lastStorageError = null;
+      return true;
+    } catch (e) {
+      this.lastStorageError = e;
+      console.error(`写入本地存储失败 (${key}):`, e);
+      return false;
+    }
+  },
+
+  _remove(key) {
+    try {
+      localStorage.removeItem(key);
+      this.lastStorageError = null;
+      return true;
+    } catch (e) {
+      this.lastStorageError = e;
+      console.error(`清理本地存储失败 (${key}):`, e);
+      return false;
+    }
+  },
+
+  _read(key, fallback, isValid) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return fallback;
+      const value = JSON.parse(raw);
+      return !isValid || isValid(value) ? value : fallback;
+    } catch (e) {
+      return fallback;
+    }
   },
 
   /* ============ 存档槽位 ============ */
@@ -170,25 +220,29 @@ const Saves = {
   },
 
   _loadSaves() {
+    this.data = createDefaultSaveData();
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        this.data = JSON.parse(raw);
-        if (!this.data.slots) this.data.slots = [];
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.slots)) throw new Error("存档结构无效");
+        this.data.slots = parsed.slots.slice(0, SAVE_SLOTS);
+        this.data.lastSlot = Number.isInteger(parsed.lastSlot) && parsed.lastSlot >= 0 && parsed.lastSlot < SAVE_SLOTS
+          ? parsed.lastSlot : null;
       }
       while (this.data.slots.length < SAVE_SLOTS) this.data.slots.push(null);
     } catch (e) {
       console.warn("读取存档失败:", e);
-      this.data = { slots: new Array(SAVE_SLOTS).fill(null), lastSlot: null };
+      this.data = createDefaultSaveData();
     }
   },
 
   _saveSaves() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); }
-    catch (e) { console.error("写入存档失败:", e); }
+    return this._write(STORAGE_KEY, JSON.stringify(this.data));
   },
 
   save(slot, snapshot) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS || !snapshot || typeof snapshot !== "object") return false;
     const data = {
       slot,
       timestamp: Date.now(),
@@ -198,19 +252,36 @@ const Saves = {
       dialogPreview: snapshot.dialogPreview || "",
       day: snapshot.day,
       time: snapshot.time,
+      currentBg: snapshot.currentBg || "",
+      history: Array.isArray(snapshot.history) ? snapshot.history : [],
+      visitedNodes: snapshot.visitedNodes && typeof snapshot.visitedNodes === "object" ? snapshot.visitedNodes : {},
+      loopCount: Number.isFinite(snapshot.loopCount) ? snapshot.loopCount : 0,
+      playCount: Number.isFinite(snapshot.playCount) ? snapshot.playCount : 0,
     };
+    const previousSlot = this.data.slots[slot];
+    const previousLastSlot = this.data.lastSlot;
     this.data.slots[slot] = data;
     this.data.lastSlot = slot;
-    this._saveSaves();
-    return true;
+    if (this._saveSaves()) return true;
+    this.data.slots[slot] = previousSlot;
+    this.data.lastSlot = previousLastSlot;
+    return false;
   },
 
-  load(slot) { return this.data.slots[slot]; },
+  load(slot) {
+    return Number.isInteger(slot) && slot >= 0 && slot < SAVE_SLOTS ? this.data.slots[slot] : null;
+  },
 
   deleteSave(slot) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS) return false;
+    const previousSlot = this.data.slots[slot];
+    const previousLastSlot = this.data.lastSlot;
     this.data.slots[slot] = null;
     if (this.data.lastSlot === slot) this.data.lastSlot = null;
-    this._saveSaves();
+    if (this._saveSaves()) return true;
+    this.data.slots[slot] = previousSlot;
+    this.data.lastSlot = previousLastSlot;
+    return false;
   },
 
   getQuickSave() { return this.data.slots[0]; },
@@ -218,18 +289,27 @@ const Saves = {
 
   /* ============ 结局图鉴 ============ */
   _loadEndings() {
+    this.endings = createDefaultEndings();
     try {
       const raw = localStorage.getItem(ENDINGS_KEY);
-      if (raw) this.endings = JSON.parse(raw);
-    } catch (e) { this.endings = { unlocked: [], count: 0 }; }
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.unlocked)) throw new Error("结局结构无效");
+        this.endings.unlocked = parsed.unlocked.filter(id => typeof id === "string");
+        this.endings.count = this.endings.unlocked.length;
+      }
+    } catch (e) { this.endings = createDefaultEndings(); }
   },
 
   unlockEnding(endingId) {
+    if (typeof endingId !== "string") return false;
+    if (!Array.isArray(this.endings.unlocked)) this.endings = createDefaultEndings();
     if (!this.endings.unlocked.includes(endingId)) {
       this.endings.unlocked.push(endingId);
       this.endings.count = this.endings.unlocked.length;
-      localStorage.setItem(ENDINGS_KEY, JSON.stringify(this.endings));
-      return true;
+      if (this._write(ENDINGS_KEY, JSON.stringify(this.endings))) return true;
+      this.endings.unlocked.pop();
+      this.endings.count = this.endings.unlocked.length;
     }
     return false;
   },
@@ -238,18 +318,14 @@ const Saves = {
 
   /* ============ 关键词收集 ============ */
   getKeywords() {
-    try {
-      const raw = localStorage.getItem(KEYWORDS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(KEYWORDS_KEY, [], Array.isArray);
   },
 
   unlockKeyword(kw) {
     const list = this.getKeywords();
     if (!list.includes(kw)) {
       list.push(kw);
-      localStorage.setItem(KEYWORDS_KEY, JSON.stringify(list));
-      return true; // 新解锁
+      return this._write(KEYWORDS_KEY, JSON.stringify(list)); // 新解锁
     }
     return false;
   },
@@ -258,18 +334,14 @@ const Saves = {
 
   /* ============ CG 图鉴 ============ */
   getCGs() {
-    try {
-      const raw = localStorage.getItem(CG_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(CG_KEY, [], Array.isArray);
   },
 
   unlockCG(cgId) {
     const list = this.getCGs();
     if (!list.includes(cgId)) {
       list.push(cgId);
-      localStorage.setItem(CG_KEY, JSON.stringify(list));
-      return true;
+      return this._write(CG_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -278,32 +350,32 @@ const Saves = {
 
   /* ============ 信件回执 ============ */
   getLetters() {
-    try {
-      const raw = localStorage.getItem(LETTERS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(LETTERS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
 
   saveLetter(letterId, answers) {
     const letters = this.getLetters();
+    const previous = letters[letterId];
     letters[letterId] = { answers, ts: Date.now() };
-    localStorage.setItem(LETTERS_KEY, JSON.stringify(letters));
+    if (this._write(LETTERS_KEY, JSON.stringify(letters))) return true;
+    if (previous === undefined) delete letters[letterId]; else letters[letterId] = previous;
+    return false;
   },
 
   getLetter(letterId) { return this.getLetters()[letterId]; },
 
   /* ============ 全局标记（多周目） ============ */
   getFlags() {
-    try {
-      const raw = localStorage.getItem(FLAGS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FLAGS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
 
   setFlag(key, value) {
     const flags = this.getFlags();
+    const previous = flags[key];
     flags[key] = value;
-    localStorage.setItem(FLAGS_KEY, JSON.stringify(flags));
+    if (this._write(FLAGS_KEY, JSON.stringify(flags))) return true;
+    if (previous === undefined) delete flags[key]; else flags[key] = previous;
+    return false;
   },
 
   getFlag(key, def) {
@@ -313,35 +385,37 @@ const Saves = {
 
   /* ============ 设置 ============ */
   _loadSettings() {
+    this.settings = createDefaultSettings();
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) this.settings = Object.assign(this.settings, JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) Object.assign(this.settings, parsed);
+      }
     } catch (e) { /* 用默认 */ }
   },
 
   saveSettings() {
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings)); }
-    catch (e) { console.error("保存设置失败:", e); }
+    return this._write(SETTINGS_KEY, JSON.stringify(this.settings));
   },
 
   updateSetting(key, value) {
+    const previous = this.settings[key];
     this.settings[key] = value;
-    this.saveSettings();
+    if (this.saveSettings()) return true;
+    this.settings[key] = previous;
+    return false;
   },
 
   /* ============ 合成关键词 ============ */
   getComposed() {
-    try {
-      const raw = localStorage.getItem(COMPOSED_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(COMPOSED_KEY, [], Array.isArray);
   },
   composeKeyword(a, b, recipe) {
     const list = this.getComposed();
     if (!list.includes(recipe)) {
       list.push(recipe);
-      localStorage.setItem(COMPOSED_KEY, JSON.stringify(list));
-      return true;
+      return this._write(COMPOSED_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -349,17 +423,13 @@ const Saves = {
 
   /* ============ 记忆片段（循环） ============ */
   getMemories() {
-    try {
-      const raw = localStorage.getItem(MEMORIES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(MEMORIES_KEY, [], Array.isArray);
   },
   saveMemory(memoryId, text) {
     const list = this.getMemories();
     if (!list.find(m => m.id === memoryId)) {
       list.push({ id: memoryId, text, ts: Date.now() });
-      localStorage.setItem(MEMORIES_KEY, JSON.stringify(list));
-      return true;
+      return this._write(MEMORIES_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -369,17 +439,13 @@ const Saves = {
 
   /* ============ 环境线索（背景可点击） ============ */
   getClues() {
-    try {
-      const raw = localStorage.getItem(CLUES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(CLUES_KEY, [], Array.isArray);
   },
   markClueFound(clueId) {
     const list = this.getClues();
     if (!list.includes(clueId)) {
       list.push(clueId);
-      localStorage.setItem(CLUES_KEY, JSON.stringify(list));
-      return true;
+      return this._write(CLUES_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -387,34 +453,43 @@ const Saves = {
 
   /* ============ 收件箱（角色主动来信） ============ */
   getInbox() {
-    try {
-      const raw = localStorage.getItem(INBOX_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(INBOX_KEY, [], Array.isArray);
   },
   saveInbox(msg) {
     const list = this.getInbox();
     if (!list.find(m => m.id === msg.id)) {
       list.push(Object.assign({ ts: Date.now(), read: false, replied: null, expired: false }, msg));
-      localStorage.setItem(INBOX_KEY, JSON.stringify(list));
-      return true;
+      return this._write(INBOX_KEY, JSON.stringify(list));
     }
     return false;
   },
   markInboxRead(id) {
     const list = this.getInbox();
     const m = list.find(x => x.id === id);
-    if (m && !m.read) { m.read = true; localStorage.setItem(INBOX_KEY, JSON.stringify(list)); }
+    if (!m || m.read) return false;
+    m.read = true;
+    if (this._write(INBOX_KEY, JSON.stringify(list))) return true;
+    m.read = false;
+    return false;
   },
   markInboxReplied(id, value) {
     const list = this.getInbox();
     const m = list.find(x => x.id === id);
-    if (m) { m.replied = value; m.read = true; localStorage.setItem(INBOX_KEY, JSON.stringify(list)); }
+    if (!m) return false;
+    const previous = { replied: m.replied, read: m.read };
+    m.replied = value; m.read = true;
+    if (this._write(INBOX_KEY, JSON.stringify(list))) return true;
+    Object.assign(m, previous);
+    return false;
   },
   markInboxExpired(id) {
     const list = this.getInbox();
     const m = list.find(x => x.id === id);
-    if (m && m.replied === null) { m.expired = true; localStorage.setItem(INBOX_KEY, JSON.stringify(list)); }
+    if (!m || m.replied !== null || m.expired) return false;
+    m.expired = true;
+    if (this._write(INBOX_KEY, JSON.stringify(list))) return true;
+    m.expired = false;
+    return false;
   },
   inboxUnreadCount() {
     return this.getInbox().filter(m => !m.read).length;
@@ -422,59 +497,54 @@ const Saves = {
 
   /* ============ 朋友圈动态 ============ */
   getMoments() {
-    try {
-      const raw = localStorage.getItem(MOMENTS_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(MOMENTS_KEY, [], Array.isArray);
   },
   addMoment(id) {
     const list = this.getMoments();
     if (!list.includes(id)) {
       list.push({ id, ts: Date.now() });
-      localStorage.setItem(MOMENTS_KEY, JSON.stringify(list));
-      return true;
+      return this._write(MOMENTS_KEY, JSON.stringify(list));
     }
     return false;
   },
   isMomentPublished(id) { return this.getMoments().some(m => m.id === id); },
   getLikedMoments() {
-    try {
-      const raw = localStorage.getItem(MOMENT_LIKES_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(MOMENT_LIKES_KEY, [], Array.isArray);
   },
   toggleLikeMoment(id) {
     const list = this.getLikedMoments();
     const i = list.indexOf(id);
-    if (i >= 0) { list.splice(i, 1); localStorage.setItem(MOMENT_LIKES_KEY, JSON.stringify(list)); return false; }
-    list.push(id); localStorage.setItem(MOMENT_LIKES_KEY, JSON.stringify(list)); return true;
+    if (i >= 0) {
+      list.splice(i, 1);
+      return this._write(MOMENT_LIKES_KEY, JSON.stringify(list)) ? false : null;
+    }
+    list.push(id);
+    return this._write(MOMENT_LIKES_KEY, JSON.stringify(list)) ? true : null;
   },
   getMomentComments() {
-    try {
-      const raw = localStorage.getItem(MOMENT_COMMENTS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(MOMENT_COMMENTS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   addMomentComment(id, value) {
     const all = this.getMomentComments();
     if (!all[id]) all[id] = [];
-    if (!all[id].includes(value)) { all[id].push(value); localStorage.setItem(MOMENT_COMMENTS_KEY, JSON.stringify(all)); return true; }
+    if (!all[id].includes(value)) {
+      all[id].push(value);
+      if (this._write(MOMENT_COMMENTS_KEY, JSON.stringify(all))) return true;
+      all[id].pop();
+      return false;
+    }
     return false;
   },
 
   /* ============ 梦境碎片 ============ */
   getDreamShards() {
-    try {
-      const raw = localStorage.getItem(DREAM_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(DREAM_KEY, [], Array.isArray);
   },
   addDreamShard(id, text) {
     const list = this.getDreamShards();
     if (!list.find(s => s.id === id)) {
       list.push({ id, text, ts: Date.now() });
-      localStorage.setItem(DREAM_KEY, JSON.stringify(list));
-      return true;
+      return this._write(DREAM_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -482,15 +552,16 @@ const Saves = {
 
   /* ============ 性格画像 ============ */
   getPersonality() {
-    try {
-      const raw = localStorage.getItem(PERSONALITY_KEY);
-      return raw ? JSON.parse(raw) : { brave: 0, kind: 0, active: 0, honest: 0 };
-    } catch (e) { return { brave: 0, kind: 0, active: 0, honest: 0 }; }
+    return this._read(PERSONALITY_KEY, { brave: 0, kind: 0, active: 0, honest: 0 },
+      v => v && typeof v === "object" && !Array.isArray(v));
   },
   addPersonality(dim, delta) {
     const p = this.getPersonality();
+    const previous = p[dim] || 0;
     p[dim] = (p[dim] || 0) + delta;
-    localStorage.setItem(PERSONALITY_KEY, JSON.stringify(p));
+    if (this._write(PERSONALITY_KEY, JSON.stringify(p))) return true;
+    p[dim] = previous;
+    return false;
   },
   getPersonalityProfile() {
     const p = this.getPersonality();
@@ -504,15 +575,15 @@ const Saves = {
 
   /* ============ 涂鸦记录 ============ */
   getDoodles() {
-    try {
-      const raw = localStorage.getItem(DOODLE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DOODLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDoodle(nodeId, mood, stats) {
     const all = this.getDoodles();
+    const previous = all[nodeId];
     all[nodeId] = { mood, stats, ts: Date.now() };
-    localStorage.setItem(DOODLE_KEY, JSON.stringify(all));
+    if (this._write(DOODLE_KEY, JSON.stringify(all))) return true;
+    if (previous === undefined) delete all[nodeId]; else all[nodeId] = previous;
+    return false;
   },
   getDoodle(nodeId) { return this.getDoodles()[nodeId]; },
 
@@ -526,8 +597,7 @@ const Saves = {
   saveCollage(nodeId, words, poem, score, tag) {
     const all = this.getCollages();
     all[nodeId] = { words, poem, score, tag, ts: Date.now() };
-    localStorage.setItem(COLLAGE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(COLLAGE_KEY, JSON.stringify(all));
   },
   getCollage(nodeId) { return this.getCollages()[nodeId]; },
 
@@ -542,8 +612,7 @@ const Saves = {
     const list = this.getEchoes();
     if (!list.find(e => e.id === echoId)) {
       list.push({ id: echoId, text, ctx: ctx || "", ts: Date.now() });
-      localStorage.setItem(ECHO_KEY, JSON.stringify(list));
-      return true;
+      return this._write(ECHO_KEY, JSON.stringify(list));
     }
     return false;
   },
@@ -552,7 +621,7 @@ const Saves = {
   acknowledgeEcho(echoId, choice) {
     const list = this.getEchoes();
     const e = list.find(x => x.id === echoId);
-    if (e) { e.acknowledged = choice; localStorage.setItem(ECHO_KEY, JSON.stringify(list)); return true; }
+    if (e) { e.acknowledged = choice; this._write(ECHO_KEY, JSON.stringify(list)); return true; }
     return false;
   },
 
@@ -566,8 +635,7 @@ const Saves = {
   savePhoto(nodeId, composition, score, tag) {
     const all = this.getPhotos();
     all[nodeId] = { composition, score, tag, ts: Date.now() };
-    localStorage.setItem(PHOTO_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PHOTO_KEY, JSON.stringify(all));
   },
   getPhoto(nodeId) { return this.getPhotos()[nodeId]; },
 
@@ -581,8 +649,7 @@ const Saves = {
   saveRhythm(nodeId, hits, accuracy, tag) {
     const all = this.getRhythms();
     all[nodeId] = { hits, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(RHYTHM_KEY, JSON.stringify(all));
-    return true;
+    return this._write(RHYTHM_KEY, JSON.stringify(all));
   },
   getRhythm(nodeId) { return this.getRhythms()[nodeId]; },
 
@@ -598,8 +665,7 @@ const Saves = {
     const all = this.getScents();
     if (all.collected[scent.id]) return false; // 已收集过
     all.collected[scent.id] = { ...scent, ts: Date.now() };
-    localStorage.setItem(SCENT_KEY, JSON.stringify(all));
-    return true; // true 表示新收集
+    return this._write(SCENT_KEY, JSON.stringify(all)); // true 表示新收集
   },
   isScentCollected(id) { return !!this.getScents().collected[id]; },
   // 闪回触发：用 scentId 关联已收集的气味
@@ -608,8 +674,7 @@ const Saves = {
     if (!all.recalled[scentId]) all.recalled[scentId] = [];
     if (!all.recalled[scentId].includes(recallId)) {
       all.recalled[scentId].push(recallId);
-      localStorage.setItem(SCENT_KEY, JSON.stringify(all));
-      return true;
+      return this._write(SCENT_KEY, JSON.stringify(all));
     }
     return false;
   },
@@ -629,8 +694,7 @@ const Saves = {
   saveSilenceRecord(nodeId, choice, silent) {
     const all = this.getSilenceRecords();
     all[nodeId] = { choice, silent, ts: Date.now() };
-    localStorage.setItem(SILENCE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SILENCE_KEY, JSON.stringify(all));
   },
   getSilenceRecord(nodeId) { return this.getSilenceRecords()[nodeId]; },
   getSilentCount() {
@@ -652,8 +716,7 @@ const Saves = {
     if (!all[nodeId].parts.some(p => p.id === partId)) {
       all[nodeId].parts.push({ id: partId, label: partLabel });
       all[nodeId].ts = Date.now();
-      localStorage.setItem(TOUCH_KEY, JSON.stringify(all));
-      return true;
+      return this._write(TOUCH_KEY, JSON.stringify(all));
     }
     return false;
   },
@@ -670,8 +733,7 @@ const Saves = {
   saveTemperatureRecord(nodeId, temp, tag) {
     const all = this.getTemperatureRecords();
     all[nodeId] = { temp, tag, ts: Date.now() };
-    localStorage.setItem(TEMPERATURE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TEMPERATURE_KEY, JSON.stringify(all));
   },
   getTemperatureRecord(nodeId) { return this.getTemperatureRecords()[nodeId]; },
   getCurrentTemperature() {
@@ -692,8 +754,7 @@ const Saves = {
   saveTarotRecord(nodeId, past, present, future, combo) {
     const all = this.getTarotRecords();
     all[nodeId] = { past, present, future, combo, ts: Date.now() };
-    localStorage.setItem(TAROT_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TAROT_KEY, JSON.stringify(all));
   },
   getTarotRecord(nodeId) { return this.getTarotRecords()[nodeId]; },
   getLastTarotCombo() {
@@ -714,8 +775,7 @@ const Saves = {
   saveDreamweaveRecord(nodeId, sequence, meaning, tag) {
     const all = this.getDreamweaveRecords();
     all[nodeId] = { sequence, meaning, tag, ts: Date.now() };
-    localStorage.setItem(DREAMWEAVE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DREAMWEAVE_KEY, JSON.stringify(all));
   },
   getDreamweaveRecord(nodeId) { return this.getDreamweaveRecords()[nodeId]; },
 
@@ -730,8 +790,7 @@ const Saves = {
   saveHandwritingRecord(nodeId, style, label) {
     const all = this.getHandwritingRecords();
     all[nodeId] = { style, label, ts: Date.now() };
-    localStorage.setItem(HANDWRITING_KEY, JSON.stringify(all));
-    return true;
+    return this._write(HANDWRITING_KEY, JSON.stringify(all));
   },
   getHandwritingRecord(nodeId) { return this.getHandwritingRecords()[nodeId]; },
   getLastHandwriting() {
@@ -753,8 +812,7 @@ const Saves = {
   saveSpectrumRecord(nodeId, x, y, tag) {
     const all = this.getSpectrumRecords();
     all[nodeId] = { x, y, tag, ts: Date.now() };
-    localStorage.setItem(SPECTRUM_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SPECTRUM_KEY, JSON.stringify(all));
   },
   getSpectrumRecord(nodeId) { return this.getSpectrumRecords()[nodeId]; },
   getLastSpectrum() {
@@ -775,8 +833,7 @@ const Saves = {
   saveConstellationRecord(nodeId, sequence, tag) {
     const all = this.getConstellationRecords();
     all[nodeId] = { sequence, tag, ts: Date.now() };
-    localStorage.setItem(CONSTELLATION_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CONSTELLATION_KEY, JSON.stringify(all));
   },
   getConstellationRecord(nodeId) { return this.getConstellationRecords()[nodeId]; },
 
@@ -791,8 +848,7 @@ const Saves = {
   saveStethoscopeRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getStethoscopeRecords();
     all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(STETHOSCOPE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(STETHOSCOPE_KEY, JSON.stringify(all));
   },
   getStethoscopeRecord(nodeId) { return this.getStethoscopeRecords()[nodeId]; },
 
@@ -807,8 +863,7 @@ const Saves = {
   savePuzzleRecord(nodeId, sequence, tag) {
     const all = this.getPuzzleRecords();
     all[nodeId] = { sequence, tag, ts: Date.now() };
-    localStorage.setItem(PUZZLE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PUZZLE_KEY, JSON.stringify(all));
   },
   getPuzzleRecord(nodeId) { return this.getPuzzleRecords()[nodeId]; },
 
@@ -823,8 +878,7 @@ const Saves = {
   savePerfumeRecord(nodeId, notes, tag) {
     const all = this.getPerfumeRecords();
     all[nodeId] = { notes, tag, ts: Date.now() };
-    localStorage.setItem(PERFUME_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PERFUME_KEY, JSON.stringify(all));
   },
   getPerfumeRecord(nodeId) { return this.getPerfumeRecords()[nodeId]; },
   getLastPerfume() {
@@ -845,8 +899,7 @@ const Saves = {
   saveBreathRecord(nodeId, cycles, avgSync, tag) {
     const all = this.getBreathRecords();
     all[nodeId] = { cycles, avgSync, tag, ts: Date.now() };
-    localStorage.setItem(BREATH_KEY, JSON.stringify(all));
-    return true;
+    return this._write(BREATH_KEY, JSON.stringify(all));
   },
   getBreathRecord(nodeId) { return this.getBreathRecords()[nodeId]; },
 
@@ -862,8 +915,7 @@ const Saves = {
   saveTimecapsuleRecord(nodeId, message, deliverAt, tag) {
     const all = this.getTimecapsuleRecords();
     all[nodeId] = { message, deliverAt, delivered: false, tag, ts: Date.now() };
-    localStorage.setItem(TIMECAPSULE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TIMECAPSULE_KEY, JSON.stringify(all));
   },
   getTimecapsuleRecord(nodeId) { return this.getTimecapsuleRecords()[nodeId]; },
   // 查找所有投递到 targetNodeId 的胶囊
@@ -877,7 +929,7 @@ const Saves = {
     const all = this.getTimecapsuleRecords();
     if (all[nodeId]) {
       all[nodeId].delivered = true;
-      localStorage.setItem(TIMECAPSULE_KEY, JSON.stringify(all));
+      this._write(TIMECAPSULE_KEY, JSON.stringify(all));
     }
   },
 
@@ -892,8 +944,7 @@ const Saves = {
   saveFoldRecord(nodeId, sequence, tag) {
     const all = this.getFoldRecords();
     all[nodeId] = { sequence, tag, ts: Date.now() };
-    localStorage.setItem(FOLD_KEY, JSON.stringify(all));
-    return true;
+    return this._write(FOLD_KEY, JSON.stringify(all));
   },
   getFoldRecord(nodeId) { return this.getFoldRecords()[nodeId]; },
 
@@ -908,8 +959,7 @@ const Saves = {
   saveReflectionRecord(nodeId, offsetX, accuracy, tag) {
     const all = this.getReflectionRecords();
     all[nodeId] = { offsetX, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(REFLECTION_KEY, JSON.stringify(all));
-    return true;
+    return this._write(REFLECTION_KEY, JSON.stringify(all));
   },
   getReflectionRecord(nodeId) { return this.getReflectionRecords()[nodeId]; },
 
@@ -924,8 +974,7 @@ const Saves = {
   saveLightdrawRecord(nodeId, litTargets, coverage, tag) {
     const all = this.getLightdrawRecords();
     all[nodeId] = { litTargets, coverage, tag, ts: Date.now() };
-    localStorage.setItem(LIGHTDRAW_KEY, JSON.stringify(all));
-    return true;
+    return this._write(LIGHTDRAW_KEY, JSON.stringify(all));
   },
   getLightdrawRecord(nodeId) { return this.getLightdrawRecords()[nodeId]; },
 
@@ -940,8 +989,7 @@ const Saves = {
   saveMimicRecord(nodeId, pitch, tempo, diff, tag) {
     const all = this.getMimicRecords();
     all[nodeId] = { pitch, tempo, diff, tag, ts: Date.now() };
-    localStorage.setItem(MIMIC_KEY, JSON.stringify(all));
-    return true;
+    return this._write(MIMIC_KEY, JSON.stringify(all));
   },
   getMimicRecord(nodeId) { return this.getMimicRecords()[nodeId]; },
 
@@ -956,8 +1004,7 @@ const Saves = {
   saveSeasonRecord(nodeId, chosenSeason, isTarget, tag) {
     const all = this.getSeasonRecords();
     all[nodeId] = { chosenSeason, isTarget, tag, ts: Date.now() };
-    localStorage.setItem(SEASON_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SEASON_KEY, JSON.stringify(all));
   },
   getSeasonRecord(nodeId) { return this.getSeasonRecords()[nodeId]; },
 
@@ -972,8 +1019,7 @@ const Saves = {
   savePulseRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getPulseRecords();
     all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(PULSE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PULSE_KEY, JSON.stringify(all));
   },
   getPulseRecord(nodeId) { return this.getPulseRecords()[nodeId]; },
 
@@ -988,8 +1034,7 @@ const Saves = {
   saveTeaRecord(nodeId, temp, amount, time, diff, tag) {
     const all = this.getTeaRecords();
     all[nodeId] = { temp, amount, time, diff, tag, ts: Date.now() };
-    localStorage.setItem(TEA_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TEA_KEY, JSON.stringify(all));
   },
   getTeaRecord(nodeId) { return this.getTeaRecords()[nodeId]; },
 
@@ -1004,8 +1049,7 @@ const Saves = {
   saveAstronomyRecord(nodeId, angle, diff, tag) {
     const all = this.getAstronomyRecords();
     all[nodeId] = { angle, diff, tag, ts: Date.now() };
-    localStorage.setItem(ASTRONOMY_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ASTRONOMY_KEY, JSON.stringify(all));
   },
   getAstronomyRecord(nodeId) { return this.getAstronomyRecords()[nodeId]; },
 
@@ -1020,8 +1064,7 @@ const Saves = {
   savePaletteRecord(nodeId, r, g, b, diff, tag) {
     const all = this.getPaletteRecords();
     all[nodeId] = { r, g, b, diff, tag, ts: Date.now() };
-    localStorage.setItem(PALETTE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PALETTE_KEY, JSON.stringify(all));
   },
   getPaletteRecord(nodeId) { return this.getPaletteRecords()[nodeId]; },
 
@@ -1036,8 +1079,7 @@ const Saves = {
   savePianoRecord(nodeId, sequence, correct, total, accuracy, tag) {
     const all = this.getPianoRecords();
     all[nodeId] = { sequence, correct, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(PIANO_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PIANO_KEY, JSON.stringify(all));
   },
   getPianoRecord(nodeId) { return this.getPianoRecords()[nodeId]; },
 
@@ -1052,8 +1094,7 @@ const Saves = {
   saveDiceRecord(nodeId, dice, sum, tag) {
     const all = this.getDiceRecords();
     all[nodeId] = { dice, sum, tag, ts: Date.now() };
-    localStorage.setItem(DICE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DICE_KEY, JSON.stringify(all));
   },
   getDiceRecord(nodeId) { return this.getDiceRecords()[nodeId]; },
 
@@ -1068,8 +1109,7 @@ const Saves = {
   saveWindRecord(nodeId, progress, attempts, tag) {
     const all = this.getWindRecords();
     all[nodeId] = { progress, attempts, tag, ts: Date.now() };
-    localStorage.setItem(WIND_KEY, JSON.stringify(all));
-    return true;
+    return this._write(WIND_KEY, JSON.stringify(all));
   },
   getWindRecord(nodeId) { return this.getWindRecords()[nodeId]; },
 
@@ -1084,8 +1124,7 @@ const Saves = {
   saveDecodeRecord(nodeId, answer, correct, tag) {
     const all = this.getDecodeRecords();
     all[nodeId] = { answer, correct, tag, ts: Date.now() };
-    localStorage.setItem(DECODE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DECODE_KEY, JSON.stringify(all));
   },
   getDecodeRecord(nodeId) { return this.getDecodeRecords()[nodeId]; },
 
@@ -1100,8 +1139,7 @@ const Saves = {
   saveRainRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getRainRecords();
     all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(RAIN_KEY, JSON.stringify(all));
-    return true;
+    return this._write(RAIN_KEY, JSON.stringify(all));
   },
   getRainRecord(nodeId) { return this.getRainRecords()[nodeId]; },
 
@@ -1116,8 +1154,7 @@ const Saves = {
   saveRubbingRecord(nodeId, coverage, tag) {
     const all = this.getRubbingRecords();
     all[nodeId] = { coverage, tag, ts: Date.now() };
-    localStorage.setItem(RUBBING_KEY, JSON.stringify(all));
-    return true;
+    return this._write(RUBBING_KEY, JSON.stringify(all));
   },
   getRubbingRecord(nodeId) { return this.getRubbingRecords()[nodeId]; },
 
@@ -1132,8 +1169,7 @@ const Saves = {
   saveCollectRecord(nodeId, collected, total, accuracy, tag) {
     const all = this.getCollectRecords();
     all[nodeId] = { collected, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(COLLECT_KEY, JSON.stringify(all));
-    return true;
+    return this._write(COLLECT_KEY, JSON.stringify(all));
   },
   getCollectRecord(nodeId) { return this.getCollectRecords()[nodeId]; },
 
@@ -1148,8 +1184,7 @@ const Saves = {
   saveFocusRecord(nodeId, focus, diff, tag) {
     const all = this.getFocusRecords();
     all[nodeId] = { focus, diff, tag, ts: Date.now() };
-    localStorage.setItem(FOCUS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(FOCUS_KEY, JSON.stringify(all));
   },
   getFocusRecord(nodeId) { return this.getFocusRecords()[nodeId]; },
 
@@ -1164,8 +1199,7 @@ const Saves = {
   saveScentmemRecord(nodeId, correct, total, tag) {
     const all = this.getScentmemRecords();
     all[nodeId] = { correct, total, tag, ts: Date.now() };
-    localStorage.setItem(SCENTMEM_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SCENTMEM_KEY, JSON.stringify(all));
   },
   getScentmemRecord(nodeId) { return this.getScentmemRecords()[nodeId]; },
 
@@ -1180,8 +1214,7 @@ const Saves = {
   saveTealeafRecord(nodeId, shape, score, tag) {
     const all = this.getTealeafRecords();
     all[nodeId] = { shape, score, tag, ts: Date.now() };
-    localStorage.setItem(TEALEAF_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TEALEAF_KEY, JSON.stringify(all));
   },
   getTealeafRecord(nodeId) { return this.getTealeafRecords()[nodeId]; },
 
@@ -1196,8 +1229,7 @@ const Saves = {
   saveShadowRecord(nodeId, overlap, tag) {
     const all = this.getShadowRecords();
     all[nodeId] = { overlap, tag, ts: Date.now() };
-    localStorage.setItem(SHADOW_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SHADOW_KEY, JSON.stringify(all));
   },
   getShadowRecord(nodeId) { return this.getShadowRecords()[nodeId]; },
 
@@ -1212,8 +1244,7 @@ const Saves = {
   saveCandleRecord(nodeId, survived, total, ratio, tag) {
     const all = this.getCandleRecords();
     all[nodeId] = { survived, total, ratio, tag, ts: Date.now() };
-    localStorage.setItem(CANDLE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CANDLE_KEY, JSON.stringify(all));
   },
   getCandleRecord(nodeId) { return this.getCandleRecords()[nodeId]; },
 
@@ -1228,8 +1259,7 @@ const Saves = {
   saveDialRecord(nodeId, dialed, target, correct, tag) {
     const all = this.getDialRecords();
     all[nodeId] = { dialed, target, correct, tag, ts: Date.now() };
-    localStorage.setItem(DIAL_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DIAL_KEY, JSON.stringify(all));
   },
   getDialRecord(nodeId) { return this.getDialRecords()[nodeId]; },
 
@@ -1244,8 +1274,7 @@ const Saves = {
   saveFoggyRecord(nodeId, coverage, shape, tag) {
     const all = this.getFoggyRecords();
     all[nodeId] = { coverage, shape, tag, ts: Date.now() };
-    localStorage.setItem(FOGGY_KEY, JSON.stringify(all));
-    return true;
+    return this._write(FOGGY_KEY, JSON.stringify(all));
   },
   getFoggyRecord(nodeId) { return this.getFoggyRecords()[nodeId]; },
 
@@ -1260,8 +1289,7 @@ const Saves = {
   saveSugarRecord(nodeId, placed, total, tag) {
     const all = this.getSugarRecords();
     all[nodeId] = { placed, total, tag, ts: Date.now() };
-    localStorage.setItem(SUGAR_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SUGAR_KEY, JSON.stringify(all));
   },
   getSugarRecord(nodeId) { return this.getSugarRecords()[nodeId]; },
 
@@ -1276,8 +1304,7 @@ const Saves = {
   saveChimeRecord(nodeId, diff, tag) {
     const all = this.getChimeRecords();
     all[nodeId] = { diff, tag, ts: Date.now() };
-    localStorage.setItem(CHIME_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CHIME_KEY, JSON.stringify(all));
   },
   getChimeRecord(nodeId) { return this.getChimeRecords()[nodeId]; },
 
@@ -1292,8 +1319,7 @@ const Saves = {
   saveHourglassRecord(nodeId, error, tag) {
     const all = this.getHourglassRecords();
     all[nodeId] = { error, tag, ts: Date.now() };
-    localStorage.setItem(HOURGLASS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(HOURGLASS_KEY, JSON.stringify(all));
   },
   getHourglassRecord(nodeId) { return this.getHourglassRecords()[nodeId]; },
 
@@ -1308,8 +1334,7 @@ const Saves = {
   saveKiteRecord(nodeId, match, tag) {
     const all = this.getKiteRecords();
     all[nodeId] = { match, tag, ts: Date.now() };
-    localStorage.setItem(KITE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(KITE_KEY, JSON.stringify(all));
   },
   getKiteRecord(nodeId) { return this.getKiteRecords()[nodeId]; },
 
@@ -1324,8 +1349,7 @@ const Saves = {
   saveLockRecord(nodeId, code, target, correct, tag) {
     const all = this.getLockRecords();
     all[nodeId] = { code, target, correct, tag, ts: Date.now() };
-    localStorage.setItem(LOCK_KEY, JSON.stringify(all));
-    return true;
+    return this._write(LOCK_KEY, JSON.stringify(all));
   },
   getLockRecord(nodeId) { return this.getLockRecords()[nodeId]; },
 
@@ -1340,8 +1364,7 @@ const Saves = {
   saveOrigamiRecord(nodeId, steps, tag) {
     const all = this.getOrigamiRecords();
     all[nodeId] = { steps, tag, ts: Date.now() };
-    localStorage.setItem(ORIGAMI_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ORIGAMI_KEY, JSON.stringify(all));
   },
   getOrigamiRecord(nodeId) { return this.getOrigamiRecords()[nodeId]; },
 
@@ -1356,8 +1379,7 @@ const Saves = {
   saveOrbitRecord(nodeId, error, tag) {
     const all = this.getOrbitRecords();
     all[nodeId] = { error, tag, ts: Date.now() };
-    localStorage.setItem(ORBIT_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ORBIT_KEY, JSON.stringify(all));
   },
   getOrbitRecord(nodeId) { return this.getOrbitRecords()[nodeId]; },
 
@@ -1372,8 +1394,7 @@ const Saves = {
   saveFireflyRecord(nodeId, gathered, total, deviation, tag) {
     const all = this.getFireflyRecords();
     all[nodeId] = { gathered, total, deviation, tag, ts: Date.now() };
-    localStorage.setItem(FIREFLY_KEY, JSON.stringify(all));
-    return true;
+    return this._write(FIREFLY_KEY, JSON.stringify(all));
   },
   getFireflyRecord(nodeId) { return this.getFireflyRecords()[nodeId]; },
 
@@ -1388,8 +1409,7 @@ const Saves = {
   saveWindchimeRecord(nodeId, matched, total, deviation, tag) {
     const all = this.getWindchimeRecords();
     all[nodeId] = { matched, total, deviation, tag, ts: Date.now() };
-    localStorage.setItem(WINDCHIME_KEY, JSON.stringify(all));
-    return true;
+    return this._write(WINDCHIME_KEY, JSON.stringify(all));
   },
   getWindchimeRecord(nodeId) { return this.getWindchimeRecords()[nodeId]; },
 
@@ -1404,8 +1424,7 @@ const Saves = {
   saveBottleRecord(nodeId, power, reached, tag) {
     const all = this.getBottleRecords();
     all[nodeId] = { power, reached, tag, ts: Date.now() };
-    localStorage.setItem(BOTTLE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(BOTTLE_KEY, JSON.stringify(all));
   },
   getBottleRecord(nodeId) { return this.getBottleRecords()[nodeId]; },
 
@@ -1420,8 +1439,7 @@ const Saves = {
   saveEcholocRecord(nodeId, estimate, actual, error, tag) {
     const all = this.getEcholocRecords();
     all[nodeId] = { estimate, actual, error, tag, ts: Date.now() };
-    localStorage.setItem(ECHOLOC_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ECHOLOC_KEY, JSON.stringify(all));
   },
   getEcholocRecord(nodeId) { return this.getEcholocRecords()[nodeId]; },
 
@@ -1436,8 +1454,7 @@ const Saves = {
   saveCompassRecord(nodeId, angle, target, error, tag) {
     const all = this.getCompassRecords();
     all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    localStorage.setItem(COMPASS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(COMPASS_KEY, JSON.stringify(all));
   },
   getCompassRecord(nodeId) { return this.getCompassRecords()[nodeId]; },
 
@@ -1452,8 +1469,7 @@ const Saves = {
   saveTelegraphRecord(nodeId, code, choice, correct, tag) {
     const all = this.getTelegraphRecords();
     all[nodeId] = { code, choice, correct, tag, ts: Date.now() };
-    localStorage.setItem(TELEGRAPH_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TELEGRAPH_KEY, JSON.stringify(all));
   },
   getTelegraphRecord(nodeId) { return this.getTelegraphRecords()[nodeId]; },
 
@@ -1468,8 +1484,7 @@ const Saves = {
   saveBalanceRecord(nodeId, left, right, diff, tag) {
     const all = this.getBalanceRecords();
     all[nodeId] = { left, right, diff, tag, ts: Date.now() };
-    localStorage.setItem(BALANCE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(BALANCE_KEY, JSON.stringify(all));
   },
   getBalanceRecord(nodeId) { return this.getBalanceRecords()[nodeId]; },
 
@@ -1484,8 +1499,7 @@ const Saves = {
   savePendulumRecord(nodeId, clickAt, targetAt, error, tag) {
     const all = this.getPendulumRecords();
     all[nodeId] = { clickAt, targetAt, error, tag, ts: Date.now() };
-    localStorage.setItem(PENDULUM_KEY, JSON.stringify(all));
-    return true;
+    return this._write(PENDULUM_KEY, JSON.stringify(all));
   },
   getPendulumRecord(nodeId) { return this.getPendulumRecords()[nodeId]; },
 
@@ -1500,8 +1514,7 @@ const Saves = {
   saveMetronomeRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getMetronomeRecords();
     all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    localStorage.setItem(METRONOME_KEY, JSON.stringify(all));
-    return true;
+    return this._write(METRONOME_KEY, JSON.stringify(all));
   },
   getMetronomeRecord(nodeId) { return this.getMetronomeRecords()[nodeId]; },
 
@@ -1516,8 +1529,7 @@ const Saves = {
   saveStarchartRecord(nodeId, sequence, matched, total, tag) {
     const all = this.getStarchartRecords();
     all[nodeId] = { sequence, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(STARCHART_KEY, JSON.stringify(all));
-    return true;
+    return this._write(STARCHART_KEY, JSON.stringify(all));
   },
   getStarchartRecord(nodeId) { return this.getStarchartRecords()[nodeId]; },
 
@@ -1532,8 +1544,7 @@ const Saves = {
   saveLensRecord(nodeId, focus, target, error, tag) {
     const all = this.getLensRecords();
     all[nodeId] = { focus, target, error, tag, ts: Date.now() };
-    localStorage.setItem(LENS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(LENS_KEY, JSON.stringify(all));
   },
   getLensRecord(nodeId) { return this.getLensRecords()[nodeId]; },
 
@@ -1548,8 +1559,7 @@ const Saves = {
   saveTuningRecord(nodeId, stringIdx, tension, diff, tag) {
     const all = this.getTuningRecords();
     all[nodeId] = { stringIdx, tension, diff, tag, ts: Date.now() };
-    localStorage.setItem(TUNING_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TUNING_KEY, JSON.stringify(all));
   },
   getTuningRecord(nodeId) { return this.getTuningRecords()[nodeId]; },
 
@@ -1564,8 +1574,7 @@ const Saves = {
   saveEclipseRecord(nodeId, moon, target, error, tag) {
     const all = this.getEclipseRecords();
     all[nodeId] = { moon, target, error, tag, ts: Date.now() };
-    localStorage.setItem(ECLIPSE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ECLIPSE_KEY, JSON.stringify(all));
   },
   getEclipseRecord(nodeId) { return this.getEclipseRecords()[nodeId]; },
 
@@ -1580,8 +1589,7 @@ const Saves = {
   saveStampRecord(nodeId, angle, target, error, tag) {
     const all = this.getStampRecords();
     all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    localStorage.setItem(STAMP_KEY, JSON.stringify(all));
-    return true;
+    return this._write(STAMP_KEY, JSON.stringify(all));
   },
   getStampRecord(nodeId) { return this.getStampRecords()[nodeId]; },
 
@@ -1596,8 +1604,7 @@ const Saves = {
   saveAstrolabeRecord(nodeId, angles, targets, avgError, tag) {
     const all = this.getAstrolabeRecords();
     all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
-    localStorage.setItem(ASTROLABE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ASTROLABE_KEY, JSON.stringify(all));
   },
   getAstrolabeRecord(nodeId) { return this.getAstrolabeRecords()[nodeId]; },
 
@@ -1612,8 +1619,7 @@ const Saves = {
   saveSandpaintRecord(nodeId, grid, matched, total, tag) {
     const all = this.getSandpaintRecords();
     all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(SANDPAINT_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SANDPAINT_KEY, JSON.stringify(all));
   },
   getSandpaintRecord(nodeId) { return this.getSandpaintRecords()[nodeId]; },
 
@@ -1628,8 +1634,7 @@ const Saves = {
   saveKaleidoRecord(nodeId, angle, target, error, tag) {
     const all = this.getKaleidoRecords();
     all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    localStorage.setItem(KALEIDO_KEY, JSON.stringify(all));
-    return true;
+    return this._write(KALEIDO_KEY, JSON.stringify(all));
   },
   getKaleidoRecord(nodeId) { return this.getKaleidoRecords()[nodeId]; },
 
@@ -1644,8 +1649,7 @@ const Saves = {
   saveAbacusRecord(nodeId, counts, targets, diff, tag) {
     const all = this.getAbacusRecords();
     all[nodeId] = { counts, targets, diff, tag, ts: Date.now() };
-    localStorage.setItem(ABACUS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(ABACUS_KEY, JSON.stringify(all));
   },
   getAbacusRecord(nodeId) { return this.getAbacusRecords()[nodeId]; },
 
@@ -1660,8 +1664,7 @@ const Saves = {
   saveGearRecord(nodeId, angles, targets, avgError, tag) {
     const all = this.getGearRecords();
     all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
-    localStorage.setItem(GEAR_KEY, JSON.stringify(all));
-    return true;
+    return this._write(GEAR_KEY, JSON.stringify(all));
   },
   getGearRecord(nodeId) { return this.getGearRecords()[nodeId]; },
 
@@ -1676,8 +1679,7 @@ const Saves = {
   saveTopoRecord(nodeId, points, matched, total, tag) {
     const all = this.getTopoRecords();
     all[nodeId] = { points, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(TOPO_KEY, JSON.stringify(all));
-    return true;
+    return this._write(TOPO_KEY, JSON.stringify(all));
   },
   getTopoRecord(nodeId) { return this.getTopoRecords()[nodeId]; },
 
@@ -1692,8 +1694,7 @@ const Saves = {
   saveSundialRecord(nodeId, angle, target, error, tag) {
     const all = this.getSundialRecords();
     all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    localStorage.setItem(SUNDIAL_KEY, JSON.stringify(all));
-    return true;
+    return this._write(SUNDIAL_KEY, JSON.stringify(all));
   },
   getSundialRecord(nodeId) { return this.getSundialRecords()[nodeId]; },
 
@@ -1708,8 +1709,7 @@ const Saves = {
   saveDyeRecord(nodeId, rgb, target, diff, tag) {
     const all = this.getDyeRecords();
     all[nodeId] = { rgb, target, diff, tag, ts: Date.now() };
-    localStorage.setItem(DYE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DYE_KEY, JSON.stringify(all));
   },
   getDyeRecord(nodeId) { return this.getDyeRecords()[nodeId]; },
 
@@ -1724,8 +1724,7 @@ const Saves = {
   saveWindmillRecord(nodeId, angles, target, avgError, tag) {
     const all = this.getWindmillRecords();
     all[nodeId] = { angles, target, avgError, tag, ts: Date.now() };
-    localStorage.setItem(WINDMILL_KEY, JSON.stringify(all));
-    return true;
+    return this._write(WINDMILL_KEY, JSON.stringify(all));
   },
   getWindmillRecord(nodeId) { return this.getWindmillRecords()[nodeId]; },
 
@@ -1740,8 +1739,7 @@ const Saves = {
   saveWeaveRecord(nodeId, grid, matched, total, tag) {
     const all = this.getWeaveRecords();
     all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(WEAVE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(WEAVE_KEY, JSON.stringify(all));
   },
   getWeaveRecord(nodeId) { return this.getWeaveRecords()[nodeId]; },
 
@@ -1756,8 +1754,7 @@ const Saves = {
   saveMirrorRecord(nodeId, grid, matched, total, tag) {
     const all = this.getMirrorRecords();
     all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(MIRROR_KEY, JSON.stringify(all));
-    return true;
+    return this._write(MIRROR_KEY, JSON.stringify(all));
   },
   getMirrorRecord(nodeId) { return this.getMirrorRecords()[nodeId]; },
 
@@ -1772,8 +1769,7 @@ const Saves = {
   saveLanternRecord(nodeId, order, target, matched, tag) {
     const all = this.getLanternRecords();
     all[nodeId] = { order, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(LANTERN_KEY, JSON.stringify(all));
-    return true;
+    return this._write(LANTERN_KEY, JSON.stringify(all));
   },
   getLanternRecord(nodeId) { return this.getLanternRecords()[nodeId]; },
 
@@ -1788,8 +1784,7 @@ const Saves = {
   saveRippleRecord(nodeId, clicks, target, error, tag) {
     const all = this.getRippleRecords();
     all[nodeId] = { clicks, target, error, tag, ts: Date.now() };
-    localStorage.setItem(RIPPLE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(RIPPLE_KEY, JSON.stringify(all));
   },
   getRippleRecord(nodeId) { return this.getRippleRecords()[nodeId]; },
 
@@ -1804,8 +1799,7 @@ const Saves = {
   saveMosaicRecord(nodeId, grid, matched, total, tag) {
     const all = this.getMosaicRecords();
     all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    localStorage.setItem(MOSAIC_KEY, JSON.stringify(all));
-    return true;
+    return this._write(MOSAIC_KEY, JSON.stringify(all));
   },
   getMosaicRecord(nodeId) { return this.getMosaicRecords()[nodeId]; },
 
@@ -1820,8 +1814,7 @@ const Saves = {
   saveSteleRecord(nodeId, placed, target, matched, tag) {
     const all = this.getSteleRecords();
     all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(STELE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(STELE_KEY, JSON.stringify(all));
   },
   getSteleRecord(nodeId) { return this.getSteleRecords()[nodeId]; },
 
@@ -1836,8 +1829,7 @@ const Saves = {
   saveCelestialRecord(nodeId, positions, target, error, tag) {
     const all = this.getCelestialRecords();
     all[nodeId] = { positions, target, error, tag, ts: Date.now() };
-    localStorage.setItem(CELESTIAL_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CELESTIAL_KEY, JSON.stringify(all));
   },
   getCelestialRecord(nodeId) { return this.getCelestialRecords()[nodeId]; },
 
@@ -1852,8 +1844,7 @@ const Saves = {
   saveDrumRecord(nodeId, hits, target, matched, tag) {
     const all = this.getDrumRecords();
     all[nodeId] = { hits, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(DRUM_KEY, JSON.stringify(all));
-    return true;
+    return this._write(DRUM_KEY, JSON.stringify(all));
   },
   getDrumRecord(nodeId) { return this.getDrumRecords()[nodeId]; },
 
@@ -1868,8 +1859,7 @@ const Saves = {
   saveVaneRecord(nodeId, angle, target, error, tag) {
     const all = this.getVaneRecords();
     all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    localStorage.setItem(VANE_KEY, JSON.stringify(all));
-    return true;
+    return this._write(VANE_KEY, JSON.stringify(all));
   },
   getVaneRecord(nodeId) { return this.getVaneRecords()[nodeId]; },
 
@@ -1884,8 +1874,7 @@ const Saves = {
   saveClepsydraRecord(nodeId, stopTime, target, error, tag) {
     const all = this.getClepsydraRecords();
     all[nodeId] = { stopTime, target, error, tag, ts: Date.now() };
-    localStorage.setItem(CLEPSYDRA_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CLEPSYDRA_KEY, JSON.stringify(all));
   },
   getClepsydraRecord(nodeId) { return this.getClepsydraRecords()[nodeId]; },
 
@@ -1900,8 +1889,7 @@ const Saves = {
   saveJigsawRecord(nodeId, placed, target, matched, tag) {
     const all = this.getJigsawRecords();
     all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(JIGSAW_KEY, JSON.stringify(all));
-    return true;
+    return this._write(JIGSAW_KEY, JSON.stringify(all));
   },
   getJigsawRecord(nodeId) { return this.getJigsawRecords()[nodeId]; },
 
@@ -1916,8 +1904,7 @@ const Saves = {
   saveChessRecord(nodeId, moves, target, matched, tag) {
     const all = this.getChessRecords();
     all[nodeId] = { moves, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(CHESS_KEY, JSON.stringify(all));
-    return true;
+    return this._write(CHESS_KEY, JSON.stringify(all));
   },
   getChessRecord(nodeId) { return this.getChessRecords()[nodeId]; },
 
@@ -1932,8 +1919,7 @@ const Saves = {
   saveFlagRecord(nodeId, selected, target, matched, tag) {
     const all = this.getFlagRecords();
     all[nodeId] = { selected, target, matched, tag, ts: Date.now() };
-    localStorage.setItem(FLAG_KEY, JSON.stringify(all));
-    return true;
+    return this._write(FLAG_KEY, JSON.stringify(all));
   },
   getFlagRecord(nodeId) { return this.getFlagRecords()[nodeId]; },
 
@@ -1945,16 +1931,9 @@ const Saves = {
   },
 
   clearAll() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(ENDINGS_KEY);
-    localStorage.removeItem(KEYWORDS_KEY);
-    localStorage.removeItem(CG_KEY);
-    localStorage.removeItem(LETTERS_KEY);
-    localStorage.removeItem(FLAGS_KEY);
-    localStorage.removeItem(SETTINGS_KEY);
-    localStorage.removeItem(COMPOSED_KEY);
-    localStorage.removeItem(MEMORIES_KEY);
-    [CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
+    const keys = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
+     FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
+     CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
      DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
      COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
      SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY,
@@ -1976,10 +1955,15 @@ const Saves = {
      SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
      MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
      STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY,
-     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY].forEach(k => localStorage.removeItem(k));
+     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY];
+    let success = true;
+    keys.forEach((key) => {
+      if (!this._remove(key)) success = false;
+    });
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
+    return success;
   },
 };
 

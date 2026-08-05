@@ -19,6 +19,7 @@
   };
 
   let styleInjected = false;
+  const activeCancels = new Set();
 
   /* ---------- 注入内联样式（仅一次） ---------- */
   function injectStyles() {
@@ -179,11 +180,16 @@
     document.body.appendChild(overlay);
 
     let cleaned = false;
+    const cancel = () => {
+      if (!cleaned) onSkip();
+    };
     function cleanup() {
       if (cleaned) return;
       cleaned = true;
+      activeCancels.delete(cancel);
       overlay.remove();
     }
+    activeCancels.add(cancel);
     skip.addEventListener("click", () => {
       if (cleaned) return;
       cleanup();
@@ -191,6 +197,10 @@
     });
 
     return { overlay, stage, body, timer, scoreLine, cleanup };
+  }
+
+  function cancelAll() {
+    Array.from(activeCancels).forEach(cancel => cancel());
   }
 
   /* ---------- 工具：分数限定 0-100 整数 ---------- */
@@ -528,5 +538,5 @@
   }
 
   /* ---------- 导出 ---------- */
-  window.Minigames = { writing, running, painting };
+  window.Minigames = { writing, running, painting, cancelAll };
 })();

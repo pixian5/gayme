@@ -43,6 +43,8 @@
     history: [],
     isTyping: false,
     typeTimer: null,
+    typingText: "",
+    typeOnDone: null,
     autoMode: false,
     autoTimer: null,
     skipMode: false,
@@ -51,10 +53,14 @@
     visitedNodes: Saves.getFlag("visitedNodes", {}),
     loopCount: Saves.getFlag("loopCount", 0), // 剧情内循环次数（每次非真结局+1）
     perspectiveActive: false, // 视角切换：当前是否在对方视角
+    sessionId: 0,
   };
 
   const MAX_HISTORY = 200;
   const AFFECTION_MAX = 10;
+  function createDefaultVariables() {
+    return { affection: { shiyu: 0, xiazhi: 0, sunian: 0 } };
+  }
 
   /* ============ 工具：深层取值/赋值 ============ */
   function getByPath(obj, path) {
@@ -93,9 +99,18 @@
     for (const key in set) setByPath(state.variables, key, set[key]);
   }
 
+  function getCharacterMeta(speaker) {
+    if (!speaker) return null;
+    return CHARACTERS[speaker] || Object.values(CHARACTERS).find((char) => char.name === speaker) || null;
+  }
+
   /* ============ 场景/背景 ============ */
   function setScene(bg) {
     if (!bg || bg === state.currentBg) return;
+    if (!document.querySelector(`.scene-${CSS.escape(bg)}`) && bg !== "cherry_full") {
+      console.warn("场景样式不存在，使用樱花全景:", bg);
+      bg = "cherry_full";
+    }
     state.currentBg = bg;
     el.bgLayer.className = "bg-scene scene-" + bg;
     el.bgLayer.classList.add("fade-transition");
@@ -130,16 +145,15 @@
   function typewriter(text, onDone) {
     clearTimeout(state.typeTimer);
     state.isTyping = true;
+    state.typingText = text;
+    state.typeOnDone = onDone || null;
     el.clickHint.style.opacity = "0";
     el.dialogText.innerHTML = "";
     let i = 0;
     const speed = state.skipMode ? 5 : Math.max(5, Saves.settings.textSpeed);
     function tick() {
       if (i >= text.length) {
-        state.isTyping = false;
-        el.dialogText.innerHTML = text;
-        el.clickHint.style.opacity = "1";
-        onDone && onDone();
+        completeTyping();
         return;
       }
       el.dialogText.textContent = text.slice(0, i + 1);
@@ -148,21 +162,20 @@
     }
     tick();
   }
+
+  function completeTyping() {
+    if (!state.isTyping) return;
+    clearTimeout(state.typeTimer);
+    state.isTyping = false;
+    el.dialogText.innerHTML = state.typingText;
+    el.clickHint.style.opacity = "1";
+    const onDone = state.typeOnDone;
+    state.typeOnDone = null;
+    if (onDone) onDone();
+  }
+
   function skipTyping() {
-    if (state.isTyping) {
-      clearTimeout(state.typeTimer);
-      state.isTyping = false;
-      const node = SCRIPT[state.currentNode];
-      if (node) {
-        el.dialogText.innerHTML = node.text || "";
-        el.clickHint.style.opacity = "1";
-        onTextComplete(node);
-        // 信件节点：跳过打字后也要触发信件
-        if (node.letter) {
-          setTimeout(() => showLetter(node.letter, state.currentNode), 200);
-        }
-      }
-    }
+    completeTyping();
   }
 
   /* ============ 历史记录 ============ */
@@ -176,7 +189,7 @@
     if (!node || !node.day) { if (el.dayBar) el.dayBar.style.opacity = "0"; return; }
     if (el.dayBar) {
       const dayLabel = ["", "第 1 日", "第 2 日", "第 3 日", "第 4 日", "第 5 日", "第 6 日", "第 7 日", "第 8 日", "第 9 日"][node.day] || `第 ${node.day} 日`;
-      const timeLabel = { morning: "上午", noon: "中午", evening: "晚上" }[node.time] || "";
+      const timeLabel = { morning: "上午", noon: "中午", afternoon: "下午", evening: "傍晚", night: "夜晚" }[node.time] || "";
       el.dayBar.textContent = `${dayLabel} · ${timeLabel}`;
       el.dayBar.style.opacity = "1";
       // 循环徽章：显示当前循环次数
@@ -214,7 +227,10 @@
 
   function onTextComplete(node) {
     if (node.ending) {
-      setTimeout(() => showEnding(node.ending), 1000);
+      const sessionId = state.sessionId;
+      setTimeout(() => {
+        if (state.inGame && state.sessionId === sessionId && SCRIPT[state.currentNode] === node) showEnding(node.ending);
+      }, 1000);
       return;
     }
     if (state.autoMode) {
@@ -225,69 +241,61 @@
     }
   }
 
-  function gotoNode(nodeId) {
+  function gotoNode(nodeId, options = {}) {
     const node = SCRIPT[nodeId];
     if (!node) { console.error("节点不存在:", nodeId); return; }
+    const restoring = options.restoring === true;
     clearTimeout(state.autoTimer);
     state.currentNode = nodeId;
 
-    // 标记访问（流程图用）
-    state.visitedNodes[nodeId] = (state.visitedNodes[nodeId] || 0) + 1;
+    if (!restoring) {
+      // 只有首次进入节点才应用状态变更；读档只负责恢复画面。
+      state.visitedNodes[nodeId] = (state.visitedNodes[nodeId] || 0) + 1;
+      applyAdd(node.add);
+      applySet(node.set);
 
-    applyAdd(node.add);
-    applySet(node.set);
-
-    // 解锁关键词
-    if (node.keyword) {
-      if (Saves.unlockKeyword(node.keyword)) flashHint(`新关键词：${node.keyword}`);
-    }
-    // 解锁 CG
-    if (node.cg_unlock) {
-      if (Saves.unlockCG(node.cg_unlock)) flashHint(`新 CG：${CGS.find(c => c.id === node.cg_unlock)?.title || ""}`);
-    }
-    // 解锁记忆片段（循环系统）
-    if (node.memory && !Saves.isMemoryUnlocked(node.memory.id)) {
-      Saves.saveMemory(node.memory.id, node.memory.text);
-      flashHint(`✦ 记忆片段：${node.memory.title || node.memory.id}`);
-    }
-
-    // v0.5.0 新玩法：环境线索（渲染热点，但不阻断流程）
-    renderClues(node);
-    // 收件箱：触发角色主动来信
-    if (node.inbox) {
-      const list = Array.isArray(node.inbox) ? node.inbox : [node.inbox];
-      list.forEach((m) => {
-        if (Saves.saveInbox(m)) {
-          flashHint(`📩 新消息：${m.from || "未知"}`);
+      if (node.keyword) {
+        if (Saves.unlockKeyword(node.keyword)) flashHint(`新关键词：${node.keyword}`);
+      }
+      if (node.cg_unlock) {
+        if (Saves.unlockCG(node.cg_unlock)) flashHint(`新 CG：${CGS.find(c => c.id === node.cg_unlock)?.title || ""}`);
+      }
+      if (node.memory && !Saves.isMemoryUnlocked(node.memory.id)) {
+        if (Saves.saveMemory(node.memory.id, node.memory.text)) {
+          flashHint(`✦ 记忆片段：${node.memory.title || node.memory.id}`);
         }
-      });
+      }
+      if (node.inbox) {
+        const list = Array.isArray(node.inbox) ? node.inbox : [node.inbox];
+        list.forEach((m) => {
+          if (Saves.saveInbox(m)) flashHint(`📩 新消息：${m.from || "未知"}`);
+        });
+        updateInboxBadge();
+      }
+      if (node.moment) {
+        const list = Array.isArray(node.moment) ? node.moment : [node.moment];
+        list.forEach((mid) => {
+          if (Saves.addMoment(mid)) flashHint(`🌸 新动态：${mid}`);
+        });
+      }
+      if (node.personality) {
+        for (const dim in node.personality) Saves.addPersonality(dim, node.personality[dim]);
+      }
+      if (node.echoSave) {
+        const list = Array.isArray(node.echoSave) ? node.echoSave : [node.echoSave];
+        list.forEach(e => {
+          Saves.saveEcho(e.id, e.text, e.ctx);
+        });
+      }
+      deliverTimecapsules(nodeId);
+    }
+
+    // 环境线索属于画面状态，读档时也必须重新渲染。
+    renderClues(node);
+
+    if (restoring) {
       updateInboxBadge();
     }
-    // 朋友圈：发布动态
-    if (node.moment) {
-      const list = Array.isArray(node.moment) ? node.moment : [node.moment];
-      list.forEach((mid) => {
-        if (Saves.addMoment(mid)) flashHint(`🌸 新动态：${mid}`);
-      });
-    }
-    // 性格画像：累积玩家倾向
-    if (node.personality) {
-      for (const dim in node.personality) {
-        Saves.addPersonality(dim, node.personality[dim]);
-      }
-    }
-    // v0.6.0 回声：保存玩家说过的重要台词
-    if (node.echoSave) {
-      const list = Array.isArray(node.echoSave) ? node.echoSave : [node.echoSave];
-      list.forEach(e => {
-        if (Saves.saveEcho(e.id, e.text, e.ctx)) {
-          // 静默保存，不打扰流程
-        }
-      });
-    }
-
-    // v1.0.0 时光胶囊：在节点进入时投递过去的胶囊
-    deliverTimecapsules(nodeId);
 
     // 循环文本：根据 loopCount 显示不同文本
     let displayNode = node;
@@ -310,8 +318,8 @@
       else if (cond.gt !== undefined) matched = (value > cond.gt);
       else if (cond.flag !== undefined) matched = !!Saves.getFlag(cond.flag, false);
       else if (cond.ending !== undefined) matched = Saves.isEndingUnlocked(cond.ending);
-      if (matched) gotoNode(cond.then);
-      else if (node.else) gotoNode(node.else);
+      if (matched) gotoNode(cond.then, options);
+      else if (node.else) gotoNode(node.else, options);
       return;
     }
 
@@ -320,11 +328,15 @@
       setScene(node.bg);
       renderCharacters(node);
       el.dialogBox.classList.remove("hidden");
-      const speakerName = node.speaker ? (CHARACTERS[node.speaker]?.name || node.speaker) : "";
+      const speakerMeta = getCharacterMeta(node.speaker);
+      const speakerName = node.speaker ? (speakerMeta?.name || node.speaker) : "";
       el.speaker.textContent = speakerName;
       el.dialogBox.classList.remove("hidden");
+      const sessionId = state.sessionId;
       typewriter(displayNode.text || "", () => {
-        setTimeout(() => showLetter(node.letter, nodeId), 400);
+        setTimeout(() => {
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) showLetter(node.letter, nodeId);
+        }, 400);
       });
       updateDayBar(node);
       updateHeartBar();
@@ -1216,10 +1228,11 @@
     setScene(node.bg);
     renderCharacters(node);
 
-    const speakerName = node.speaker ? (CHARACTERS[node.speaker]?.name || node.speaker) : "";
+    const speakerMeta = getCharacterMeta(node.speaker);
+    const speakerName = node.speaker ? (speakerMeta?.name || node.speaker) : "";
     el.speaker.textContent = speakerName;
     el.speaker.style.background = speakerName
-      ? `linear-gradient(135deg, ${CHARACTERS[node.speaker]?.color || "#d87090"}, ${CHARACTERS[node.speaker]?.accent || "#b8608a"})`
+      ? `linear-gradient(135deg, ${speakerMeta?.color || "#d87090"}, ${speakerMeta?.accent || "#b8608a"})`
       : "rgba(40,40,60,0.7)";
     el.dialogBox.classList.remove("hidden");
 
@@ -1228,9 +1241,12 @@
 
     // v0.6.0 回声触发：节点定义 echo 时，在文本完成后弹出回声
     if (node.echo) {
+      const sessionId = state.sessionId;
       typewriter(displayNode.text || "", () => {
         onTextComplete(node);
-        setTimeout(() => triggerEcho(node.echo, nodeId), 600);
+        setTimeout(() => {
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) triggerEcho(node.echo, nodeId);
+        }, 600);
       });
     } else {
       typewriter(displayNode.text || "", () => onTextComplete(node));
@@ -1433,6 +1449,7 @@
 
   /* ============ 迷你游戏 ============ */
   async function runMinigame(gameType, currentNodeId) {
+    const sessionId = state.sessionId;
     if (!window.Minigames) {
       console.warn("Minigames 模块未加载，跳过");
       const node = SCRIPT[currentNodeId];
@@ -1447,6 +1464,7 @@
     } catch (e) {
       console.warn("迷你游戏出错:", e);
     }
+    if (!state.inGame || state.sessionId !== sessionId || state.currentNode !== currentNodeId) return;
     state.variables.lastMinigameScore = score;
     const node = SCRIPT[currentNodeId];
     if (!node) return;
@@ -1530,8 +1548,13 @@
 
   /* ============ 新游戏 ============ */
   function newGame() {
-    state.variables = { affection: { shiyu: 0, xiazhi: 0, sunian: 0 } };
+    state.sessionId += 1;
+    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
+    removeActiveInteractionLayers();
+    state.variables = createDefaultVariables();
     state.history = [];
+    state.currentNode = null;
+    state.currentBg = null;
     state.inGame = true;
     state.autoMode = false;
     state.skipMode = false;
@@ -1547,7 +1570,8 @@
   /* ============ 存档快照 ============ */
   function snapshot() {
     const node = SCRIPT[state.currentNode];
-    const speakerName = node?.speaker ? (CHARACTERS[node.speaker]?.name || node.speaker) : "";
+    const speakerMeta = getCharacterMeta(node?.speaker);
+    const speakerName = node?.speaker ? (speakerMeta?.name || node.speaker) : "";
     return {
       nodeId: state.currentNode,
       variables: JSON.parse(JSON.stringify(state.variables)),
@@ -1555,29 +1579,65 @@
       dialogPreview: (speakerName ? `【${speakerName}】` : "（旁白）") + (node?.text || "").slice(0, 30),
       day: node?.day,
       time: node?.time,
+      currentBg: state.currentBg,
+      history: state.history.slice(-MAX_HISTORY),
+      visitedNodes: JSON.parse(JSON.stringify(state.visitedNodes)),
+      loopCount: state.loopCount,
+      playCount: state.playCount,
     };
   }
 
   function quickSave() {
     if (!state.inGame) return;
-    Saves.quickSave(snapshot());
-    flashHint("已快存");
+    flashHint(Saves.quickSave(snapshot()) ? "已快存" : "快存失败：浏览器存储不可用");
   }
 
   function saveToSlot(slot) {
     if (!state.inGame) { flashHint("当前无法存档"); return; }
-    Saves.save(slot, snapshot());
-    renderSaveSlots("save");
-    flashHint(`已保存到槽位 ${slot + 1}`);
+    if (Saves.save(slot, snapshot())) {
+      renderSaveSlots("save");
+      flashHint(`已保存到槽位 ${slot + 1}`);
+    } else {
+      flashHint("保存失败：浏览器存储不可用");
+    }
   }
 
-  function loadFromSlot(slot) {
-    const data = Saves.load(slot);
-    if (!data) { flashHint("该槽位为空"); return; }
+  function removeActiveInteractionLayers() {
+    const baseLayers = new Set([el.bgLayer, el.charLayer, el.clueLayer]);
+    document.querySelectorAll("#game > [class]").forEach((candidate) => {
+      if (baseLayers.has(candidate)) return;
+      if (Array.from(candidate.classList).some((name) => name.endsWith("-layer"))) candidate.remove();
+    });
+    el.choices.classList.add("hidden");
+    el.choices.innerHTML = "";
+  }
+
+  function restoreSnapshot(data) {
+    if (!data || !SCRIPT[data.nodeId]) {
+      flashHint("存档损坏或剧情节点不存在");
+      return false;
+    }
+    state.sessionId += 1;
+    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
+    removeActiveInteractionLayers();
     state.currentNode = data.nodeId;
-    state.variables = data.variables || { affection: { shiyu: 0, xiazhi: 0, sunian: 0 } };
-    state.history = state.history || [];
+    state.variables = data.variables && typeof data.variables === "object"
+      ? JSON.parse(JSON.stringify(data.variables)) : createDefaultVariables();
+    const affection = state.variables.affection;
+    state.variables.affection = affection && typeof affection === "object" ? affection : {};
+    for (const id of ["shiyu", "xiazhi", "sunian"]) {
+      state.variables.affection[id] = Number.isFinite(state.variables.affection[id])
+        ? state.variables.affection[id] : 0;
+    }
+    state.currentBg = null;
+    state.history = Array.isArray(data.history) ? data.history.slice(-MAX_HISTORY) : [];
+    state.visitedNodes = data.visitedNodes && typeof data.visitedNodes === "object"
+      ? JSON.parse(JSON.stringify(data.visitedNodes)) : {};
+    state.loopCount = Number.isFinite(data.loopCount) ? data.loopCount : Saves.getFlag("loopCount", 0);
+    state.playCount = Number.isFinite(data.playCount) ? data.playCount : Saves.getFlag("playCount", 0);
     state.inGame = true;
+    state.autoMode = false;
+    state.skipMode = false;
     el.titleScreen.classList.add("hidden");
     el.endingScreen.classList.add("hidden");
     el.dialogBox.classList.remove("hidden");
@@ -1585,7 +1645,14 @@
     if (el.dayBar) el.dayBar.style.opacity = "1";
     if (el.heartBar) el.heartBar.style.opacity = "1";
     closeOverlay();
-    gotoNode(data.nodeId);
+    gotoNode(data.nodeId, { restoring: true });
+    return true;
+  }
+
+  function loadFromSlot(slot) {
+    const data = Saves.load(slot);
+    if (!data) { flashHint("该槽位为空"); return; }
+    restoreSnapshot(data);
   }
 
   /* ============ 顶部提示 ============ */
@@ -1664,7 +1731,14 @@
         const act = btn.dataset.act;
         if (act === "save") saveToSlot(slot);
         else if (act === "load") loadFromSlot(slot);
-        else if (act === "del") { Saves.deleteSave(slot); renderSaveSlots(mode); flashHint("已删除"); }
+        else if (act === "del") {
+          if (Saves.deleteSave(slot)) {
+            renderSaveSlots(mode);
+            flashHint("已删除");
+          } else {
+            flashHint("删除失败：浏览器存储不可用");
+          }
+        }
       };
     });
   }
@@ -1712,10 +1786,14 @@
     };
     document.getElementById("cfg-clear").onclick = () => {
       if (confirm("确定清空所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。")) {
-        Saves.clearAll();
+        if (!Saves.clearAll()) {
+          flashHint("清空失败：浏览器存储不可用");
+          return;
+        }
         state.playCount = 0;
         state.visitedNodes = {};
         state.loopCount = 0;
+        state.variables = createDefaultVariables();
         flashHint("已清空");
         closeOverlay();
       }
@@ -1751,7 +1829,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v0.5.0 · Demo</p>
+        <p style="color:#e8e0d0;">v2.6.1 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个结局（含真结局）<br>3 个迷你游戏 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -2194,6 +2272,10 @@
       btn.onclick = () => {
         const id = btn.dataset.id;
         const nowLiked = Saves.toggleLikeMoment(id);
+        if (nowLiked === null) {
+          flashHint("操作失败：浏览器存储不可用");
+          return;
+        }
         const m = moments.find(x => x.id === id);
         if (nowLiked && m && m.likeAffection) {
           applyAdd(m.likeAffection);
@@ -3781,12 +3863,18 @@
       updatePoint(v.x, v.y);
       hasSelected = true;
     });
-    document.addEventListener("mousemove", e => {
+    function onMouseMove(e) {
       if (!dragging) return;
       const v = stageToValue(e.clientX, e.clientY);
       updatePoint(v.x, v.y);
-    });
-    document.addEventListener("mouseup", () => { dragging = false; });
+    }
+    function onMouseUp() { dragging = false; }
+    function cleanupDocumentListeners() {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    }
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
     // 触屏支持
     stage.addEventListener("touchstart", e => {
       const t = e.touches[0];
@@ -3819,11 +3907,20 @@
         }
       }
       flashHint(`✦ 情绪：${qdef.label}`);
+      cleanupDocumentListeners();
       layer.remove();
       const node = SCRIPT[currentNodeId];
       const jumpTo = qdef.next || (node && node.next);
       if (jumpTo) gotoNode(jumpTo);
     };
+
+    const observer = new MutationObserver(() => {
+      if (!document.body.contains(layer)) {
+        cleanupDocumentListeners();
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.getElementById("game"), { childList: true });
 
     document.getElementById("game").appendChild(layer);
   }
@@ -15821,26 +15918,26 @@
     let stoppedAt = 0;
     let rafId = 0;
     layer.innerHTML = `
-      <div class="cl-prompt">${cl.prompt || "在目标时刻停止水流"}</div>
-      <div class="cl-stage">
-        <canvas class="cl-canvas" id="cl-canvas"></canvas>
-        <div class="cl-info" id="cl-info">点击「开始」放水，再点击「停止」</div>
+      <div class="cly-prompt">${cl.prompt || "在目标时刻停止水流"}</div>
+      <div class="cly-stage">
+        <canvas class="cly-canvas" id="cly-canvas"></canvas>
+        <div class="cly-info" id="cly-info">点击「开始」放水，再点击「停止」</div>
       </div>
-      <div class="cl-target-display">目标：${(target/1000).toFixed(1)}s · 误差 ≤ ${(tolerance/1000).toFixed(1)}s</div>
-      <div class="cl-current" id="cl-current">当前：0.0s</div>
-      <div class="cl-actions">
-        <button class="cl-start" id="cl-start">开始</button>
-        <button class="cl-stop" id="cl-stop" disabled>停止</button>
-        <button class="cl-confirm" id="cl-confirm" disabled>确认</button>
+      <div class="cly-target-display">目标：${(target/1000).toFixed(1)}s · 误差 ≤ ${(tolerance/1000).toFixed(1)}s</div>
+      <div class="cly-current" id="cly-current">当前：0.0s</div>
+      <div class="cly-actions">
+        <button class="cly-start" id="cly-start">开始</button>
+        <button class="cly-stop" id="cly-stop" disabled>停止</button>
+        <button class="cly-confirm" id="cly-confirm" disabled>确认</button>
       </div>
     `;
-    const canvas = layer.querySelector("#cl-canvas");
+    const canvas = layer.querySelector("#cly-canvas");
     const ctx = canvas.getContext("2d");
-    const info = layer.querySelector("#cl-info");
-    const currentEl = layer.querySelector("#cl-current");
-    const startBtn = layer.querySelector("#cl-start");
-    const stopBtn = layer.querySelector("#cl-stop");
-    const confirmBtn = layer.querySelector("#cl-confirm");
+    const info = layer.querySelector("#cly-info");
+    const currentEl = layer.querySelector("#cly-current");
+    const startBtn = layer.querySelector("#cly-start");
+    const stopBtn = layer.querySelector("#cly-stop");
+    const confirmBtn = layer.querySelector("#cly-confirm");
 
     let aborted = false;
     let cw = 0, ch = 0;
@@ -15954,11 +16051,11 @@
         }
       }
       const reading = document.createElement("div");
-      reading.className = "cl-reading";
-      reading.innerHTML = `<div class="cl-reading-title">${matched.label || "解读"} · 差 ${(diff/1000).toFixed(1)}s</div>
-        <div class="cl-reading-text">${matched.text || ""}</div>
-        <button class="cl-reading-close">继续</button>`;
-      reading.querySelector(".cl-reading-close").onclick = () => {
+      reading.className = "cly-reading";
+      reading.innerHTML = `<div class="cly-reading-title">${matched.label || "解读"} · 差 ${(diff/1000).toFixed(1)}s</div>
+        <div class="cly-reading-text">${matched.text || ""}</div>
+        <button class="cly-reading-close">继续</button>`;
+      reading.querySelector(".cly-reading-close").onclick = () => {
         reading.remove();
         layer.remove();
         const node = SCRIPT[currentNodeId];
@@ -16145,22 +16242,22 @@
     const moves = [];
     let piece = { x: start.x, y: start.y };
     layer.innerHTML = `
-      <div class="ch-prompt">${ch.prompt || "移动棋子到目标位置"}</div>
-      <div class="ch-stage">
-        <div class="ch-board" id="ch-board"></div>
-        <div class="ch-info" id="ch-info">点击格子移动棋子（每步一格）</div>
+      <div class="chs-prompt">${ch.prompt || "移动棋子到目标位置"}</div>
+      <div class="chs-stage">
+        <div class="chs-board" id="chs-board"></div>
+        <div class="chs-info" id="chs-info">点击格子移动棋子（每步一格）</div>
       </div>
-      <div class="ch-progress" id="ch-progress">0 / ${maxMoves} 步</div>
-      <div class="ch-actions">
-        <button class="ch-reset">重置</button>
-        <button class="ch-confirm" id="ch-confirm">确认</button>
+      <div class="chs-progress" id="chs-progress">0 / ${maxMoves} 步</div>
+      <div class="chs-actions">
+        <button class="chs-reset">重置</button>
+        <button class="chs-confirm" id="chs-confirm">确认</button>
       </div>
     `;
-    const boardEl = layer.querySelector("#ch-board");
-    const info = layer.querySelector("#ch-info");
-    const progressEl = layer.querySelector("#ch-progress");
-    const confirmBtn = layer.querySelector(".ch-confirm");
-    const resetBtn = layer.querySelector(".ch-reset");
+    const boardEl = layer.querySelector("#chs-board");
+    const info = layer.querySelector("#chs-info");
+    const progressEl = layer.querySelector("#chs-progress");
+    const confirmBtn = layer.querySelector(".chs-confirm");
+    const resetBtn = layer.querySelector(".chs-reset");
 
     let aborted = false;
 
@@ -16178,13 +16275,13 @@
       for (let y = 0; y < size; y++) {
         for (let x = 0; x < size; x++) {
           const cell = document.createElement("div");
-          cell.className = "ch-cell";
-          if ((x + y) % 2 === 0) cell.classList.add("ch-light");
-          else cell.classList.add("ch-dark");
-          if (isObstacle(x, y)) cell.classList.add("ch-obstacle");
-          if (x === target.x && y === target.y) cell.classList.add("ch-target");
-          if (piece.x === x && piece.y === y) cell.classList.add("ch-piece");
-          if (isAdjacent(x, y) && !isObstacle(x, y)) cell.classList.add("ch-movable");
+          cell.className = "chs-cell";
+          if ((x + y) % 2 === 0) cell.classList.add("chs-light");
+          else cell.classList.add("chs-dark");
+          if (isObstacle(x, y)) cell.classList.add("chs-obstacle");
+          if (x === target.x && y === target.y) cell.classList.add("chs-target");
+          if (piece.x === x && piece.y === y) cell.classList.add("chs-piece");
+          if (isAdjacent(x, y) && !isObstacle(x, y)) cell.classList.add("chs-movable");
           cell.addEventListener("click", () => {
             if (aborted) return;
             if (moves.length >= maxMoves) return;
@@ -16238,11 +16335,11 @@
         }
       }
       const reading = document.createElement("div");
-      reading.className = "ch-reading";
-      reading.innerHTML = `<div class="ch-reading-title">${matched.label || "解读"} · 距目标 ${dist} · ${moves.length} 步</div>
-        <div class="ch-reading-text">${matched.text || ""}</div>
-        <button class="ch-reading-close">继续</button>`;
-      reading.querySelector(".ch-reading-close").onclick = () => {
+      reading.className = "chs-reading";
+      reading.innerHTML = `<div class="chs-reading-title">${matched.label || "解读"} · 距目标 ${dist} · ${moves.length} 步</div>
+        <div class="chs-reading-text">${matched.text || ""}</div>
+        <button class="chs-reading-close">继续</button>`;
+      reading.querySelector(".chs-reading-close").onclick = () => {
         reading.remove();
         layer.remove();
         const node = SCRIPT[currentNodeId];
@@ -16601,10 +16698,16 @@
 
   /* ============ 返回标题 ============ */
   function backToTitle() {
+    state.sessionId += 1;
+    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
     clearTimeout(state.autoTimer);
     clearTimeout(state.typeTimer);
     state.autoMode = false;
     state.skipMode = false;
+    state.isTyping = false;
+    state.typingText = "";
+    state.typeOnDone = null;
+    state.currentNode = null;
     state.inGame = false;
     stopBgm();
     if (perspectiveBtn) { perspectiveBtn.remove(); perspectiveBtn = null; }
@@ -16930,18 +17033,8 @@
       if (a === "new") newGame();
       else if (a === "continue") {
         const quick = Saves.getQuickSave();
-        if (quick) {
-          state.currentNode = quick.nodeId;
-          state.variables = quick.variables || { affection: { shiyu: 0, xiazhi: 0, sunian: 0 } };
-          state.history = [];
-          state.inGame = true;
-          el.titleScreen.classList.add("hidden");
-          el.dialogBox.classList.remove("hidden");
-          el.topBar.classList.add("show");
-          if (el.dayBar) el.dayBar.style.opacity = "1";
-          if (el.heartBar) el.heartBar.style.opacity = "1";
-          gotoNode(quick.nodeId);
-        } else flashHint("没有可继续的存档");
+        if (quick) restoreSnapshot(quick);
+        else flashHint("没有可继续的存档");
       } else if (a === "load") openOverlay("load");
       else if (a === "gallery") openOverlay("gallery");
       else if (a === "keywords") openOverlay("keywords");
@@ -16969,20 +17062,40 @@
     };
   });
 
+  function isEditableTarget(target) {
+    return target instanceof Element && !!target.closest(
+      "input, textarea, select, button, [contenteditable='true'], [role='textbox']"
+    );
+  }
+
+  function hasActiveInteractionLayer() {
+    if (!el.choices.classList.contains("hidden")) return true;
+    if (document.querySelector(".mg-overlay")) return true;
+    const baseLayers = new Set([el.bgLayer, el.charLayer, el.clueLayer]);
+    return Array.from(document.querySelectorAll("#game > [class]")).some((candidate) => {
+      return !baseLayers.has(candidate)
+        && Array.from(candidate.classList).some((name) => name.endsWith("-layer"));
+    });
+  }
+
   // 快捷键
   document.addEventListener("keydown", (e) => {
     if (el.overlay.classList.contains("hidden") === false) {
       if (e.key === "Escape") closeOverlay();
       return;
     }
-    if (!state.inGame) return;
+    if (!state.inGame || e.repeat || isEditableTarget(e.target)) return;
+    if (e.key === "Escape") {
+      backToTitle();
+      return;
+    }
+    if (hasActiveInteractionLayer()) return;
     if (e.key === " " || e.key === "Enter") {
       e.preventDefault();
       if (state.isTyping) skipTyping();
       else advance();
     } else if (e.key === "s" || e.key === "S") quickSave();
     else if (e.key === "a" || e.key === "A") document.getElementById("btn-auto").click();
-    else if (e.key === "Escape") backToTitle();
   });
 
   /* ============ 启动 ============ */

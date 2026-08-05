@@ -5,3 +5,9 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.DS_Store
+build/
+dist/
+.env
+.env.*
+.playwright-mcp/
