@@ -589,10 +589,7 @@ const Saves = {
 
   /* ============ 拼贴诗 ============ */
   getCollages() {
-    try {
-      const raw = localStorage.getItem(COLLAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(COLLAGE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveCollage(nodeId, words, poem, score, tag) {
     const all = this.getCollages();
@@ -603,10 +600,7 @@ const Saves = {
 
   /* ============ 回声台词（玩家说过的重要台词） ============ */
   getEchoes() {
-    try {
-      const raw = localStorage.getItem(ECHO_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) { return []; }
+    return this._read(ECHO_KEY, [], Array.isArray);
   },
   saveEcho(echoId, text, ctx) {
     const list = this.getEchoes();
@@ -621,16 +615,17 @@ const Saves = {
   acknowledgeEcho(echoId, choice) {
     const list = this.getEchoes();
     const e = list.find(x => x.id === echoId);
-    if (e) { e.acknowledged = choice; this._write(ECHO_KEY, JSON.stringify(list)); return true; }
+    if (!e) return false;
+    const previous = e.acknowledged;
+    e.acknowledged = choice;
+    if (this._write(ECHO_KEY, JSON.stringify(list))) return true;
+    if (previous === undefined) delete e.acknowledged; else e.acknowledged = previous;
     return false;
   },
 
   /* ============ 摄影构图 ============ */
   getPhotos() {
-    try {
-      const raw = localStorage.getItem(PHOTO_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PHOTO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePhoto(nodeId, composition, score, tag) {
     const all = this.getPhotos();
@@ -641,10 +636,7 @@ const Saves = {
 
   /* ============ 节奏敲击 ============ */
   getRhythms() {
-    try {
-      const raw = localStorage.getItem(RHYTHM_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(RHYTHM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveRhythm(nodeId, hits, accuracy, tag) {
     const all = this.getRhythms();
@@ -656,10 +648,10 @@ const Saves = {
   /* ============ v0.7.0 气味收集 ============ */
   // 气味卡结构：{ id, name, desc, scene, ts }
   getScents() {
-    try {
-      const raw = localStorage.getItem(SCENT_KEY);
-      return raw ? JSON.parse(raw) : { collected: {}, recalled: {} };
-    } catch (e) { return { collected: {}, recalled: {} }; }
+    return this._read(SCENT_KEY, { collected: {}, recalled: {} },
+      v => v && typeof v === "object" && !Array.isArray(v)
+        && v.collected && typeof v.collected === "object" && !Array.isArray(v.collected)
+        && v.recalled && typeof v.recalled === "object" && !Array.isArray(v.recalled));
   },
   collectScent(scent) {
     const all = this.getScents();
@@ -686,10 +678,7 @@ const Saves = {
   /* ============ v0.7.0 沉默选择 ============ */
   // 记录每个沉默节点的最终选择：{ nodeId: { choice, silent, ts } }
   getSilenceRecords() {
-    try {
-      const raw = localStorage.getItem(SILENCE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SILENCE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSilenceRecord(nodeId, choice, silent) {
     const all = this.getSilenceRecords();
@@ -705,10 +694,7 @@ const Saves = {
   /* ============ v0.7.0 触觉关怀 ============ */
   // 记录每次触觉关怀的部位：{ nodeId: { parts: [], ts } }
   getTouchRecords() {
-    try {
-      const raw = localStorage.getItem(TOUCH_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TOUCH_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTouchRecord(nodeId, partId, partLabel) {
     const all = this.getTouchRecords();
@@ -725,10 +711,7 @@ const Saves = {
   /* ============ v0.7.0 温度感知 ============ */
   // 记录每个温度节点的最终温度：{ nodeId: { temp, tag, ts } }
   getTemperatureRecords() {
-    try {
-      const raw = localStorage.getItem(TEMPERATURE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TEMPERATURE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTemperatureRecord(nodeId, temp, tag) {
     const all = this.getTemperatureRecords();
@@ -746,10 +729,7 @@ const Saves = {
   /* ============ v0.8.0 占卜抽牌 ============ */
   // 记录每次占卜的三张牌：{ nodeId: { past, present, future, combo, ts } }
   getTarotRecords() {
-    try {
-      const raw = localStorage.getItem(TAROT_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TAROT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTarotRecord(nodeId, past, present, future, combo) {
     const all = this.getTarotRecords();
@@ -767,10 +747,7 @@ const Saves = {
   /* ============ v0.8.0 梦境编织 ============ */
   // 记录每次拼接的顺序：{ nodeId: { sequence: [], meaning, tag, ts } }
   getDreamweaveRecords() {
-    try {
-      const raw = localStorage.getItem(DREAMWEAVE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DREAMWEAVE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDreamweaveRecord(nodeId, sequence, meaning, tag) {
     const all = this.getDreamweaveRecords();
@@ -782,10 +759,7 @@ const Saves = {
   /* ============ v0.8.0 笔迹选择 ============ */
   // 记录每次写信的笔迹：{ nodeId: { style, label, ts } }
   getHandwritingRecords() {
-    try {
-      const raw = localStorage.getItem(HANDWRITING_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(HANDWRITING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveHandwritingRecord(nodeId, style, label) {
     const all = this.getHandwritingRecords();
@@ -804,10 +778,7 @@ const Saves = {
   // 记录每次选择的情绪点：{ nodeId: { x, y, tag, ts } }
   // x: -100(不悦)~+100(愉悦)，y: -100(平静)~+100(激活)
   getSpectrumRecords() {
-    try {
-      const raw = localStorage.getItem(SPECTRUM_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SPECTRUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSpectrumRecord(nodeId, x, y, tag) {
     const all = this.getSpectrumRecords();
@@ -825,10 +796,7 @@ const Saves = {
   /* ============ v0.9.0 星座连线 ============ */
   // 记录每次连星的顺序：{ nodeId: { sequence: [], tag, ts } }
   getConstellationRecords() {
-    try {
-      const raw = localStorage.getItem(CONSTELLATION_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CONSTELLATION_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveConstellationRecord(nodeId, sequence, tag) {
     const all = this.getConstellationRecords();
@@ -840,10 +808,7 @@ const Saves = {
   /* ============ v0.9.0 心声听诊 ============ */
   // 记录每次心跳同步：{ nodeId: { hits, total, accuracy, tag, ts } }
   getStethoscopeRecords() {
-    try {
-      const raw = localStorage.getItem(STETHOSCOPE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(STETHOSCOPE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveStethoscopeRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getStethoscopeRecords();
@@ -855,10 +820,7 @@ const Saves = {
   /* ============ v0.9.0 信物拼图 ============ */
   // 记录每次拼图顺序：{ nodeId: { sequence: [], tag, ts } }
   getPuzzleRecords() {
-    try {
-      const raw = localStorage.getItem(PUZZLE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PUZZLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePuzzleRecord(nodeId, sequence, tag) {
     const all = this.getPuzzleRecords();
@@ -870,10 +832,7 @@ const Saves = {
   /* ============ v0.9.0 气味调香 ============ */
   // 记录每次调香配方：{ nodeId: { notes: { 前, 中, 后 }, tag, ts } }
   getPerfumeRecords() {
-    try {
-      const raw = localStorage.getItem(PERFUME_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PERFUME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePerfumeRecord(nodeId, notes, tag) {
     const all = this.getPerfumeRecords();
@@ -891,10 +850,7 @@ const Saves = {
   /* ============ v1.0.0 呼吸引导 ============ */
   // 记录每次呼吸：{ nodeId: { cycles, avgSync, tag, ts } }
   getBreathRecords() {
-    try {
-      const raw = localStorage.getItem(BREATH_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(BREATH_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveBreathRecord(nodeId, cycles, avgSync, tag) {
     const all = this.getBreathRecords();
@@ -907,10 +863,7 @@ const Saves = {
   // 记录每次写的胶囊：{ nodeId: { message, deliverAt, delivered, tag, ts } }
   // deliverAt 是未来某节点 id；delivered 标记是否已投递
   getTimecapsuleRecords() {
-    try {
-      const raw = localStorage.getItem(TIMECAPSULE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TIMECAPSULE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTimecapsuleRecord(nodeId, message, deliverAt, tag) {
     const all = this.getTimecapsuleRecords();
@@ -936,10 +889,7 @@ const Saves = {
   /* ============ v1.0.0 信纸折痕 ============ */
   // 记录每次折纸顺序：{ nodeId: { sequence: [], tag, ts } }
   getFoldRecords() {
-    try {
-      const raw = localStorage.getItem(FOLD_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FOLD_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveFoldRecord(nodeId, sequence, tag) {
     const all = this.getFoldRecords();
@@ -951,10 +901,7 @@ const Saves = {
   /* ============ v1.0.0 倒影对齐 ============ */
   // 记录每次对齐结果：{ nodeId: { offsetX, accuracy, tag, ts } }
   getReflectionRecords() {
-    try {
-      const raw = localStorage.getItem(REFLECTION_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(REFLECTION_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveReflectionRecord(nodeId, offsetX, accuracy, tag) {
     const all = this.getReflectionRecords();
@@ -966,10 +913,7 @@ const Saves = {
   /* ============ v1.1.0 光影描绘 ============ */
   // 记录每次描绘：{ nodeId: { litTargets: [...], coverage, tag, ts } }
   getLightdrawRecords() {
-    try {
-      const raw = localStorage.getItem(LIGHTDRAW_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(LIGHTDRAW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveLightdrawRecord(nodeId, litTargets, coverage, tag) {
     const all = this.getLightdrawRecords();
@@ -981,10 +925,7 @@ const Saves = {
   /* ============ v1.1.0 声音模仿 ============ */
   // 记录每次模仿：{ nodeId: { pitch, tempo, diff, tag, ts } }
   getMimicRecords() {
-    try {
-      const raw = localStorage.getItem(MIMIC_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(MIMIC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveMimicRecord(nodeId, pitch, tempo, diff, tag) {
     const all = this.getMimicRecords();
@@ -996,10 +937,7 @@ const Saves = {
   /* ============ v1.1.0 季节切换 ============ */
   // 记录每次季节选择：{ nodeId: { chosenSeason, isTarget, tag, ts } }
   getSeasonRecords() {
-    try {
-      const raw = localStorage.getItem(SEASON_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SEASON_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSeasonRecord(nodeId, chosenSeason, isTarget, tag) {
     const all = this.getSeasonRecords();
@@ -1011,10 +949,7 @@ const Saves = {
   /* ============ v1.1.0 脉搏同步 ============ */
   // 记录每次脉搏同步：{ nodeId: { hits, total, accuracy, tag, ts } }
   getPulseRecords() {
-    try {
-      const raw = localStorage.getItem(PULSE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PULSE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePulseRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getPulseRecords();
@@ -1026,10 +961,7 @@ const Saves = {
   /* ============ v1.2.0 茶席品茗 ============ */
   // 记录每次泡茶：{ nodeId: { temp, amount, time, diff, tag, ts } }
   getTeaRecords() {
-    try {
-      const raw = localStorage.getItem(TEA_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TEA_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTeaRecord(nodeId, temp, amount, time, diff, tag) {
     const all = this.getTeaRecords();
@@ -1041,10 +973,7 @@ const Saves = {
   /* ============ v1.2.0 星象观测 ============ */
   // 记录每次星象对齐：{ nodeId: { angle, diff, tag, ts } }
   getAstronomyRecords() {
-    try {
-      const raw = localStorage.getItem(ASTRONOMY_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ASTRONOMY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveAstronomyRecord(nodeId, angle, diff, tag) {
     const all = this.getAstronomyRecords();
@@ -1056,10 +985,7 @@ const Saves = {
   /* ============ v1.2.0 颜料调配 ============ */
   // 记录每次调色：{ nodeId: { r, g, b, diff, tag, ts } }
   getPaletteRecords() {
-    try {
-      const raw = localStorage.getItem(PALETTE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PALETTE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePaletteRecord(nodeId, r, g, b, diff, tag) {
     const all = this.getPaletteRecords();
@@ -1071,10 +997,7 @@ const Saves = {
   /* ============ v1.2.0 琴键演奏 ============ */
   // 记录每次演奏：{ nodeId: { sequence, correct, total, accuracy, tag, ts } }
   getPianoRecords() {
-    try {
-      const raw = localStorage.getItem(PIANO_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PIANO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePianoRecord(nodeId, sequence, correct, total, accuracy, tag) {
     const all = this.getPianoRecords();
@@ -1086,10 +1009,7 @@ const Saves = {
   /* ============ v1.3.0 占星骰子 ============ */
   // 记录每次掷骰：{ nodeId: { dice:[a,b,c], sum, tag, ts } }
   getDiceRecords() {
-    try {
-      const raw = localStorage.getItem(DICE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DICE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDiceRecord(nodeId, dice, sum, tag) {
     const all = this.getDiceRecords();
@@ -1101,10 +1021,7 @@ const Saves = {
   /* ============ v1.3.0 风向感知 ============ */
   // 记录每次航行：{ nodeId: { progress, attempts, tag, ts } }
   getWindRecords() {
-    try {
-      const raw = localStorage.getItem(WIND_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(WIND_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveWindRecord(nodeId, progress, attempts, tag) {
     const all = this.getWindRecords();
@@ -1116,10 +1033,7 @@ const Saves = {
   /* ============ v1.3.0 梦境解码 ============ */
   // 记录每次解码：{ nodeId: { answer, correct, tag, ts } }
   getDecodeRecords() {
-    try {
-      const raw = localStorage.getItem(DECODE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DECODE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDecodeRecord(nodeId, answer, correct, tag) {
     const all = this.getDecodeRecords();
@@ -1131,10 +1045,7 @@ const Saves = {
   /* ============ v1.3.0 雨滴节奏 ============ */
   // 记录每次雨滴：{ nodeId: { hits, total, accuracy, tag, ts } }
   getRainRecords() {
-    try {
-      const raw = localStorage.getItem(RAIN_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(RAIN_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveRainRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getRainRecords();
@@ -1146,10 +1057,7 @@ const Saves = {
   /* ============ v1.4.0 拓印 ============ */
   // 记录每次拓印：{ nodeId: { coverage, tag, ts } }
   getRubbingRecords() {
-    try {
-      const raw = localStorage.getItem(RUBBING_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(RUBBING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveRubbingRecord(nodeId, coverage, tag) {
     const all = this.getRubbingRecords();
@@ -1161,10 +1069,7 @@ const Saves = {
   /* ============ v1.4.0 集字 ============ */
   // 记录每次集字：{ nodeId: { collected, total, accuracy, tag, ts } }
   getCollectRecords() {
-    try {
-      const raw = localStorage.getItem(COLLECT_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(COLLECT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveCollectRecord(nodeId, collected, total, accuracy, tag) {
     const all = this.getCollectRecords();
@@ -1176,10 +1081,7 @@ const Saves = {
   /* ============ v1.4.0 光影对焦 ============ */
   // 记录每次对焦：{ nodeId: { focus, diff, tag, ts } }
   getFocusRecords() {
-    try {
-      const raw = localStorage.getItem(FOCUS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FOCUS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveFocusRecord(nodeId, focus, diff, tag) {
     const all = this.getFocusRecords();
@@ -1191,10 +1093,7 @@ const Saves = {
   /* ============ v1.4.0 气味记忆 ============ */
   // 记录每次气味记忆：{ nodeId: { correct, total, tag, ts } }
   getScentmemRecords() {
-    try {
-      const raw = localStorage.getItem(SCENTMEM_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SCENTMEM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveScentmemRecord(nodeId, correct, total, tag) {
     const all = this.getScentmemRecords();
@@ -1206,10 +1105,7 @@ const Saves = {
   /* ============ v1.5.0 茶渍占卜 ============ */
   // { nodeId: { shape, score, tag, ts } }
   getTealeafRecords() {
-    try {
-      const raw = localStorage.getItem(TEALEAF_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TEALEAF_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTealeafRecord(nodeId, shape, score, tag) {
     const all = this.getTealeafRecords();
@@ -1221,10 +1117,7 @@ const Saves = {
   /* ============ v1.5.0 影子对齐 ============ */
   // { nodeId: { overlap, tag, ts } }
   getShadowRecords() {
-    try {
-      const raw = localStorage.getItem(SHADOW_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SHADOW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveShadowRecord(nodeId, overlap, tag) {
     const all = this.getShadowRecords();
@@ -1236,10 +1129,7 @@ const Saves = {
   /* ============ v1.5.0 烛火守护 ============ */
   // { nodeId: { survived, total, ratio, tag, ts } }
   getCandleRecords() {
-    try {
-      const raw = localStorage.getItem(CANDLE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CANDLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveCandleRecord(nodeId, survived, total, ratio, tag) {
     const all = this.getCandleRecords();
@@ -1251,10 +1141,7 @@ const Saves = {
   /* ============ v1.5.0 电话拨号 ============ */
   // { nodeId: { dialed, target, correct, tag, ts } }
   getDialRecords() {
-    try {
-      const raw = localStorage.getItem(DIAL_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDialRecord(nodeId, dialed, target, correct, tag) {
     const all = this.getDialRecords();
@@ -1266,10 +1153,7 @@ const Saves = {
   /* ============ v1.6.0 雾窗描绘 ============ */
   // { nodeId: { coverage, shape, tag, ts } }
   getFoggyRecords() {
-    try {
-      const raw = localStorage.getItem(FOGGY_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FOGGY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveFoggyRecord(nodeId, coverage, shape, tag) {
     const all = this.getFoggyRecords();
@@ -1281,10 +1165,7 @@ const Saves = {
   /* ============ v1.6.0 糖块拼图 ============ */
   // { nodeId: { placed, total, tag, ts } }
   getSugarRecords() {
-    try {
-      const raw = localStorage.getItem(SUGAR_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SUGAR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSugarRecord(nodeId, placed, total, tag) {
     const all = this.getSugarRecords();
@@ -1296,10 +1177,7 @@ const Saves = {
   /* ============ v1.6.0 钟调共振 ============ */
   // { nodeId: { diff, tag, ts } }
   getChimeRecords() {
-    try {
-      const raw = localStorage.getItem(CHIME_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CHIME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveChimeRecord(nodeId, diff, tag) {
     const all = this.getChimeRecords();
@@ -1311,10 +1189,7 @@ const Saves = {
   /* ============ v1.6.0 沙漏计时 ============ */
   // { nodeId: { error, tag, ts } }
   getHourglassRecords() {
-    try {
-      const raw = localStorage.getItem(HOURGLASS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(HOURGLASS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveHourglassRecord(nodeId, error, tag) {
     const all = this.getHourglassRecords();
@@ -1326,10 +1201,7 @@ const Saves = {
   /* ============ v1.7.0 风筝引线 ============ */
   // { nodeId: { match, tag, ts } }
   getKiteRecords() {
-    try {
-      const raw = localStorage.getItem(KITE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(KITE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveKiteRecord(nodeId, match, tag) {
     const all = this.getKiteRecords();
@@ -1341,10 +1213,7 @@ const Saves = {
   /* ============ v1.7.0 密码锁 ============ */
   // { nodeId: { code, target, correct, tag, ts } }
   getLockRecords() {
-    try {
-      const raw = localStorage.getItem(LOCK_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(LOCK_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveLockRecord(nodeId, code, target, correct, tag) {
     const all = this.getLockRecords();
@@ -1356,10 +1225,7 @@ const Saves = {
   /* ============ v1.7.0 折纸造型 ============ */
   // { nodeId: { steps, tag, ts } }
   getOrigamiRecords() {
-    try {
-      const raw = localStorage.getItem(ORIGAMI_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ORIGAMI_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveOrigamiRecord(nodeId, steps, tag) {
     const all = this.getOrigamiRecords();
@@ -1371,10 +1237,7 @@ const Saves = {
   /* ============ v1.7.0 星轨追踪 ============ */
   // { nodeId: { error, tag, ts } }
   getOrbitRecords() {
-    try {
-      const raw = localStorage.getItem(ORBIT_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ORBIT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveOrbitRecord(nodeId, error, tag) {
     const all = this.getOrbitRecords();
@@ -1386,10 +1249,7 @@ const Saves = {
   /* ============ v1.8.0 萤火引路 ============ */
   // { nodeId: { gathered, total, deviation, tag, ts } }
   getFireflyRecords() {
-    try {
-      const raw = localStorage.getItem(FIREFLY_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FIREFLY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveFireflyRecord(nodeId, gathered, total, deviation, tag) {
     const all = this.getFireflyRecords();
@@ -1401,10 +1261,7 @@ const Saves = {
   /* ============ v1.8.0 风铃调音 ============ */
   // { nodeId: { matched, total, deviation, tag, ts } }
   getWindchimeRecords() {
-    try {
-      const raw = localStorage.getItem(WINDCHIME_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(WINDCHIME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveWindchimeRecord(nodeId, matched, total, deviation, tag) {
     const all = this.getWindchimeRecords();
@@ -1416,10 +1273,7 @@ const Saves = {
   /* ============ v1.8.0 瓶中信 ============ */
   // { nodeId: { power, reached, tag, ts } }
   getBottleRecords() {
-    try {
-      const raw = localStorage.getItem(BOTTLE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(BOTTLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveBottleRecord(nodeId, power, reached, tag) {
     const all = this.getBottleRecords();
@@ -1431,10 +1285,7 @@ const Saves = {
   /* ============ v1.8.0 回声定位 ============ */
   // { nodeId: { estimate, actual, error, tag, ts } }
   getEcholocRecords() {
-    try {
-      const raw = localStorage.getItem(ECHOLOC_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ECHOLOC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveEcholocRecord(nodeId, estimate, actual, error, tag) {
     const all = this.getEcholocRecords();
@@ -1446,10 +1297,7 @@ const Saves = {
   /* ============ v1.9.0 罗盘导航 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
   getCompassRecords() {
-    try {
-      const raw = localStorage.getItem(COMPASS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(COMPASS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveCompassRecord(nodeId, angle, target, error, tag) {
     const all = this.getCompassRecords();
@@ -1461,10 +1309,7 @@ const Saves = {
   /* ============ v1.9.0 密码电报 ============ */
   // { nodeId: { code, choice, correct, tag, ts } }
   getTelegraphRecords() {
-    try {
-      const raw = localStorage.getItem(TELEGRAPH_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TELEGRAPH_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTelegraphRecord(nodeId, code, choice, correct, tag) {
     const all = this.getTelegraphRecords();
@@ -1476,10 +1321,7 @@ const Saves = {
   /* ============ v1.9.0 天平称重 ============ */
   // { nodeId: { left, right, diff, tag, ts } }
   getBalanceRecords() {
-    try {
-      const raw = localStorage.getItem(BALANCE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(BALANCE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveBalanceRecord(nodeId, left, right, diff, tag) {
     const all = this.getBalanceRecords();
@@ -1491,10 +1333,7 @@ const Saves = {
   /* ============ v1.9.0 钟摆节奏 ============ */
   // { nodeId: { clickAt, targetAt, error, tag, ts } }
   getPendulumRecords() {
-    try {
-      const raw = localStorage.getItem(PENDULUM_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(PENDULUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   savePendulumRecord(nodeId, clickAt, targetAt, error, tag) {
     const all = this.getPendulumRecords();
@@ -1506,10 +1345,7 @@ const Saves = {
   /* ============ v2.0.0 节拍器同步 ============ */
   // { nodeId: { hits, total, accuracy, tag, ts } }
   getMetronomeRecords() {
-    try {
-      const raw = localStorage.getItem(METRONOME_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(METRONOME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveMetronomeRecord(nodeId, hits, total, accuracy, tag) {
     const all = this.getMetronomeRecords();
@@ -1521,10 +1357,7 @@ const Saves = {
   /* ============ v2.0.0 星图连线 ============ */
   // { nodeId: { sequence, matched, total, tag, ts } }
   getStarchartRecords() {
-    try {
-      const raw = localStorage.getItem(STARCHART_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(STARCHART_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveStarchartRecord(nodeId, sequence, matched, total, tag) {
     const all = this.getStarchartRecords();
@@ -1536,10 +1369,7 @@ const Saves = {
   /* ============ v2.0.0 透镜聚焦 ============ */
   // { nodeId: { focus, target, error, tag, ts } }
   getLensRecords() {
-    try {
-      const raw = localStorage.getItem(LENS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(LENS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveLensRecord(nodeId, focus, target, error, tag) {
     const all = this.getLensRecords();
@@ -1551,10 +1381,7 @@ const Saves = {
   /* ============ v2.0.0 弦音调音 ============ */
   // { nodeId: { stringIdx, tension, diff, tag, ts } }
   getTuningRecords() {
-    try {
-      const raw = localStorage.getItem(TUNING_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TUNING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTuningRecord(nodeId, stringIdx, tension, diff, tag) {
     const all = this.getTuningRecords();
@@ -1566,10 +1393,7 @@ const Saves = {
   /* ============ v2.1.0 日蚀对位 ============ */
   // { nodeId: { moon, target, error, tag, ts } }
   getEclipseRecords() {
-    try {
-      const raw = localStorage.getItem(ECLIPSE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ECLIPSE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveEclipseRecord(nodeId, moon, target, error, tag) {
     const all = this.getEclipseRecords();
@@ -1581,10 +1405,7 @@ const Saves = {
   /* ============ v2.1.0 印章对齐 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
   getStampRecords() {
-    try {
-      const raw = localStorage.getItem(STAMP_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(STAMP_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveStampRecord(nodeId, angle, target, error, tag) {
     const all = this.getStampRecords();
@@ -1596,10 +1417,7 @@ const Saves = {
   /* ============ v2.1.0 星盘仪 ============ */
   // { nodeId: { angles, targets, avgError, tag, ts } }
   getAstrolabeRecords() {
-    try {
-      const raw = localStorage.getItem(ASTROLABE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ASTROLABE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveAstrolabeRecord(nodeId, angles, targets, avgError, tag) {
     const all = this.getAstrolabeRecords();
@@ -1611,10 +1429,7 @@ const Saves = {
   /* ============ v2.1.0 沙画凝形 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
   getSandpaintRecords() {
-    try {
-      const raw = localStorage.getItem(SANDPAINT_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SANDPAINT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSandpaintRecord(nodeId, grid, matched, total, tag) {
     const all = this.getSandpaintRecords();
@@ -1626,10 +1441,7 @@ const Saves = {
   /* ============ v2.2.0 万花筒 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
   getKaleidoRecords() {
-    try {
-      const raw = localStorage.getItem(KALEIDO_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(KALEIDO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveKaleidoRecord(nodeId, angle, target, error, tag) {
     const all = this.getKaleidoRecords();
@@ -1641,10 +1453,7 @@ const Saves = {
   /* ============ v2.2.0 算盘珠 ============ */
   // { nodeId: { counts, targets, diff, tag, ts } }
   getAbacusRecords() {
-    try {
-      const raw = localStorage.getItem(ABACUS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(ABACUS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveAbacusRecord(nodeId, counts, targets, diff, tag) {
     const all = this.getAbacusRecords();
@@ -1656,10 +1465,7 @@ const Saves = {
   /* ============ v2.2.0 齿轮咬合 ============ */
   // { nodeId: { angles, targets, avgError, tag, ts } }
   getGearRecords() {
-    try {
-      const raw = localStorage.getItem(GEAR_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(GEAR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveGearRecord(nodeId, angles, targets, avgError, tag) {
     const all = this.getGearRecords();
@@ -1671,10 +1477,7 @@ const Saves = {
   /* ============ v2.2.0 等高线 ============ */
   // { nodeId: { points, matched, total, tag, ts } }
   getTopoRecords() {
-    try {
-      const raw = localStorage.getItem(TOPO_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(TOPO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveTopoRecord(nodeId, points, matched, total, tag) {
     const all = this.getTopoRecords();
@@ -1686,10 +1489,7 @@ const Saves = {
   /* ============ v2.3.0 日晷对时 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
   getSundialRecords() {
-    try {
-      const raw = localStorage.getItem(SUNDIAL_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(SUNDIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSundialRecord(nodeId, angle, target, error, tag) {
     const all = this.getSundialRecords();
@@ -1701,10 +1501,7 @@ const Saves = {
   /* ============ v2.3.0 染缸调色 ============ */
   // { nodeId: { rgb, target, diff, tag, ts } }
   getDyeRecords() {
-    try {
-      const raw = localStorage.getItem(DYE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DYE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDyeRecord(nodeId, rgb, target, diff, tag) {
     const all = this.getDyeRecords();
@@ -1716,10 +1513,7 @@ const Saves = {
   /* ============ v2.3.0 风车叶片 ============ */
   // { nodeId: { angles, target, avgError, tag, ts } }
   getWindmillRecords() {
-    try {
-      const raw = localStorage.getItem(WINDMILL_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(WINDMILL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveWindmillRecord(nodeId, angles, target, avgError, tag) {
     const all = this.getWindmillRecords();
@@ -1731,10 +1525,7 @@ const Saves = {
   /* ============ v2.3.0 经纬编织 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
   getWeaveRecords() {
-    try {
-      const raw = localStorage.getItem(WEAVE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(WEAVE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveWeaveRecord(nodeId, grid, matched, total, tag) {
     const all = this.getWeaveRecords();
@@ -1746,10 +1537,7 @@ const Saves = {
   /* ============ v2.4.0 镜面对称 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
   getMirrorRecords() {
-    try {
-      const raw = localStorage.getItem(MIRROR_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(MIRROR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveMirrorRecord(nodeId, grid, matched, total, tag) {
     const all = this.getMirrorRecords();
@@ -1761,10 +1549,7 @@ const Saves = {
   /* ============ v2.4.0 灯笼排列 ============ */
   // { nodeId: { order, target, matched, tag, ts } }
   getLanternRecords() {
-    try {
-      const raw = localStorage.getItem(LANTERN_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(LANTERN_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveLanternRecord(nodeId, order, target, matched, tag) {
     const all = this.getLanternRecords();
@@ -1776,10 +1561,7 @@ const Saves = {
   /* ============ v2.4.0 水波纹 ============ */
   // { nodeId: { clicks, target, error, tag, ts } }
   getRippleRecords() {
-    try {
-      const raw = localStorage.getItem(RIPPLE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(RIPPLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveRippleRecord(nodeId, clicks, target, error, tag) {
     const all = this.getRippleRecords();
@@ -1791,10 +1573,7 @@ const Saves = {
   /* ============ v2.4.0 马赛克拼图 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
   getMosaicRecords() {
-    try {
-      const raw = localStorage.getItem(MOSAIC_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(MOSAIC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveMosaicRecord(nodeId, grid, matched, total, tag) {
     const all = this.getMosaicRecords();
@@ -1806,10 +1585,7 @@ const Saves = {
   /* ============ v2.5.0 碑帖拼合 ============ */
   // { nodeId: { placed, target, matched, tag, ts } }
   getSteleRecords() {
-    try {
-      const raw = localStorage.getItem(STELE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(STELE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveSteleRecord(nodeId, placed, target, matched, tag) {
     const all = this.getSteleRecords();
@@ -1821,10 +1597,7 @@ const Saves = {
   /* ============ v2.5.0 星轨推演 ============ */
   // { nodeId: { positions, target, error, tag, ts } }
   getCelestialRecords() {
-    try {
-      const raw = localStorage.getItem(CELESTIAL_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CELESTIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveCelestialRecord(nodeId, positions, target, error, tag) {
     const all = this.getCelestialRecords();
@@ -1836,10 +1609,7 @@ const Saves = {
   /* ============ v2.5.0 节拍鼓点 ============ */
   // { nodeId: { hits, target, matched, tag, ts } }
   getDrumRecords() {
-    try {
-      const raw = localStorage.getItem(DRUM_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(DRUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveDrumRecord(nodeId, hits, target, matched, tag) {
     const all = this.getDrumRecords();
@@ -1851,10 +1621,7 @@ const Saves = {
   /* ============ v2.5.0 风向标 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
   getVaneRecords() {
-    try {
-      const raw = localStorage.getItem(VANE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(VANE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveVaneRecord(nodeId, angle, target, error, tag) {
     const all = this.getVaneRecords();
@@ -1866,10 +1633,7 @@ const Saves = {
   /* ============ v2.6.0 漏刻计时 ============ */
   // { nodeId: { stopTime, target, error, tag, ts } }
   getClepsydraRecords() {
-    try {
-      const raw = localStorage.getItem(CLEPSYDRA_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CLEPSYDRA_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveClepsydraRecord(nodeId, stopTime, target, error, tag) {
     const all = this.getClepsydraRecords();
@@ -1881,10 +1645,7 @@ const Saves = {
   /* ============ v2.6.0 拼图归位 ============ */
   // { nodeId: { placed, target, matched, tag, ts } }
   getJigsawRecords() {
-    try {
-      const raw = localStorage.getItem(JIGSAW_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(JIGSAW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveJigsawRecord(nodeId, placed, target, matched, tag) {
     const all = this.getJigsawRecords();
@@ -1896,10 +1657,7 @@ const Saves = {
   /* ============ v2.6.0 棋局推演 ============ */
   // { nodeId: { moves, target, matched, tag, ts } }
   getChessRecords() {
-    try {
-      const raw = localStorage.getItem(CHESS_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(CHESS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveChessRecord(nodeId, moves, target, matched, tag) {
     const all = this.getChessRecords();
@@ -1911,10 +1669,7 @@ const Saves = {
   /* ============ v2.6.0 旗阵辨识 ============ */
   // { nodeId: { selected, target, matched, tag, ts } }
   getFlagRecords() {
-    try {
-      const raw = localStorage.getItem(FLAG_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (e) { return {}; }
+    return this._read(FLAG_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
   },
   saveFlagRecord(nodeId, selected, target, matched, tag) {
     const all = this.getFlagRecords();
