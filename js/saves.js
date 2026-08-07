@@ -149,6 +149,26 @@ const CLEPSYDRA_KEY   = "sakura_letters_clepsydra_v2";   // 漏刻计时
 const JIGSAW_KEY      = "sakura_letters_jigsaw_v2";      // 拼图归位
 const CHESS_KEY       = "sakura_letters_chess_v2";       // 棋局推演
 const FLAG_KEY        = "sakura_letters_flag_v2";        // 旗阵辨识
+const META_KEY        = "sakura_letters_meta_v3";
+const STORAGE_SCHEMA_VERSION = 3;
+
+const GAME_STORAGE_KEYS = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
+  FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
+  CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
+  DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY, COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
+  SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY, TAROT_KEY, DREAMWEAVE_KEY,
+  HANDWRITING_KEY, SPECTRUM_KEY, CONSTELLATION_KEY, STETHOSCOPE_KEY, PUZZLE_KEY,
+  PERFUME_KEY, BREATH_KEY, TIMECAPSULE_KEY, FOLD_KEY, REFLECTION_KEY, LIGHTDRAW_KEY,
+  MIMIC_KEY, SEASON_KEY, PULSE_KEY, TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY,
+  DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY, RUBBING_KEY, COLLECT_KEY, FOCUS_KEY,
+  SCENTMEM_KEY, TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY, FOGGY_KEY, SUGAR_KEY,
+  CHIME_KEY, HOURGLASS_KEY, KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY, FIREFLY_KEY,
+  WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY, COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY,
+  PENDULUM_KEY, METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY, ECLIPSE_KEY,
+  STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY, KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
+  SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY, MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY,
+  MOSAIC_KEY, STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY, CLEPSYDRA_KEY, JIGSAW_KEY,
+  CHESS_KEY, FLAG_KEY];
 
 const DEFAULT_SETTINGS = Object.freeze({
   textSpeed: 30,
@@ -171,15 +191,22 @@ function createDefaultSettings() {
   return Object.assign({}, DEFAULT_SETTINGS);
 }
 
+function cloneValue(value) {
+  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
 const Saves = {
   data: createDefaultSaveData(),
   endings: createDefaultEndings(),
   settings: createDefaultSettings(),
   lastStorageError: null,
+  cache: new Map(),
 
   _write(key, value) {
     try {
       localStorage.setItem(key, value);
+      try { this.cache.set(key, cloneValue(JSON.parse(value))); }
+      catch (parseError) { this.cache.delete(key); }
       this.lastStorageError = null;
       return true;
     } catch (e) {
@@ -192,6 +219,7 @@ const Saves = {
   _remove(key) {
     try {
       localStorage.removeItem(key);
+      this.cache.delete(key);
       this.lastStorageError = null;
       return true;
     } catch (e) {
@@ -203,20 +231,80 @@ const Saves = {
 
   _read(key, fallback, isValid) {
     try {
+      if (this.cache.has(key)) return cloneValue(this.cache.get(key));
       const raw = localStorage.getItem(key);
-      if (!raw) return fallback;
+      if (!raw) return cloneValue(fallback);
       const value = JSON.parse(raw);
-      return !isValid || isValid(value) ? value : fallback;
+      if (isValid && !isValid(value)) return cloneValue(fallback);
+      this.cache.set(key, cloneValue(value));
+      return cloneValue(value);
     } catch (e) {
-      return fallback;
+      return cloneValue(fallback);
     }
   },
 
   /* ============ 存档槽位 ============ */
   init() {
+    this._migrate();
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
+  },
+
+  _migrate() {
+    const meta = this._read(META_KEY, {}, value => value && typeof value === "object" && !Array.isArray(value));
+    const previousVersion = Number.isInteger(meta.schemaVersion) ? meta.schemaVersion : 0;
+    if (previousVersion >= STORAGE_SCHEMA_VERSION) return;
+    this._write(META_KEY, JSON.stringify({
+      schemaVersion: STORAGE_SCHEMA_VERSION,
+      migratedAt: Date.now(),
+      previousVersion,
+    }));
+  },
+
+  exportData() {
+    const records = {};
+    for (const key of GAME_STORAGE_KEYS) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (raw !== null) records[key] = JSON.parse(raw);
+      } catch (e) {
+        console.warn(`导出本地存储失败 (${key}):`, e);
+      }
+    }
+    return { schemaVersion: STORAGE_SCHEMA_VERSION, exportedAt: Date.now(), records };
+  },
+
+  importData(payload) {
+    if (!payload || typeof payload !== "object" || !payload.records || typeof payload.records !== "object") return false;
+    if (!Number.isInteger(payload.schemaVersion) || payload.schemaVersion > STORAGE_SCHEMA_VERSION) return false;
+    const before = new Map();
+    for (const key of GAME_STORAGE_KEYS) {
+      try { before.set(key, localStorage.getItem(key)); }
+      catch (e) { return false; }
+    }
+    for (const [key, value] of Object.entries(payload.records)) {
+      if (!GAME_STORAGE_KEYS.includes(key) || !this._write(key, JSON.stringify(value))) {
+        for (const [rollbackKey, raw] of before) {
+          if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
+        }
+        return false;
+      }
+    }
+    for (const key of GAME_STORAGE_KEYS) {
+      if (!(key in payload.records) && !this._remove(key)) {
+        for (const [rollbackKey, raw] of before) {
+          if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
+        }
+        return false;
+      }
+    }
+    this.cache.clear();
+    this._migrate();
+    this._loadSaves();
+    this._loadEndings();
+    this._loadSettings();
+    return true;
   },
 
   _loadSaves() {
@@ -1686,7 +1774,7 @@ const Saves = {
   },
 
   clearAll() {
-    const keys = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
+    const keys = [META_KEY, STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
      FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
      CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
      DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
@@ -1715,11 +1803,20 @@ const Saves = {
     keys.forEach((key) => {
       if (!this._remove(key)) success = false;
     });
+    this.cache.clear();
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
+    this._migrate();
     return success;
   },
 };
 
 Saves.init();
+
+if (typeof window !== "undefined" && window.addEventListener) {
+  window.addEventListener("storage", (event) => {
+    if (event.key) Saves.cache.delete(event.key);
+    else Saves.cache.clear();
+  });
+}

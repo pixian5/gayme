@@ -1,0 +1,10 @@
+{
+  "name": "sakura-letters",
+  "private": true,
+  "version": "2.6.3",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:syntax": "node tests/syntax.test.mjs"
+  }
+}

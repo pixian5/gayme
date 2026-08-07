@@ -1549,7 +1549,6 @@
   /* ============ 新游戏 ============ */
   function newGame() {
     state.sessionId += 1;
-    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
     removeActiveInteractionLayers();
     state.variables = createDefaultVariables();
     state.history = [];
@@ -1603,6 +1602,8 @@
   }
 
   function removeActiveInteractionLayers() {
+    window.GameLifecycle?.cancelAll();
+    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
     const baseLayers = new Set([el.bgLayer, el.charLayer, el.clueLayer]);
     document.querySelectorAll("#game > [class]").forEach((candidate) => {
       if (baseLayers.has(candidate)) return;
@@ -1618,7 +1619,6 @@
       return false;
     }
     state.sessionId += 1;
-    if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
     removeActiveInteractionLayers();
     state.currentNode = data.nodeId;
     state.variables = data.variables && typeof data.variables === "object"
@@ -1662,6 +1662,8 @@
     if (!hint) {
       hint = document.createElement("div");
       hint.id = "flash-hint";
+      hint.setAttribute("role", "status");
+      hint.setAttribute("aria-live", "polite");
       hint.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:14px 28px;background:rgba(20,18,32,0.9);border:1px solid rgba(255,200,220,0.4);border-radius:12px;color:#ffd8e4;font-size:16px;letter-spacing:2px;z-index:9999;pointer-events:none;transition:opacity 0.3s;";
       document.body.appendChild(hint);
     }
@@ -1682,6 +1684,7 @@
     };
     el.overlayTitle.textContent = titles[type] || type;
     el.overlay.classList.remove("hidden");
+    el.overlayBody.focus();
     if (type === "save" || type === "load") renderSaveSlots(type);
     else if (type === "config") renderConfig();
     else if (type === "history") renderHistory();
@@ -1693,7 +1696,12 @@
     else if (type === "inbox") renderInbox();
     else if (type === "moments") renderMoments();
   }
-  function closeOverlay() { el.overlay.classList.add("hidden"); overlayMode = null; }
+  function closeOverlay() {
+    el.overlay.classList.add("hidden");
+    overlayMode = null;
+    const active = document.activeElement;
+    if (active && active.closest?.("#overlay")) el.topBar.querySelector("button")?.focus();
+  }
 
   function renderSaveSlots(mode) {
     let html = "";
@@ -1766,6 +1774,14 @@
         <label style="color:#ff8888;">清空所有存档与图鉴</label>
         <button id="cfg-clear" style="padding:8px 16px;background:rgba(255,80,80,0.4);border:1px solid rgba(255,100,100,0.6);border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;">清空</button>
       </div>
+      <div class="config-row config-data-actions">
+        <label>数据备份</label>
+        <div>
+          <button id="cfg-export" type="button">导出 JSON</button>
+          <button id="cfg-import" type="button">导入 JSON</button>
+          <input id="cfg-import-file" type="file" accept="application/json,.json" hidden>
+        </div>
+      </div>
       <div class="config-row"><label style="color:rgba(255,200,220,0.6);">已通关周目数</label><span style="color:#ffb8c8;">${state.playCount}</span></div>
     `;
     const ts = document.getElementById("cfg-textspeed");
@@ -1783,6 +1799,39 @@
       Saves.updateSetting("bgm", e.target.value === "true");
       if (Saves.settings.bgm && state.currentBg) playBgmForScene(state.currentBg);
       else stopBgm();
+    };
+    document.getElementById("cfg-export").onclick = () => {
+      const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sakura-letters-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      flashHint("备份已导出");
+    };
+    const importFile = document.getElementById("cfg-import-file");
+    document.getElementById("cfg-import").onclick = () => importFile.click();
+    importFile.onchange = () => {
+      const file = importFile.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const payload = JSON.parse(reader.result);
+          if (!Saves.importData(payload)) throw new Error("invalid backup");
+          state.playCount = Saves.getFlag("playCount", 0);
+          state.loopCount = Saves.getFlag("loopCount", 0);
+          updateInboxBadge();
+          flashHint("备份已导入");
+          renderConfig();
+        } catch (e) {
+          flashHint("导入失败：备份格式无效或存储不可用");
+        } finally {
+          importFile.value = "";
+        }
+      };
+      reader.readAsText(file);
     };
     document.getElementById("cfg-clear").onclick = () => {
       if (confirm("确定清空所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。")) {
@@ -1829,7 +1878,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.6.2 · Demo</p>
+        <p style="color:#e8e0d0;">v2.6.3 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个结局（含真结局）<br>3 个迷你游戏 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -16699,6 +16748,7 @@
   /* ============ 返回标题 ============ */
   function backToTitle() {
     state.sessionId += 1;
+    window.GameLifecycle?.cancelAll();
     if (window.Minigames?.cancelAll) window.Minigames.cancelAll();
     clearTimeout(state.autoTimer);
     clearTimeout(state.typeTimer);

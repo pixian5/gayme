@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="game">
+<div id="game" role="application" aria-label="樱时信笺视觉小说">
 
   <!-- 背景层 -->
   <div id="bg-layer" class="bg-scene scene-school_gate"></div>
@@ -21,39 +21,39 @@
   <div id="char-layer"></div>
 
   <!-- 顶部菜单条 -->
-  <div id="top-bar">
-    <button data-menu="inbox" title="消息" id="btn-inbox">📩<span id="inbox-badge" class="hidden"></span></button>
-    <button data-menu="moments" title="朋友圈" id="btn-moments">🌸</button>
-    <button data-menu="history" title="历史">📜</button>
-    <button data-menu="save" title="存档">💾</button>
-    <button data-menu="load" title="读档">📂</button>
-    <button data-menu="config" title="设置">⚙️</button>
-    <button data-menu="keywords" title="关键词">🔑</button>
-    <button data-menu="cg" title="CG图鉴">🖼️</button>
-    <button data-menu="flowchart" title="流程图">🗺️</button>
-    <button data-menu="title" title="返回标题">🏠</button>
-    <button id="btn-auto" title="自动">▶▶</button>
-    <button id="btn-skip" title="快进">⏩</button>
+  <div id="top-bar" aria-label="游戏菜单">
+    <button data-menu="inbox" title="消息" aria-label="消息" id="btn-inbox">📩<span id="inbox-badge" class="hidden"></span></button>
+    <button data-menu="moments" title="朋友圈" aria-label="朋友圈" id="btn-moments">🌸</button>
+    <button data-menu="history" title="历史" aria-label="历史">📜</button>
+    <button data-menu="save" title="存档" aria-label="存档">💾</button>
+    <button data-menu="load" title="读档" aria-label="读档">📂</button>
+    <button data-menu="config" title="设置" aria-label="设置">⚙️</button>
+    <button data-menu="keywords" title="关键词" aria-label="关键词">🔑</button>
+    <button data-menu="cg" title="CG图鉴" aria-label="CG图鉴">🖼️</button>
+    <button data-menu="flowchart" title="流程图" aria-label="流程图">🗺️</button>
+    <button data-menu="title" title="返回标题" aria-label="返回标题">🏠</button>
+    <button id="btn-auto" title="自动" aria-label="自动模式">▶▶</button>
+    <button id="btn-skip" title="快进" aria-label="快进模式">⏩</button>
   </div>
 
   <!-- 环境线索层 -->
   <div id="clue-layer"></div>
 
   <!-- 日程条（左上） -->
-  <div id="day-bar"></div>
+  <div id="day-bar" aria-live="polite"></div>
 
   <!-- 好感度心条（右上） -->
-  <div id="heart-bar"></div>
+  <div id="heart-bar" aria-live="polite"></div>
 
   <!-- 对话框 -->
-  <div id="dialog-box" class="hidden">
-    <div id="speaker"></div>
-    <div id="dialog-text"></div>
-    <div id="click-hint">▼</div>
+  <div id="dialog-box" class="hidden" role="dialog" aria-label="剧情对白">
+    <div id="speaker" aria-label="说话者"></div>
+    <div id="dialog-text" aria-live="polite" tabindex="0"></div>
+    <div id="click-hint" aria-hidden="true">▼</div>
   </div>
 
   <!-- 选项层 -->
-  <div id="choices" class="hidden"></div>
+  <div id="choices" class="hidden" role="group" aria-live="polite" aria-label="剧情选项"></div>
 
   <!-- 标题画面 -->
   <div id="title-screen" class="screen">
@@ -73,17 +73,17 @@
       <button data-action="trueend" class="hidden">★ 真结局 ★</button>
       <button data-action="about">关于</button>
     </div>
-    <div class="title-version">v2.6.2 · Demo</div>
+    <div class="title-version">v2.6.3 · Demo</div>
   </div>
 
   <!-- 通用菜单浮层（存档/读档/设置/历史/图鉴/CG/关键词/流程图） -->
-  <div id="overlay" class="screen hidden">
+  <div id="overlay" class="screen hidden" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
     <div class="overlay-panel">
       <div class="overlay-header">
         <h2 id="overlay-title">存档</h2>
-        <button class="overlay-close" data-close>✕</button>
+        <button class="overlay-close" data-close aria-label="关闭浮层" title="关闭">✕</button>
       </div>
-      <div id="overlay-body" class="overlay-body"></div>
+      <div id="overlay-body" class="overlay-body" tabindex="-1"></div>
     </div>
   </div>
 
@@ -104,6 +104,7 @@
 
 <script src="js/saves.js"></script>
 <script src="js/script.js"></script>
+<script src="js/lifecycle.js"></script>
 <script src="js/minigames.js"></script>
 <script src="js/engine.js"></script>
 </body>

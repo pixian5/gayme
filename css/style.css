@@ -16,6 +16,11 @@ body {
   background: #000;
 }
 .hidden { display: none !important; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #ffd88a;
+  outline-offset: 3px;
+}
 
 /* ============ 背景层 ============ */
 #bg-layer {
@@ -477,6 +482,16 @@ body {
   justify-content: space-between;
   padding: 14px 8px;
   border-bottom: 1px solid rgba(255,200,220,0.08);
+}
+.config-data-actions > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.config-data-actions button {
+  padding: 8px 14px;
+  border: 1px solid rgba(255,200,220,0.35);
+  border-radius: 8px;
+  color: #ffe8f0;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  font-family: inherit;
 }
 .config-row label { font-size: 16px; color: #f0e8d8; }
 .config-row input[type="range"] {

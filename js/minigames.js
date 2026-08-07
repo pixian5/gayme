@@ -180,6 +180,7 @@
     document.body.appendChild(overlay);
 
     let cleaned = false;
+    let lifecycle = null;
     const cancel = () => {
       if (!cleaned) onSkip();
     };
@@ -187,9 +188,11 @@
       if (cleaned) return;
       cleaned = true;
       activeCancels.delete(cancel);
+      lifecycle?.finish();
       overlay.remove();
     }
     activeCancels.add(cancel);
+    lifecycle = window.GameLifecycle?.register(overlay, cancel) || null;
     skip.addEventListener("click", () => {
       if (cleaned) return;
       cleanup();
