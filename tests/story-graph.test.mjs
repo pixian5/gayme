@@ -4,6 +4,7 @@ import vm from "node:vm";
 import test from "node:test";
 
 const source = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+const engineSource = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
 const context = { console, window: {} };
 vm.createContext(context);
 vm.runInContext(`${source}\nthis.__out = { SCRIPT, START_NODE };`, context);
@@ -49,4 +50,50 @@ test("主线和真结局入口可达", () => {
     "d13_mosaic", "d14_stele", "d15_chess", "common_day3_afternoon",
     "common_day5_afternoon"
   ]) assert.equal(reachable.has(id), true, `${id} 不可达`);
+});
+
+test("时间回溯有明确的叙事承接", () => {
+  assert.equal(SCRIPT.d5_piano.next, "d5_rewind");
+  assert.equal(SCRIPT.d5_rewind.timeLoop, true);
+  assert.match(SCRIPT.d5_rewind.text, /第 5 日.*第 4 日/);
+  assert.equal(SCRIPT.d15_flag.next, "d15_rewind");
+  assert.equal(SCRIPT.d15_rewind.timeLoop, true);
+  assert.match(SCRIPT.d15_rewind.text, /第 15 日.*第 5 日/);
+});
+
+test("真结局后日谈和明信片分支可达", () => {
+  const roots = ["afterword_entry"];
+  const reachable = new Set(roots);
+  const queue = roots.slice();
+  while (queue.length) {
+    const current = queue.shift();
+    for (const [from, target] of refs) {
+      if (from === current && SCRIPT[target] && !reachable.has(target)) {
+        reachable.add(target);
+        queue.push(target);
+      }
+    }
+  }
+  for (const id of [
+    "afterword_three", "afterword_postcard", "afterword_stamp", "afterword_4",
+    "afterword_signature", "afterword_signature_meet", "afterword_signature_care",
+    "afterword_signature_blank", "afterword_ending"
+  ]) {
+    assert.equal(reachable.has(id), true, `${id} 不可达`);
+  }
+  assert.equal(SCRIPT.afterword_postcard.postcard.max, 2);
+  assert.equal(SCRIPT.afterword_postcard.postcard.interpretations.length, 4);
+  assert.match(SCRIPT.afterword_postcard.text, /两枚印记/);
+  for (const branch of SCRIPT.afterword_postcard.postcard.interpretations) {
+    assert.equal(branch.stamps.length, 2);
+    assert.equal(branch.next, "afterword_stamp");
+  }
+  assert.equal(SCRIPT.afterword_postcard.postcard.fallback.next, "afterword_stamp");
+  assert.equal(SCRIPT.afterword_4.speaker, "沈屿");
+  assert.equal(SCRIPT.afterword_4.next, "afterword_signature");
+  assert.equal(SCRIPT.afterword_signature.choice.options.length, 3);
+});
+
+test("后日谈入口只由真结局解锁", () => {
+  assert.match(engineSource, /function updateAfterwordAccess\(\)[\s\S]*?const unlocked = isTrueEndUnlocked\(\);/);
 });

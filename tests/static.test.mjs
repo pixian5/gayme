@@ -29,3 +29,8 @@ test("所有剧情背景都有 CSS 场景", () => {
   const scenes = [...script.matchAll(/bg:\s*"([\w-]+)"/g)].map(match => match[1]);
   for (const scene of new Set(scenes)) assert.match(css, new RegExp(`\\.scene-${scene}(?:\\W|$)`), scene);
 });
+
+test("场景切换按样式表规则校验背景", () => {
+  assert.match(engine, /function hasSceneStyle\(bg\)[\s\S]*?sheet\.cssRules/);
+  assert.doesNotMatch(engine, /document\.querySelector\(`\.scene-\\$\{CSS\.escape\(bg\)\}`\)/);
+});

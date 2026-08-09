@@ -105,9 +105,23 @@
   }
 
   /* ============ 场景/背景 ============ */
+  function hasSceneStyle(bg) {
+    const selector = `.scene-${CSS.escape(bg)}`;
+    return Array.from(document.styleSheets).some((sheet) => {
+      try {
+        return Array.from(sheet.cssRules || []).some((rule) => {
+          if (typeof rule.selectorText !== "string") return false;
+          return rule.selectorText.split(",").some((item) => item.trim() === selector);
+        });
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
   function setScene(bg) {
     if (!bg || bg === state.currentBg) return;
-    if (!document.querySelector(`.scene-${CSS.escape(bg)}`) && bg !== "cherry_full") {
+    if (!hasSceneStyle(bg) && bg !== "cherry_full") {
       console.warn("场景样式不存在，使用樱花全景:", bg);
       bg = "cherry_full";
     }
@@ -1224,6 +1238,16 @@
       return;
     }
 
+    // v2.6.4 后日谈明信片印记
+    if (node.postcard) {
+      setScene(node.bg);
+      renderCharacters(node);
+      runPostcard(node.postcard, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -1510,7 +1534,7 @@
       Saves.setFlag("loopCount", 0);
       state.loopCount = 0;
       flashHint("★ 循环打破 ★");
-    } else {
+    } else if (ending.id !== "afterword") {
       // 普通结局：循环+1
       Saves.setFlag("loopCount", state.loopCount + 1);
       state.loopCount += 1;
@@ -1531,6 +1555,9 @@
     }
     if (ending.id === "true_end") {
       loopHint.textContent = "✦ 你打破了时间的循环 ✦";
+      loopHint.style.color = "#ffd88a";
+    } else if (ending.id === "afterword") {
+      loopHint.textContent = "✦ 后日谈结束 · 故事交还给今天 ✦";
       loopHint.style.color = "#ffd88a";
     } else {
       loopHint.textContent = `⟲ 第 ${state.loopCount} 次循环 · 关键词与记忆将被保留`;
@@ -1564,6 +1591,25 @@
     if (el.dayBar) el.dayBar.style.opacity = "1";
     if (el.heartBar) el.heartBar.style.opacity = "1";
     gotoNode(START_NODE);
+  }
+
+  function startAfterword() {
+    state.sessionId += 1;
+    removeActiveInteractionLayers();
+    state.variables = createDefaultVariables();
+    state.history = [];
+    state.currentNode = null;
+    state.currentBg = null;
+    state.inGame = true;
+    state.autoMode = false;
+    state.skipMode = false;
+    el.titleScreen.classList.add("hidden");
+    el.endingScreen.classList.add("hidden");
+    el.dialogBox.classList.remove("hidden");
+    el.topBar.classList.add("show");
+    if (el.dayBar) el.dayBar.style.opacity = "0";
+    if (el.heartBar) el.heartBar.style.opacity = "1";
+    gotoNode("afterword_entry");
   }
 
   /* ============ 存档快照 ============ */
@@ -1756,13 +1802,13 @@
     el.overlayBody.innerHTML = `
       <div class="config-row">
         <label>文字速度（越小越快）</label>
-        <input type="range" id="cfg-textspeed" min="5" max="80" value="${s.textSpeed}">
-        <span id="cfg-textspeed-val" style="color:#ffb8c8;width:50px;">${s.textSpeed}ms</span>
+        <input type="range" id="cfg-textspeed" min="5" max="80" value="${escapeHtml(String(s.textSpeed))}">
+        <span id="cfg-textspeed-val" style="color:#ffb8c8;width:50px;">${escapeHtml(String(s.textSpeed))}ms</span>
       </div>
       <div class="config-row">
         <label>自动模式延迟</label>
-        <input type="range" id="cfg-autodelay" min="500" max="4000" step="100" value="${s.autoDelay}">
-        <span id="cfg-autodelay-val" style="color:#ffb8c8;width:70px;">${s.autoDelay}ms</span>
+        <input type="range" id="cfg-autodelay" min="500" max="4000" step="100" value="${escapeHtml(String(s.autoDelay))}">
+        <span id="cfg-autodelay-val" style="color:#ffb8c8;width:70px;">${escapeHtml(String(s.autoDelay))}ms</span>
       </div>
       <div class="config-row"><label>粒子特效</label>
         <select id="cfg-particles"><option value="true" ${s.particles ? "selected" : ""}>开启</option><option value="false" ${!s.particles ? "selected" : ""}>关闭</option></select>
@@ -1878,9 +1924,9 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.6.3 · Demo</p>
+        <p style="color:#e8e0d0;">v2.6.7 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
-        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个结局（含真结局）<br>3 个迷你游戏 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
+        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
         ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
       </div>
@@ -2001,6 +2047,7 @@
       { title: "夏织线", nodes: ["route_xiazhi_1", "xz_9", "xz_minigame", "xz_choice_1", "xz_ending_good", "xz_ending_normal", "xz_ending_bad"] },
       { title: "苏念线", nodes: ["route_sunian_1", "sn_9", "sn_minigame", "sn_choice_1", "sn_ending_good", "sn_ending_normal", "sn_ending_bad"] },
       { title: "真结局", nodes: ["true_end_entry", "true_choice", "true_ending"] },
+      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_ending"] },
     ];
     el.overlayBody.innerHTML = groups.map(g => {
       return `<div class="flow-group">
@@ -16518,6 +16565,95 @@
   }
 
   /* ============================================================
+     v2.6.4 明信片印记 runPostcard
+     node.postcard = {
+       prompt, hint, max,
+       stamps: [ { id, label, desc } ],
+       interpretations: [ { stamps, label, text, add?, personality?, next } ],
+       fallback: { label, text, add?, personality?, next }
+     }
+     ============================================================ */
+  function runPostcard(pd, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "postcard-layer";
+    layer.id = "postcard-layer";
+    layer.innerHTML = `
+      <div class="postcard-card">
+        <div class="postcard-prompt">${escapeHtml(pd.prompt || "选择明信片印记")}</div>
+        <div class="postcard-hint">${escapeHtml(pd.hint || "选出你想留下的印记")}</div>
+        <div class="postcard-stamps" id="postcard-stamps"></div>
+        <div class="postcard-info" id="postcard-info">请选择 ${pd.max || 2} 枚印记</div>
+        <div class="postcard-actions">
+          <button class="postcard-reset">重选</button>
+          <button class="postcard-confirm" disabled>寄出明信片</button>
+        </div>
+      </div>
+    `;
+    const stampsEl = layer.querySelector("#postcard-stamps");
+    const info = layer.querySelector("#postcard-info");
+    const resetBtn = layer.querySelector(".postcard-reset");
+    const confirmBtn = layer.querySelector(".postcard-confirm");
+    const max = Math.max(1, Number(pd.max) || 2);
+    const selected = [];
+
+    function renderStamps() {
+      stampsEl.innerHTML = "";
+      (pd.stamps || []).forEach((stamp) => {
+        const button = document.createElement("button");
+        button.className = "postcard-stamp";
+        button.type = "button";
+        if (selected.includes(stamp.id)) button.classList.add("selected");
+        button.innerHTML = `<strong>${escapeHtml(stamp.label || stamp.id)}</strong><span>${escapeHtml(stamp.desc || "")}</span>`;
+        button.onclick = () => {
+          const index = selected.indexOf(stamp.id);
+          if (index >= 0) selected.splice(index, 1);
+          else if (selected.length < max) selected.push(stamp.id);
+          renderStamps();
+          confirmBtn.disabled = selected.length !== max;
+          info.textContent = `已选 ${selected.length} / ${max}：${selected.map(id => (pd.stamps.find(s => s.id === id) || {}).label || id).join("、")}`;
+        };
+        stampsEl.appendChild(button);
+      });
+    }
+    renderStamps();
+
+    resetBtn.onclick = () => {
+      selected.length = 0;
+      renderStamps();
+      confirmBtn.disabled = true;
+      info.textContent = `请选择 ${max} 枚印记`;
+    };
+
+    confirmBtn.onclick = () => {
+      if (selected.length !== max) return;
+      const selectedKey = selected.slice().sort().join("|");
+      const matched = (pd.interpretations || []).find((item) => {
+        return Array.isArray(item.stamps) && item.stamps.slice().sort().join("|") === selectedKey;
+      }) || pd.fallback || { label: "——寄出", text: "明信片被寄了出去。", next: null };
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      const reading = document.createElement("div");
+      reading.className = "postcard-reading";
+      reading.innerHTML = `<div class="postcard-reading-title">${escapeHtml(matched.label || "明信片已寄出")}</div>
+        <div class="postcard-reading-text">${escapeHtml(matched.text || "")}</div>
+        <button class="postcard-reading-close">继续</button>`;
+      reading.querySelector(".postcard-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -16866,6 +17002,7 @@
     document.querySelectorAll(".jigsaw-layer").forEach(e => e.remove());
     document.querySelectorAll(".chess-layer").forEach(e => e.remove());
     document.querySelectorAll(".flag-layer").forEach(e => e.remove());
+    document.querySelectorAll(".postcard-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";
@@ -16879,6 +17016,7 @@
     if (el.heartBar) el.heartBar.style.opacity = "0";
     setScene("cherry_full");
     updateTrueEndAccess();
+    updateAfterwordAccess();
     updateLoopBadge();
     updateInboxBadge();
   }
@@ -16887,11 +17025,22 @@
     const trueBtn = el.titleScreen.querySelector("button[data-action='trueend']");
     if (!trueBtn) return;
     if (isTrueEndUnlocked()) {
-      trueBtn.style.display = "block";
+      trueBtn.classList.remove("hidden");
+      trueBtn.style.display = "";
       trueBtn.classList.add("special");
     } else {
+      trueBtn.classList.add("hidden");
       trueBtn.style.display = "none";
     }
+  }
+
+  function updateAfterwordAccess() {
+    const afterwordButton = el.titleScreen.querySelector("button[data-action='afterword']");
+    if (!afterwordButton) return;
+    const unlocked = isTrueEndUnlocked();
+    afterwordButton.classList.toggle("hidden", !unlocked);
+    afterwordButton.style.display = unlocked ? "" : "none";
+    if (unlocked) afterwordButton.classList.add("special");
   }
 
   /* ============ 粒子系统 ============ */
@@ -17099,6 +17248,7 @@
         if (el.heartBar) el.heartBar.style.opacity = "1";
         gotoNode("true_end_entry");
       }
+      else if (a === "afterword") startAfterword();
       else if (a === "about") openOverlay("about");
     };
   });
@@ -17153,6 +17303,7 @@
     setScene("cherry_full");
     updateParticles("cherry_full");
     updateTrueEndAccess();
+    updateAfterwordAccess();
     updateInboxBadge();
   }
   init();

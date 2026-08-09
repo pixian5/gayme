@@ -8070,6 +8070,76 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   line-height: 1.8; margin-bottom: 14px;
 }
 
+/* ============ v2.6.4 后日谈明信片 ============ */
+.postcard-layer {
+  position: absolute; inset: 0; z-index: 38;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at center, rgba(58, 32, 56, 0.96), rgba(16, 12, 24, 0.99));
+  backdrop-filter: blur(12px);
+}
+.postcard-card {
+  width: min(680px, 100%);
+  padding: 30px 28px;
+  border: 1px solid rgba(255, 216, 228, 0.35);
+  border-radius: 14px;
+  background: rgba(32, 22, 42, 0.9);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+.postcard-prompt {
+  color: #ffd8e4;
+  font-size: 21px;
+  letter-spacing: 4px;
+}
+.postcard-hint {
+  margin: 10px auto 20px;
+  color: rgba(255, 216, 228, 0.58);
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.postcard-stamps {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.postcard-stamp {
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(255, 216, 228, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 216, 228, 0.06);
+  color: #ffe8f0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.postcard-stamp:hover { transform: translateY(-2px); border-color: rgba(255, 216, 228, 0.55); }
+.postcard-stamp.selected {
+  border-color: #ffd88a;
+  background: rgba(255, 216, 228, 0.15);
+  box-shadow: 0 0 14px rgba(255, 216, 228, 0.16);
+}
+.postcard-stamp strong { display: block; color: #ffd88a; font-size: 16px; letter-spacing: 3px; }
+.postcard-stamp span { display: block; margin-top: 8px; color: rgba(255, 240, 248, 0.68); font-size: 12px; line-height: 1.6; }
+.postcard-info { min-height: 24px; margin: 16px 0 12px; color: rgba(255, 216, 228, 0.72); font-size: 13px; letter-spacing: 1px; }
+.postcard-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.postcard-reset, .postcard-confirm, .postcard-reading-close {
+  padding: 9px 20px;
+  border: 1px solid rgba(255, 216, 228, 0.4);
+  border-radius: 8px;
+  background: rgba(180, 80, 120, 0.35);
+  color: #ffd8e4;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+.postcard-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.postcard-reading { margin-top: 20px; padding: 18px; border-top: 1px solid rgba(255, 216, 228, 0.22); }
+.postcard-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
+.postcard-reading-text { margin: 12px auto 16px; max-width: 560px; color: rgba(255, 240, 248, 0.86); font-size: 14px; line-height: 1.9; }
+
 /* ============ v2.6.0 移动端适配 ============ */
 @media (max-width: 768px) {
   .cly-canvas { height: 280px; }
@@ -8079,6 +8149,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .chs-cell.chs-piece::before { font-size: 22px; }
   .chs-cell.chs-target::after { font-size: 18px; }
   .fl-options { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .postcard-stamps { grid-template-columns: 1fr; gap: 8px; }
   .cly-prompt, .ji-prompt, .chs-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
   .fl-description { font-size: 14px; }
   .cly-actions button, .cly-reading-close,

@@ -195,6 +195,7 @@ const ENDINGS = [
   { id: "sunian_normal",heroine: "苏念",   title: "网 展", type: "NORMAL", desc: "她在自己的网展开了个展。" },
   { id: "sunian_bad",   heroine: "苏念",   title: "按 住",   type: "BAD",    desc: "她按住了自己。" },
   { id: "true_end",     heroine: "真结局", title: "樱 花 信", type: "TRUE",  desc: "你替她回了一封信，也写下自己。" },
+  { id: "afterword",    heroine: "三人",   title: "樱海以后", type: "AFTERWORD", desc: "信寄出以后，三个人各自继续往前走。" },
 ];
 
 /* ============ v0.5.0 朋友圈动态池 ============ */
@@ -1503,7 +1504,7 @@ const SCRIPT = {
   d5_piano: {
     day: 5, time: "morning", bg: "home_room", char: null, speaker: "",
     text: "窗台上有一架旧口风琴。她昨天哼过一段旋律——你试着弹出来。",
-    next: "d4_dice",
+    next: "d5_rewind",
     piano: {
       prompt: "弹奏她哼过的旋律——",
       keys: 8,
@@ -1516,19 +1517,27 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "琴键·旋律", title: "她外婆的歌", text: "你弹出了她哼过的旋律——是她外婆教她的那首歌。" },
-          next: "d4_dice" },
+          next: "d5_rewind" },
         { min: 0.55, tag: "ok",
           label: "——弹得还行",
           text: "你弹得磕磕绊绊，但旋律出来了。她说过：错音也是旋律的一部分。你想她是对的。",
           add: { affection: { shiyu: 1 } },
           personality: { honest: 1 },
-          next: "d4_dice" }
+          next: "d5_rewind" }
       ],
       fallback: { tag: "miss",
         label: "——弹错了",
         text: "你完全弹错了。旋律碎了。但没关系——有些歌，本来就不是弹给人听的。",
-        next: "d4_dice" }
+        next: "d5_rewind" }
     }
+  },
+
+  // 明确标记长玩法链的时间回溯，避免玩家把日期倒退误读成剧情断链。
+  d5_rewind: {
+    bg: "home_room", char: null, speaker: "",
+    text: "琴声落下，匿名信的纸页忽然自己翻动。日期从「第 5 日」退回「第 4 日」——这不是忘记，而是信在把我送回还没走完的那段路。",
+    timeLoop: true,
+    next: "d4_dice"
   },
 
   /* ============ v1.3.0 新玩法触发节点 ============ */
@@ -3230,7 +3239,7 @@ const SCRIPT = {
   d15_flag: {
     day: 15, time: "evening", bg: "courtyard", char: null, speaker: "",
     text: "庭院旗杆上挂着四面旗。她说——按我说的图案选对那一面，旗才会认你。她说：旗不会自己认人，认人的是眼。",
-    next: "d5_mimic",
+    next: "d15_rewind",
     flag: {
       prompt: "按描述选择正确的旗帜",
       description: "红底白圆居中",
@@ -3248,13 +3257,20 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, honest: 1 },
           memory: { id: "旗阵·辨识", title: "庭院的旗杆", text: "你按描述选对了一面红底白圆的旗。" },
-          next: "d5_mimic" }
+          next: "d15_rewind" }
       ],
       fallback: { tag: "miss",
         label: "——选错了",
         text: "你选错了那一面。她说：选错了——也不是错，只是这次没看清。她把旗降下来。",
-        next: "d5_mimic" }
+        next: "d15_rewind" }
     }
+  },
+
+  d15_rewind: {
+    bg: "courtyard", char: null, speaker: "",
+    text: "旗落下的声音像一页合上。第 15 日没有消失，只是把我送回第 5 日清晨——这一次，我知道回去不是重来，而是把漏掉的答案补上。",
+    timeLoop: true,
+    next: "d5_mimic"
   },
 
   /* ============ v1.4.0 新玩法触发节点 ============ */
@@ -3752,6 +3768,84 @@ const SCRIPT = {
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。",
     ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信 · 破 环", text: "你合成了樱花信，打破了时间的循环。" }
+  },
+
+  /* ============ 真结局后日谈：樱海以后 ============ */
+  afterword_entry: {
+    bg: "festival", char: null, speaker: "",
+    text: "樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。",
+    next: "afterword_three"
+  },
+  afterword_three: {
+    bg: "cafeteria", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "林诗雨",
+    text: "我把下一章交给校刊了。夏织开始做康复训练，苏念把画室的门打开了一半。我们没有替谁走完路，只是约好每周见一次。",
+    next: "afterword_postcard"
+  },
+  afterword_postcard: {
+    bg: "school_gate", char: null, speaker: "",
+    text: "学姐寄来一张没有写回地址的明信片。我们决定替她补上两枚印记，再寄回她现在生活的地方——不问她什么时候回来，只告诉她：这里有人记得。",
+    next: "afterword_stamp",
+    postcard: {
+      prompt: "为明信片选两枚印记",
+      hint: "每枚印记只代表一个今天，不代表永远。",
+      max: 2,
+      stamps: [
+        { id: "write", label: "写下", desc: "给还没完成的故事留一页。" },
+        { id: "run", label: "起跑", desc: "为明天的训练系好鞋带。" },
+        { id: "open", label: "开门", desc: "把画室的门再推开一点。" },
+        { id: "wait", label: "等候", desc: "允许想念存在，但不把脚停在原地。" }
+      ],
+      interpretations: [
+        { stamps: ["write", "open"], label: "——把门写成一条路", text: "林诗雨在背面写下下一章的开头，苏念添了一小块紫。明信片没有催学姐回来，只把门和路都留着。", add: { affection: { shiyu: 1, sunian: 1 } }, personality: { honest: 1, creative: 1 }, next: "afterword_stamp" },
+        { stamps: ["run", "wait"], label: "——等候不是停下", text: "夏织画了一条短短的跑道，旁边写着「等你看见终点」。这一次，等候不是把谁留下，而是让每个人都能继续跑。", add: { affection: { xiazhi: 1, shen: 1 } }, personality: { kind: 1, brave: 1 }, next: "afterword_stamp" },
+        { stamps: ["write", "wait"], label: "——给未来留位置", text: "你们把明信片寄出去，没有写回信期限。未来不是一张必须填满的表格，它可以先留一个位置。", add: { affection: { shiyu: 1, shen: 1 } }, personality: { honest: 2 }, next: "afterword_stamp" },
+        { stamps: ["run", "open"], label: "——从今天开始", text: "跑道和画室被印在同一张卡片上。她们说，开始并不需要等到一切准备好。", add: { affection: { xiazhi: 1, sunian: 1 } }, personality: { brave: 1, creative: 1 }, next: "afterword_stamp" }
+      ],
+      fallback: { label: "——还没决定", text: "你们选了两枚还说不清的印记。也没关系，明信片先寄出去，答案可以在路上慢慢长出来。", add: { affection: { shen: 1 } }, personality: { patient: 1 }, next: "afterword_stamp" }
+    }
+  },
+  afterword_stamp: {
+    bg: "school_gate", char: "shiyu", speaker: "林诗雨",
+    text: "邮筒吞下明信片时，林诗雨问：「这次不会再回来了吗？」我说：「会回来，但不是回到原点。」她把这句话写进了下一章。",
+    next: "afterword_4"
+  },
+  afterword_4: {
+    bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "风从海那边吹过来。夏织先迈开步子，诗雨把稿纸夹好，苏念把门再推开一点。她们都没有回头叫我。因为这一次，我已经在她们身边。",
+    next: "afterword_signature"
+  },
+  afterword_signature: {
+    bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    choice: {
+      prompt: "替明信片补上一句落款",
+      options: [
+        { text: "写下「下次见」", next: "afterword_signature_meet", add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } } },
+        { text: "写下「照顾好自己」", next: "afterword_signature_care", add: { affection: { shiyu: 1, shen: 1 } } },
+        { text: "留一行空白", next: "afterword_signature_blank", add: { affection: { sunian: 1, shen: 1 } } }
+      ]
+    }
+  },
+  afterword_signature_meet: {
+    bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
+    text: "我们写下「下次见」，却没有写日期。不是催学姐回来，只是承认未来仍然有相遇的可能。",
+    next: "afterword_ending"
+  },
+  afterword_signature_care: {
+    bg: "cherry_full", char: "xiazhi", speaker: "夏织",
+    text: "夏织把「照顾好自己」写得很重。这句话不需要回信，也不需要证明；只要学姐收到，就够了。",
+    next: "afterword_ending"
+  },
+  afterword_signature_blank: {
+    bg: "cherry_full", char: "sunian", speaker: "苏念",
+    text: "我们留了一行空白。不是因为无话可说，而是把下一个字交给学姐自己。",
+    next: "afterword_ending"
+  },
+  afterword_ending: {
+    bg: "ending_true", char: null, speaker: "",
+    text: "樱海以后没有新的谜题，只有一群人把昨天写过的字带进今天。故事没有被封存——它只是终于交还给了每一个正在生活的人。",
+    ending: { id: "afterword", type: "AFTERWORD", title: "樱海以后", text: "信寄出以后，三个人各自继续往前走。" }
   },
 };
 

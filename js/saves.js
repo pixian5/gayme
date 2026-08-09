@@ -191,6 +191,33 @@ function createDefaultSettings() {
   return Object.assign({}, DEFAULT_SETTINGS);
 }
 
+const NUMERIC_SETTING_RANGES = Object.freeze({
+  textSpeed: { min: 5, max: 80, integer: true },
+  autoDelay: { min: 500, max: 4000, integer: true },
+  bgmVolume: { min: 0, max: 1, integer: false },
+  sfxVolume: { min: 0, max: 1, integer: false },
+});
+
+function normalizeSettings(value) {
+  const normalized = createDefaultSettings();
+  if (!value || typeof value !== "object" || Array.isArray(value)) return normalized;
+
+  for (const [key, range] of Object.entries(NUMERIC_SETTING_RANGES)) {
+    const raw = value[key];
+    if (typeof raw !== "number" || !Number.isFinite(raw)) continue;
+    const bounded = Math.min(range.max, Math.max(range.min, raw));
+    normalized[key] = range.integer ? Math.round(bounded) : bounded;
+  }
+  for (const key of ["particles", "bgm"]) {
+    if (typeof value[key] === "boolean") normalized[key] = value[key];
+  }
+  return normalized;
+}
+
+function isKnownSetting(key) {
+  return Object.prototype.hasOwnProperty.call(DEFAULT_SETTINGS, key);
+}
+
 function cloneValue(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
@@ -276,15 +303,24 @@ const Saves = {
   },
 
   importData(payload) {
-    if (!payload || typeof payload !== "object" || !payload.records || typeof payload.records !== "object") return false;
-    if (!Number.isInteger(payload.schemaVersion) || payload.schemaVersion > STORAGE_SCHEMA_VERSION) return false;
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)
+      || !payload.records || typeof payload.records !== "object" || Array.isArray(payload.records)) return false;
+    if (!Number.isInteger(payload.schemaVersion) || payload.schemaVersion < 0 || payload.schemaVersion > STORAGE_SCHEMA_VERSION) return false;
     const before = new Map();
     for (const key of GAME_STORAGE_KEYS) {
       try { before.set(key, localStorage.getItem(key)); }
       catch (e) { return false; }
     }
     for (const [key, value] of Object.entries(payload.records)) {
-      if (!GAME_STORAGE_KEYS.includes(key) || !this._write(key, JSON.stringify(value))) {
+      let serialized;
+      try {
+        const normalizedValue = key === SETTINGS_KEY ? normalizeSettings(value) : value;
+        serialized = JSON.stringify(normalizedValue);
+        if (serialized === undefined) throw new Error("记录值不可序列化");
+      } catch (e) {
+        serialized = null;
+      }
+      if (!GAME_STORAGE_KEYS.includes(key) || serialized === null || !this._write(key, serialized)) {
         for (const [rollbackKey, raw] of before) {
           if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
         }
@@ -478,20 +514,28 @@ const Saves = {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) Object.assign(this.settings, parsed);
+        this.settings = normalizeSettings(parsed);
       }
     } catch (e) { /* 用默认 */ }
   },
 
   saveSettings() {
-    return this._write(SETTINGS_KEY, JSON.stringify(this.settings));
+    const previous = this.settings;
+    this.settings = normalizeSettings(this.settings);
+    if (this._write(SETTINGS_KEY, JSON.stringify(this.settings))) return true;
+    this.settings = previous;
+    return false;
   },
 
   updateSetting(key, value) {
-    const previous = this.settings[key];
-    this.settings[key] = value;
-    if (this.saveSettings()) return true;
-    this.settings[key] = previous;
+    if (!isKnownSetting(key)) return false;
+    const candidate = Object.assign({}, this.settings, { [key]: value });
+    if (key in NUMERIC_SETTING_RANGES && (typeof value !== "number" || !Number.isFinite(value))) return false;
+    if ((key === "particles" || key === "bgm") && typeof value !== "boolean") return false;
+    const previous = this.settings;
+    this.settings = normalizeSettings(candidate);
+    if (this._write(SETTINGS_KEY, JSON.stringify(this.settings))) return true;
+    this.settings = previous;
     return false;
   },
 
