@@ -1924,7 +1924,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.6.7 · Demo</p>
+        <p style="color:#e8e0d0;">v2.6.9 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -8891,6 +8891,7 @@
     }));
     const total = pieces.length;
     let placedCount = 0;
+    const releaseHandlers = [];
 
     // 棋盘背景
     const board = document.createElement("div");
@@ -8974,6 +8975,10 @@
       elDom.addEventListener("touchstart", start, { passive: false });
       elDom.addEventListener("touchmove", move, { passive: false });
       elDom.addEventListener("touchend", end);
+      // 目标格不属于糖块本身，释放事件必须在文档级收尾。
+      document.addEventListener("mouseup", end);
+      document.addEventListener("touchend", end);
+      releaseHandlers.push(end);
       stage.appendChild(elDom);
       return elDom;
     }
@@ -8998,6 +9003,10 @@
       aborted = true;
       confirmBtn.disabled = true;
       resetBtn.disabled = true;
+      releaseHandlers.forEach(handler => {
+        document.removeEventListener("mouseup", handler);
+        document.removeEventListener("touchend", handler);
+      });
       pieceDoms.forEach(d => d.style.pointerEvents = "none");
       const ratio = placedCount / Math.max(1, total);
       const thresholds = sg.thresholds || [];
@@ -9034,6 +9043,10 @@
     const mo = new MutationObserver(() => {
       if (!document.body.contains(layer)) {
         aborted = true;
+        releaseHandlers.forEach(handler => {
+          document.removeEventListener("mouseup", handler);
+          document.removeEventListener("touchend", handler);
+        });
         if (mo) mo.disconnect();
       }
     });

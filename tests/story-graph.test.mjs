@@ -47,7 +47,8 @@ test("主线和真结局入口可达", () => {
   for (const id of [
     "d1_night_stars", "d6_kite", "d7_firefly", "d8_compass",
     "d9_metronome", "d10_eclipse", "d11_kaleido", "d12_sundial",
-    "d13_mosaic", "d14_stele", "d15_chess", "common_day3_afternoon",
+    "d13_mosaic", "d14_stele", "d15_chess", "d5_loop_arrival",
+    "common_day3_afternoon",
     "common_day5_afternoon"
   ]) assert.equal(reachable.has(id), true, `${id} 不可达`);
 });
@@ -59,6 +60,15 @@ test("时间回溯有明确的叙事承接", () => {
   assert.equal(SCRIPT.d15_flag.next, "d15_rewind");
   assert.equal(SCRIPT.d15_rewind.timeLoop, true);
   assert.match(SCRIPT.d15_rewind.text, /第 15 日.*第 5 日/);
+  assert.equal(SCRIPT.d15_rewind.next, "d5_loop_arrival");
+  assert.equal(SCRIPT.d5_loop_choice.choice.options.length, 3);
+  assert.deepEqual(
+    [...SCRIPT.d5_loop_choice.choice.options].map(option => option.next),
+    ["d5_loop_letter", "d5_mimic", "d5_loop_signature"]
+  );
+  assert.equal(SCRIPT.d5_loop_letter.next, "d5_mimic");
+  assert.equal(SCRIPT.d5_loop_signature.next, "d5_mimic");
+  assert.match(SCRIPT.d5_loop_arrival.text, /匿名信/);
 });
 
 test("真结局后日谈和明信片分支可达", () => {

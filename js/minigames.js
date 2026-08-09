@@ -464,11 +464,13 @@
         const blocks = shuffle(colors.map((c) => ({ color: c, used: false, el: null })));
 
         // 渲染目标
-        targets.forEach((t) => {
+        targets.forEach((t, index) => {
           const el = document.createElement("div");
           el.className = "mg-target";
-          el.style.background = "rgba(255,255,255,0.04)";
-          el.textContent = "目标";
+          // 目标色必须可见，否则玩家无法建立色块与目标的对应关系。
+          el.style.background = t.color;
+          el.textContent = "目标 " + (index + 1);
+          el.setAttribute("aria-label", `目标色块 ${index + 1}`);
           el.addEventListener("click", () => onTargetClick(t));
           t.el = el;
           targetRow.appendChild(el);

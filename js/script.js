@@ -1710,10 +1710,13 @@ const SCRIPT = {
       prompt: "拖动木块——让影子与虚线轮廓重合",
       lightAngle: 30,
       target: [
-        { x: 0.55, y: 0.50 },
-        { x: 0.85, y: 0.50 },
-        { x: 0.85, y: 0.62 },
-        { x: 0.55, y: 0.62 }
+        // 与 30 度光源下木块的实际投影轮廓一致，目标可通过拖动达到。
+        { x: 0.624, y: 0.503 },
+        { x: 0.664, y: 0.503 },
+        { x: 0.751, y: 0.638 },
+        { x: 0.751, y: 0.668 },
+        { x: 0.711, y: 0.638 },
+        { x: 0.624, y: 0.563 }
       ],
       min: 0.5,
       thresholds: [
@@ -1774,7 +1777,7 @@ const SCRIPT = {
   d4_dial: {
     day: 4, time: "night", bg: "home_room", char: null, speaker: "",
     text: "床头有一台旧电话。她说——拨一个号码，是 7 位数。她说完只重复了一遍。你试着拨出去。",
-    next: "d5_foggy",
+    next: "d4_voice_note",
     dial: {
       prompt: "拨出你记得的号码——",
       target: "1206437",
@@ -1786,19 +1789,60 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
           personality: { honest: 2, brave: 2 },
           memory: { id: "电话·拨通", title: "雨夜的电话", text: "你在雨夜拨通了一个 7 位的号码，对面接了。" },
-          next: "d5_foggy" },
+          next: "d4_voice_note" },
         { min: 0.5, tag: "ok",
           label: "——拨了一半",
           text: "拨号声断断续续，对面没接。你想：号码记不全也是好的——有些事，记一半就够。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d5_foggy" }
+          next: "d4_voice_note" }
       ],
       fallback: { tag: "miss",
         label: "——拨错了",
         text: "拨号声嘟嘟响，没有人接。她说：拨错的号码，也是号码——它属于某个你不知道的人。你挂了电话。",
-        next: "d5_foggy" }
+        next: "d4_voice_note" }
     }
+  },
+
+  // 雨后留言
+  d4_voice_note: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    text: "电话那头的嘟声消失后，录音键还亮着。你忽然想把没说出口的话留在这里，至少让它有地方可回去。",
+    next: "d4_voice_choice"
+  },
+  d4_voice_choice: {
+    day: 4, time: "night", bg: "home_room", char: null, speaker: "",
+    choice: {
+      prompt: "这段话留给谁？",
+      options: [
+        { text: "留给明天的自己", next: "d4_voice_self" },
+        { text: "留给电话那头的人", next: "d4_voice_them" },
+        { text: "不录了，写在纸上", next: "d4_voice_paper" }
+      ]
+    }
+  },
+  d4_voice_self: {
+    day: 4, time: "night", bg: "home_room", speaker: "沈屿",
+    text: "「明天也要回来。」你按下停止。录音里只有自己的声音，却没有刚才那么空。",
+    next: "d4_voice_end",
+    memory: { id: "留言·明天", title: "留给明天的声音", text: "你给明天的自己留了一句：明天也要回来。" }
+  },
+  d4_voice_them: {
+    day: 4, time: "night", bg: "home_room", speaker: "沈屿",
+    text: "「如果你还记得这串号码，就知道我没有真的走远。」你没有说名字，怕名字一出口，故事就只能有一个答案。",
+    next: "d4_voice_end",
+    memory: { id: "留言·号码", title: "没有说出的名字", text: "你把一句话留给电话那头的人，却没有说出名字。" }
+  },
+  d4_voice_paper: {
+    day: 4, time: "night", bg: "home_room", speaker: "沈屿",
+    text: "你关掉录音，改在纸上写下一句：「今晚先到这里。」纸比录音安静，安静到你终于听见自己的呼吸。",
+    next: "d4_voice_end",
+    memory: { id: "留言·纸面", title: "纸上的停顿", text: "你没有录音，而是在纸上写下：今晚先到这里。" }
+  },
+  d4_voice_end: {
+    day: 4, time: "night", bg: "home_room", speaker: "",
+    text: "你把手机扣在桌上。窗外的雨已经停了，明早还会有新的声音。",
+    next: "d5_foggy"
   },
 
 
@@ -3270,7 +3314,39 @@ const SCRIPT = {
     bg: "courtyard", char: null, speaker: "",
     text: "旗落下的声音像一页合上。第 15 日没有消失，只是把我送回第 5 日清晨——这一次，我知道回去不是重来，而是把漏掉的答案补上。",
     timeLoop: true,
-    next: "d5_mimic"
+    next: "d5_loop_arrival"
+  },
+
+  // 第 15 日回溯后的新线索：先处理记忆，再回到第 5 日的原有事件。
+  d5_loop_arrival: {
+    day: 5, time: "morning", bg: "rooftop", char: null, speaker: "",
+    text: "第 5 日的风还没有变。口袋里的匿名信却比记忆里多了一道折痕，像有人在我回去之前，替我把答案藏进了纸里。",
+    next: "d5_loop_choice"
+  },
+  d5_loop_choice: {
+    day: 5, time: "morning", bg: "rooftop",
+    choice: {
+      prompt: "带着第 15 日的记忆醒来，你先做什么？",
+      options: [
+        { text: "把记得的事写在信封背面", next: "d5_loop_letter" },
+        { text: "先上天台，等她叫我", next: "d5_mimic" },
+        { text: "重新读一遍匿名信的落款", next: "d5_loop_signature" }
+      ]
+    }
+  },
+  d5_loop_letter: {
+    day: 5, time: "morning", bg: "rooftop", speaker: "沈屿",
+    text: "我在信封背面写下：「如果今天重复，别把重复当成惩罚。」墨迹落下去时，我不确定这是给未来的自己，还是给那个还没认识我的人。",
+    next: "d5_mimic",
+    set: { flag_loop_note: true },
+    memory: { id: "循环·背面", title: "信封背面的提醒", text: "回到第 5 日后，你在匿名信封背面写下：别把重复当成惩罚。" }
+  },
+  d5_loop_signature: {
+    day: 5, time: "morning", bg: "rooftop", speaker: "沈屿",
+    text: "落款仍只有一个「樱」字。它可能是名字，也可能只是写信的人不敢留下名字时，给自己画的一道影子。你把信折好，决定先听今天会发生什么。",
+    next: "d5_mimic",
+    set: { flag_loop_signature: true },
+    memory: { id: "循环·落款", title: "只有一个樱字", text: "回到第 5 日后，你重新读匿名信，只看见一个无法确认含义的「樱」字。" }
   },
 
   /* ============ v1.4.0 新玩法触发节点 ============ */
