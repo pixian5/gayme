@@ -3943,21 +3943,131 @@ const SCRIPT = {
   afterword_reply_meet: {
     bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把回信折好：「我们可以期待见面，但不用把期待变成她必须完成的作业。」她在落款旁边添了一朵很小的樱花。",
-    next: "afterword_ending"
+    next: "afterword_timeline"
   },
   afterword_reply_release: {
     bg: "school_gate", char: "xiazhi", speaker: "夏织",
     text: "夏织把信投进邮筒：「那就继续跑吧。不是离开樱海才算赢，跑到自己想去的地方就算。」",
-    next: "afterword_ending"
+    next: "afterword_timeline"
   },
   afterword_reply_write: {
     bg: "cafeteria", char: "sunian", speaker: "苏念",
     text: "苏念在回信末尾画了一扇半开的门：「下一章不用等我批准。你先写今天的这一页。」",
-    next: "afterword_ending"
+    next: "afterword_timeline"
   },
   afterword_reply_default: {
     bg: "cherry_full", char: null, speaker: "",
     text: "我们没有替学姐解释这句话，只把自己的近况写进去。回信不必漂亮，能抵达就已经足够。",
+    next: "afterword_timeline"
+  },
+  afterword_timeline: {
+    bg: "school_gate", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "我们把明信片摊在桌上，按日期核对这段没有倒流的日子。不是寻找下一封匿名信，只是确认：发生过的事，已经有了先后。",
+    next: "afterword_autumn",
+    timeline: {
+      prompt: "把四件事按发生先后排好",
+      hint: "从樱花祭那晚开始，排到今天收到回信以后。",
+      events: [
+        { id: "festival_letter", date: "樱花祭之夜", label: "寄出樱花信", desc: "你在樱花树下替学姐写下回信。" },
+        { id: "school_cleanup", date: "三天后", label: "学园收摊", desc: "彩灯和摊位收起，三个人约好每周见面。" },
+        { id: "postcard_reply", date: "一周后", label: "收到学姐回信", desc: "明信片从新城市折返回来，写着一扇打开的窗。" },
+        { id: "today_reply", date: "今天", label: "写下现在的话", desc: "你们把近况写回去，不再追问她何时回来。" }
+      ],
+      correctOrder: ["festival_letter", "school_cleanup", "postcard_reply", "today_reply"],
+      success: {
+        label: "——日子往前了",
+        text: "四件事一件接着一件，没有哪一件需要回到原点重来。你们把明信片收好：记住顺序，也允许明天继续发生。",
+        add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } },
+        personality: { honest: 1, patient: 1 }
+      },
+      retry: {
+        label: "——再核对一次",
+        text: "顺序有一处对不上。你们重新看了一遍日期，发现不是记忆出了错，而是大家都太急着把未来提前。",
+        add: { affection: { shen: 1 } },
+        personality: { patient: 1 }
+      }
+    }
+  },
+  /* ============ 后日谈追加：半年后的回信角 ============ */
+  afterword_autumn: {
+    bg: "school_gate", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "半年后，樱海学园换上了薄薄的秋色。我们把旧公告栏改成了「回信角」：每张纸条都写着署名和日期，不再把任何人的困惑交给一封没有来处的信。",
+    next: "afterword_mailbox"
+  },
+  afterword_mailbox: {
+    bg: "classroom", char: null, speaker: "",
+    text: "第一张纸条没有写名字：「如果我暂时不知道要去哪里，还能先留在这里吗？」三个人看了很久，谁也不想替她决定答案。我们把笔递给了你。",
+    next: "afterword_mailbox_reply",
+  },
+  afterword_mailbox_reply: {
+    bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "回信角的第一封公开回信——不需要漂亮，只要让对方知道，犹豫也可以被认真对待。",
+    letter: {
+      id: "afterword_mailbox_reply",
+      type: "free",
+      prompt: "✦ 写给回信角的第一位来信者",
+      hint: "不要替对方选终点，只写一句能落到今天的话…",
+      matchings: [
+        { id: "mailbox_stay", keywords: ["可以", "留下", "留在", "慢一点", "现在"], next: "afterword_mailbox_stay" },
+        { id: "mailbox_step", keywords: ["一步", "试试", "开始", "走走", "先做"], next: "afterword_mailbox_step" },
+        { id: "mailbox_listen", keywords: ["听", "陪", "等", "问问", "说说"], next: "afterword_mailbox_listen" }
+      ],
+      defaultReply: { next: "afterword_mailbox_default" }
+    }
+  },
+  afterword_mailbox_stay: {
+    bg: "classroom", char: "shiyu", speaker: "林诗雨",
+    text: "诗雨把「可以先留在这里」圈了出来，又补了一句：「留下不是放弃寻找，只是今天不用急着证明自己。」她第一次写建议时，没有把它写成答案。",
+    personality: { kind: 1, patient: 1 },
+    next: "afterword_mailbox_rules"
+  },
+  afterword_mailbox_step: {
+    bg: "school_gate", char: "xiazhi", speaker: "夏织",
+    text: "夏织本来想写「那就跑起来」，最后改成：「先试一小步，明天再看。」她说，真正的起跑不是把人推向终点，而是把脚下这一格照亮。",
+    personality: { brave: 1, kind: 1 },
+    next: "afterword_mailbox_rules"
+  },
+  afterword_mailbox_listen: {
+    bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "苏念没有填满纸条，只在下面写：「如果你愿意，可以把下一句也留在这里。」空白没有替对方沉默，它只是先把位置留出来。",
+    personality: { kind: 1, honest: 1 },
+    next: "afterword_mailbox_rules"
+  },
+  afterword_mailbox_default: {
+    bg: "classroom", char: null, speaker: "",
+    text: "你写下了一句暂时无法归类的话。三个人没有把它改成更像答案的样子，只把日期和你们的名字写在下面：有人会读到，也有人愿意继续听。",
+    personality: { honest: 1, patient: 1 },
+    next: "afterword_mailbox_rules"
+  },
+  afterword_mailbox_rules: {
+    bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "林诗雨",
+    text: "第一封回信贴上墙后，我们又写下回信角的第一条规则。它不能保证每个人马上找到方向，但至少不能让好意变成新的压力。",
+    choice: {
+      prompt: "回信角的第一条规则——",
+      options: [
+        { text: "每一封回信都写上名字和日期。", next: "afterword_mailbox_rule_sign", add: { personality: { honest: 1 } } },
+        { text: "先问对方需要什么，再给建议。", next: "afterword_mailbox_rule_ask", add: { personality: { kind: 1 } } },
+        { text: "允许只留下空白，不催任何人回答。", next: "afterword_mailbox_rule_space", add: { personality: { patient: 1 } } }
+      ]
+    }
+  },
+  afterword_mailbox_rule_sign: {
+    bg: "school_gate", char: "shiyu", speaker: "林诗雨",
+    text: "诗雨把姓名栏和日期栏画得很直：「署名不是为了追责，是为了让关心有一个真实的落点。」回信角终于和那封匿名信不一样了。",
+    next: "afterword_ending"
+  },
+  afterword_mailbox_rule_ask: {
+    bg: "cafeteria", char: "xiazhi", speaker: "夏织",
+    text: "夏织点头：「先问一句，至少不会把自己的经验塞给别人。」她把「你现在需要什么？」写在公告栏最上面。",
+    next: "afterword_ending"
+  },
+  afterword_mailbox_rule_space: {
+    bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "苏念在角落画了一个半开的方框：「空白也算回信。」它不是把人晾在那里，而是承认有些话要等准备好才说。",
     next: "afterword_ending"
   },
   afterword_ending: {

@@ -149,6 +149,7 @@ const CLEPSYDRA_KEY   = "sakura_letters_clepsydra_v2";   // 漏刻计时
 const JIGSAW_KEY      = "sakura_letters_jigsaw_v2";      // 拼图归位
 const CHESS_KEY       = "sakura_letters_chess_v2";       // 棋局推演
 const FLAG_KEY        = "sakura_letters_flag_v2";        // 旗阵辨识
+const TIMELINE_KEY     = "sakura_letters_timeline_v2";    // 后日谈时间线
 const META_KEY        = "sakura_letters_meta_v3";
 const STORAGE_SCHEMA_VERSION = 3;
 
@@ -168,7 +169,7 @@ const GAME_STORAGE_KEYS = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTE
   STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY, KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
   SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY, MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY,
   MOSAIC_KEY, STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY, CLEPSYDRA_KEY, JIGSAW_KEY,
-  CHESS_KEY, FLAG_KEY];
+  CHESS_KEY, FLAG_KEY, TIMELINE_KEY];
 
 const DEFAULT_SETTINGS = Object.freeze({
   textSpeed: 30,
@@ -1810,6 +1811,18 @@ const Saves = {
   },
   getFlagRecord(nodeId) { return this.getFlagRecords()[nodeId]; },
 
+  /* ============ v2.7.2 后日谈时间线 ============ */
+  // { nodeId: { order: [], correct, tag, ts } }
+  getTimelineRecords() {
+    return this._read(TIMELINE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
+  },
+  saveTimelineRecord(nodeId, order, correct, tag) {
+    const all = this.getTimelineRecords();
+    all[nodeId] = { order, correct, tag, ts: Date.now() };
+    return this._write(TIMELINE_KEY, JSON.stringify(all));
+  },
+  getTimelineRecord(nodeId) { return this.getTimelineRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1842,7 +1855,7 @@ const Saves = {
      SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
      MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
      STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY,
-     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY];
+     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY, TIMELINE_KEY];
     let success = true;
     keys.forEach((key) => {
       if (!this._remove(key)) success = false;

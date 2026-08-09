@@ -8140,6 +8140,110 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .postcard-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
 .postcard-reading-text { margin: 12px auto 16px; max-width: 560px; color: rgba(255, 240, 248, 0.86); font-size: 14px; line-height: 1.9; }
 
+/* ============ v2.7.2 后日谈时间线 ============ */
+.timeline-layer {
+  position: absolute; inset: 0; z-index: 38;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at center, rgba(44, 48, 66, 0.97), rgba(14, 16, 24, 0.99));
+  backdrop-filter: blur(12px);
+}
+.timeline-card {
+  width: min(760px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid rgba(200, 220, 240, 0.3);
+  border-radius: 12px;
+  background: rgba(25, 30, 44, 0.94);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45);
+}
+.timeline-prompt {
+  color: #d8ecff;
+  font-size: 21px;
+  letter-spacing: 3px;
+  text-align: center;
+}
+.timeline-hint {
+  margin: 10px auto 18px;
+  color: rgba(216, 236, 255, 0.62);
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+.timeline-stage { display: grid; gap: 10px; }
+.timeline-order-label, .timeline-pool-label {
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+.timeline-order, .timeline-pool {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  min-height: 86px;
+  padding: 10px;
+  border: 1px dashed rgba(200, 220, 240, 0.24);
+  border-radius: 8px;
+  background: rgba(200, 220, 240, 0.04);
+}
+.timeline-pool { min-height: 0; }
+.timeline-empty {
+  grid-column: 1 / -1;
+  align-self: center;
+  padding: 16px;
+  color: rgba(216, 236, 255, 0.48);
+  font-size: 13px;
+  text-align: center;
+}
+.timeline-event {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  min-height: 82px;
+  padding: 11px 12px;
+  border: 1px solid rgba(200, 220, 240, 0.24);
+  border-radius: 8px;
+  background: rgba(80, 100, 130, 0.22);
+  color: #eff7ff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.timeline-event:hover { transform: translateY(-2px); border-color: rgba(216, 236, 255, 0.66); }
+.timeline-ordered { background: rgba(120, 150, 180, 0.26); }
+.timeline-event strong { display: block; color: #ffd88a; font-size: 12px; letter-spacing: 1px; }
+.timeline-event small { display: block; margin-top: 4px; color: rgba(239, 247, 255, 0.62); font-size: 11px; line-height: 1.45; }
+.timeline-index {
+  flex: 0 0 22px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 216, 138, 0.18);
+  color: #ffd88a;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+}
+.timeline-info { min-height: 22px; margin: 14px 0 10px; color: rgba(216, 236, 255, 0.72); font-size: 13px; letter-spacing: 1px; text-align: center; }
+.timeline-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.timeline-reset, .timeline-confirm, .timeline-reading-close {
+  padding: 9px 20px;
+  border: 1px solid rgba(216, 236, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(80, 120, 160, 0.34);
+  color: #d8ecff;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+.timeline-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.timeline-reading { margin-top: 20px; padding: 18px; border-top: 1px solid rgba(216, 236, 255, 0.22); text-align: center; }
+.timeline-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
+.timeline-reading-text { margin: 12px auto 16px; max-width: 600px; color: rgba(239, 247, 255, 0.86); font-size: 14px; line-height: 1.9; }
+
 /* ============ v2.6.0 移动端适配 ============ */
 @media (max-width: 768px) {
   .cly-canvas { height: 280px; }
@@ -8150,6 +8254,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .chs-cell.chs-target::after { font-size: 18px; }
   .fl-options { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .postcard-stamps { grid-template-columns: 1fr; gap: 8px; }
+  .timeline-order, .timeline-pool { grid-template-columns: 1fr; }
   .cly-prompt, .ji-prompt, .chs-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
   .fl-description { font-size: 14px; }
   .cly-actions button, .cly-reading-close,

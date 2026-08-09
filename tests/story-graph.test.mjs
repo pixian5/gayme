@@ -89,7 +89,11 @@ test("真结局后日谈和明信片分支可达", () => {
     "afterword_signature", "afterword_signature_meet", "afterword_signature_care",
     "afterword_signature_blank", "afterword_reply_arrival", "afterword_reply",
     "afterword_reply_meet", "afterword_reply_release", "afterword_reply_write",
-    "afterword_reply_default", "afterword_ending"
+    "afterword_reply_default", "afterword_timeline", "afterword_autumn",
+    "afterword_mailbox", "afterword_mailbox_reply", "afterword_mailbox_stay",
+    "afterword_mailbox_step", "afterword_mailbox_listen", "afterword_mailbox_default",
+    "afterword_mailbox_rules", "afterword_mailbox_rule_sign",
+    "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space", "afterword_ending"
   ]) {
     assert.equal(reachable.has(id), true, `${id} 不可达`);
   }
@@ -109,6 +113,28 @@ test("真结局后日谈和明信片分支可达", () => {
   assert.equal(SCRIPT.afterword_reply.letter.matchings.length, 3);
   assert.equal(SCRIPT.afterword_reply.letter.defaultReply.next, "afterword_reply_default");
   assert.match(SCRIPT.afterword_reply_arrival.text, /新城市打开了一扇窗/);
+  for (const id of ["afterword_reply_meet", "afterword_reply_release", "afterword_reply_write", "afterword_reply_default"]) {
+    assert.equal(SCRIPT[id].next, "afterword_timeline");
+  }
+  assert.deepEqual([...SCRIPT.afterword_timeline.timeline.correctOrder], [
+    "festival_letter", "school_cleanup", "postcard_reply", "today_reply"
+  ]);
+  assert.equal(SCRIPT.afterword_timeline.timeline.events.length, 4);
+  assert.match(SCRIPT.afterword_timeline.text, /没有倒流/);
+  assert.equal(SCRIPT.afterword_timeline.next, "afterword_autumn");
+  assert.match(SCRIPT.afterword_autumn.text, /半年后/);
+  assert.match(SCRIPT.afterword_autumn.text, /署名和日期/);
+  assert.equal(SCRIPT.afterword_mailbox_reply.letter.type, "free");
+  assert.equal(SCRIPT.afterword_mailbox_reply.letter.matchings.length, 3);
+  assert.equal(SCRIPT.afterword_mailbox_reply.letter.defaultReply.next, "afterword_mailbox_default");
+  for (const id of ["afterword_mailbox_stay", "afterword_mailbox_step", "afterword_mailbox_listen", "afterword_mailbox_default"]) {
+    assert.equal(SCRIPT[id].next, "afterword_mailbox_rules");
+  }
+  assert.equal(SCRIPT.afterword_mailbox_rules.choice.options.length, 3);
+  for (const id of ["afterword_mailbox_rule_sign", "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space"]) {
+    assert.equal(SCRIPT[id].next, "afterword_ending");
+  }
+  assert.match(SCRIPT.afterword_mailbox_rule_sign.text, /匿名信不一样/);
 });
 
 test("后日谈入口只由真结局解锁", () => {
