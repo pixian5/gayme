@@ -87,7 +87,9 @@ test("真结局后日谈和明信片分支可达", () => {
   for (const id of [
     "afterword_three", "afterword_postcard", "afterword_stamp", "afterword_4",
     "afterword_signature", "afterword_signature_meet", "afterword_signature_care",
-    "afterword_signature_blank", "afterword_ending"
+    "afterword_signature_blank", "afterword_reply_arrival", "afterword_reply",
+    "afterword_reply_meet", "afterword_reply_release", "afterword_reply_write",
+    "afterword_reply_default", "afterword_ending"
   ]) {
     assert.equal(reachable.has(id), true, `${id} 不可达`);
   }
@@ -102,6 +104,11 @@ test("真结局后日谈和明信片分支可达", () => {
   assert.equal(SCRIPT.afterword_4.speaker, "沈屿");
   assert.equal(SCRIPT.afterword_4.next, "afterword_signature");
   assert.equal(SCRIPT.afterword_signature.choice.options.length, 3);
+  assert.equal(SCRIPT.afterword_signature_meet.next, "afterword_reply_arrival");
+  assert.equal(SCRIPT.afterword_reply.letter.type, "free");
+  assert.equal(SCRIPT.afterword_reply.letter.matchings.length, 3);
+  assert.equal(SCRIPT.afterword_reply.letter.defaultReply.next, "afterword_reply_default");
+  assert.match(SCRIPT.afterword_reply_arrival.text, /新城市打开了一扇窗/);
 });
 
 test("后日谈入口只由真结局解锁", () => {

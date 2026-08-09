@@ -1924,7 +1924,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.6.9 · Demo</p>
+        <p style="color:#e8e0d0;">v2.7.0 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -2047,7 +2047,7 @@
       { title: "夏织线", nodes: ["route_xiazhi_1", "xz_9", "xz_minigame", "xz_choice_1", "xz_ending_good", "xz_ending_normal", "xz_ending_bad"] },
       { title: "苏念线", nodes: ["route_sunian_1", "sn_9", "sn_minigame", "sn_choice_1", "sn_ending_good", "sn_ending_normal", "sn_ending_bad"] },
       { title: "真结局", nodes: ["true_end_entry", "true_choice", "true_ending"] },
-      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_ending"] },
+      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_ending"] },
     ];
     el.overlayBody.innerHTML = groups.map(g => {
       return `<div class="flow-group">

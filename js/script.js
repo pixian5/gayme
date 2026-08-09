@@ -3906,16 +3906,58 @@ const SCRIPT = {
   afterword_signature_meet: {
     bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
     text: "我们写下「下次见」，却没有写日期。不是催学姐回来，只是承认未来仍然有相遇的可能。",
-    next: "afterword_ending"
+    next: "afterword_reply_arrival"
   },
   afterword_signature_care: {
     bg: "cherry_full", char: "xiazhi", speaker: "夏织",
     text: "夏织把「照顾好自己」写得很重。这句话不需要回信，也不需要证明；只要学姐收到，就够了。",
-    next: "afterword_ending"
+    next: "afterword_reply_arrival"
   },
   afterword_signature_blank: {
     bg: "cherry_full", char: "sunian", speaker: "苏念",
     text: "我们留了一行空白。不是因为无话可说，而是把下一个字交给学姐自己。",
+    next: "afterword_reply_arrival"
+  },
+  /* ============ 后日谈追加：循环结束后的现实回信 ============ */
+  afterword_reply_arrival: {
+    bg: "school_gate", char: null, speaker: "",
+    text: "一周后，邮筒里出现了一张折回来的明信片。学姐没有写回地址，只在空白处写了一句：「我没有回樱海，但我在新城市打开了一扇窗。」",
+    next: "afterword_reply"
+  },
+  afterword_reply: {
+    bg: "school_gate", char: null, speaker: "",
+    text: "三个人把明信片传了一圈。没有人再问她什么时候回来——这一次，我们只想认真回一句现在的话。",
+    letter: {
+      id: "afterword_reply",
+      type: "free",
+      prompt: "✦ 回一封给现在的学姐",
+      hint: "写下你想让她带走的一句话…",
+      matchings: [
+        { id: "reply_meet", keywords: ["见", "下次", "回来"], next: "afterword_reply_meet" },
+        { id: "reply_release", keywords: ["继续", "不用", "远方", "走"], next: "afterword_reply_release" },
+        { id: "reply_write", keywords: ["写", "下一章", "今天", "开始"], next: "afterword_reply_write" }
+      ],
+      defaultReply: { next: "afterword_reply_default" }
+    }
+  },
+  afterword_reply_meet: {
+    bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
+    text: "诗雨把回信折好：「我们可以期待见面，但不用把期待变成她必须完成的作业。」她在落款旁边添了一朵很小的樱花。",
+    next: "afterword_ending"
+  },
+  afterword_reply_release: {
+    bg: "school_gate", char: "xiazhi", speaker: "夏织",
+    text: "夏织把信投进邮筒：「那就继续跑吧。不是离开樱海才算赢，跑到自己想去的地方就算。」",
+    next: "afterword_ending"
+  },
+  afterword_reply_write: {
+    bg: "cafeteria", char: "sunian", speaker: "苏念",
+    text: "苏念在回信末尾画了一扇半开的门：「下一章不用等我批准。你先写今天的这一页。」",
+    next: "afterword_ending"
+  },
+  afterword_reply_default: {
+    bg: "cherry_full", char: null, speaker: "",
+    text: "我们没有替学姐解释这句话，只把自己的近况写进去。回信不必漂亮，能抵达就已经足够。",
     next: "afterword_ending"
   },
   afterword_ending: {
