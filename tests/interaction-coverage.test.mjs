@@ -35,7 +35,7 @@ const handlers = {
   ripple: "runRipple", mosaic: "runMosaic", stele: "runStele", celestial: "runCelestial",
   drum: "runDrum", vane: "runVane", clepsydra: "runClepsydra", jigsaw: "runJigsaw",
   chess: "runChess", flag: "runFlag", postcard: "runPostcard", timeline: "runTimeline",
-  triage: "runTriage",
+  triage: "runTriage", wall: "runWall",
 };
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {

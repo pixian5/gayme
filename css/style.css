@@ -8334,6 +8334,96 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .triage-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
 .triage-reading-text { margin: 12px auto 16px; max-width: 640px; color: rgba(239, 250, 240, 0.88); font-size: 14px; line-height: 1.9; }
 
+/* ============ v2.7.4 后日谈留言墙 ============ */
+.wall-layer {
+  position: absolute; inset: 0; z-index: 38;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at center, rgba(65, 48, 38, 0.97), rgba(20, 18, 22, 0.99));
+  backdrop-filter: blur(12px);
+}
+.wall-card {
+  width: min(920px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid rgba(244, 211, 176, 0.3);
+  border-radius: 12px;
+  background: rgba(42, 32, 30, 0.96);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45);
+}
+.wall-prompt {
+  color: #ffe0b0;
+  font-size: 21px;
+  letter-spacing: 3px;
+  text-align: center;
+}
+.wall-hint {
+  margin: 10px auto 12px;
+  color: rgba(255, 224, 176, 0.68);
+  font-size: 13px;
+  letter-spacing: 1px;
+  line-height: 1.6;
+  text-align: center;
+}
+.wall-progress {
+  min-height: 22px;
+  margin: 0 0 14px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.wall-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.wall-column { min-width: 0; }
+.wall-column-label {
+  margin-bottom: 8px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+.wall-notes, .wall-bins { display: grid; gap: 10px; }
+.wall-note, .wall-bin {
+  width: 100%;
+  min-height: 104px;
+  padding: 13px 14px;
+  border: 1px solid rgba(244, 211, 176, 0.24);
+  border-radius: 8px;
+  background: rgba(151, 103, 73, 0.16);
+  color: #fff4e8;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.wall-note:hover, .wall-bin:hover { transform: translateY(-2px); border-color: rgba(255, 224, 176, 0.68); }
+.wall-note.wall-selected { border-color: #ffd88a; background: rgba(255, 216, 138, 0.16); }
+.wall-note.wall-assigned { background: rgba(151, 103, 73, 0.34); }
+.wall-bin.wall-bin-used { border-color: rgba(255, 216, 138, 0.54); background: rgba(255, 216, 138, 0.12); }
+.wall-note strong, .wall-bin strong { display: block; color: #ffd88a; font-size: 14px; letter-spacing: 1px; }
+.wall-note span, .wall-bin span { display: block; margin-top: 8px; color: rgba(255, 244, 232, 0.88); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.wall-note small, .wall-bin small { display: block; margin-top: 7px; color: rgba(255, 224, 176, 0.62); font-size: 11px; line-height: 1.45; }
+.wall-info { min-height: 24px; margin: 14px 0 10px; color: rgba(255, 224, 176, 0.78); font-size: 13px; letter-spacing: 1px; text-align: center; }
+.wall-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.wall-reset, .wall-confirm, .wall-reading-close {
+  padding: 9px 20px;
+  border: 1px solid rgba(255, 224, 176, 0.42);
+  border-radius: 8px;
+  background: rgba(151, 103, 73, 0.34);
+  color: #ffe0b0;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+.wall-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.wall-reading { margin-top: 20px; padding: 18px; border-top: 1px solid rgba(255, 224, 176, 0.22); text-align: center; }
+.wall-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
+.wall-reading-text { margin: 12px auto 16px; max-width: 660px; color: rgba(255, 244, 232, 0.88); font-size: 14px; line-height: 1.9; }
+
 /* ============ v2.6.0 移动端适配 ============ */
 @media (max-width: 768px) {
   .cly-canvas { height: 280px; }
@@ -8346,14 +8436,17 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .postcard-stamps { grid-template-columns: 1fr; gap: 8px; }
   .timeline-order, .timeline-pool { grid-template-columns: 1fr; }
   .triage-columns { grid-template-columns: 1fr; gap: 16px; }
+  .wall-columns { grid-template-columns: 1fr; gap: 16px; }
   .cly-prompt, .ji-prompt, .chs-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
   .triage-prompt { font-size: 16px; letter-spacing: 2px; }
+  .wall-prompt { font-size: 16px; letter-spacing: 2px; }
   .fl-description { font-size: 14px; }
   .cly-actions button, .cly-reading-close,
   .ji-actions button, .ji-reading-close,
   .chs-actions button, .chs-reading-close,
   .fl-actions button, .fl-reading-close,
-  .triage-actions button, .triage-reading-close {
+    .triage-actions button, .triage-reading-close,
+    .wall-actions button, .wall-reading-close {
     padding: 8px 18px; font-size: 13px;
   }
 }

@@ -1286,6 +1286,26 @@
       return;
     }
 
+    // v2.7.4 后日谈留言墙
+    if (node.wall) {
+      setScene(node.bg);
+      renderCharacters(node);
+      el.dialogBox.classList.remove("hidden");
+      const sessionId = state.sessionId;
+      state.pendingInteraction = true;
+      typewriter(displayNode.text || "", () => {
+        setTimeout(() => {
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) {
+            state.pendingInteraction = false;
+            runWall(node.wall, nodeId);
+          }
+        }, 400);
+      });
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
     // 普通节点/结局节点
     setScene(node.bg);
     renderCharacters(node);
@@ -1966,7 +1986,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.7.3 · Demo</p>
+        <p style="color:#e8e0d0;">v2.7.4 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -2089,7 +2109,7 @@
       { title: "夏织线", nodes: ["route_xiazhi_1", "xz_9", "xz_minigame", "xz_choice_1", "xz_ending_good", "xz_ending_normal", "xz_ending_bad"] },
       { title: "苏念线", nodes: ["route_sunian_1", "sn_9", "sn_minigame", "sn_choice_1", "sn_ending_good", "sn_ending_normal", "sn_ending_bad"] },
       { title: "真结局", nodes: ["true_end_entry", "true_choice", "true_ending"] },
-      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_timeline", "afterword_autumn", "afterword_mailbox_reply", "afterword_mailbox_rules", "afterword_mailbox_triage", "afterword_ending"] },
+      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_timeline", "afterword_autumn", "afterword_mailbox_reply", "afterword_mailbox_rules", "afterword_mailbox_triage", "afterword_wall", "afterword_wall_reflection", "afterword_ending"] },
     ];
     el.overlayBody.innerHTML = groups.map(g => {
       return `<div class="flow-group">
@@ -16957,6 +16977,139 @@
   }
 
   /* ============================================================
+     v2.7.4 后日谈留言墙 runWall
+     node.wall = {
+       prompt, hint,
+       bins: [ { id, label, text } ],
+       notes: [ { id, label, text, target } ],
+       success: { label, text, add?, personality?, next? },
+       retry: { label, text, add?, personality?, next? }
+     }
+     ============================================================ */
+  function runWall(wl, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "wall-layer";
+    layer.id = "wall-layer";
+    layer.innerHTML = `
+      <div class="wall-card">
+        <div class="wall-prompt">${escapeHtml(wl.prompt || "整理留言墙")}</div>
+        <div class="wall-hint">${escapeHtml(wl.hint || "先确认作者的意愿，再决定留言去哪里")}</div>
+        <div class="wall-progress" id="wall-progress">已处理 0 / ${(wl.notes || []).length}</div>
+        <div class="wall-columns">
+          <section class="wall-column">
+            <div class="wall-column-label">待整理留言</div>
+            <div class="wall-notes" id="wall-notes"></div>
+          </section>
+          <section class="wall-column">
+            <div class="wall-column-label">处理位置</div>
+            <div class="wall-bins" id="wall-bins"></div>
+          </section>
+        </div>
+        <div class="wall-info" id="wall-info">先选择一张留言</div>
+        <div class="wall-actions">
+          <button class="wall-reset" type="button">重置整理</button>
+          <button class="wall-confirm" type="button" disabled>确认张贴</button>
+        </div>
+      </div>
+    `;
+    const notesEl = layer.querySelector("#wall-notes");
+    const binsEl = layer.querySelector("#wall-bins");
+    const progressEl = layer.querySelector("#wall-progress");
+    const infoEl = layer.querySelector("#wall-info");
+    const resetBtn = layer.querySelector(".wall-reset");
+    const confirmBtn = layer.querySelector(".wall-confirm");
+    const notes = Array.isArray(wl.notes) ? wl.notes : [];
+    const bins = Array.isArray(wl.bins) ? wl.bins : [];
+    const assignment = Object.create(null);
+    let selectedNote = null;
+
+    function binById(id) { return bins.find((bin) => bin.id === id) || {}; }
+
+    function render() {
+      notesEl.innerHTML = "";
+      notes.forEach((note) => {
+        const assigned = assignment[note.id];
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `wall-note${selectedNote === note.id ? " wall-selected" : ""}${assigned ? " wall-assigned" : ""}`;
+        const bin = assigned ? binById(assigned) : null;
+        button.innerHTML = `<strong>${escapeHtml(note.label || note.id)}</strong><span>${escapeHtml(note.text || "")}</span>${bin ? `<small>位置：${escapeHtml(bin.label || assigned)}</small>` : "<small>点击后选择处理位置</small>"}`;
+        button.onclick = () => {
+          if (assignment[note.id]) {
+            delete assignment[note.id];
+            selectedNote = note.id;
+            infoEl.textContent = "已撤回这张留言，请重新选择位置";
+          } else {
+            selectedNote = note.id;
+            infoEl.textContent = `已选「${note.label || note.id}」，再选择右侧位置`;
+          }
+          render();
+        };
+        notesEl.appendChild(button);
+      });
+
+      binsEl.innerHTML = "";
+      bins.forEach((bin) => {
+        const assigned = notes.filter((note) => assignment[note.id] === bin.id);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `wall-bin${assigned.length ? " wall-bin-used" : ""}`;
+        button.innerHTML = `<strong>${escapeHtml(bin.label || bin.id)}</strong><span>${escapeHtml(bin.text || "")}</span><small>${assigned.length ? `已放入 ${assigned.length} 张` : "点击放入选中的留言"}</small>`;
+        button.onclick = () => {
+          if (!selectedNote) {
+            infoEl.textContent = "先选择左侧一张留言";
+            return;
+          }
+          assignment[selectedNote] = bin.id;
+          selectedNote = null;
+          infoEl.textContent = "已放入。点击已处理的留言可以撤回修改";
+          render();
+        };
+        binsEl.appendChild(button);
+      });
+
+      const count = notes.filter((note) => assignment[note.id]).length;
+      progressEl.textContent = `已处理 ${count} / ${notes.length}`;
+      confirmBtn.disabled = notes.length === 0 || count !== notes.length;
+    }
+
+    resetBtn.onclick = () => {
+      for (const note of notes) delete assignment[note.id];
+      selectedNote = null;
+      infoEl.textContent = "先选择一张留言";
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const correct = notes.length > 0 && notes.every((note) => assignment[note.id] === note.target);
+      const matched = (correct ? wl.success : wl.retry) || { label: "——留言已整理", text: "你们把纸条收好。", next: null };
+      Saves.saveWallRecord(currentNodeId, { ...assignment }, correct, correct ? "correct" : "retry");
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      const reading = document.createElement("div");
+      reading.className = "wall-reading";
+      reading.innerHTML = `<div class="wall-reading-title">${escapeHtml(matched.label || "留言已整理")}</div>
+        <div class="wall-reading-text">${escapeHtml(matched.text || "")}</div>
+        <button class="wall-reading-close" type="button">继续</button>`;
+      reading.querySelector(".wall-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    render();
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
      v1.9.0 钟摆节奏 runPendulum
      node.pendulum = {
        prompt: "钟摆摆到目标位置时——点「停」",
@@ -17309,6 +17462,7 @@
     document.querySelectorAll(".postcard-layer").forEach(e => e.remove());
     document.querySelectorAll(".timeline-layer").forEach(e => e.remove());
     document.querySelectorAll(".triage-layer").forEach(e => e.remove());
+    document.querySelectorAll(".wall-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

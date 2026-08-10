@@ -4074,7 +4074,7 @@ const SCRIPT = {
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "规则写好后，公告栏旁又出现了三张纸条。我们先把它们读完，再决定回什么——不是给人贴标签，而是确认眼前这句话真正需要什么。",
-    next: "afterword_ending",
+    next: "afterword_wall",
     triage: {
       prompt: "把每张纸条匹配到它需要的回应",
       hint: "先读完左边的来信，再从右边选择最不替对方做决定的一句。",
@@ -4102,6 +4102,48 @@ const SCRIPT = {
         personality: { patient: 1 }
       }
     }
+  },
+  /* ============ 后日谈追加：毕业前的留言墙 ============ */
+  afterword_wall: {
+    bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "又过半年，春末的开放日快结束了。回信角前留下四张纸条：有人明确说可以公开，有人只想把话交还自己，还有人替朋友写了一半。我们先确认每句话能不能被看见，再决定它该去哪里。",
+    next: "afterword_wall_reflection",
+    wall: {
+      prompt: "把每张留言放到合适的位置",
+      hint: "明确同意才能公开；不确定的内容先留给本人或暂缓，不替别人做决定。",
+      bins: [
+        { id: "public", label: "公开回应", text: "作者明确允许，才贴到墙上。" },
+        { id: "private", label: "交还本人", text: "只让写下它的人看见，不扩大范围。" },
+        { id: "hold", label: "暂不张贴", text: "同意还不清楚，先保留原纸条。" }
+      ],
+      notes: [
+        { id: "poster", label: "愿意署名的海报", text: "我画的海报可以贴到墙上，署名就写在右下角。", target: "public" },
+        { id: "private", label: "只想自己确认", text: "我还没准备好让班里看见，能把这张交还给我吗？", target: "private" },
+        { id: "unfinished", label: "写到一半", text: "我不知道要不要把后半句写完。今天先别替我补上。", target: "hold" },
+        { id: "friend", label: "替朋友写的留言", text: "这是我替朋友写的，可我不知道她是否同意公开。", target: "hold" }
+      ],
+      success: {
+        label: "——先确认谁有决定权",
+        text: "明确同意的留言才走上公开墙；只想收回的交还本人；还没准备好的话先保留。你们没有替任何人补完那句没写完的话。",
+        add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } },
+        personality: { honest: 1, kind: 1 },
+        next: "afterword_wall_reflection"
+      },
+      retry: {
+        label: "——先把纸条收回来",
+        text: "有一张纸条被放得太快。你们把它从墙上取下：关心不能代替当事人的同意，尤其不能替朋友发言。",
+        add: { affection: { shen: 1 } },
+        personality: { patient: 1 },
+        next: "afterword_wall_reflection"
+      }
+    }
+  },
+  afterword_wall_reflection: {
+    bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "林诗雨",
+    text: "墙上最后只留下那张明确允许署名的海报。诗雨把其余三张分别交还，夏织在规则下面补了一行：「公开之前，先问写下它的人。」苏念没有把空白填满。",
+    next: "afterword_ending"
   },
   afterword_ending: {
     bg: "ending_true", char: null, speaker: "",

@@ -90,3 +90,12 @@ test("后日谈回信分拣记录可写入并被清空", () => {
   assert.equal(Saves.clearAll(), true);
   assert.equal(Saves.getTriageRecord("afterword_mailbox_triage"), undefined);
 });
+
+test("后日谈留言墙记录可写入并被清空", () => {
+  const assignment = { poster: "public", private: "private", unfinished: "hold", friend: "hold" };
+  assert.equal(Saves.saveWallRecord("afterword_wall", assignment, true, "correct"), true);
+  assert.equal(JSON.stringify(Saves.getWallRecord("afterword_wall").assignment), JSON.stringify(assignment));
+  assert.equal(Saves.getWallRecord("afterword_wall").correct, true);
+  assert.equal(Saves.clearAll(), true);
+  assert.equal(Saves.getWallRecord("afterword_wall"), undefined);
+});
