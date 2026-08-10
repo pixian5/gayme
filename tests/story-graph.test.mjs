@@ -93,7 +93,8 @@ test("真结局后日谈和明信片分支可达", () => {
     "afterword_mailbox", "afterword_mailbox_reply", "afterword_mailbox_stay",
     "afterword_mailbox_step", "afterword_mailbox_listen", "afterword_mailbox_default",
     "afterword_mailbox_rules", "afterword_mailbox_rule_sign",
-    "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space", "afterword_mailbox_triage", "afterword_wall", "afterword_wall_reflection", "afterword_ending"
+    "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space", "afterword_mailbox_triage", "afterword_wall", "afterword_wall_reflection",
+    "afterword_proofread", "afterword_proofread_clean", "afterword_proofread_recheck", "afterword_ending"
   ]) {
     assert.equal(reachable.has(id), true, `${id} 不可达`);
   }
@@ -149,7 +150,25 @@ test("真结局后日谈和明信片分支可达", () => {
   );
   assert.equal(SCRIPT.afterword_wall.wall.success.next, "afterword_wall_reflection");
   assert.equal(SCRIPT.afterword_wall.wall.retry.next, "afterword_wall_reflection");
-  assert.equal(SCRIPT.afterword_wall_reflection.next, "afterword_ending");
+  assert.equal(SCRIPT.afterword_wall_reflection.next, "afterword_proofread");
+  assert.equal(SCRIPT.afterword_proofread.proofread.cards.length, 6);
+  assert.equal(SCRIPT.afterword_proofread.proofread.bins.length, 3);
+  assert.deepEqual(
+    Object.fromEntries(SCRIPT.afterword_proofread.proofread.cards.map(card => [card.id, card.target])),
+    {
+      senior_school: "fact",
+      senior_return: "inference",
+      senior_leave: "fact",
+      anonymous_watch: "inference",
+      sunian_gallery: "private",
+      mailbox_answer: "inference"
+    }
+  );
+  assert.equal(SCRIPT.afterword_proofread.proofread.success.next, "afterword_proofread_clean");
+  assert.equal(SCRIPT.afterword_proofread.proofread.retry.next, "afterword_proofread_recheck");
+  assert.equal(SCRIPT.afterword_proofread_clean.next, "afterword_ending");
+  assert.equal(SCRIPT.afterword_proofread_recheck.next, "afterword_ending");
+  assert.match(SCRIPT.afterword_proofread.text, /事实.*猜测/);
 });
 
 test("后日谈入口只由真结局解锁", () => {

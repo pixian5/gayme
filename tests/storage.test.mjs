@@ -99,3 +99,12 @@ test("后日谈留言墙记录可写入并被清空", () => {
   assert.equal(Saves.clearAll(), true);
   assert.equal(Saves.getWallRecord("afterword_wall"), undefined);
 });
+
+test("后日谈校刊校对记录可写入并被清空", () => {
+  const assignment = { senior_school: "fact", senior_return: "inference", sunian_gallery: "private" };
+  assert.equal(Saves.saveProofreadRecord("afterword_proofread", assignment, true, "correct"), true);
+  assert.equal(JSON.stringify(Saves.getProofreadRecord("afterword_proofread").assignment), JSON.stringify(assignment));
+  assert.equal(Saves.getProofreadRecord("afterword_proofread").correct, true);
+  assert.equal(Saves.clearAll(), true);
+  assert.equal(Saves.getProofreadRecord("afterword_proofread"), undefined);
+});

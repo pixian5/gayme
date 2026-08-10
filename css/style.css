@@ -8424,6 +8424,96 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .wall-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
 .wall-reading-text { margin: 12px auto 16px; max-width: 660px; color: rgba(255, 244, 232, 0.88); font-size: 14px; line-height: 1.9; }
 
+/* ============ v2.7.6 后日谈校刊校对 ============ */
+.proofread-layer {
+  position: absolute; inset: 0; z-index: 39;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at center, rgba(43, 47, 62, 0.97), rgba(17, 19, 28, 0.99));
+  backdrop-filter: blur(12px);
+}
+.proofread-card {
+  width: min(940px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid rgba(205, 215, 244, 0.3);
+  border-radius: 12px;
+  background: rgba(30, 35, 52, 0.96);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45);
+}
+.proofread-prompt {
+  color: #dce4ff;
+  font-size: 21px;
+  letter-spacing: 3px;
+  text-align: center;
+}
+.proofread-hint {
+  margin: 10px auto 12px;
+  color: rgba(220, 228, 255, 0.68);
+  font-size: 13px;
+  letter-spacing: 1px;
+  line-height: 1.6;
+  text-align: center;
+}
+.proofread-progress {
+  min-height: 22px;
+  margin: 0 0 14px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.proofread-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.proofread-column { min-width: 0; }
+.proofread-column-label {
+  margin-bottom: 8px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+.proofread-cards, .proofread-bins { display: grid; gap: 10px; }
+.proofread-quote, .proofread-bin {
+  width: 100%;
+  min-height: 96px;
+  padding: 13px 14px;
+  border: 1px solid rgba(205, 215, 244, 0.24);
+  border-radius: 8px;
+  background: rgba(95, 108, 148, 0.16);
+  color: #f3f5ff;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.proofread-quote:hover, .proofread-bin:hover { transform: translateY(-2px); border-color: rgba(220, 228, 255, 0.68); }
+.proofread-selected { border-color: #ffd88a; background: rgba(255, 216, 138, 0.16); }
+.proofread-assigned { background: rgba(95, 128, 162, 0.34); }
+.proofread-bin-used { border-color: rgba(255, 216, 138, 0.54); background: rgba(255, 216, 138, 0.12); }
+.proofread-quote strong, .proofread-bin strong { display: block; color: #ffd88a; font-size: 14px; letter-spacing: 1px; }
+.proofread-quote span, .proofread-bin span { display: block; margin-top: 8px; color: rgba(243, 245, 255, 0.88); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.proofread-quote small, .proofread-bin small { display: block; margin-top: 7px; color: rgba(220, 228, 255, 0.62); font-size: 11px; line-height: 1.45; }
+.proofread-info { min-height: 24px; margin: 14px 0 10px; color: rgba(220, 228, 255, 0.78); font-size: 13px; letter-spacing: 1px; text-align: center; }
+.proofread-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.proofread-reset, .proofread-confirm, .proofread-reading-close {
+  padding: 9px 20px;
+  border: 1px solid rgba(220, 228, 255, 0.42);
+  border-radius: 8px;
+  background: rgba(95, 108, 148, 0.34);
+  color: #dce4ff;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+.proofread-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.proofread-reading { margin-top: 20px; padding: 18px; border-top: 1px solid rgba(220, 228, 255, 0.22); text-align: center; }
+.proofread-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
+.proofread-reading-text { margin: 12px auto 16px; max-width: 680px; color: rgba(243, 245, 255, 0.88); font-size: 14px; line-height: 1.9; }
+
 /* ============ v2.6.0 移动端适配 ============ */
 @media (max-width: 768px) {
   .cly-canvas { height: 280px; }
@@ -8437,16 +8527,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .timeline-order, .timeline-pool { grid-template-columns: 1fr; }
   .triage-columns { grid-template-columns: 1fr; gap: 16px; }
   .wall-columns { grid-template-columns: 1fr; gap: 16px; }
+  .proofread-columns { grid-template-columns: 1fr; gap: 16px; }
   .cly-prompt, .ji-prompt, .chs-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
   .triage-prompt { font-size: 16px; letter-spacing: 2px; }
   .wall-prompt { font-size: 16px; letter-spacing: 2px; }
+  .proofread-prompt { font-size: 16px; letter-spacing: 2px; }
   .fl-description { font-size: 14px; }
   .cly-actions button, .cly-reading-close,
   .ji-actions button, .ji-reading-close,
   .chs-actions button, .chs-reading-close,
   .fl-actions button, .fl-reading-close,
     .triage-actions button, .triage-reading-close,
-    .wall-actions button, .wall-reading-close {
+    .wall-actions button, .wall-reading-close,
+    .proofread-actions button, .proofread-reading-close {
     padding: 8px 18px; font-size: 13px;
   }
 }

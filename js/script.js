@@ -4143,11 +4143,59 @@ const SCRIPT = {
     bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "林诗雨",
     text: "墙上最后只留下那张明确允许署名的海报。诗雨把其余三张分别交还，夏织在规则下面补了一行：「公开之前，先问写下它的人。」苏念没有把空白填满。",
+    next: "afterword_proofread"
+  },
+  /* ============ 后日谈追加：校刊校对 ============ */
+  afterword_proofread: {
+    bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "毕业前，校刊编辑部想记录回信角。摊开的稿件里，有些话可以作为事实写入，有些只是我们当时的猜测，还有一句涉及苏念要不要公开下一幅画。我们决定先校对，再把故事交给读者。",
+    next: "afterword_ending",
+    proofread: {
+      prompt: "把校刊稿件里的句子放到合适的校对标记",
+      hint: "原话能证实的才写事实；推测不能伪装成结论；涉及本人选择的先交还本人。",
+      bins: [
+        { id: "fact", label: "已有依据", text: "信件或已经发生的行动可以直接证实。" },
+        { id: "inference", label: "只能推测", text: "可以讨论，但不能写成已经发生的事实。" },
+        { id: "private", label: "交还本人", text: "涉及当事人的决定，不能由旁人替她公开。" }
+      ],
+      cards: [
+        { id: "senior_school", label: "学姐的旧经历", text: "学姐三年前曾在樱海读书。", target: "fact" },
+        { id: "senior_return", label: "学姐的未来", text: "学姐一定会在毕业前回到樱海。", target: "inference" },
+        { id: "senior_leave", label: "学姐的选择", text: "学姐曾经休学，后来没有回到樱海。", target: "fact" },
+        { id: "anonymous_watch", label: "匿名信的含义", text: "每一封匿名信都证明学姐一直在监视我们。", target: "inference" },
+        { id: "sunian_gallery", label: "苏念的画", text: "苏念已经决定公开她的下一幅画。", target: "private" },
+        { id: "mailbox_answer", label: "回信角的作用", text: "回信角可以替每个人解决迷茫。", target: "inference" }
+      ],
+      success: {
+        label: "——把知道的和不知道的分开",
+        text: "六句话逐一核对后，校刊只把信里明确写过的事情称为事实，把未知留在推测栏，也把苏念的决定交还给她。记录不是替别人补完人生。",
+        add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } },
+        personality: { honest: 2, patient: 1 },
+        next: "afterword_proofread_clean"
+      },
+      retry: {
+        label: "——把结论改回问题",
+        text: "有一句把猜测写成了结论。你们把「一定」「证明」和「可以替」划掉，改成「目前没有依据」「也许」和「先问本人」。好意不能让未知变成事实。",
+        add: { affection: { shen: 1 } },
+        personality: { patient: 2 },
+        next: "afterword_proofread_recheck"
+      }
+    }
+  },
+  afterword_proofread_clean: {
+    bg: "classroom", char: "shiyu", speaker: "林诗雨",
+    text: "诗雨把校刊最后一行改成：「我们记得发生过什么，也承认还有什么不知道。」她说，留白不是文章没写完，而是把别人的下一句还给别人。",
+    next: "afterword_ending"
+  },
+  afterword_proofread_recheck: {
+    bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "苏念看完修改稿，只圈出一句：「下一幅画要不要公开，等我自己说。」你们把这句话留在原稿旁边，没有替她删掉，也没有替她答应。",
     next: "afterword_ending"
   },
   afterword_ending: {
     bg: "ending_true", char: null, speaker: "",
-    text: "樱海以后没有新的谜题，只有一群人把昨天写过的字带进今天。故事没有被封存——它只是终于交还给了每一个正在生活的人。",
+    text: "樱海以后没有新的谜题，只有一群人把昨天写过的字带进今天。校刊留下了事实，也留下了没有答案的地方。故事没有被封存——它只是终于交还给了每一个正在生活的人。",
     ending: { id: "afterword", type: "AFTERWORD", title: "樱海以后", text: "信寄出以后，三个人各自继续往前走。" }
   },
 };

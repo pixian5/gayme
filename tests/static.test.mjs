@@ -46,5 +46,6 @@ test("延迟互动层出现前不会跳过剧情", () => {
   assert.match(engine, /if \(state\.pendingInteraction \|\| hasActiveInteractionLayer\(\)\) return;[\s\S]*?if \(node\.next\) gotoNode\(node\.next\);/);
   assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runTriage\(node\.triage, nodeId\)/);
   assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runWall\(node\.wall, nodeId\)/);
+  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runProofread\(node\.proofread, nodeId\)/);
   assert.match(engine, /state\.pendingInteraction = false;[\s\S]*?showLetter\(node\.letter, nodeId\)/);
 });

@@ -152,6 +152,7 @@ const FLAG_KEY        = "sakura_letters_flag_v2";        // 旗阵辨识
 const TIMELINE_KEY     = "sakura_letters_timeline_v2";    // 后日谈时间线
 const TRIAGE_KEY       = "sakura_letters_triage_v2";      // 后日谈回信分拣
 const WALL_KEY         = "sakura_letters_wall_v2";        // 后日谈留言墙
+const PROOFREAD_KEY    = "sakura_letters_proofread_v2";   // 后日谈校刊校对
 const META_KEY        = "sakura_letters_meta_v3";
 const STORAGE_SCHEMA_VERSION = 3;
 
@@ -171,7 +172,7 @@ const GAME_STORAGE_KEYS = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTE
   STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY, KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
   SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY, MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY,
   MOSAIC_KEY, STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY, CLEPSYDRA_KEY, JIGSAW_KEY,
-  CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY];
+  CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY, PROOFREAD_KEY];
 
 const DEFAULT_SETTINGS = Object.freeze({
   textSpeed: 30,
@@ -1849,6 +1850,18 @@ const Saves = {
   },
   getWallRecord(nodeId) { return this.getWallRecords()[nodeId]; },
 
+  /* ============ v2.7.6 后日谈校刊校对 ============ */
+  // { nodeId: { assignment: { cardId: binId }, correct, tag, ts } }
+  getProofreadRecords() {
+    return this._read(PROOFREAD_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
+  },
+  saveProofreadRecord(nodeId, assignment, correct, tag) {
+    const all = this.getProofreadRecords();
+    all[nodeId] = { assignment, correct, tag, ts: Date.now() };
+    return this._write(PROOFREAD_KEY, JSON.stringify(all));
+  },
+  getProofreadRecord(nodeId) { return this.getProofreadRecords()[nodeId]; },
+
   /* ============ 工具 ============ */
   formatTime(ts) {
     const d = new Date(ts);
@@ -1881,7 +1894,7 @@ const Saves = {
      SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
      MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
      STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY,
-     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY];
+     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY, PROOFREAD_KEY];
     let success = true;
     keys.forEach((key) => {
       if (!this._remove(key)) success = false;
