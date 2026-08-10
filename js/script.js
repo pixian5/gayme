@@ -4058,17 +4058,50 @@ const SCRIPT = {
   afterword_mailbox_rule_sign: {
     bg: "school_gate", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把姓名栏和日期栏画得很直：「署名不是为了追责，是为了让关心有一个真实的落点。」回信角终于和那封匿名信不一样了。",
-    next: "afterword_ending"
+    next: "afterword_mailbox_triage"
   },
   afterword_mailbox_rule_ask: {
     bg: "cafeteria", char: "xiazhi", speaker: "夏织",
     text: "夏织点头：「先问一句，至少不会把自己的经验塞给别人。」她把「你现在需要什么？」写在公告栏最上面。",
-    next: "afterword_ending"
+    next: "afterword_mailbox_triage"
   },
   afterword_mailbox_rule_space: {
     bg: "art_room", char: "sunian", speaker: "苏念",
     text: "苏念在角落画了一个半开的方框：「空白也算回信。」它不是把人晾在那里，而是承认有些话要等准备好才说。",
-    next: "afterword_ending"
+    next: "afterword_mailbox_triage"
+  },
+  afterword_mailbox_triage: {
+    bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
+    speaker: "沈屿",
+    text: "规则写好后，公告栏旁又出现了三张纸条。我们先把它们读完，再决定回什么——不是给人贴标签，而是确认眼前这句话真正需要什么。",
+    next: "afterword_ending",
+    triage: {
+      prompt: "把每张纸条匹配到它需要的回应",
+      hint: "先读完左边的来信，再从右边选择最不替对方做决定的一句。",
+      notes: [
+        { id: "room", label: "想留在美术室", text: "我想继续画，但请别每天问我什么时候完成。" },
+        { id: "step", label: "想先试一小步", text: "我想参加训练，可一想到全程就想逃。能先陪我走到操场吗？" },
+        { id: "listen", label: "想有人听完", text: "我不知道怎么跟班里说。你们能先听我说完吗？" }
+      ],
+      replies: [
+        { id: "space", label: "给她一点空间", text: "先把今天画完，不需要现在证明下一幅。" },
+        { id: "step", label: "把路缩成一步", text: "先走到操场，下一步等你准备好。" },
+        { id: "listen", label: "先问她愿不愿意被听", text: "先听完她想说的，不急着给建议。" }
+      ],
+      correctMapping: { room: "space", step: "step", listen: "listen" },
+      success: {
+        label: "——先听见，再回应",
+        text: "三张纸条没有被归进谁的性格或结局。你们只是把每句话需要的空间、一步和倾听放到了它面前，然后把名字和日期留在墙角。",
+        add: { affection: { shiyu: 1, xiazhi: 1, sunian: 1 } },
+        personality: { kind: 1, honest: 1 }
+      },
+      retry: {
+        label: "——再读一遍",
+        text: "有一张回应太快替对方安排了下一站。你们把纸条重新摊开，发现关心不是猜中一个标签，而是愿意把话听完整。",
+        add: { affection: { shen: 1 } },
+        personality: { patient: 1 }
+      }
+    }
   },
   afterword_ending: {
     bg: "ending_true", char: null, speaker: "",

@@ -81,3 +81,12 @@ test("备份导出、导入和版本校验", () => {
   assert.equal(Saves.importData({ schemaVersion: 999, records: {} }), false);
   assert.equal(Saves.importData({ schemaVersion: 3, records: { unknown: true } }), false);
 });
+
+test("后日谈回信分拣记录可写入并被清空", () => {
+  const assignment = { room: "space", step: "step", listen: "listen" };
+  assert.equal(Saves.saveTriageRecord("afterword_mailbox_triage", assignment, true, "correct"), true);
+  assert.equal(JSON.stringify(Saves.getTriageRecord("afterword_mailbox_triage").assignment), JSON.stringify(assignment));
+  assert.equal(Saves.getTriageRecord("afterword_mailbox_triage").correct, true);
+  assert.equal(Saves.clearAll(), true);
+  assert.equal(Saves.getTriageRecord("afterword_mailbox_triage"), undefined);
+});

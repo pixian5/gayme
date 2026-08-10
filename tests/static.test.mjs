@@ -40,3 +40,9 @@ test("涂色玩法把目标颜色呈现给玩家", () => {
   assert.match(minigames, /el\.style\.background = t\.color/);
   assert.match(minigames, /目标色块/);
 });
+
+test("延迟互动层出现前不会跳过剧情", () => {
+  assert.match(engine, /function advance\(\) \{\s+if \(state\.pendingInteraction\) return;/);
+  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runTriage\(node\.triage, nodeId\)/);
+  assert.match(engine, /state\.pendingInteraction = false;[\s\S]*?showLetter\(node\.letter, nodeId\)/);
+});

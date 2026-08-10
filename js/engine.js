@@ -48,6 +48,7 @@
     autoMode: false,
     autoTimer: null,
     skipMode: false,
+    pendingInteraction: false,
     inGame: false,
     playCount: Saves.getFlag("playCount", 0),
     visitedNodes: Saves.getFlag("visitedNodes", {}),
@@ -234,6 +235,7 @@
 
   /* ============ 推进/跳转 ============ */
   function advance() {
+    if (state.pendingInteraction) return;
     const node = SCRIPT[state.currentNode];
     if (!node) return;
     if (node.next) gotoNode(node.next);
@@ -250,6 +252,7 @@
     if (state.autoMode) {
       clearTimeout(state.autoTimer);
       state.autoTimer = setTimeout(() => {
+        if (state.pendingInteraction) return;
         if (node.next) gotoNode(node.next);
       }, Saves.settings.autoDelay);
     }
@@ -261,6 +264,7 @@
     const restoring = options.restoring === true;
     clearTimeout(state.autoTimer);
     state.currentNode = nodeId;
+    state.pendingInteraction = false;
 
     if (!restoring) {
       // 只有首次进入节点才应用状态变更；读档只负责恢复画面。
@@ -347,9 +351,13 @@
       el.speaker.textContent = speakerName;
       el.dialogBox.classList.remove("hidden");
       const sessionId = state.sessionId;
+      state.pendingInteraction = true;
       typewriter(displayNode.text || "", () => {
         setTimeout(() => {
-          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) showLetter(node.letter, nodeId);
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) {
+            state.pendingInteraction = false;
+            showLetter(node.letter, nodeId);
+          }
         }, 400);
       });
       updateDayBar(node);
@@ -1248,11 +1256,31 @@
       return;
     }
 
-    // v2.7.2 后日谈时间线
+    // v2.7.3 后日谈时间线
     if (node.timeline) {
       setScene(node.bg);
       renderCharacters(node);
       runTimeline(node.timeline, nodeId);
+      updateDayBar(node);
+      updateHeartBar();
+      return;
+    }
+
+    // v2.7.3 后日谈回信分拣
+    if (node.triage) {
+      setScene(node.bg);
+      renderCharacters(node);
+      el.dialogBox.classList.remove("hidden");
+      const sessionId = state.sessionId;
+      state.pendingInteraction = true;
+      typewriter(displayNode.text || "", () => {
+        setTimeout(() => {
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) {
+            state.pendingInteraction = false;
+            runTriage(node.triage, nodeId);
+          }
+        }, 400);
+      });
       updateDayBar(node);
       updateHeartBar();
       return;
@@ -1276,10 +1304,14 @@
     // v0.6.0 回声触发：节点定义 echo 时，在文本完成后弹出回声
     if (node.echo) {
       const sessionId = state.sessionId;
+      state.pendingInteraction = true;
       typewriter(displayNode.text || "", () => {
         onTextComplete(node);
         setTimeout(() => {
-          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) triggerEcho(node.echo, nodeId);
+          if (state.inGame && state.sessionId === sessionId && state.currentNode === nodeId) {
+            state.pendingInteraction = false;
+            triggerEcho(node.echo, nodeId);
+          }
         }, 600);
       });
     } else {
@@ -1934,7 +1966,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.7.2 · Demo</p>
+        <p style="color:#e8e0d0;">v2.7.3 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
@@ -2057,7 +2089,7 @@
       { title: "夏织线", nodes: ["route_xiazhi_1", "xz_9", "xz_minigame", "xz_choice_1", "xz_ending_good", "xz_ending_normal", "xz_ending_bad"] },
       { title: "苏念线", nodes: ["route_sunian_1", "sn_9", "sn_minigame", "sn_choice_1", "sn_ending_good", "sn_ending_normal", "sn_ending_bad"] },
       { title: "真结局", nodes: ["true_end_entry", "true_choice", "true_ending"] },
-      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_timeline", "afterword_autumn", "afterword_mailbox_reply", "afterword_mailbox_rules", "afterword_ending"] },
+      { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_timeline", "afterword_autumn", "afterword_mailbox_reply", "afterword_mailbox_rules", "afterword_mailbox_triage", "afterword_ending"] },
     ];
     el.overlayBody.innerHTML = groups.map(g => {
       return `<div class="flow-group">
@@ -16677,7 +16709,7 @@
   }
 
   /* ============================================================
-     v2.7.2 后日谈时间线 runTimeline
+     v2.7.3 后日谈时间线 runTimeline
      node.timeline = {
        prompt, hint,
        events: [ { id, date, label, desc } ],
@@ -16773,6 +16805,144 @@
         <div class="timeline-reading-text">${escapeHtml(matched.text || "")}</div>
         <button class="timeline-reading-close">继续</button>`;
       reading.querySelector(".timeline-reading-close").onclick = () => {
+        reading.remove();
+        layer.remove();
+        const node = SCRIPT[currentNodeId];
+        const jumpTo = matched.next || (node && node.next);
+        if (jumpTo) gotoNode(jumpTo);
+      };
+      layer.appendChild(reading);
+    };
+
+    render();
+    document.getElementById("game").appendChild(layer);
+  }
+
+  /* ============================================================
+     v2.7.3 后日谈回信分拣 runTriage
+     node.triage = {
+       prompt, hint,
+       notes: [ { id, label, text } ],
+       replies: [ { id, label, text } ],
+       correctMapping: { noteId: replyId },
+       success: { label, text, add?, personality?, next? },
+       retry: { label, text, add?, personality?, next? }
+     }
+     ============================================================ */
+  function runTriage(tg, currentNodeId) {
+    el.dialogBox.classList.add("hidden");
+    const layer = document.createElement("div");
+    layer.className = "triage-layer";
+    layer.id = "triage-layer";
+    layer.innerHTML = `
+      <div class="triage-card">
+        <div class="triage-prompt">${escapeHtml(tg.prompt || "匹配来信与回应")}</div>
+        <div class="triage-hint">${escapeHtml(tg.hint || "先读来信，再选择回应")}</div>
+        <div class="triage-progress" id="triage-progress">已处理 0 / ${(tg.notes || []).length}</div>
+        <div class="triage-columns">
+          <section class="triage-column">
+            <div class="triage-column-label">来信</div>
+            <div class="triage-notes" id="triage-notes"></div>
+          </section>
+          <section class="triage-column">
+            <div class="triage-column-label">回应</div>
+            <div class="triage-replies" id="triage-replies"></div>
+          </section>
+        </div>
+        <div class="triage-info" id="triage-info">先选择一张未处理的纸条</div>
+        <div class="triage-actions">
+          <button class="triage-reset" type="button">重置匹配</button>
+          <button class="triage-confirm" type="button" disabled>确认回应</button>
+        </div>
+      </div>
+    `;
+    const notesEl = layer.querySelector("#triage-notes");
+    const repliesEl = layer.querySelector("#triage-replies");
+    const progressEl = layer.querySelector("#triage-progress");
+    const infoEl = layer.querySelector("#triage-info");
+    const resetBtn = layer.querySelector(".triage-reset");
+    const confirmBtn = layer.querySelector(".triage-confirm");
+    const notes = Array.isArray(tg.notes) ? tg.notes : [];
+    const replies = Array.isArray(tg.replies) ? tg.replies : [];
+    const assignment = Object.create(null);
+    let selectedNote = null;
+
+    function replyById(id) { return replies.find((reply) => reply.id === id) || {}; }
+
+    function render() {
+      notesEl.innerHTML = "";
+      notes.forEach((note) => {
+        const assigned = assignment[note.id];
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `triage-note${selectedNote === note.id ? " triage-selected" : ""}${assigned ? " triage-assigned" : ""}`;
+        const reply = assigned ? replyById(assigned) : null;
+        button.innerHTML = `<strong>${escapeHtml(note.label || note.id)}</strong><span>${escapeHtml(note.text || "")}</span>${reply ? `<small>回应：${escapeHtml(reply.label || assigned)}</small>` : "<small>点击后选择回应</small>"}`;
+        button.onclick = () => {
+          if (assignment[note.id]) {
+            delete assignment[note.id];
+            selectedNote = note.id;
+            infoEl.textContent = "已撤回这张纸条的回应，请重新选择";
+          } else {
+            selectedNote = note.id;
+            infoEl.textContent = `已选「${note.label || note.id}」，再选择右侧回应`;
+          }
+          render();
+        };
+        notesEl.appendChild(button);
+      });
+
+      repliesEl.innerHTML = "";
+      replies.forEach((reply) => {
+        const usedBy = notes.find((note) => assignment[note.id] === reply.id);
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `triage-reply${usedBy ? " triage-used" : ""}`;
+        button.innerHTML = `<strong>${escapeHtml(reply.label || reply.id)}</strong><span>${escapeHtml(reply.text || "")}</span>${usedBy ? `<small>已匹配：${escapeHtml(usedBy.label || usedBy.id)}</small>` : ""}`;
+        button.onclick = () => {
+          if (!selectedNote) {
+            infoEl.textContent = "先选择左侧一张纸条";
+            return;
+          }
+          for (const note of notes) {
+            if (assignment[note.id] === reply.id) delete assignment[note.id];
+          }
+          assignment[selectedNote] = reply.id;
+          selectedNote = null;
+          infoEl.textContent = "已匹配。可以点击已匹配的纸条撤回并修改";
+          render();
+        };
+        repliesEl.appendChild(button);
+      });
+
+      const count = notes.filter((note) => assignment[note.id]).length;
+      progressEl.textContent = `已处理 ${count} / ${notes.length}`;
+      confirmBtn.disabled = notes.length === 0 || count !== notes.length;
+    }
+
+    resetBtn.onclick = () => {
+      for (const note of notes) delete assignment[note.id];
+      selectedNote = null;
+      infoEl.textContent = "先选择一张未处理的纸条";
+      render();
+    };
+
+    confirmBtn.onclick = () => {
+      if (confirmBtn.disabled) return;
+      const correctMapping = tg.correctMapping && typeof tg.correctMapping === "object" ? tg.correctMapping : {};
+      const correct = notes.length > 0 && notes.every((note) => assignment[note.id] === correctMapping[note.id]);
+      const matched = (correct ? tg.success : tg.retry) || { label: "——回应已写下", text: "你们把纸条贴回墙上。", next: null };
+      Saves.saveTriageRecord(currentNodeId, { ...assignment }, correct, correct ? "correct" : "retry");
+      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
+      if (matched.personality) {
+        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
+      }
+      const reading = document.createElement("div");
+      reading.className = "triage-reading";
+      reading.innerHTML = `<div class="triage-reading-title">${escapeHtml(matched.label || "回应已确认")}</div>
+        <div class="triage-reading-text">${escapeHtml(matched.text || "")}</div>
+        <button class="triage-reading-close" type="button">继续</button>`;
+      reading.querySelector(".triage-reading-close").onclick = () => {
         reading.remove();
         layer.remove();
         const node = SCRIPT[currentNodeId];
@@ -17027,6 +17197,7 @@
     state.typingText = "";
     state.typeOnDone = null;
     state.currentNode = null;
+    state.pendingInteraction = false;
     state.inGame = false;
     stopBgm();
     if (perspectiveBtn) { perspectiveBtn.remove(); perspectiveBtn = null; }
@@ -17137,6 +17308,7 @@
     document.querySelectorAll(".flag-layer").forEach(e => e.remove());
     document.querySelectorAll(".postcard-layer").forEach(e => e.remove());
     document.querySelectorAll(".timeline-layer").forEach(e => e.remove());
+    document.querySelectorAll(".triage-layer").forEach(e => e.remove());
     // 恢复温度叠加
     if (el.bgOverlay) el.bgOverlay.style.background = "transparent";
     if (el.clueLayer) el.clueLayer.innerHTML = "";

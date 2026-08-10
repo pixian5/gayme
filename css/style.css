@@ -8140,7 +8140,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .postcard-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
 .postcard-reading-text { margin: 12px auto 16px; max-width: 560px; color: rgba(255, 240, 248, 0.86); font-size: 14px; line-height: 1.9; }
 
-/* ============ v2.7.2 后日谈时间线 ============ */
+/* ============ v2.7.3 后日谈时间线 ============ */
 .timeline-layer {
   position: absolute; inset: 0; z-index: 38;
   display: flex; align-items: center; justify-content: center;
@@ -8244,6 +8244,96 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .timeline-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
 .timeline-reading-text { margin: 12px auto 16px; max-width: 600px; color: rgba(239, 247, 255, 0.86); font-size: 14px; line-height: 1.9; }
 
+/* ============ v2.7.3 后日谈回信分拣 ============ */
+.triage-layer {
+  position: absolute; inset: 0; z-index: 38;
+  display: flex; align-items: center; justify-content: center;
+  padding: 22px;
+  background: radial-gradient(ellipse at center, rgba(45, 54, 48, 0.97), rgba(14, 19, 17, 0.99));
+  backdrop-filter: blur(12px);
+}
+.triage-card {
+  width: min(900px, 100%);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid rgba(202, 235, 210, 0.3);
+  border-radius: 12px;
+  background: rgba(24, 38, 30, 0.95);
+  box-shadow: 0 14px 45px rgba(0, 0, 0, 0.45);
+}
+.triage-prompt {
+  color: #d8f1dc;
+  font-size: 21px;
+  letter-spacing: 3px;
+  text-align: center;
+}
+.triage-hint {
+  margin: 10px auto 12px;
+  color: rgba(216, 241, 220, 0.64);
+  font-size: 13px;
+  letter-spacing: 1px;
+  line-height: 1.6;
+  text-align: center;
+}
+.triage-progress {
+  min-height: 22px;
+  margin: 0 0 14px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.triage-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.triage-column { min-width: 0; }
+.triage-column-label {
+  margin-bottom: 8px;
+  color: #ffd88a;
+  font-size: 13px;
+  letter-spacing: 2px;
+}
+.triage-notes, .triage-replies { display: grid; gap: 10px; }
+.triage-note, .triage-reply {
+  width: 100%;
+  min-height: 112px;
+  padding: 13px 14px;
+  border: 1px solid rgba(202, 235, 210, 0.24);
+  border-radius: 8px;
+  background: rgba(109, 145, 116, 0.16);
+  color: #effaf0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s;
+}
+.triage-note:hover, .triage-reply:hover { transform: translateY(-2px); border-color: rgba(216, 241, 220, 0.68); }
+.triage-note.triage-selected { border-color: #ffd88a; background: rgba(255, 216, 138, 0.16); }
+.triage-note.triage-assigned { background: rgba(118, 176, 128, 0.26); }
+.triage-reply.triage-used { border-color: rgba(255, 216, 138, 0.54); background: rgba(255, 216, 138, 0.12); }
+.triage-note strong, .triage-reply strong { display: block; color: #ffd88a; font-size: 14px; letter-spacing: 1px; }
+.triage-note span, .triage-reply span { display: block; margin-top: 8px; color: rgba(239, 250, 240, 0.88); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.triage-note small, .triage-reply small { display: block; margin-top: 7px; color: rgba(216, 241, 220, 0.6); font-size: 11px; line-height: 1.45; }
+.triage-info { min-height: 24px; margin: 14px 0 10px; color: rgba(216, 241, 220, 0.74); font-size: 13px; letter-spacing: 1px; text-align: center; }
+.triage-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.triage-reset, .triage-confirm, .triage-reading-close {
+  padding: 9px 20px;
+  border: 1px solid rgba(216, 241, 220, 0.42);
+  border-radius: 8px;
+  background: rgba(91, 145, 99, 0.34);
+  color: #d8f1dc;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 2px;
+}
+.triage-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
+.triage-reading { margin-top: 20px; padding: 18px; border-top: 1px solid rgba(216, 241, 220, 0.22); text-align: center; }
+.triage-reading-title { color: #ffd88a; font-size: 17px; letter-spacing: 3px; }
+.triage-reading-text { margin: 12px auto 16px; max-width: 640px; color: rgba(239, 250, 240, 0.88); font-size: 14px; line-height: 1.9; }
+
 /* ============ v2.6.0 移动端适配 ============ */
 @media (max-width: 768px) {
   .cly-canvas { height: 280px; }
@@ -8255,12 +8345,15 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .fl-options { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .postcard-stamps { grid-template-columns: 1fr; gap: 8px; }
   .timeline-order, .timeline-pool { grid-template-columns: 1fr; }
+  .triage-columns { grid-template-columns: 1fr; gap: 16px; }
   .cly-prompt, .ji-prompt, .chs-prompt, .fl-prompt { font-size: 16px; letter-spacing: 2px; }
+  .triage-prompt { font-size: 16px; letter-spacing: 2px; }
   .fl-description { font-size: 14px; }
   .cly-actions button, .cly-reading-close,
   .ji-actions button, .ji-reading-close,
   .chs-actions button, .chs-reading-close,
-  .fl-actions button, .fl-reading-close {
+  .fl-actions button, .fl-reading-close,
+  .triage-actions button, .triage-reading-close {
     padding: 8px 18px; font-size: 13px;
   }
 }

@@ -93,7 +93,7 @@ test("真结局后日谈和明信片分支可达", () => {
     "afterword_mailbox", "afterword_mailbox_reply", "afterword_mailbox_stay",
     "afterword_mailbox_step", "afterword_mailbox_listen", "afterword_mailbox_default",
     "afterword_mailbox_rules", "afterword_mailbox_rule_sign",
-    "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space", "afterword_ending"
+    "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space", "afterword_mailbox_triage", "afterword_ending"
   ]) {
     assert.equal(reachable.has(id), true, `${id} 不可达`);
   }
@@ -132,9 +132,15 @@ test("真结局后日谈和明信片分支可达", () => {
   }
   assert.equal(SCRIPT.afterword_mailbox_rules.choice.options.length, 3);
   for (const id of ["afterword_mailbox_rule_sign", "afterword_mailbox_rule_ask", "afterword_mailbox_rule_space"]) {
-    assert.equal(SCRIPT[id].next, "afterword_ending");
+    assert.equal(SCRIPT[id].next, "afterword_mailbox_triage");
   }
   assert.match(SCRIPT.afterword_mailbox_rule_sign.text, /匿名信不一样/);
+  assert.equal(SCRIPT.afterword_mailbox_triage.triage.notes.length, 3);
+  assert.equal(SCRIPT.afterword_mailbox_triage.triage.replies.length, 3);
+  assert.equal(JSON.stringify(SCRIPT.afterword_mailbox_triage.triage.correctMapping), JSON.stringify({
+    room: "space", step: "step", listen: "listen"
+  }));
+  assert.equal(SCRIPT.afterword_mailbox_triage.next, "afterword_ending");
 });
 
 test("后日谈入口只由真结局解锁", () => {
