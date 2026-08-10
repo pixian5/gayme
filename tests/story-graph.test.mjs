@@ -7,8 +7,8 @@ const source = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf
 const engineSource = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
 const context = { console, window: {} };
 vm.createContext(context);
-vm.runInContext(`${source}\nthis.__out = { SCRIPT, START_NODE };`, context);
-const { SCRIPT, START_NODE } = context.__out;
+vm.runInContext(source + "\nthis.__out = { SCRIPT, START_NODE, KEYWORDS, COMPOSE_RECIPES, ENDINGS, hasAllGoodEndings, isTrueEndUnlocked };", context);
+const { SCRIPT, START_NODE, KEYWORDS, COMPOSE_RECIPES, ENDINGS, isTrueEndUnlocked } = context.__out;
 const ids = new Set(Object.keys(SCRIPT));
 
 function collectRefs(value, refs, from) {
@@ -25,6 +25,18 @@ function collectRefs(value, refs, from) {
 
 const refs = [];
 for (const [id, node] of Object.entries(SCRIPT)) collectRefs(node, refs, id);
+
+function collectNextRefs(value, refs, from) {
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach(item => collectNextRefs(item, refs, from));
+    return;
+  }
+  for (const [key, child] of Object.entries(value)) {
+    if (key === "next" && typeof child === "string" && ids.has(child)) refs.push([from, child]);
+    collectNextRefs(child, refs, from);
+  }
+}
 
 test("剧情引用全部指向已定义节点", () => {
   const missing = refs.filter(([, target]) => !SCRIPT[target]);
@@ -173,4 +185,68 @@ test("真结局后日谈和明信片分支可达", () => {
 
 test("后日谈入口只由真结局解锁", () => {
   assert.match(engineSource, /function updateAfterwordAccess\(\)[\s\S]*?const unlocked = isTrueEndUnlocked\(\);/);
+});
+
+test("所有关键词和合成原料都有剧情解锁点", () => {
+  const unlockedByStory = new Set();
+  for (const node of Object.values(SCRIPT)) {
+    const keywords = Array.isArray(node.keyword) ? node.keyword : [node.keyword];
+    keywords.filter(Boolean).forEach(keyword => unlockedByStory.add(keyword));
+  }
+  for (const keyword of Object.keys(KEYWORDS)) {
+    assert.equal(unlockedByStory.has(keyword), true, `${keyword} 没有剧情解锁点`);
+  }
+  const recipeResults = new Set(COMPOSE_RECIPES.map(recipe => recipe.result));
+  const baseInputs = new Set(
+    COMPOSE_RECIPES.flatMap(recipe => [recipe.a, recipe.b]).filter(keyword => !recipeResults.has(keyword))
+  );
+  for (const keyword of baseInputs) {
+    assert.equal(unlockedByStory.has(keyword), true, `合成原料 ${keyword} 不可达`);
+  }
+  assert.match(engineSource, /Array\.isArray\(node\.keyword\)/);
+});
+
+test("真结局状态只由真正的破环结局授予", () => {
+  assert.equal(SCRIPT.true_ending.ending.id, "true_unbroken");
+  assert.equal(SCRIPT.true_break_ending.ending.id, "true_end");
+  assert.equal(ENDINGS.some(ending => ending.id === "true_unbroken"), true);
+  assert.match(source, /function isTrueEndUnlocked\(\)[\s\S]*?Saves\.isEndingUnlocked\("true_end"\)/);
+  assert.match(engineSource, /function startAfterword\(\)[\s\S]*?if \(!isTrueEndUnlocked\(\)/);
+  const unlocked = new Set(["shiyu_good", "xiazhi_good", "sunian_good"]);
+  context.Saves = { isEndingUnlocked: id => unlocked.has(id) };
+  assert.equal(isTrueEndUnlocked(), false);
+  unlocked.add("true_end");
+  assert.equal(isTrueEndUnlocked(), true);
+});
+
+test("无时间回溯标记的剧情边不会倒退", () => {
+  const order = { morning: 0, noon: 1, afternoon: 2, evening: 3, night: 4 };
+  const edges = [];
+  for (const [id, node] of Object.entries(SCRIPT)) collectNextRefs(node, edges, id);
+  const reverse = [];
+  for (const [from, to] of edges) {
+    const sourceNode = SCRIPT[from];
+    const targetNode = SCRIPT[to];
+    if (!sourceNode.day || !targetNode.day || sourceNode.timeLoop) continue;
+    const sourceTime = sourceNode.day * 5 + order[sourceNode.time];
+    const targetTime = targetNode.day * 5 + order[targetNode.time];
+    if (sourceTime > targetTime) reverse.push(`${from} -> ${to}`);
+  }
+  assert.deepEqual(reverse, []);
+});
+
+test("剧情时间跨度和关键文本相互一致", () => {
+  assert.equal(SCRIPT.d4_timecapsule.timecapsule.deliverAt, "d5_foggy");
+  assert.match(SCRIPT.d4_timecapsule.text, /明早醒来/);
+  assert.deepEqual(
+    [SCRIPT.sy_13_good.day, SCRIPT.xz_12_good.day, SCRIPT.sn_12_good.day],
+    [35, 35, 35]
+  );
+  assert.match(SCRIPT.xz_12_normal.text, /一个月后/);
+  assert.match(SCRIPT.sn_13_good.text, /新作.*不是同一张/);
+  assert.match(SCRIPT.afterword_postcard.text, /新城市的收件地址/);
+  assert.match(SCRIPT.afterword_autumn.text, /明确选择匿名/);
+  assert.match(SCRIPT.d1_night_home.text, /重新说上了话/);
+  assert.equal(SCRIPT.d5_route_check.choice.options.length, 3);
+  assert.equal(SCRIPT.d5_route_check.if, undefined);
 });
