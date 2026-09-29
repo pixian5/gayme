@@ -11,3 +11,7 @@ dist/
 .env
 .env.*
 .playwright-mcp/
+
+# 根目录下的浏览器回归临时产物（截图 / 控制台验证输出），不入库
+/*.png
+/verification-console-errors.txt

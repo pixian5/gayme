@@ -946,7 +946,7 @@ test('三条个人线 GOOD 全通', async ({ page }) => {
 - **技术扎实**：存档健壮，测试覆盖较全
 
 当前最大的瓶颈是**代码体量和模块化程度**：
-- engine.js 16999行，script.js 3743行
+- engine.js 17939行，script.js 4211行
 - gotoNode 巨型 if-else 链
 - 场景 CSS 缺失、孤儿节点
 
