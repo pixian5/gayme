@@ -1187,7 +1187,20 @@ const SCRIPT = {
       ]
     }
   },
-  letter_2_after: { day: 4, time: "evening", bg: "home_room", speaker: "沈屿", text: "信封好，放在窗台。窗外起了风。我坐到窗前——心有点乱。先静一静再睡。", next: "d4_breath" },
+  letter_2_after: { day: 4, time: "evening", bg: "home_room", speaker: "沈屿", text: "信封好，放在窗台。窗外起了风。我坐到窗前——心有点乱。先静一静再睡。", next: "d4_night_family" },
+
+  /* ============ v2.8.1 沈屿家庭线铺垫（为后日谈的「第一道缝」蓄势） ============ */
+  d4_night_family: {
+    day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
+    text: "睡前，我点开和父母的对话框。上一次说话是住校第一晚，之后它就安静到了现在。我打了一段话——想说这里的樱花开了，想说食堂的糖醋排骨不如家里做的好吃，想说其实我有一点想家——写到一半，又全部删掉。",
+    next: "d4_night_family_2"
+  },
+  d4_night_family_2: {
+    day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
+    text: "最后输入框里只剩下三个字：「都挺好」。我盯着它看了很久，没有按发送。有些话要等到更会说话的时候——也可能，要等一个他们真正需要听见的时候。",
+    next: "d4_breath",
+    memory: { id: "沈屿·未寄的话", title: "未寄的话", text: "有一句「都挺好」，你写好了，却留在了输入框里。" }
+  },
 
   /* ============ v1.0.0 新玩法触发节点 ============ */
   // 呼吸引导
@@ -2244,19 +2257,37 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { honest: 2, brave: 1 },
           memory: { id: "回声·60%", title: "隧道里的回声", text: "你在隧道里靠回声估算出了障碍的位置。" },
-          next: "d8_compass" },
+          next: "d8_old_photo" },
         { max: 0.2, tag: "ok",
           label: "——差一点",
           text: "你估算的位置差了一点。她说：差一点也行——你听出了大概。大概也是真的。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d8_compass" }
+          next: "d8_old_photo" }
       ],
       fallback: { tag: "miss",
         label: "——听偏了",
         text: "你估算的位置完全偏了。她说：听偏了也没关系——回声有时候会骗人。她不让你再试一次。",
-        next: "d8_compass" }
+        next: "d8_old_photo" }
     }
+  },
+
+  /* ============ v2.8.1 三人旧交回忆（回收 d2_noon_9 / d3_sunian_5 伏笔） ============ */
+  d8_old_photo: {
+    day: 8, time: "morning", bg: "classroom", speaker: "沈屿",
+    text: "上午课间，我在活动室整理旧物箱，翻到一张去年的照片：夏织在跑道上摔倒，看台边站着两个人——林诗雨手里攥着冰袋，苏念抱着画本。两个人都没有上前。",
+    next: "d8_old_photo_2"
+  },
+  d8_old_photo_2: {
+    day: 8, time: "morning", bg: "classroom", char: "shiyu", speaker: "林诗雨",
+    text: "「那天我们第一次说话。」她把照片翻过来，「她说『她摔了』，我说『我带了冰袋』。然后我们就那么站着，谁都没敢走进去。」",
+    next: "d8_old_photo_3"
+  },
+  d8_old_photo_3: {
+    day: 8, time: "morning", bg: "classroom", char: "sunian", speaker: "苏念",
+    text: "「那天我本来在画她起跑。」苏念说，「画到一半她摔了，我就把本子合上了。后来补过一次——补的不是摔倒，是她爬起来的样子。那张画，我一直没给人看过。」",
+    next: "d8_compass",
+    memory: { id: "三人·一张旧照片", title: "一张旧照片", text: "去年运动会她们都在场：谁都没上前，但谁都没有走远。" }
   },
 
   /* ============ v1.9.0 新玩法触发节点 ============ */

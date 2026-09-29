@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v2.8.0**（开发测试版 · Demo）
+- 当前版本：**v2.8.1**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，6 槽位 + 自动存档）
 
@@ -26,13 +26,13 @@ npm run test:syntax
 
 ## 【当前开发进度】
 
-剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成，30 项测试全过；v2.7.9 建立玩法框架基座（GameKit），v2.8.0 已完成 13 个玩法的迁移（后日谈 5 + 身心感知 8）并补齐版本号一致性测试，工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
+剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（404 个剧情节点），30 项测试全过；v2.7.9 建立玩法框架基座（GameKit），v2.8.0 完成 13 个玩法迁移与一致性测试，v2.8.1 补齐沈屿家庭线铺垫与三人旧交回忆。工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
 
 详细内容见 → [docs/202609292356当前开发进度.md](docs/202609292356当前开发进度.md)
 
 ## 【下一步待实现】
 
-按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → ~~减重与一致性（v2.8.0）~~ → 内容纵深（v2.8.1 沈屿家庭线 + 三女主旧交）→ 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
+按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → ~~减重与一致性（v2.8.0）~~ → ~~内容纵深 A（v2.8.1 家庭线 + 三人旧交）~~ → 内容纵深 B（v2.8.2 学姐线索 + 长链分章）→ 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
 
 详细内容见 → [docs/202609292356下一步开发方案.md](docs/202609292356下一步开发方案.md)
 
@@ -62,6 +62,7 @@ npm run test:syntax
 | [v2.7.8-story-consistency.md](docs/v2.7.8-story-consistency.md) | 星座路径收束、旧存档节点别名兼容、favicon |
 | [v2.7.9-gamekit.md](docs/v2.7.9-gamekit.md) | 玩法框架基座 GameKit、后日谈 5 个玩法迁移与回归修复 |
 | [v2.8.0-gamekit-batch2.md](docs/v2.8.0-gamekit-batch2.md) | 第二批 8 个玩法迁移、GameKit 能力扩展、一致性测试与死代码清理 |
+| [v2.8.1-story-depth.md](docs/v2.8.1-story-depth.md) | 沈屿家庭线铺垫与三人旧交回忆（回收 d2_noon_9 / d3_sunian_5 伏笔） |
 
 ### 外部分析（项目根目录）
 | 文档 | 作用 |
@@ -80,7 +81,7 @@ npm run test:syntax
 index.html          入口（含 8 个脚本按序加载，engine.js 最后）
 css/style.css       全部视觉/动效/响应式
 js/saves.js         存档与图鉴数据层（localStorage，106 个键）
-js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 399 节点）
+js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 404 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
 js/minigames.js     3 个基础迷你游戏（writing / running / painting）
 js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生命周期 / 进度文案 / 宿主桥
