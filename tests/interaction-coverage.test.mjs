@@ -18,9 +18,7 @@ const handlers = {
   silenceChoice: "runSilenceChoice", touch: "runTouch", temperature: "runTemperature",
   tarot: "runTarot", dreamweave: "runDreamweave", handwriting: "runHandwriting",
   spectrum: "runSpectrum", constellation: "runConstellation", stethoscope: "runStethoscope",
-  puzzle: "runPuzzle", perfume: "runPerfume", breath: "runBreath", timecapsule: "runTimecapsule",
-  fold: "runFold", reflection: "runReflection", lightdraw: "runLightdraw", mimic: "runMimic",
-  season: "runSeason", pulse: "runPulse", tea: "runTea", astronomy: "runAstronomy",
+  puzzle: "runPuzzle", perfume: "runPerfume", tea: "runTea", astronomy: "runAstronomy",
   palette: "runPalette", piano: "runPiano", dice: "runDice", wind: "runWind",
   decode: "runDecode", rain: "runRain", rubbing: "runRubbing", collect: "runCollect",
   focus: "runFocus", scentmem: "runScentmem", tealeaf: "runTealeaf", shadow: "runShadow",
@@ -38,8 +36,14 @@ const handlers = {
   chess: "runChess", flag: "runFlag",
 };
 
-/* v2.7.9 起，后日谈 5 个玩法迁至 js/games/afterword.js，经 GameKit 注册、由引擎触发 */
-const gameKitHandlers = ["postcard", "timeline", "triage", "wall", "proofread"];
+/* v2.7.9 / v2.8.0 起，后日谈与身心感知玩法迁出 engine.js，经 GameKit 注册、由引擎触发 */
+const senses = fs.readFileSync(new URL("../js/games/senses.js", import.meta.url), "utf8");
+const gameFiles = { afterword, senses };
+const gameKitHandlers = {
+  postcard: "afterword", timeline: "afterword", triage: "afterword", wall: "afterword", proofread: "afterword",
+  breath: "senses", timecapsule: "senses", fold: "senses", reflection: "senses",
+  lightdraw: "senses", mimic: "senses", season: "senses", pulse: "senses",
+};
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {
   for (const [field, handler] of Object.entries(handlers)) {
@@ -50,12 +54,12 @@ test("每类剧情互动都有节点入口和引擎处理器", () => {
   }
 });
 
-test("后日谈玩法经 GameKit 注册并由引擎触发", () => {
-  for (const field of gameKitHandlers) {
+test("已迁移玩法经 GameKit 注册并由引擎触发", () => {
+  for (const [field, source] of Object.entries(gameKitHandlers)) {
     const ids = Object.entries(SCRIPT).filter(([, node]) => node && node[field] !== undefined).map(([id]) => id);
     assert.ok(ids.length > 0, `${field} 没有剧情节点入口`);
     assert.match(engine, new RegExp(`if \\(node\\.${field}\\)`), `${field} 没有节点分发器`);
     assert.match(engine, new RegExp(`GameKit\\?\\.run\\("${field}"`), `${field} 未通过 GameKit 触发`);
-    assert.match(afterword, new RegExp(`register\\("${field}"`), `${field} 缺少 GameKit 注册`);
+    assert.match(gameFiles[source], new RegExp(`register\\("${field}"`), `${field} 缺少 GameKit 注册`);
   }
 });
