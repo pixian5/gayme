@@ -5,6 +5,7 @@ import test from "node:test";
 
 const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
 const engine = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
+const afterword = fs.readFileSync(new URL("../js/games/afterword.js", import.meta.url), "utf8");
 const context = { console, window: {} };
 vm.createContext(context);
 vm.runInContext(`${script}\nthis.__script = SCRIPT;`, context);
@@ -34,9 +35,11 @@ const handlers = {
   windmill: "runWindmill", weave: "runWeave", mirror: "runMirror", lantern: "runLantern",
   ripple: "runRipple", mosaic: "runMosaic", stele: "runStele", celestial: "runCelestial",
   drum: "runDrum", vane: "runVane", clepsydra: "runClepsydra", jigsaw: "runJigsaw",
-  chess: "runChess", flag: "runFlag", postcard: "runPostcard", timeline: "runTimeline",
-  triage: "runTriage", wall: "runWall", proofread: "runProofread",
+  chess: "runChess", flag: "runFlag",
 };
+
+/* v2.7.9 起，后日谈 5 个玩法迁至 js/games/afterword.js，经 GameKit 注册、由引擎触发 */
+const gameKitHandlers = ["postcard", "timeline", "triage", "wall", "proofread"];
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {
   for (const [field, handler] of Object.entries(handlers)) {
@@ -44,5 +47,15 @@ test("每类剧情互动都有节点入口和引擎处理器", () => {
     assert.ok(ids.length > 0, `${field} 没有剧情节点入口`);
     assert.match(engine, new RegExp(`if \\(node\\.${field}\\)`), `${field} 没有节点分发器`);
     assert.match(engine, new RegExp(`function ${handler}\\(`), `${field} 缺少 ${handler}`);
+  }
+});
+
+test("后日谈玩法经 GameKit 注册并由引擎触发", () => {
+  for (const field of gameKitHandlers) {
+    const ids = Object.entries(SCRIPT).filter(([, node]) => node && node[field] !== undefined).map(([id]) => id);
+    assert.ok(ids.length > 0, `${field} 没有剧情节点入口`);
+    assert.match(engine, new RegExp(`if \\(node\\.${field}\\)`), `${field} 没有节点分发器`);
+    assert.match(engine, new RegExp(`GameKit\\?\\.run\\("${field}"`), `${field} 未通过 GameKit 触发`);
+    assert.match(afterword, new RegExp(`register\\("${field}"`), `${field} 缺少 GameKit 注册`);
   }
 });

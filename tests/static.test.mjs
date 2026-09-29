@@ -14,7 +14,7 @@ test("版本和静态资源一致", () => {
   assert.match(html, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.match(engine, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.equal(packageJson.version, version);
-  for (const asset of ["favicon.svg", "js/saves.js", "js/script.js", "js/minigames.js", "js/engine.js", "css/style.css"]) {
+  for (const asset of ["favicon.svg", "js/saves.js", "js/script.js", "js/minigames.js", "js/gamekit.js", "js/games/afterword.js", "js/engine.js", "css/style.css"]) {
     assert.equal(fs.existsSync(new URL(`../${asset}`, import.meta.url)), true, asset);
   }
 });
@@ -44,8 +44,8 @@ test("涂色玩法把目标颜色呈现给玩家", () => {
 test("延迟互动层出现前不会跳过剧情", () => {
   assert.match(engine, /function advance\(\) \{\s+if \(state\.pendingInteraction \|\| hasActiveInteractionLayer\(\)\) return;/);
   assert.match(engine, /if \(state\.pendingInteraction \|\| hasActiveInteractionLayer\(\)\) return;[\s\S]*?if \(node\.next\) gotoNode\(node\.next\);/);
-  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runTriage\(node\.triage, nodeId\)/);
-  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runWall\(node\.wall, nodeId\)/);
-  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?runProofread\(node\.proofread, nodeId\)/);
+  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?GameKit\?\.run\("triage", node\.triage, nodeId\)/);
+  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?GameKit\?\.run\("wall", node\.wall, nodeId\)/);
+  assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?GameKit\?\.run\("proofread", node\.proofread, nodeId\)/);
   assert.match(engine, /state\.pendingInteraction = false;[\s\S]*?showLetter\(node\.letter, nodeId\)/);
 });

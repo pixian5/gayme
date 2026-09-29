@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v2.7.8**（开发测试版 · Demo）
+- 当前版本：**v2.7.9**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，6 槽位 + 自动存档）
 
@@ -26,13 +26,13 @@ npm run test:syntax
 
 ## 【当前开发进度】
 
-剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成，27 项测试全过；工程重心正从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
+剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成，28 项测试全过；v2.7.9 已建立玩法框架基座（GameKit）并完成后日谈 5 个玩法的迁移验证，工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
 
 详细内容见 → [docs/202609292356当前开发进度.md](docs/202609292356当前开发进度.md)
 
 ## 【下一步待实现】
 
-按 v2.7.9 → v2.8.7 路线推进：玩法框架基座（GameKit）→ 减重与一致性 → 内容纵深 → 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
+按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → 减重与一致性（v2.8.0）→ 内容纵深 → 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
 
 详细内容见 → [docs/202609292356下一步开发方案.md](docs/202609292356下一步开发方案.md)
 
@@ -60,6 +60,7 @@ npm run test:syntax
 | [v2.7.6-story-proofread.md](docs/v2.7.6-story-proofread.md) | 校刊校对玩法 |
 | [v2.7.7-story-consistency.md](docs/v2.7.7-story-consistency.md) | 剧情合理性复核（真结局判定、时间线、关键词解锁） |
 | [v2.7.8-story-consistency.md](docs/v2.7.8-story-consistency.md) | 星座路径收束、旧存档节点别名兼容、favicon |
+| [v2.7.9-gamekit.md](docs/v2.7.9-gamekit.md) | 玩法框架基座 GameKit、后日谈 5 个玩法迁移与回归修复 |
 
 ### 外部分析（项目根目录）
 | 文档 | 作用 |
@@ -75,13 +76,15 @@ npm run test:syntax
 ## 目录结构
 
 ```
-index.html          入口（含 5 个脚本按序加载）
+index.html          入口（含 7 个脚本按序加载）
 css/style.css       全部视觉/动效/响应式
 js/saves.js         存档与图鉴数据层（localStorage，106 个键）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 399 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
 js/minigames.js     3 个基础迷你游戏（writing / running / painting）
-js/engine.js        引擎 + 90 个玩法实现（v2.7.9 起将分批外迁至 js/games/）
+js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生命周期 / 进度文案
+js/games/           已迁移的玩法模块（v2.7.9 起分批从 engine.js 外迁）
+js/engine.js        引擎 + 剩余玩法实现
 tests/              Node 原生测试
 docs/               版本记录与规划文档
 ```
