@@ -83,6 +83,16 @@ test("时间回溯有明确的叙事承接", () => {
   assert.match(SCRIPT.d5_loop_arrival.text, /匿名信/);
 });
 
+test("星座解读都会经过父母冲突收束", () => {
+  const constellation = SCRIPT.d1_night_stars.constellation;
+  assert.equal(SCRIPT.d1_night_stars.next, "d1_night_home");
+  assert.equal(SCRIPT.d1_night_home.next, "common_day2_morning");
+  for (const branch of constellation.constellations) {
+    assert.equal(branch.next, "d1_night_home", `${branch.tag} 绕过了父母冲突收束`);
+  }
+  assert.equal(constellation.fallback.next, "d1_night_home");
+});
+
 test("真结局后日谈和明信片分支可达", () => {
   const roots = ["afterword_entry"];
   const reachable = new Set(roots);
@@ -185,6 +195,15 @@ test("真结局后日谈和明信片分支可达", () => {
 
 test("后日谈入口只由真结局解锁", () => {
   assert.match(engineSource, /function updateAfterwordAccess\(\)[\s\S]*?const unlocked = isTrueEndUnlocked\(\);/);
+});
+
+test("旧版第 5 日存档仍能恢复到路线选择", () => {
+  assert.match(engineSource, /const SAVE_NODE_ALIASES = Object\.freeze\(\{[\s\S]*d5_check_xiazhi: "d5_route_check"/);
+  assert.match(engineSource, /d5_check_sunian: "d5_route_check"/);
+  assert.match(engineSource, /d5_default_choice: "d5_route_check"/);
+  assert.match(engineSource, /function normalizeSaveNodeId\(nodeId\) \{[\s\S]*return SAVE_NODE_ALIASES\[nodeId\] \|\| nodeId;/);
+  assert.match(engineSource, /const nodeId = normalizeSaveNodeId\(data\?\.nodeId\);[\s\S]*if \(!data \|\| !SCRIPT\[nodeId\]\)/);
+  assert.match(engineSource, /state\.currentNode = nodeId;[\s\S]*gotoNode\(nodeId, \{ restoring: true \}\)/);
 });
 
 test("所有关键词和合成原料都有剧情解锁点", () => {

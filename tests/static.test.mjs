@@ -14,7 +14,7 @@ test("版本和静态资源一致", () => {
   assert.match(html, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.match(engine, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.equal(packageJson.version, version);
-  for (const asset of ["js/saves.js", "js/script.js", "js/minigames.js", "js/engine.js", "css/style.css"]) {
+  for (const asset of ["favicon.svg", "js/saves.js", "js/script.js", "js/minigames.js", "js/engine.js", "css/style.css"]) {
     assert.equal(fs.existsSync(new URL(`../${asset}`, import.meta.url)), true, asset);
   }
 });

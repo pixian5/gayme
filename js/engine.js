@@ -59,6 +59,16 @@
 
   const MAX_HISTORY = 200;
   const AFFECTION_MAX = 10;
+  const SAVE_NODE_ALIASES = Object.freeze({
+    d5_check_xiazhi: "d5_route_check",
+    d5_check_sunian: "d5_route_check",
+    d5_default_choice: "d5_route_check",
+  });
+
+  function normalizeSaveNodeId(nodeId) {
+    return SAVE_NODE_ALIASES[nodeId] || nodeId;
+  }
+
   function createDefaultVariables() {
     return { affection: { shiyu: 0, xiazhi: 0, sunian: 0 } };
   }
@@ -1748,13 +1758,14 @@
   }
 
   function restoreSnapshot(data) {
-    if (!data || !SCRIPT[data.nodeId]) {
+    const nodeId = normalizeSaveNodeId(data?.nodeId);
+    if (!data || !SCRIPT[nodeId]) {
       flashHint("存档损坏或剧情节点不存在");
       return false;
     }
     state.sessionId += 1;
     removeActiveInteractionLayers();
-    state.currentNode = data.nodeId;
+    state.currentNode = nodeId;
     state.variables = data.variables && typeof data.variables === "object"
       ? JSON.parse(JSON.stringify(data.variables)) : createDefaultVariables();
     const affection = state.variables.affection;
@@ -1779,7 +1790,7 @@
     if (el.dayBar) el.dayBar.style.opacity = "1";
     if (el.heartBar) el.heartBar.style.opacity = "1";
     closeOverlay();
-    gotoNode(data.nodeId, { restoring: true });
+    gotoNode(nodeId, { restoring: true });
     return true;
   }
 
@@ -2012,7 +2023,7 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.7.7 · Demo</p>
+        <p style="color:#e8e0d0;">v2.7.8 · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}

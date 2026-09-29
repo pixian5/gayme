@@ -647,22 +647,22 @@ const SCRIPT = {
           text: "星点连成信的形状，从起笔到落笔，最后收在心。林诗雨看了很久，说：「原来连星星都会写信。」",
           add: { affection: { shiyu: 2 } }, personality: { honest: 2, kind: 1 },
           memory: { id: "星座·信", title: "夜空里的信", text: "你连出寄给夜空的信。林诗雨说连星星都会写信。" },
-          next: "common_day2_morning" },
+          next: "d1_night_home" },
         { stars: ["cherry_a","heart","cherry_b"], tag: "cherry_heart",
           label: "——樱花落在心上",
           text: "三颗星连成樱花包着一颗心。林诗雨轻声说：「樱花和心——你把它们连在一起了。」",
           add: { affection: { shiyu: 1 } }, personality: { kind: 2 },
           memory: { id: "星座·樱心", title: "樱花与心", text: "你连出樱花包着心。林诗雨轻声说，你把它们连在一起了。" },
-          next: "common_day2_morning" },
+          next: "d1_night_home" },
         { stars: ["letter_a","north_star","letter_b"], tag: "letter_only",
           label: "——只有信的形状",
           text: "三颗星连成信的轮廓，没有收信人。林诗雨说：「写了，但没寄出去——也行。」",
           add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
-          next: "common_day2_morning" }
+          next: "d1_night_home" }
       ],
       fallback: { tag: "scattered_stars", label: "——散落的星",
         text: "星点连不成特别的形状。林诗雨抬头看了很久，说：「没关系，今晚的星，本来就乱。」",
-        next: "common_day2_morning" }
+        next: "d1_night_home" }
     }
   },
   d1_night_home: {
