@@ -1984,7 +1984,7 @@ const SCRIPT = {
   d5_hourglass: {
     day: 5, time: "afternoon", bg: "home_room", char: "senior", speaker: "学姐",
     text: "学姐把一只沙漏放到桌上。她说——在 5 秒的时候翻一次，让沙在 5 秒后落完。她说完就走了。你拿着沙漏，第一次确定长玩法里那个反复出现的「她」就是她。",
-    next: "d6_kite",
+    next: "d6_chapter_open",
     hourglass: {
       prompt: "点「开始」计时，到 5 秒时点「翻转」",
       target: 5000,
@@ -1997,19 +1997,51 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, xiazhi: 1, sunian: 1, shen: 1 } },
           personality: { brave: 2, honest: 2 },
           memory: { id: "沙漏·5秒", title: "卡住的时间", text: "你在 5 秒的时候翻转了沙漏，让沙再落一次。" },
-          next: "d6_kite" },
+          next: "d6_chapter_open" },
         { max: 1000, tag: "ok",
           label: "——差一点",
           text: "你差了一点。沙没在 5 秒落完。她说：差一点也是好的——证明你想过它。你想她说的是对的。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d6_kite" }
+          next: "d6_chapter_open" }
       ],
       fallback: { tag: "miss",
         label: "——没卡上",
         text: "你完全没卡上。沙落完了，没翻转。她说：没卡上也是真的——有些事错过了，就是错过了。你看着空了的沙漏。",
-        next: "d6_kite" }
+        next: "d6_chapter_open" }
     }
+  },
+
+  /* ============ v2.8.2 长链分章呼吸点与学姐中段线索 ============ */
+  // 第一章「旧物」开场（第 6 日）
+  d6_chapter_open: {
+    day: 6, time: "morning", bg: "hallway", speaker: "沈屿",
+    text: "第 6 日。学姐说，接下来这些天，她想带我做一些「她当年没做完的事」。我不知道那是什么。只知道从今天起，日子像在整理一间旧屋子——一件一件，把蒙尘的东西拿起来，擦干净，再放回去。",
+    next: "d6_kite"
+  },
+  // 第二章「节奏」开场（第 9 日）
+  d9_chapter_open: {
+    day: 9, time: "morning", bg: "hallway", speaker: "沈屿",
+    text: "第 9 日。旧物整理到了一半。我发现她挑的东西都有节奏——风铃、瓶中信、回声、罗盘，一样比一样安静。像是在教我：听见世界的方式，不止「看见」一种。",
+    next: "d9_metronome"
+  },
+  // 学姐中段线索（第 10 日）
+  d10_senior_slip: {
+    day: 10, time: "morning", bg: "rooftop", char: "senior", speaker: "学姐",
+    text: "第 10 日早上，她在天台看云。她说：「这些天带你做的事，三年前我都做过一遍。只是那时候——」她停住了。后半句在风里打了个转，被她自己咽了回去，改口说：「算了。今天的云挺好。」",
+    next: "d10_senior_slip_2"
+  },
+  d10_senior_slip_2: {
+    day: 10, time: "morning", bg: "rooftop", speaker: "沈屿",
+    text: "我没有追问。她说的「那时候」，大概就是三条路只走到一半的时候。风把云推得很快，像有什么事正在赶时间。",
+    next: "d10_eclipse",
+    memory: { id: "学姐·咽回去的半句", title: "咽回去的半句", text: "她说「三年前我都做过一遍，只是那时候——」，然后改口去说云。" }
+  },
+  // 第三章「归位」开场（第 12 日）
+  d12_chapter_open: {
+    day: 12, time: "morning", bg: "hallway", speaker: "沈屿",
+    text: "第 12 日。她说最后一段路叫「归位」——把借来的东西还给原处，把散开的自己收回来。她说这话时在走神。我知道她在想什么：等这一切结束，她就要离开了。",
+    next: "d12_sundial"
   },
 
   /* ============ v1.7.0 新玩法触发节点 ============ */
@@ -2382,7 +2414,7 @@ const SCRIPT = {
   d8_pendulum: {
     day: 8, time: "night", bg: "clock_room", char: null, speaker: "",
     text: "她带你去钟楼。一只老钟摆在摆动。她说——它在找一个位置。她让你在它到那个位置的时候点「停」。她说：时机不对，就什么都不是。",
-    next: "d9_metronome",
+    next: "d9_chapter_open",
     pendulum: {
       prompt: "钟摆摆到目标位置时——点「停」",
       target: 0.85,
@@ -2395,18 +2427,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { honest: 2, brave: 1 },
           memory: { id: "钟摆·85%", title: "钟楼里的钟摆", text: "你在钟摆到目标位置时点停，时机很准。" },
-          next: "d9_metronome" },
+          next: "d9_chapter_open" },
         { max: 0.15, tag: "ok",
           label: "——差一点",
           text: "钟摆差一点。她说：差一点也是停——只是没那么对。她不让你再试一次。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d9_metronome" }
+          next: "d9_chapter_open" }
       ],
       fallback: { tag: "miss",
         label: "——停早了",
         text: "钟摆完全没停对位置。她说：时机不对——不对就是不对。她把钟摆按住，让它停下。",
-        next: "d9_metronome" }
+        next: "d9_chapter_open" }
     }
   },
 
@@ -2516,7 +2548,7 @@ const SCRIPT = {
   d9_tuning: {
     day: 9, time: "night", bg: "music_room", char: null, speaker: "",
     text: "她递给你一把旧琴。她说——三根弦，张力都不对。你把它们调到目标张力。她说：调音是慢活，弦绷太紧会断，太松不响。",
-    next: "d10_eclipse",
+    next: "d10_senior_slip",
     tuning: {
       prompt: "依次调三根琴弦——让张力接近目标值",
       strings: [
@@ -2532,18 +2564,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { kind: 2, honest: 1 },
           memory: { id: "弦音·三弦齐", title: "音乐教室的旧琴", text: "你把三根琴弦调到目标张力，弦音干净。" },
-          next: "d10_eclipse" },
+          next: "d10_senior_slip" },
         { max: 0.12, tag: "ok",
           label: "——差不多准",
           text: "弦音差不多准。她说：差不多——也是一种准。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { honest: 1 },
-          next: "d10_eclipse" }
+          next: "d10_senior_slip" }
       ],
       fallback: { tag: "miss",
         label: "——音不准",
         text: "弦音不准。她说：弦没调好——也没关系，你可以慢慢调。她把琴收回琴盒。",
-        next: "d10_eclipse" }
+        next: "d10_senior_slip" }
     }
   },
 
@@ -2776,7 +2808,7 @@ const SCRIPT = {
   d11_topo: {
     day: 11, time: "evening", bg: "rooftop", char: null, speaker: "",
     text: "她铺开一张旧地图。她说——在海拔接近目标值的点上做记号，地形才会显出来。她说：等高线不会自己说话，说话的是你做的记号。",
-    next: "d12_sundial",
+    next: "d12_chapter_open",
     topo: {
       prompt: "点击海拔接近目标值的点做记号",
       targetH: 0.6,
@@ -2802,18 +2834,18 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, kind: 1 },
           memory: { id: "等高线·目标海拔", title: "天台上的旧地图", text: "你在海拔 0.6 的目标点上做了记号。" },
-          next: "d12_sundial" },
+          next: "d12_chapter_open" },
         { max: 2, tag: "ok",
           label: "——差不多对",
           text: "记号差不多到位。她说：差不多——也是一种对。她不再多说。",
           add: { affection: { shen: 1 } },
           personality: { careful: 1 },
-          next: "d12_sundial" }
+          next: "d12_chapter_open" }
       ],
       fallback: { tag: "miss",
         label: "——标错了",
         text: "记号完全没落在目标海拔点。她说：标错了——也不是错，只是这次没看清。她把地图折起。",
-        next: "d12_sundial" }
+        next: "d12_chapter_open" }
     }
   },
 

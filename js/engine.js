@@ -7,6 +7,7 @@
    v2.8.0：身心感知 8 个玩法迁至 js/games/senses.js；
            已迁移玩法统一经 window.GameKit.run(type, config, nodeId) 触发
    v2.8.1：内容纵深——沈屿家庭线铺垫与三人旧交回忆（节点数据见 js/script.js）
+   v2.8.2：长链分章呼吸点与学姐中段线索（节点数据见 js/script.js）
    ======================================== */
 
 (function () {
