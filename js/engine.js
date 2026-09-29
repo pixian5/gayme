@@ -8,6 +8,8 @@
            已迁移玩法统一经 window.GameKit.run(type, config, nodeId) 触发
    v2.8.1：内容纵深——沈屿家庭线铺垫与三人旧交回忆（节点数据见 js/script.js）
    v2.8.2：长链分章呼吸点与学姐中段线索（节点数据见 js/script.js）
+   v2.8.3：工程瘦身——saves.js 引入 recordStore/unlockListStore 工厂（1918→1208 行）；
+           自托管 Noto Serif SC 子集字体（fonts/，约 320KB/字重）
    ======================================== */
 
 (function () {

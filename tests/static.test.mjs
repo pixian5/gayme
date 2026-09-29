@@ -14,9 +14,23 @@ test("版本和静态资源一致", () => {
   assert.match(html, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.match(engine, new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.equal(packageJson.version, version);
-  for (const asset of ["favicon.svg", "js/saves.js", "js/script.js", "js/minigames.js", "js/gamekit.js", "js/games/afterword.js", "js/games/senses.js", "js/engine.js", "css/style.css"]) {
+  for (const asset of ["favicon.svg", "js/saves.js", "js/script.js", "js/minigames.js", "js/gamekit.js", "js/games/afterword.js", "js/games/senses.js", "js/engine.js", "css/style.css", "fonts/NotoSerifSC-Regular.woff2", "fonts/NotoSerifSC-Bold.woff2"]) {
     assert.equal(fs.existsSync(new URL(`../${asset}`, import.meta.url)), true, asset);
   }
+});
+
+test("声明的中文字体有本地 @font-face 支撑", () => {
+  // style.css 使用 "Noto Serif SC" 时，必须存在自托管字体，否则会静默回退到系统字体
+  assert.match(css, /font-family:\s*"Noto Serif SC"/);
+  for (const weight of ["400", "700"]) {
+    assert.match(
+      css,
+      new RegExp(`@font-face\\s*\\{[^}]*font-family:\\s*"Noto Serif SC"[^}]*font-weight:\\s*${weight}[^}]*\\}`),
+      `缺少 ${weight} 字重的 @font-face`,
+    );
+  }
+  assert.match(css, /@font-face\s*\{[^}]*fonts\/NotoSerifSC-Regular\.woff2/);
+  assert.match(css, /@font-face\s*\{[^}]*fonts\/NotoSerifSC-Bold\.woff2/);
 });
 
 test("基础控件具备可访问名称", () => {

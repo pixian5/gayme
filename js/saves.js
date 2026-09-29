@@ -226,6 +226,55 @@ function cloneValue(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
 }
 
+/* ============ 存档方法工厂 ============
+   历史上 100 多个 localStorage 键各自手写「读取 / 写入 / 读单条」三个方法，
+   形态完全一致却重复上千行。以下两个工厂统一实现，仅保留键名与字段差异。 */
+
+// 纯对象校验（排除数组与 null），作为默认的结构校验器
+function isPlainObject(value) {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
+// 「按 nodeId 记录」型：存储结构 { [nodeId]: { ...fields, ts } }
+// 生成 getXxxRecords() / saveXxxRecord(nodeId, ...) / getXxxRecord(nodeId)
+// names 用于覆盖方法名，兼容命名不规则的存储（如 Photo：getPhotos / savePhoto / getPhoto）
+function recordStore(key, name, fields, names) {
+  const listName = (names && names.list) || `get${name}Records`;
+  const saveName = (names && names.save) || `save${name}Record`;
+  const oneName = (names && names.one) || `get${name}Record`;
+  return {
+    [listName]() { return this._read(key, {}, isPlainObject); },
+    [saveName](nodeId, ...args) {
+      const all = this[listName]();
+      const record = {};
+      let argIndex = 0;
+      // 字段可以是名字（取自入参），也可以是 [名字, 字面量]（固定默认值，如 delivered: false）
+      fields.forEach((field) => {
+        if (Array.isArray(field)) record[field[0]] = field[1];
+        else record[field] = args[argIndex++];
+      });
+      record.ts = Date.now();
+      all[nodeId] = record;
+      return this._write(key, JSON.stringify(all));
+    },
+    [oneName](nodeId) { return this[listName]()[nodeId]; },
+  };
+}
+
+// 「解锁型 id 列表」：存储结构 [id, id, ...]，已存在则返回 false，新增才写入
+function unlockListStore(key, listName, addName, hasName) {
+  return {
+    [listName]() { return this._read(key, [], Array.isArray); },
+    [addName](id) {
+      const list = this[listName]();
+      if (list.includes(id)) return false;
+      list.push(id);
+      return this._write(key, JSON.stringify(list));
+    },
+    [hasName](id) { return this[listName]().includes(id); },
+  };
+}
+
 const Saves = {
   data: createDefaultSaveData(),
   endings: createDefaultEndings(),
@@ -445,52 +494,14 @@ const Saves = {
   isEndingUnlocked(endingId) { return this.endings.unlocked.includes(endingId); },
 
   /* ============ 关键词收集 ============ */
-  getKeywords() {
-    return this._read(KEYWORDS_KEY, [], Array.isArray);
-  },
-
-  unlockKeyword(kw) {
-    const list = this.getKeywords();
-    if (!list.includes(kw)) {
-      list.push(kw);
-      return this._write(KEYWORDS_KEY, JSON.stringify(list)); // 新解锁
-    }
-    return false;
-  },
-
-  isKeywordUnlocked(kw) { return this.getKeywords().includes(kw); },
+  ...unlockListStore(KEYWORDS_KEY, "getKeywords", "unlockKeyword", "isKeywordUnlocked"),
 
   /* ============ CG 图鉴 ============ */
-  getCGs() {
-    return this._read(CG_KEY, [], Array.isArray);
-  },
-
-  unlockCG(cgId) {
-    const list = this.getCGs();
-    if (!list.includes(cgId)) {
-      list.push(cgId);
-      return this._write(CG_KEY, JSON.stringify(list));
-    }
-    return false;
-  },
-
-  isCGUnlocked(cgId) { return this.getCGs().includes(cgId); },
+  ...unlockListStore(CG_KEY, "getCGs", "unlockCG", "isCGUnlocked"),
 
   /* ============ 信件回执 ============ */
-  getLetters() {
-    return this._read(LETTERS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-
-  saveLetter(letterId, answers) {
-    const letters = this.getLetters();
-    const previous = letters[letterId];
-    letters[letterId] = { answers, ts: Date.now() };
-    if (this._write(LETTERS_KEY, JSON.stringify(letters))) return true;
-    if (previous === undefined) delete letters[letterId]; else letters[letterId] = previous;
-    return false;
-  },
-
-  getLetter(letterId) { return this.getLetters()[letterId]; },
+  ...recordStore(LETTERS_KEY, "Letter", ["answers"],
+    { list: "getLetters", save: "saveLetter", one: "getLetter" }),
 
   /* ============ 全局标记（多周目） ============ */
   getFlags() {
@@ -574,18 +585,7 @@ const Saves = {
   },
 
   /* ============ 环境线索（背景可点击） ============ */
-  getClues() {
-    return this._read(CLUES_KEY, [], Array.isArray);
-  },
-  markClueFound(clueId) {
-    const list = this.getClues();
-    if (!list.includes(clueId)) {
-      list.push(clueId);
-      return this._write(CLUES_KEY, JSON.stringify(list));
-    }
-    return false;
-  },
-  isClueFound(clueId) { return this.getClues().includes(clueId); },
+  ...unlockListStore(CLUES_KEY, "getClues", "markClueFound", "isClueFound"),
 
   /* ============ 收件箱（角色主动来信） ============ */
   getInbox() {
@@ -710,29 +710,12 @@ const Saves = {
   },
 
   /* ============ 涂鸦记录 ============ */
-  getDoodles() {
-    return this._read(DOODLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDoodle(nodeId, mood, stats) {
-    const all = this.getDoodles();
-    const previous = all[nodeId];
-    all[nodeId] = { mood, stats, ts: Date.now() };
-    if (this._write(DOODLE_KEY, JSON.stringify(all))) return true;
-    if (previous === undefined) delete all[nodeId]; else all[nodeId] = previous;
-    return false;
-  },
-  getDoodle(nodeId) { return this.getDoodles()[nodeId]; },
+  ...recordStore(DOODLE_KEY, "Doodle", ["mood", "stats"],
+    { list: "getDoodles", save: "saveDoodle", one: "getDoodle" }),
 
   /* ============ 拼贴诗 ============ */
-  getCollages() {
-    return this._read(COLLAGE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveCollage(nodeId, words, poem, score, tag) {
-    const all = this.getCollages();
-    all[nodeId] = { words, poem, score, tag, ts: Date.now() };
-    return this._write(COLLAGE_KEY, JSON.stringify(all));
-  },
-  getCollage(nodeId) { return this.getCollages()[nodeId]; },
+  ...recordStore(COLLAGE_KEY, "Collage", ["words", "poem", "score", "tag"],
+    { list: "getCollages", save: "saveCollage", one: "getCollage" }),
 
   /* ============ 回声台词（玩家说过的重要台词） ============ */
   getEchoes() {
@@ -760,26 +743,12 @@ const Saves = {
   },
 
   /* ============ 摄影构图 ============ */
-  getPhotos() {
-    return this._read(PHOTO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePhoto(nodeId, composition, score, tag) {
-    const all = this.getPhotos();
-    all[nodeId] = { composition, score, tag, ts: Date.now() };
-    return this._write(PHOTO_KEY, JSON.stringify(all));
-  },
-  getPhoto(nodeId) { return this.getPhotos()[nodeId]; },
+  ...recordStore(PHOTO_KEY, "Photo", ["composition", "score", "tag"],
+    { list: "getPhotos", save: "savePhoto", one: "getPhoto" }),
 
   /* ============ 节奏敲击 ============ */
-  getRhythms() {
-    return this._read(RHYTHM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveRhythm(nodeId, hits, accuracy, tag) {
-    const all = this.getRhythms();
-    all[nodeId] = { hits, accuracy, tag, ts: Date.now() };
-    return this._write(RHYTHM_KEY, JSON.stringify(all));
-  },
-  getRhythm(nodeId) { return this.getRhythms()[nodeId]; },
+  ...recordStore(RHYTHM_KEY, "Rhythm", ["hits", "accuracy", "tag"],
+    { list: "getRhythms", save: "saveRhythm", one: "getRhythm" }),
 
   /* ============ v0.7.0 气味收集 ============ */
   // 气味卡结构：{ id, name, desc, scene, ts }
@@ -813,15 +782,7 @@ const Saves = {
 
   /* ============ v0.7.0 沉默选择 ============ */
   // 记录每个沉默节点的最终选择：{ nodeId: { choice, silent, ts } }
-  getSilenceRecords() {
-    return this._read(SILENCE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSilenceRecord(nodeId, choice, silent) {
-    const all = this.getSilenceRecords();
-    all[nodeId] = { choice, silent, ts: Date.now() };
-    return this._write(SILENCE_KEY, JSON.stringify(all));
-  },
-  getSilenceRecord(nodeId) { return this.getSilenceRecords()[nodeId]; },
+  ...recordStore(SILENCE_KEY, "Silence", ["choice", "silent"]),
   getSilentCount() {
     const all = this.getSilenceRecords();
     return Object.values(all).filter(r => r.silent).length;
@@ -846,15 +807,7 @@ const Saves = {
 
   /* ============ v0.7.0 温度感知 ============ */
   // 记录每个温度节点的最终温度：{ nodeId: { temp, tag, ts } }
-  getTemperatureRecords() {
-    return this._read(TEMPERATURE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTemperatureRecord(nodeId, temp, tag) {
-    const all = this.getTemperatureRecords();
-    all[nodeId] = { temp, tag, ts: Date.now() };
-    return this._write(TEMPERATURE_KEY, JSON.stringify(all));
-  },
-  getTemperatureRecord(nodeId) { return this.getTemperatureRecords()[nodeId]; },
+  ...recordStore(TEMPERATURE_KEY, "Temperature", ["temp", "tag"]),
   getCurrentTemperature() {
     const all = this.getTemperatureRecords();
     const vals = Object.values(all);
@@ -864,15 +817,7 @@ const Saves = {
 
   /* ============ v0.8.0 占卜抽牌 ============ */
   // 记录每次占卜的三张牌：{ nodeId: { past, present, future, combo, ts } }
-  getTarotRecords() {
-    return this._read(TAROT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTarotRecord(nodeId, past, present, future, combo) {
-    const all = this.getTarotRecords();
-    all[nodeId] = { past, present, future, combo, ts: Date.now() };
-    return this._write(TAROT_KEY, JSON.stringify(all));
-  },
-  getTarotRecord(nodeId) { return this.getTarotRecords()[nodeId]; },
+  ...recordStore(TAROT_KEY, "Tarot", ["past", "present", "future", "combo"]),
   getLastTarotCombo() {
     const all = this.getTarotRecords();
     const vals = Object.values(all);
@@ -882,27 +827,11 @@ const Saves = {
 
   /* ============ v0.8.0 梦境编织 ============ */
   // 记录每次拼接的顺序：{ nodeId: { sequence: [], meaning, tag, ts } }
-  getDreamweaveRecords() {
-    return this._read(DREAMWEAVE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDreamweaveRecord(nodeId, sequence, meaning, tag) {
-    const all = this.getDreamweaveRecords();
-    all[nodeId] = { sequence, meaning, tag, ts: Date.now() };
-    return this._write(DREAMWEAVE_KEY, JSON.stringify(all));
-  },
-  getDreamweaveRecord(nodeId) { return this.getDreamweaveRecords()[nodeId]; },
+  ...recordStore(DREAMWEAVE_KEY, "Dreamweave", ["sequence", "meaning", "tag"]),
 
   /* ============ v0.8.0 笔迹选择 ============ */
   // 记录每次写信的笔迹：{ nodeId: { style, label, ts } }
-  getHandwritingRecords() {
-    return this._read(HANDWRITING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveHandwritingRecord(nodeId, style, label) {
-    const all = this.getHandwritingRecords();
-    all[nodeId] = { style, label, ts: Date.now() };
-    return this._write(HANDWRITING_KEY, JSON.stringify(all));
-  },
-  getHandwritingRecord(nodeId) { return this.getHandwritingRecords()[nodeId]; },
+  ...recordStore(HANDWRITING_KEY, "Handwriting", ["style", "label"]),
   getLastHandwriting() {
     const all = this.getHandwritingRecords();
     const vals = Object.values(all);
@@ -913,15 +842,7 @@ const Saves = {
   /* ============ v0.8.0 情绪光谱 ============ */
   // 记录每次选择的情绪点：{ nodeId: { x, y, tag, ts } }
   // x: -100(不悦)~+100(愉悦)，y: -100(平静)~+100(激活)
-  getSpectrumRecords() {
-    return this._read(SPECTRUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSpectrumRecord(nodeId, x, y, tag) {
-    const all = this.getSpectrumRecords();
-    all[nodeId] = { x, y, tag, ts: Date.now() };
-    return this._write(SPECTRUM_KEY, JSON.stringify(all));
-  },
-  getSpectrumRecord(nodeId) { return this.getSpectrumRecords()[nodeId]; },
+  ...recordStore(SPECTRUM_KEY, "Spectrum", ["x", "y", "tag"]),
   getLastSpectrum() {
     const all = this.getSpectrumRecords();
     const vals = Object.values(all);
@@ -931,51 +852,19 @@ const Saves = {
 
   /* ============ v0.9.0 星座连线 ============ */
   // 记录每次连星的顺序：{ nodeId: { sequence: [], tag, ts } }
-  getConstellationRecords() {
-    return this._read(CONSTELLATION_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveConstellationRecord(nodeId, sequence, tag) {
-    const all = this.getConstellationRecords();
-    all[nodeId] = { sequence, tag, ts: Date.now() };
-    return this._write(CONSTELLATION_KEY, JSON.stringify(all));
-  },
-  getConstellationRecord(nodeId) { return this.getConstellationRecords()[nodeId]; },
+  ...recordStore(CONSTELLATION_KEY, "Constellation", ["sequence", "tag"]),
 
   /* ============ v0.9.0 心声听诊 ============ */
   // 记录每次心跳同步：{ nodeId: { hits, total, accuracy, tag, ts } }
-  getStethoscopeRecords() {
-    return this._read(STETHOSCOPE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveStethoscopeRecord(nodeId, hits, total, accuracy, tag) {
-    const all = this.getStethoscopeRecords();
-    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    return this._write(STETHOSCOPE_KEY, JSON.stringify(all));
-  },
-  getStethoscopeRecord(nodeId) { return this.getStethoscopeRecords()[nodeId]; },
+  ...recordStore(STETHOSCOPE_KEY, "Stethoscope", ["hits", "total", "accuracy", "tag"]),
 
   /* ============ v0.9.0 信物拼图 ============ */
   // 记录每次拼图顺序：{ nodeId: { sequence: [], tag, ts } }
-  getPuzzleRecords() {
-    return this._read(PUZZLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePuzzleRecord(nodeId, sequence, tag) {
-    const all = this.getPuzzleRecords();
-    all[nodeId] = { sequence, tag, ts: Date.now() };
-    return this._write(PUZZLE_KEY, JSON.stringify(all));
-  },
-  getPuzzleRecord(nodeId) { return this.getPuzzleRecords()[nodeId]; },
+  ...recordStore(PUZZLE_KEY, "Puzzle", ["sequence", "tag"]),
 
   /* ============ v0.9.0 气味调香 ============ */
   // 记录每次调香配方：{ nodeId: { notes: { 前, 中, 后 }, tag, ts } }
-  getPerfumeRecords() {
-    return this._read(PERFUME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePerfumeRecord(nodeId, notes, tag) {
-    const all = this.getPerfumeRecords();
-    all[nodeId] = { notes, tag, ts: Date.now() };
-    return this._write(PERFUME_KEY, JSON.stringify(all));
-  },
-  getPerfumeRecord(nodeId) { return this.getPerfumeRecords()[nodeId]; },
+  ...recordStore(PERFUME_KEY, "Perfume", ["notes", "tag"]),
   getLastPerfume() {
     const all = this.getPerfumeRecords();
     const vals = Object.values(all);
@@ -985,28 +874,12 @@ const Saves = {
 
   /* ============ v1.0.0 呼吸引导 ============ */
   // 记录每次呼吸：{ nodeId: { cycles, avgSync, tag, ts } }
-  getBreathRecords() {
-    return this._read(BREATH_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveBreathRecord(nodeId, cycles, avgSync, tag) {
-    const all = this.getBreathRecords();
-    all[nodeId] = { cycles, avgSync, tag, ts: Date.now() };
-    return this._write(BREATH_KEY, JSON.stringify(all));
-  },
-  getBreathRecord(nodeId) { return this.getBreathRecords()[nodeId]; },
+  ...recordStore(BREATH_KEY, "Breath", ["cycles", "avgSync", "tag"]),
 
   /* ============ v1.0.0 时光胶囊 ============ */
   // 记录每次写的胶囊：{ nodeId: { message, deliverAt, delivered, tag, ts } }
   // deliverAt 是未来某节点 id；delivered 标记是否已投递
-  getTimecapsuleRecords() {
-    return this._read(TIMECAPSULE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTimecapsuleRecord(nodeId, message, deliverAt, tag) {
-    const all = this.getTimecapsuleRecords();
-    all[nodeId] = { message, deliverAt, delivered: false, tag, ts: Date.now() };
-    return this._write(TIMECAPSULE_KEY, JSON.stringify(all));
-  },
-  getTimecapsuleRecord(nodeId) { return this.getTimecapsuleRecords()[nodeId]; },
+  ...recordStore(TIMECAPSULE_KEY, "Timecapsule", ["message", "deliverAt", ["delivered", false], "tag"]),
   // 查找所有投递到 targetNodeId 的胶囊
   getTimecapsulesForNode(targetNodeId) {
     const all = this.getTimecapsuleRecords();
@@ -1024,843 +897,283 @@ const Saves = {
 
   /* ============ v1.0.0 信纸折痕 ============ */
   // 记录每次折纸顺序：{ nodeId: { sequence: [], tag, ts } }
-  getFoldRecords() {
-    return this._read(FOLD_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveFoldRecord(nodeId, sequence, tag) {
-    const all = this.getFoldRecords();
-    all[nodeId] = { sequence, tag, ts: Date.now() };
-    return this._write(FOLD_KEY, JSON.stringify(all));
-  },
-  getFoldRecord(nodeId) { return this.getFoldRecords()[nodeId]; },
+  ...recordStore(FOLD_KEY, "Fold", ["sequence", "tag"]),
 
   /* ============ v1.0.0 倒影对齐 ============ */
   // 记录每次对齐结果：{ nodeId: { offsetX, accuracy, tag, ts } }
-  getReflectionRecords() {
-    return this._read(REFLECTION_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveReflectionRecord(nodeId, offsetX, accuracy, tag) {
-    const all = this.getReflectionRecords();
-    all[nodeId] = { offsetX, accuracy, tag, ts: Date.now() };
-    return this._write(REFLECTION_KEY, JSON.stringify(all));
-  },
-  getReflectionRecord(nodeId) { return this.getReflectionRecords()[nodeId]; },
+  ...recordStore(REFLECTION_KEY, "Reflection", ["offsetX", "accuracy", "tag"]),
 
   /* ============ v1.1.0 光影描绘 ============ */
   // 记录每次描绘：{ nodeId: { litTargets: [...], coverage, tag, ts } }
-  getLightdrawRecords() {
-    return this._read(LIGHTDRAW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveLightdrawRecord(nodeId, litTargets, coverage, tag) {
-    const all = this.getLightdrawRecords();
-    all[nodeId] = { litTargets, coverage, tag, ts: Date.now() };
-    return this._write(LIGHTDRAW_KEY, JSON.stringify(all));
-  },
-  getLightdrawRecord(nodeId) { return this.getLightdrawRecords()[nodeId]; },
+  ...recordStore(LIGHTDRAW_KEY, "Lightdraw", ["litTargets", "coverage", "tag"]),
 
   /* ============ v1.1.0 声音模仿 ============ */
   // 记录每次模仿：{ nodeId: { pitch, tempo, diff, tag, ts } }
-  getMimicRecords() {
-    return this._read(MIMIC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveMimicRecord(nodeId, pitch, tempo, diff, tag) {
-    const all = this.getMimicRecords();
-    all[nodeId] = { pitch, tempo, diff, tag, ts: Date.now() };
-    return this._write(MIMIC_KEY, JSON.stringify(all));
-  },
-  getMimicRecord(nodeId) { return this.getMimicRecords()[nodeId]; },
+  ...recordStore(MIMIC_KEY, "Mimic", ["pitch", "tempo", "diff", "tag"]),
 
   /* ============ v1.1.0 季节切换 ============ */
   // 记录每次季节选择：{ nodeId: { chosenSeason, isTarget, tag, ts } }
-  getSeasonRecords() {
-    return this._read(SEASON_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSeasonRecord(nodeId, chosenSeason, isTarget, tag) {
-    const all = this.getSeasonRecords();
-    all[nodeId] = { chosenSeason, isTarget, tag, ts: Date.now() };
-    return this._write(SEASON_KEY, JSON.stringify(all));
-  },
-  getSeasonRecord(nodeId) { return this.getSeasonRecords()[nodeId]; },
+  ...recordStore(SEASON_KEY, "Season", ["chosenSeason", "isTarget", "tag"]),
 
   /* ============ v1.1.0 脉搏同步 ============ */
   // 记录每次脉搏同步：{ nodeId: { hits, total, accuracy, tag, ts } }
-  getPulseRecords() {
-    return this._read(PULSE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePulseRecord(nodeId, hits, total, accuracy, tag) {
-    const all = this.getPulseRecords();
-    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    return this._write(PULSE_KEY, JSON.stringify(all));
-  },
-  getPulseRecord(nodeId) { return this.getPulseRecords()[nodeId]; },
+  ...recordStore(PULSE_KEY, "Pulse", ["hits", "total", "accuracy", "tag"]),
 
   /* ============ v1.2.0 茶席品茗 ============ */
   // 记录每次泡茶：{ nodeId: { temp, amount, time, diff, tag, ts } }
-  getTeaRecords() {
-    return this._read(TEA_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTeaRecord(nodeId, temp, amount, time, diff, tag) {
-    const all = this.getTeaRecords();
-    all[nodeId] = { temp, amount, time, diff, tag, ts: Date.now() };
-    return this._write(TEA_KEY, JSON.stringify(all));
-  },
-  getTeaRecord(nodeId) { return this.getTeaRecords()[nodeId]; },
+  ...recordStore(TEA_KEY, "Tea", ["temp", "amount", "time", "diff", "tag"]),
 
   /* ============ v1.2.0 星象观测 ============ */
   // 记录每次星象对齐：{ nodeId: { angle, diff, tag, ts } }
-  getAstronomyRecords() {
-    return this._read(ASTRONOMY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveAstronomyRecord(nodeId, angle, diff, tag) {
-    const all = this.getAstronomyRecords();
-    all[nodeId] = { angle, diff, tag, ts: Date.now() };
-    return this._write(ASTRONOMY_KEY, JSON.stringify(all));
-  },
-  getAstronomyRecord(nodeId) { return this.getAstronomyRecords()[nodeId]; },
+  ...recordStore(ASTRONOMY_KEY, "Astronomy", ["angle", "diff", "tag"]),
 
   /* ============ v1.2.0 颜料调配 ============ */
   // 记录每次调色：{ nodeId: { r, g, b, diff, tag, ts } }
-  getPaletteRecords() {
-    return this._read(PALETTE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePaletteRecord(nodeId, r, g, b, diff, tag) {
-    const all = this.getPaletteRecords();
-    all[nodeId] = { r, g, b, diff, tag, ts: Date.now() };
-    return this._write(PALETTE_KEY, JSON.stringify(all));
-  },
-  getPaletteRecord(nodeId) { return this.getPaletteRecords()[nodeId]; },
+  ...recordStore(PALETTE_KEY, "Palette", ["r", "g", "b", "diff", "tag"]),
 
   /* ============ v1.2.0 琴键演奏 ============ */
   // 记录每次演奏：{ nodeId: { sequence, correct, total, accuracy, tag, ts } }
-  getPianoRecords() {
-    return this._read(PIANO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePianoRecord(nodeId, sequence, correct, total, accuracy, tag) {
-    const all = this.getPianoRecords();
-    all[nodeId] = { sequence, correct, total, accuracy, tag, ts: Date.now() };
-    return this._write(PIANO_KEY, JSON.stringify(all));
-  },
-  getPianoRecord(nodeId) { return this.getPianoRecords()[nodeId]; },
+  ...recordStore(PIANO_KEY, "Piano", ["sequence", "correct", "total", "accuracy", "tag"]),
 
   /* ============ v1.3.0 占星骰子 ============ */
   // 记录每次掷骰：{ nodeId: { dice:[a,b,c], sum, tag, ts } }
-  getDiceRecords() {
-    return this._read(DICE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDiceRecord(nodeId, dice, sum, tag) {
-    const all = this.getDiceRecords();
-    all[nodeId] = { dice, sum, tag, ts: Date.now() };
-    return this._write(DICE_KEY, JSON.stringify(all));
-  },
-  getDiceRecord(nodeId) { return this.getDiceRecords()[nodeId]; },
+  ...recordStore(DICE_KEY, "Dice", ["dice", "sum", "tag"]),
 
   /* ============ v1.3.0 风向感知 ============ */
   // 记录每次航行：{ nodeId: { progress, attempts, tag, ts } }
-  getWindRecords() {
-    return this._read(WIND_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveWindRecord(nodeId, progress, attempts, tag) {
-    const all = this.getWindRecords();
-    all[nodeId] = { progress, attempts, tag, ts: Date.now() };
-    return this._write(WIND_KEY, JSON.stringify(all));
-  },
-  getWindRecord(nodeId) { return this.getWindRecords()[nodeId]; },
+  ...recordStore(WIND_KEY, "Wind", ["progress", "attempts", "tag"]),
 
   /* ============ v1.3.0 梦境解码 ============ */
   // 记录每次解码：{ nodeId: { answer, correct, tag, ts } }
-  getDecodeRecords() {
-    return this._read(DECODE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDecodeRecord(nodeId, answer, correct, tag) {
-    const all = this.getDecodeRecords();
-    all[nodeId] = { answer, correct, tag, ts: Date.now() };
-    return this._write(DECODE_KEY, JSON.stringify(all));
-  },
-  getDecodeRecord(nodeId) { return this.getDecodeRecords()[nodeId]; },
+  ...recordStore(DECODE_KEY, "Decode", ["answer", "correct", "tag"]),
 
   /* ============ v1.3.0 雨滴节奏 ============ */
   // 记录每次雨滴：{ nodeId: { hits, total, accuracy, tag, ts } }
-  getRainRecords() {
-    return this._read(RAIN_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveRainRecord(nodeId, hits, total, accuracy, tag) {
-    const all = this.getRainRecords();
-    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    return this._write(RAIN_KEY, JSON.stringify(all));
-  },
-  getRainRecord(nodeId) { return this.getRainRecords()[nodeId]; },
+  ...recordStore(RAIN_KEY, "Rain", ["hits", "total", "accuracy", "tag"]),
 
   /* ============ v1.4.0 拓印 ============ */
   // 记录每次拓印：{ nodeId: { coverage, tag, ts } }
-  getRubbingRecords() {
-    return this._read(RUBBING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveRubbingRecord(nodeId, coverage, tag) {
-    const all = this.getRubbingRecords();
-    all[nodeId] = { coverage, tag, ts: Date.now() };
-    return this._write(RUBBING_KEY, JSON.stringify(all));
-  },
-  getRubbingRecord(nodeId) { return this.getRubbingRecords()[nodeId]; },
+  ...recordStore(RUBBING_KEY, "Rubbing", ["coverage", "tag"]),
 
   /* ============ v1.4.0 集字 ============ */
   // 记录每次集字：{ nodeId: { collected, total, accuracy, tag, ts } }
-  getCollectRecords() {
-    return this._read(COLLECT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveCollectRecord(nodeId, collected, total, accuracy, tag) {
-    const all = this.getCollectRecords();
-    all[nodeId] = { collected, total, accuracy, tag, ts: Date.now() };
-    return this._write(COLLECT_KEY, JSON.stringify(all));
-  },
-  getCollectRecord(nodeId) { return this.getCollectRecords()[nodeId]; },
+  ...recordStore(COLLECT_KEY, "Collect", ["collected", "total", "accuracy", "tag"]),
 
   /* ============ v1.4.0 光影对焦 ============ */
   // 记录每次对焦：{ nodeId: { focus, diff, tag, ts } }
-  getFocusRecords() {
-    return this._read(FOCUS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveFocusRecord(nodeId, focus, diff, tag) {
-    const all = this.getFocusRecords();
-    all[nodeId] = { focus, diff, tag, ts: Date.now() };
-    return this._write(FOCUS_KEY, JSON.stringify(all));
-  },
-  getFocusRecord(nodeId) { return this.getFocusRecords()[nodeId]; },
+  ...recordStore(FOCUS_KEY, "Focus", ["focus", "diff", "tag"]),
 
   /* ============ v1.4.0 气味记忆 ============ */
   // 记录每次气味记忆：{ nodeId: { correct, total, tag, ts } }
-  getScentmemRecords() {
-    return this._read(SCENTMEM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveScentmemRecord(nodeId, correct, total, tag) {
-    const all = this.getScentmemRecords();
-    all[nodeId] = { correct, total, tag, ts: Date.now() };
-    return this._write(SCENTMEM_KEY, JSON.stringify(all));
-  },
-  getScentmemRecord(nodeId) { return this.getScentmemRecords()[nodeId]; },
+  ...recordStore(SCENTMEM_KEY, "Scentmem", ["correct", "total", "tag"]),
 
   /* ============ v1.5.0 茶渍占卜 ============ */
   // { nodeId: { shape, score, tag, ts } }
-  getTealeafRecords() {
-    return this._read(TEALEAF_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTealeafRecord(nodeId, shape, score, tag) {
-    const all = this.getTealeafRecords();
-    all[nodeId] = { shape, score, tag, ts: Date.now() };
-    return this._write(TEALEAF_KEY, JSON.stringify(all));
-  },
-  getTealeafRecord(nodeId) { return this.getTealeafRecords()[nodeId]; },
+  ...recordStore(TEALEAF_KEY, "Tealeaf", ["shape", "score", "tag"]),
 
   /* ============ v1.5.0 影子对齐 ============ */
   // { nodeId: { overlap, tag, ts } }
-  getShadowRecords() {
-    return this._read(SHADOW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveShadowRecord(nodeId, overlap, tag) {
-    const all = this.getShadowRecords();
-    all[nodeId] = { overlap, tag, ts: Date.now() };
-    return this._write(SHADOW_KEY, JSON.stringify(all));
-  },
-  getShadowRecord(nodeId) { return this.getShadowRecords()[nodeId]; },
+  ...recordStore(SHADOW_KEY, "Shadow", ["overlap", "tag"]),
 
   /* ============ v1.5.0 烛火守护 ============ */
   // { nodeId: { survived, total, ratio, tag, ts } }
-  getCandleRecords() {
-    return this._read(CANDLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveCandleRecord(nodeId, survived, total, ratio, tag) {
-    const all = this.getCandleRecords();
-    all[nodeId] = { survived, total, ratio, tag, ts: Date.now() };
-    return this._write(CANDLE_KEY, JSON.stringify(all));
-  },
-  getCandleRecord(nodeId) { return this.getCandleRecords()[nodeId]; },
+  ...recordStore(CANDLE_KEY, "Candle", ["survived", "total", "ratio", "tag"]),
 
   /* ============ v1.5.0 电话拨号 ============ */
   // { nodeId: { dialed, target, correct, tag, ts } }
-  getDialRecords() {
-    return this._read(DIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDialRecord(nodeId, dialed, target, correct, tag) {
-    const all = this.getDialRecords();
-    all[nodeId] = { dialed, target, correct, tag, ts: Date.now() };
-    return this._write(DIAL_KEY, JSON.stringify(all));
-  },
-  getDialRecord(nodeId) { return this.getDialRecords()[nodeId]; },
+  ...recordStore(DIAL_KEY, "Dial", ["dialed", "target", "correct", "tag"]),
 
   /* ============ v1.6.0 雾窗描绘 ============ */
   // { nodeId: { coverage, shape, tag, ts } }
-  getFoggyRecords() {
-    return this._read(FOGGY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveFoggyRecord(nodeId, coverage, shape, tag) {
-    const all = this.getFoggyRecords();
-    all[nodeId] = { coverage, shape, tag, ts: Date.now() };
-    return this._write(FOGGY_KEY, JSON.stringify(all));
-  },
-  getFoggyRecord(nodeId) { return this.getFoggyRecords()[nodeId]; },
+  ...recordStore(FOGGY_KEY, "Foggy", ["coverage", "shape", "tag"]),
 
   /* ============ v1.6.0 糖块拼图 ============ */
   // { nodeId: { placed, total, tag, ts } }
-  getSugarRecords() {
-    return this._read(SUGAR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSugarRecord(nodeId, placed, total, tag) {
-    const all = this.getSugarRecords();
-    all[nodeId] = { placed, total, tag, ts: Date.now() };
-    return this._write(SUGAR_KEY, JSON.stringify(all));
-  },
-  getSugarRecord(nodeId) { return this.getSugarRecords()[nodeId]; },
+  ...recordStore(SUGAR_KEY, "Sugar", ["placed", "total", "tag"]),
 
   /* ============ v1.6.0 钟调共振 ============ */
   // { nodeId: { diff, tag, ts } }
-  getChimeRecords() {
-    return this._read(CHIME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveChimeRecord(nodeId, diff, tag) {
-    const all = this.getChimeRecords();
-    all[nodeId] = { diff, tag, ts: Date.now() };
-    return this._write(CHIME_KEY, JSON.stringify(all));
-  },
-  getChimeRecord(nodeId) { return this.getChimeRecords()[nodeId]; },
+  ...recordStore(CHIME_KEY, "Chime", ["diff", "tag"]),
 
   /* ============ v1.6.0 沙漏计时 ============ */
   // { nodeId: { error, tag, ts } }
-  getHourglassRecords() {
-    return this._read(HOURGLASS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveHourglassRecord(nodeId, error, tag) {
-    const all = this.getHourglassRecords();
-    all[nodeId] = { error, tag, ts: Date.now() };
-    return this._write(HOURGLASS_KEY, JSON.stringify(all));
-  },
-  getHourglassRecord(nodeId) { return this.getHourglassRecords()[nodeId]; },
+  ...recordStore(HOURGLASS_KEY, "Hourglass", ["error", "tag"]),
 
   /* ============ v1.7.0 风筝引线 ============ */
   // { nodeId: { match, tag, ts } }
-  getKiteRecords() {
-    return this._read(KITE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveKiteRecord(nodeId, match, tag) {
-    const all = this.getKiteRecords();
-    all[nodeId] = { match, tag, ts: Date.now() };
-    return this._write(KITE_KEY, JSON.stringify(all));
-  },
-  getKiteRecord(nodeId) { return this.getKiteRecords()[nodeId]; },
+  ...recordStore(KITE_KEY, "Kite", ["match", "tag"]),
 
   /* ============ v1.7.0 密码锁 ============ */
   // { nodeId: { code, target, correct, tag, ts } }
-  getLockRecords() {
-    return this._read(LOCK_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveLockRecord(nodeId, code, target, correct, tag) {
-    const all = this.getLockRecords();
-    all[nodeId] = { code, target, correct, tag, ts: Date.now() };
-    return this._write(LOCK_KEY, JSON.stringify(all));
-  },
-  getLockRecord(nodeId) { return this.getLockRecords()[nodeId]; },
+  ...recordStore(LOCK_KEY, "Lock", ["code", "target", "correct", "tag"]),
 
   /* ============ v1.7.0 折纸造型 ============ */
   // { nodeId: { steps, tag, ts } }
-  getOrigamiRecords() {
-    return this._read(ORIGAMI_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveOrigamiRecord(nodeId, steps, tag) {
-    const all = this.getOrigamiRecords();
-    all[nodeId] = { steps, tag, ts: Date.now() };
-    return this._write(ORIGAMI_KEY, JSON.stringify(all));
-  },
-  getOrigamiRecord(nodeId) { return this.getOrigamiRecords()[nodeId]; },
+  ...recordStore(ORIGAMI_KEY, "Origami", ["steps", "tag"]),
 
   /* ============ v1.7.0 星轨追踪 ============ */
   // { nodeId: { error, tag, ts } }
-  getOrbitRecords() {
-    return this._read(ORBIT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveOrbitRecord(nodeId, error, tag) {
-    const all = this.getOrbitRecords();
-    all[nodeId] = { error, tag, ts: Date.now() };
-    return this._write(ORBIT_KEY, JSON.stringify(all));
-  },
-  getOrbitRecord(nodeId) { return this.getOrbitRecords()[nodeId]; },
+  ...recordStore(ORBIT_KEY, "Orbit", ["error", "tag"]),
 
   /* ============ v1.8.0 萤火引路 ============ */
   // { nodeId: { gathered, total, deviation, tag, ts } }
-  getFireflyRecords() {
-    return this._read(FIREFLY_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveFireflyRecord(nodeId, gathered, total, deviation, tag) {
-    const all = this.getFireflyRecords();
-    all[nodeId] = { gathered, total, deviation, tag, ts: Date.now() };
-    return this._write(FIREFLY_KEY, JSON.stringify(all));
-  },
-  getFireflyRecord(nodeId) { return this.getFireflyRecords()[nodeId]; },
+  ...recordStore(FIREFLY_KEY, "Firefly", ["gathered", "total", "deviation", "tag"]),
 
   /* ============ v1.8.0 风铃调音 ============ */
   // { nodeId: { matched, total, deviation, tag, ts } }
-  getWindchimeRecords() {
-    return this._read(WINDCHIME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveWindchimeRecord(nodeId, matched, total, deviation, tag) {
-    const all = this.getWindchimeRecords();
-    all[nodeId] = { matched, total, deviation, tag, ts: Date.now() };
-    return this._write(WINDCHIME_KEY, JSON.stringify(all));
-  },
-  getWindchimeRecord(nodeId) { return this.getWindchimeRecords()[nodeId]; },
+  ...recordStore(WINDCHIME_KEY, "Windchime", ["matched", "total", "deviation", "tag"]),
 
   /* ============ v1.8.0 瓶中信 ============ */
   // { nodeId: { power, reached, tag, ts } }
-  getBottleRecords() {
-    return this._read(BOTTLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveBottleRecord(nodeId, power, reached, tag) {
-    const all = this.getBottleRecords();
-    all[nodeId] = { power, reached, tag, ts: Date.now() };
-    return this._write(BOTTLE_KEY, JSON.stringify(all));
-  },
-  getBottleRecord(nodeId) { return this.getBottleRecords()[nodeId]; },
+  ...recordStore(BOTTLE_KEY, "Bottle", ["power", "reached", "tag"]),
 
   /* ============ v1.8.0 回声定位 ============ */
   // { nodeId: { estimate, actual, error, tag, ts } }
-  getEcholocRecords() {
-    return this._read(ECHOLOC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveEcholocRecord(nodeId, estimate, actual, error, tag) {
-    const all = this.getEcholocRecords();
-    all[nodeId] = { estimate, actual, error, tag, ts: Date.now() };
-    return this._write(ECHOLOC_KEY, JSON.stringify(all));
-  },
-  getEcholocRecord(nodeId) { return this.getEcholocRecords()[nodeId]; },
+  ...recordStore(ECHOLOC_KEY, "Echoloc", ["estimate", "actual", "error", "tag"]),
 
   /* ============ v1.9.0 罗盘导航 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
-  getCompassRecords() {
-    return this._read(COMPASS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveCompassRecord(nodeId, angle, target, error, tag) {
-    const all = this.getCompassRecords();
-    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    return this._write(COMPASS_KEY, JSON.stringify(all));
-  },
-  getCompassRecord(nodeId) { return this.getCompassRecords()[nodeId]; },
+  ...recordStore(COMPASS_KEY, "Compass", ["angle", "target", "error", "tag"]),
 
   /* ============ v1.9.0 密码电报 ============ */
   // { nodeId: { code, choice, correct, tag, ts } }
-  getTelegraphRecords() {
-    return this._read(TELEGRAPH_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTelegraphRecord(nodeId, code, choice, correct, tag) {
-    const all = this.getTelegraphRecords();
-    all[nodeId] = { code, choice, correct, tag, ts: Date.now() };
-    return this._write(TELEGRAPH_KEY, JSON.stringify(all));
-  },
-  getTelegraphRecord(nodeId) { return this.getTelegraphRecords()[nodeId]; },
+  ...recordStore(TELEGRAPH_KEY, "Telegraph", ["code", "choice", "correct", "tag"]),
 
   /* ============ v1.9.0 天平称重 ============ */
   // { nodeId: { left, right, diff, tag, ts } }
-  getBalanceRecords() {
-    return this._read(BALANCE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveBalanceRecord(nodeId, left, right, diff, tag) {
-    const all = this.getBalanceRecords();
-    all[nodeId] = { left, right, diff, tag, ts: Date.now() };
-    return this._write(BALANCE_KEY, JSON.stringify(all));
-  },
-  getBalanceRecord(nodeId) { return this.getBalanceRecords()[nodeId]; },
+  ...recordStore(BALANCE_KEY, "Balance", ["left", "right", "diff", "tag"]),
 
   /* ============ v1.9.0 钟摆节奏 ============ */
   // { nodeId: { clickAt, targetAt, error, tag, ts } }
-  getPendulumRecords() {
-    return this._read(PENDULUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  savePendulumRecord(nodeId, clickAt, targetAt, error, tag) {
-    const all = this.getPendulumRecords();
-    all[nodeId] = { clickAt, targetAt, error, tag, ts: Date.now() };
-    return this._write(PENDULUM_KEY, JSON.stringify(all));
-  },
-  getPendulumRecord(nodeId) { return this.getPendulumRecords()[nodeId]; },
+  ...recordStore(PENDULUM_KEY, "Pendulum", ["clickAt", "targetAt", "error", "tag"]),
 
   /* ============ v2.0.0 节拍器同步 ============ */
   // { nodeId: { hits, total, accuracy, tag, ts } }
-  getMetronomeRecords() {
-    return this._read(METRONOME_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveMetronomeRecord(nodeId, hits, total, accuracy, tag) {
-    const all = this.getMetronomeRecords();
-    all[nodeId] = { hits, total, accuracy, tag, ts: Date.now() };
-    return this._write(METRONOME_KEY, JSON.stringify(all));
-  },
-  getMetronomeRecord(nodeId) { return this.getMetronomeRecords()[nodeId]; },
+  ...recordStore(METRONOME_KEY, "Metronome", ["hits", "total", "accuracy", "tag"]),
 
   /* ============ v2.0.0 星图连线 ============ */
   // { nodeId: { sequence, matched, total, tag, ts } }
-  getStarchartRecords() {
-    return this._read(STARCHART_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveStarchartRecord(nodeId, sequence, matched, total, tag) {
-    const all = this.getStarchartRecords();
-    all[nodeId] = { sequence, matched, total, tag, ts: Date.now() };
-    return this._write(STARCHART_KEY, JSON.stringify(all));
-  },
-  getStarchartRecord(nodeId) { return this.getStarchartRecords()[nodeId]; },
+  ...recordStore(STARCHART_KEY, "Starchart", ["sequence", "matched", "total", "tag"]),
 
   /* ============ v2.0.0 透镜聚焦 ============ */
   // { nodeId: { focus, target, error, tag, ts } }
-  getLensRecords() {
-    return this._read(LENS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveLensRecord(nodeId, focus, target, error, tag) {
-    const all = this.getLensRecords();
-    all[nodeId] = { focus, target, error, tag, ts: Date.now() };
-    return this._write(LENS_KEY, JSON.stringify(all));
-  },
-  getLensRecord(nodeId) { return this.getLensRecords()[nodeId]; },
+  ...recordStore(LENS_KEY, "Lens", ["focus", "target", "error", "tag"]),
 
   /* ============ v2.0.0 弦音调音 ============ */
   // { nodeId: { stringIdx, tension, diff, tag, ts } }
-  getTuningRecords() {
-    return this._read(TUNING_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTuningRecord(nodeId, stringIdx, tension, diff, tag) {
-    const all = this.getTuningRecords();
-    all[nodeId] = { stringIdx, tension, diff, tag, ts: Date.now() };
-    return this._write(TUNING_KEY, JSON.stringify(all));
-  },
-  getTuningRecord(nodeId) { return this.getTuningRecords()[nodeId]; },
+  ...recordStore(TUNING_KEY, "Tuning", ["stringIdx", "tension", "diff", "tag"]),
 
   /* ============ v2.1.0 日蚀对位 ============ */
   // { nodeId: { moon, target, error, tag, ts } }
-  getEclipseRecords() {
-    return this._read(ECLIPSE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveEclipseRecord(nodeId, moon, target, error, tag) {
-    const all = this.getEclipseRecords();
-    all[nodeId] = { moon, target, error, tag, ts: Date.now() };
-    return this._write(ECLIPSE_KEY, JSON.stringify(all));
-  },
-  getEclipseRecord(nodeId) { return this.getEclipseRecords()[nodeId]; },
+  ...recordStore(ECLIPSE_KEY, "Eclipse", ["moon", "target", "error", "tag"]),
 
   /* ============ v2.1.0 印章对齐 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
-  getStampRecords() {
-    return this._read(STAMP_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveStampRecord(nodeId, angle, target, error, tag) {
-    const all = this.getStampRecords();
-    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    return this._write(STAMP_KEY, JSON.stringify(all));
-  },
-  getStampRecord(nodeId) { return this.getStampRecords()[nodeId]; },
+  ...recordStore(STAMP_KEY, "Stamp", ["angle", "target", "error", "tag"]),
 
   /* ============ v2.1.0 星盘仪 ============ */
   // { nodeId: { angles, targets, avgError, tag, ts } }
-  getAstrolabeRecords() {
-    return this._read(ASTROLABE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveAstrolabeRecord(nodeId, angles, targets, avgError, tag) {
-    const all = this.getAstrolabeRecords();
-    all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
-    return this._write(ASTROLABE_KEY, JSON.stringify(all));
-  },
-  getAstrolabeRecord(nodeId) { return this.getAstrolabeRecords()[nodeId]; },
+  ...recordStore(ASTROLABE_KEY, "Astrolabe", ["angles", "targets", "avgError", "tag"]),
 
   /* ============ v2.1.0 沙画凝形 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
-  getSandpaintRecords() {
-    return this._read(SANDPAINT_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSandpaintRecord(nodeId, grid, matched, total, tag) {
-    const all = this.getSandpaintRecords();
-    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    return this._write(SANDPAINT_KEY, JSON.stringify(all));
-  },
-  getSandpaintRecord(nodeId) { return this.getSandpaintRecords()[nodeId]; },
+  ...recordStore(SANDPAINT_KEY, "Sandpaint", ["grid", "matched", "total", "tag"]),
 
   /* ============ v2.2.0 万花筒 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
-  getKaleidoRecords() {
-    return this._read(KALEIDO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveKaleidoRecord(nodeId, angle, target, error, tag) {
-    const all = this.getKaleidoRecords();
-    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    return this._write(KALEIDO_KEY, JSON.stringify(all));
-  },
-  getKaleidoRecord(nodeId) { return this.getKaleidoRecords()[nodeId]; },
+  ...recordStore(KALEIDO_KEY, "Kaleido", ["angle", "target", "error", "tag"]),
 
   /* ============ v2.2.0 算盘珠 ============ */
   // { nodeId: { counts, targets, diff, tag, ts } }
-  getAbacusRecords() {
-    return this._read(ABACUS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveAbacusRecord(nodeId, counts, targets, diff, tag) {
-    const all = this.getAbacusRecords();
-    all[nodeId] = { counts, targets, diff, tag, ts: Date.now() };
-    return this._write(ABACUS_KEY, JSON.stringify(all));
-  },
-  getAbacusRecord(nodeId) { return this.getAbacusRecords()[nodeId]; },
+  ...recordStore(ABACUS_KEY, "Abacus", ["counts", "targets", "diff", "tag"]),
 
   /* ============ v2.2.0 齿轮咬合 ============ */
   // { nodeId: { angles, targets, avgError, tag, ts } }
-  getGearRecords() {
-    return this._read(GEAR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveGearRecord(nodeId, angles, targets, avgError, tag) {
-    const all = this.getGearRecords();
-    all[nodeId] = { angles, targets, avgError, tag, ts: Date.now() };
-    return this._write(GEAR_KEY, JSON.stringify(all));
-  },
-  getGearRecord(nodeId) { return this.getGearRecords()[nodeId]; },
+  ...recordStore(GEAR_KEY, "Gear", ["angles", "targets", "avgError", "tag"]),
 
   /* ============ v2.2.0 等高线 ============ */
   // { nodeId: { points, matched, total, tag, ts } }
-  getTopoRecords() {
-    return this._read(TOPO_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTopoRecord(nodeId, points, matched, total, tag) {
-    const all = this.getTopoRecords();
-    all[nodeId] = { points, matched, total, tag, ts: Date.now() };
-    return this._write(TOPO_KEY, JSON.stringify(all));
-  },
-  getTopoRecord(nodeId) { return this.getTopoRecords()[nodeId]; },
+  ...recordStore(TOPO_KEY, "Topo", ["points", "matched", "total", "tag"]),
 
   /* ============ v2.3.0 日晷对时 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
-  getSundialRecords() {
-    return this._read(SUNDIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSundialRecord(nodeId, angle, target, error, tag) {
-    const all = this.getSundialRecords();
-    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    return this._write(SUNDIAL_KEY, JSON.stringify(all));
-  },
-  getSundialRecord(nodeId) { return this.getSundialRecords()[nodeId]; },
+  ...recordStore(SUNDIAL_KEY, "Sundial", ["angle", "target", "error", "tag"]),
 
   /* ============ v2.3.0 染缸调色 ============ */
   // { nodeId: { rgb, target, diff, tag, ts } }
-  getDyeRecords() {
-    return this._read(DYE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDyeRecord(nodeId, rgb, target, diff, tag) {
-    const all = this.getDyeRecords();
-    all[nodeId] = { rgb, target, diff, tag, ts: Date.now() };
-    return this._write(DYE_KEY, JSON.stringify(all));
-  },
-  getDyeRecord(nodeId) { return this.getDyeRecords()[nodeId]; },
+  ...recordStore(DYE_KEY, "Dye", ["rgb", "target", "diff", "tag"]),
 
   /* ============ v2.3.0 风车叶片 ============ */
   // { nodeId: { angles, target, avgError, tag, ts } }
-  getWindmillRecords() {
-    return this._read(WINDMILL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveWindmillRecord(nodeId, angles, target, avgError, tag) {
-    const all = this.getWindmillRecords();
-    all[nodeId] = { angles, target, avgError, tag, ts: Date.now() };
-    return this._write(WINDMILL_KEY, JSON.stringify(all));
-  },
-  getWindmillRecord(nodeId) { return this.getWindmillRecords()[nodeId]; },
+  ...recordStore(WINDMILL_KEY, "Windmill", ["angles", "target", "avgError", "tag"]),
 
   /* ============ v2.3.0 经纬编织 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
-  getWeaveRecords() {
-    return this._read(WEAVE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveWeaveRecord(nodeId, grid, matched, total, tag) {
-    const all = this.getWeaveRecords();
-    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    return this._write(WEAVE_KEY, JSON.stringify(all));
-  },
-  getWeaveRecord(nodeId) { return this.getWeaveRecords()[nodeId]; },
+  ...recordStore(WEAVE_KEY, "Weave", ["grid", "matched", "total", "tag"]),
 
   /* ============ v2.4.0 镜面对称 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
-  getMirrorRecords() {
-    return this._read(MIRROR_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveMirrorRecord(nodeId, grid, matched, total, tag) {
-    const all = this.getMirrorRecords();
-    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    return this._write(MIRROR_KEY, JSON.stringify(all));
-  },
-  getMirrorRecord(nodeId) { return this.getMirrorRecords()[nodeId]; },
+  ...recordStore(MIRROR_KEY, "Mirror", ["grid", "matched", "total", "tag"]),
 
   /* ============ v2.4.0 灯笼排列 ============ */
   // { nodeId: { order, target, matched, tag, ts } }
-  getLanternRecords() {
-    return this._read(LANTERN_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveLanternRecord(nodeId, order, target, matched, tag) {
-    const all = this.getLanternRecords();
-    all[nodeId] = { order, target, matched, tag, ts: Date.now() };
-    return this._write(LANTERN_KEY, JSON.stringify(all));
-  },
-  getLanternRecord(nodeId) { return this.getLanternRecords()[nodeId]; },
+  ...recordStore(LANTERN_KEY, "Lantern", ["order", "target", "matched", "tag"]),
 
   /* ============ v2.4.0 水波纹 ============ */
   // { nodeId: { clicks, target, error, tag, ts } }
-  getRippleRecords() {
-    return this._read(RIPPLE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveRippleRecord(nodeId, clicks, target, error, tag) {
-    const all = this.getRippleRecords();
-    all[nodeId] = { clicks, target, error, tag, ts: Date.now() };
-    return this._write(RIPPLE_KEY, JSON.stringify(all));
-  },
-  getRippleRecord(nodeId) { return this.getRippleRecords()[nodeId]; },
+  ...recordStore(RIPPLE_KEY, "Ripple", ["clicks", "target", "error", "tag"]),
 
   /* ============ v2.4.0 马赛克拼图 ============ */
   // { nodeId: { grid, matched, total, tag, ts } }
-  getMosaicRecords() {
-    return this._read(MOSAIC_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveMosaicRecord(nodeId, grid, matched, total, tag) {
-    const all = this.getMosaicRecords();
-    all[nodeId] = { grid, matched, total, tag, ts: Date.now() };
-    return this._write(MOSAIC_KEY, JSON.stringify(all));
-  },
-  getMosaicRecord(nodeId) { return this.getMosaicRecords()[nodeId]; },
+  ...recordStore(MOSAIC_KEY, "Mosaic", ["grid", "matched", "total", "tag"]),
 
   /* ============ v2.5.0 碑帖拼合 ============ */
   // { nodeId: { placed, target, matched, tag, ts } }
-  getSteleRecords() {
-    return this._read(STELE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveSteleRecord(nodeId, placed, target, matched, tag) {
-    const all = this.getSteleRecords();
-    all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
-    return this._write(STELE_KEY, JSON.stringify(all));
-  },
-  getSteleRecord(nodeId) { return this.getSteleRecords()[nodeId]; },
+  ...recordStore(STELE_KEY, "Stele", ["placed", "target", "matched", "tag"]),
 
   /* ============ v2.5.0 星轨推演 ============ */
   // { nodeId: { positions, target, error, tag, ts } }
-  getCelestialRecords() {
-    return this._read(CELESTIAL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveCelestialRecord(nodeId, positions, target, error, tag) {
-    const all = this.getCelestialRecords();
-    all[nodeId] = { positions, target, error, tag, ts: Date.now() };
-    return this._write(CELESTIAL_KEY, JSON.stringify(all));
-  },
-  getCelestialRecord(nodeId) { return this.getCelestialRecords()[nodeId]; },
+  ...recordStore(CELESTIAL_KEY, "Celestial", ["positions", "target", "error", "tag"]),
 
   /* ============ v2.5.0 节拍鼓点 ============ */
   // { nodeId: { hits, target, matched, tag, ts } }
-  getDrumRecords() {
-    return this._read(DRUM_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveDrumRecord(nodeId, hits, target, matched, tag) {
-    const all = this.getDrumRecords();
-    all[nodeId] = { hits, target, matched, tag, ts: Date.now() };
-    return this._write(DRUM_KEY, JSON.stringify(all));
-  },
-  getDrumRecord(nodeId) { return this.getDrumRecords()[nodeId]; },
+  ...recordStore(DRUM_KEY, "Drum", ["hits", "target", "matched", "tag"]),
 
   /* ============ v2.5.0 风向标 ============ */
   // { nodeId: { angle, target, error, tag, ts } }
-  getVaneRecords() {
-    return this._read(VANE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveVaneRecord(nodeId, angle, target, error, tag) {
-    const all = this.getVaneRecords();
-    all[nodeId] = { angle, target, error, tag, ts: Date.now() };
-    return this._write(VANE_KEY, JSON.stringify(all));
-  },
-  getVaneRecord(nodeId) { return this.getVaneRecords()[nodeId]; },
+  ...recordStore(VANE_KEY, "Vane", ["angle", "target", "error", "tag"]),
 
   /* ============ v2.6.0 漏刻计时 ============ */
   // { nodeId: { stopTime, target, error, tag, ts } }
-  getClepsydraRecords() {
-    return this._read(CLEPSYDRA_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveClepsydraRecord(nodeId, stopTime, target, error, tag) {
-    const all = this.getClepsydraRecords();
-    all[nodeId] = { stopTime, target, error, tag, ts: Date.now() };
-    return this._write(CLEPSYDRA_KEY, JSON.stringify(all));
-  },
-  getClepsydraRecord(nodeId) { return this.getClepsydraRecords()[nodeId]; },
+  ...recordStore(CLEPSYDRA_KEY, "Clepsydra", ["stopTime", "target", "error", "tag"]),
 
   /* ============ v2.6.0 拼图归位 ============ */
   // { nodeId: { placed, target, matched, tag, ts } }
-  getJigsawRecords() {
-    return this._read(JIGSAW_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveJigsawRecord(nodeId, placed, target, matched, tag) {
-    const all = this.getJigsawRecords();
-    all[nodeId] = { placed, target, matched, tag, ts: Date.now() };
-    return this._write(JIGSAW_KEY, JSON.stringify(all));
-  },
-  getJigsawRecord(nodeId) { return this.getJigsawRecords()[nodeId]; },
+  ...recordStore(JIGSAW_KEY, "Jigsaw", ["placed", "target", "matched", "tag"]),
 
   /* ============ v2.6.0 棋局推演 ============ */
   // { nodeId: { moves, target, matched, tag, ts } }
-  getChessRecords() {
-    return this._read(CHESS_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveChessRecord(nodeId, moves, target, matched, tag) {
-    const all = this.getChessRecords();
-    all[nodeId] = { moves, target, matched, tag, ts: Date.now() };
-    return this._write(CHESS_KEY, JSON.stringify(all));
-  },
-  getChessRecord(nodeId) { return this.getChessRecords()[nodeId]; },
+  ...recordStore(CHESS_KEY, "Chess", ["moves", "target", "matched", "tag"]),
 
   /* ============ v2.6.0 旗阵辨识 ============ */
   // { nodeId: { selected, target, matched, tag, ts } }
-  getFlagRecords() {
-    return this._read(FLAG_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveFlagRecord(nodeId, selected, target, matched, tag) {
-    const all = this.getFlagRecords();
-    all[nodeId] = { selected, target, matched, tag, ts: Date.now() };
-    return this._write(FLAG_KEY, JSON.stringify(all));
-  },
-  getFlagRecord(nodeId) { return this.getFlagRecords()[nodeId]; },
+  ...recordStore(FLAG_KEY, "Flag", ["selected", "target", "matched", "tag"]),
 
   /* ============ v2.7.3 后日谈时间线 ============ */
   // { nodeId: { order: [], correct, tag, ts } }
-  getTimelineRecords() {
-    return this._read(TIMELINE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTimelineRecord(nodeId, order, correct, tag) {
-    const all = this.getTimelineRecords();
-    all[nodeId] = { order, correct, tag, ts: Date.now() };
-    return this._write(TIMELINE_KEY, JSON.stringify(all));
-  },
-  getTimelineRecord(nodeId) { return this.getTimelineRecords()[nodeId]; },
+  ...recordStore(TIMELINE_KEY, "Timeline", ["order", "correct", "tag"]),
 
   /* ============ v2.7.3 后日谈回信分拣 ============ */
   // { nodeId: { assignment: { noteId: replyId }, correct, tag, ts } }
-  getTriageRecords() {
-    return this._read(TRIAGE_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveTriageRecord(nodeId, assignment, correct, tag) {
-    const all = this.getTriageRecords();
-    all[nodeId] = { assignment, correct, tag, ts: Date.now() };
-    return this._write(TRIAGE_KEY, JSON.stringify(all));
-  },
-  getTriageRecord(nodeId) { return this.getTriageRecords()[nodeId]; },
+  ...recordStore(TRIAGE_KEY, "Triage", ["assignment", "correct", "tag"]),
 
   /* ============ v2.7.4 后日谈留言墙 ============ */
   // { nodeId: { assignment: { noteId: binId }, correct, tag, ts } }
-  getWallRecords() {
-    return this._read(WALL_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveWallRecord(nodeId, assignment, correct, tag) {
-    const all = this.getWallRecords();
-    all[nodeId] = { assignment, correct, tag, ts: Date.now() };
-    return this._write(WALL_KEY, JSON.stringify(all));
-  },
-  getWallRecord(nodeId) { return this.getWallRecords()[nodeId]; },
+  ...recordStore(WALL_KEY, "Wall", ["assignment", "correct", "tag"]),
 
   /* ============ v2.7.6 后日谈校刊校对 ============ */
   // { nodeId: { assignment: { cardId: binId }, correct, tag, ts } }
-  getProofreadRecords() {
-    return this._read(PROOFREAD_KEY, {}, v => v && typeof v === "object" && !Array.isArray(v));
-  },
-  saveProofreadRecord(nodeId, assignment, correct, tag) {
-    const all = this.getProofreadRecords();
-    all[nodeId] = { assignment, correct, tag, ts: Date.now() };
-    return this._write(PROOFREAD_KEY, JSON.stringify(all));
-  },
-  getProofreadRecord(nodeId) { return this.getProofreadRecords()[nodeId]; },
+  ...recordStore(PROOFREAD_KEY, "Proofread", ["assignment", "correct", "tag"]),
 
   /* ============ 工具 ============ */
   formatTime(ts) {
@@ -1870,31 +1183,8 @@ const Saves = {
   },
 
   clearAll() {
-    const keys = [META_KEY, STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
-     FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
-     CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
-     DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY,
-     COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
-     SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY,
-     TAROT_KEY, DREAMWEAVE_KEY, HANDWRITING_KEY, SPECTRUM_KEY,
-     CONSTELLATION_KEY, STETHOSCOPE_KEY, PUZZLE_KEY, PERFUME_KEY,
-     BREATH_KEY, TIMECAPSULE_KEY, FOLD_KEY, REFLECTION_KEY,
-     LIGHTDRAW_KEY, MIMIC_KEY, SEASON_KEY, PULSE_KEY,
-     TEA_KEY, ASTRONOMY_KEY, PALETTE_KEY, PIANO_KEY,
-     DICE_KEY, WIND_KEY, DECODE_KEY, RAIN_KEY,
-     RUBBING_KEY, COLLECT_KEY, FOCUS_KEY, SCENTMEM_KEY,
-     TEALEAF_KEY, SHADOW_KEY, CANDLE_KEY, DIAL_KEY,
-     FOGGY_KEY, SUGAR_KEY, CHIME_KEY, HOURGLASS_KEY,
-     KITE_KEY, LOCK_KEY, ORIGAMI_KEY, ORBIT_KEY,
-     FIREFLY_KEY, WINDCHIME_KEY, BOTTLE_KEY, ECHOLOC_KEY,
-     COMPASS_KEY, TELEGRAPH_KEY, BALANCE_KEY, PENDULUM_KEY,
-     METRONOME_KEY, STARCHART_KEY, LENS_KEY, TUNING_KEY,
-     ECLIPSE_KEY, STAMP_KEY, ASTROLABE_KEY, SANDPAINT_KEY,
-     KALEIDO_KEY, ABACUS_KEY, GEAR_KEY, TOPO_KEY,
-     SUNDIAL_KEY, DYE_KEY, WINDMILL_KEY, WEAVE_KEY,
-     MIRROR_KEY, LANTERN_KEY, RIPPLE_KEY, MOSAIC_KEY,
-     STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY,
-     CLEPSYDRA_KEY, JIGSAW_KEY, CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY, PROOFREAD_KEY];
+    // 复用 GAME_STORAGE_KEYS，避免与上方清单重复维护（此前两处各列 100 多项，易漏键）
+    const keys = [META_KEY, ...GAME_STORAGE_KEYS];
     let success = true;
     keys.forEach((key) => {
       if (!this._remove(key)) success = false;

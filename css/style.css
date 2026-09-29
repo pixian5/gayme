@@ -1,3 +1,21 @@
+/* ============ 字体 ============
+   自托管 Noto Serif SC 子集（仅含项目实际用到的 1713 个字符，约 320KB/字重）。
+   重新生成：见 docs/20260930*字体子集.md；未覆盖的 emoji/符号由系统字体回退。 */
+@font-face {
+  font-family: "Noto Serif SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/NotoSerifSC-Regular.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Noto Serif SC";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/NotoSerifSC-Bold.woff2") format("woff2");
+}
+
 /* ============ 基础 ============ */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
