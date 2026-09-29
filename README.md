@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v2.8.3**（开发测试版 · Demo）
+- 当前版本：**v2.8.4**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 
@@ -26,13 +26,15 @@ npm run test:syntax
 
 ## 【当前开发进度】
 
-剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（409 个剧情节点），31 项测试全过；v2.7.9 建立玩法框架基座（GameKit），v2.8.0 完成 13 个玩法迁移与一致性测试，v2.8.1~v2.8.2 补齐内容纵深（家庭线 / 三人旧交 / 长链分章 / 学姐中段线索），v2.8.3 转向工程瘦身：saves.js 引入存档方法工厂（1918→1208 行），中文字体改为自托管 Noto Serif SC 子集（660KB）。工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
+剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（409 个剧情节点），31 项测试全过；v2.7.9 建立玩法框架基座（GameKit），v2.8.0 完成 13 个玩法迁移与一致性测试，v2.8.1~v2.8.2 补齐内容纵深（家庭线 / 三人旧交 / 长链分章 / 学姐中段线索），v2.8.3 转向工程瘦身：saves.js 引入存档方法工厂（1918→1208 行），中文字体改为自托管 Noto Serif SC 子集（660KB）。**v2.8.4 启动玩法模板减量（共 6 批）**：第 1 批把 13 个手作与器物玩法迁至 `js/games/craft.js`，engine.js 从 16172 行 / 590,035 字符降到 14614 行 / 552,240 字符（−6.4%）。工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
 
 详细内容见 → [docs/202609292356当前开发进度.md](docs/202609292356当前开发进度.md)
 
 ## 【下一步待实现】
 
-按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → ~~减重与一致性（v2.8.0）~~ → ~~内容纵深 A（v2.8.1）~~ → ~~内容纵深 B（v2.8.2 学姐线索 + 长链分章）~~ → ~~工程瘦身 + 字体落地（v2.8.3）~~ → 玩法结果影响叙事（v2.8.4）→ 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
+按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → ~~减重与一致性（v2.8.0）~~ → ~~内容纵深 A（v2.8.1）~~ → ~~内容纵深 B（v2.8.2 学姐线索 + 长链分章）~~ → ~~工程瘦身 + 字体落地（v2.8.3）~~ → 玩法模板减量 6 批（~~第 1 批 v2.8.4~~ → 第 2~6 批 v2.8.5~v2.8.9）→ 玩法结果影响叙事 → 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
+
+当前批次详情 → [docs/202609300249玩法模板减量第1批.md](docs/202609300249玩法模板减量第1批.md)
 
 详细内容见 → [docs/202609292356下一步开发方案.md](docs/202609292356下一步开发方案.md)
 
@@ -65,6 +67,7 @@ npm run test:syntax
 | [v2.8.1-story-depth.md](docs/v2.8.1-story-depth.md) | 沈屿家庭线铺垫与三人旧交回忆（回收 d2_noon_9 / d3_sunian_5 伏笔） |
 | [v2.8.2-longchain-chapters.md](docs/v2.8.2-longchain-chapters.md) | 长链分三章呼吸点与学姐中段线索（d10_senior_slip） |
 | [202609300202工程瘦身与自托管字体.md](docs/202609300202工程瘦身与自托管字体.md) | v2.8.3：saves.js 存档方法工厂化（1918→1208 行）与自托管 Noto Serif SC 子集字体，含子集重建步骤 |
+| [202609300249玩法模板减量第1批.md](docs/202609300249玩法模板减量第1批.md) | v2.8.4：玩法模板减量（共 6 批）路线、第 1 批 13 个手作玩法迁至 craft.js、等价校验与回归方法 |
 
 ### 外部分析（项目根目录）
 | 文档 | 作用 |
@@ -80,7 +83,7 @@ npm run test:syntax
 ## 目录结构
 
 ```
-index.html          入口（含字体 preload 与 8 个脚本按序加载，engine.js 最后）
+index.html          入口（含字体 preload 与 9 个脚本按序加载，engine.js 最后）
 css/style.css       全部视觉/动效/响应式（顶部为自托管 @font-face）
 fonts/              自托管 Noto Serif SC 子集（Regular/Bold woff2，共 660KB，覆盖 1713 字符）
 js/saves.js         存档与图鉴数据层（localStorage，106 个键；记录型存取由 recordStore 工厂生成）
@@ -88,7 +91,7 @@ js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCR
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
 js/minigames.js     3 个基础迷你游戏（writing / running / painting）
 js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生命周期 / 进度文案 / 宿主桥
-js/games/           已迁移的玩法模块：afterword.js（后日谈 5）、senses.js（身心感知 8）
+js/games/           已迁移的玩法模块：afterword.js（后日谈 5）、senses.js（身心感知 8）、craft.js（手作与器物 13）
 js/engine.js        引擎 + 其余玩法实现
 tests/              Node 原生测试
 docs/               版本记录与规划文档
@@ -96,8 +99,11 @@ docs/               版本记录与规划文档
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v2.8.3，下一版 v2.8.4）
-- 版本同步点：`VERSION`、`index.html`（9 处 `?v=` + 标题页 `vX.Y.Z · Demo`）、`package.json`、`js/engine.js` 头部注释
+- 版本号：每次修改 +0.0.1，满十进一（当前 v2.8.4，下一版 v2.8.5）
+- 版本同步点：`VERSION`、`index.html`（10 处 `?v=` + 标题页 `vX.Y.Z · Demo`）、`package.json`、`js/engine.js` 头部注释
+- 玩法迁移：新玩法一律用 `GameKit.createShell()` + `shell.finish()`，不再手写浮层 / 结果面板 / `MutationObserver`；
+  早期直跳型（无结果面板）玩法待 GameKit 补 `silent` 收尾选项后迁移（见第 6 批）
+- 迁移后的玩法文件需在 `tests/interaction-coverage.test.mjs` 的 `gameKitHandlers` 中登记来源
 - 新增玩法存储：使用 `js/saves.js` 的 `recordStore` / `unlockListStore` 工厂，不再手写 get/save/读单条三件套
 - 字体：中文由自托管子集提供，新增文案若出现子集未覆盖的汉字，需按[docs/202609300202工程瘦身与自托管字体.md](docs/202609300202工程瘦身与自托管字体.md)重建子集
 - 提交：中文 commit，完成后推送 gitee（origin）与 github
