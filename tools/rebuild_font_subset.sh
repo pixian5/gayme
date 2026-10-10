@@ -1,6 +1,6 @@
 #!/bin/bash
 # 重建自托管中文字体子集（Noto Serif SC Regular/Bold woff2）。
-# 完整流程见 docs/202609300202工程瘦身与自托管字体.md。
+# 完整流程见 docs/20260930-0202-工程瘦身与自托管字体-GLM.md。
 #
 # ⚠️ 第 0 步要下载约 23MB 字体源文件：请确认当前是 WiFi 而非手机热点再继续！
 # 用法：bash tools/rebuild_font_subset.sh [字体源目录，默认 /tmp/noto-src]

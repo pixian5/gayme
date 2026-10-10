@@ -45,7 +45,7 @@ def main():
           f"缺失 {len(missing)}，符号回退（不处理）{len(skipped)}")
     if missing:
         print("缺失字符:", "".join(chr(c) for c in missing))
-        print("→ 需按 docs/202609300202工程瘦身与自托管字体.md 重建子集"
+        print("→ 需按 docs/20260930-0202-工程瘦身与自托管字体-GLM.md 重建子集"
              "（tools/rebuild_font_subset.sh，需字体源文件与 WiFi 环境）")
         sys.exit(1)
     print("覆盖完整 ✓")
