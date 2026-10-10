@@ -33,6 +33,8 @@
            js/games/direct.js（doodle/collage/photo/rhythm/scent/silenceChoice/touch/
            temperature/handwriting/spectrum）；matchConstellation/matchPuzzle/matchPerfume
            辅助函数同步移入对应 games 文件；engine.js 降为纯引擎（约 3.4k 行）
+   v2.9.2：CSS 拆分——玩法浮层样式（v0.6.0 起全部分节）拆至 css/games.css（约 7.3k 行），
+           style.css 保留基础与引擎 UI（约 1.2k 行）；加载顺序保持级联不变
    ======================================== */
 
 (function () {
@@ -440,7 +442,6 @@
 
 
 
-
     // v0.7.0 气味闪回触发节点
     if (node.scentRecall) {
       setScene(node.bg);
@@ -450,18 +451,6 @@
       updateHeartBar();
       return;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2018,7 +2007,6 @@
        next: "..."  // 默认跳转
      }
      温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
-
 
   /* ============================================================
      v0.8.0 笔迹选择 runHandwriting
