@@ -38,6 +38,8 @@
    v2.9.3：字体子集治理——tools/collect_font_charset.py（字符集收集）、
            tools/check_font_coverage.py（cmap 覆盖检查）、tools/rebuild_font_subset.sh
            （一键重建，含 WiFi 提示）；当前基线缺 30 字符（13 汉字 + 符号），待重建
+   v2.9.4：发布链路——GitHub Actions CI（推送/PR 跑全部测试）+ GitHub Pages 自动部署
+           （测试通过后发布仓库根目录，configure-pages 自动开启 Pages，附 .nojekyll）
    ======================================== */
 
 (function () {
