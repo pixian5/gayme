@@ -91,6 +91,16 @@ def main():
     new_text = open(games_path, encoding="utf-8").read()
     new_line_set = {re.sub(r"\s+", " ", l.strip()) for l in new_text.split("\n")}
 
+    # 新文件整体禁用标识符扫描（引擎内部符号在 games 文件中不可达）
+    forbidden = []
+    for i, l in enumerate(new_text.split("\n"), 1):
+        if re.search(r'\b(applyAdd|updateHeartBar|gotoNode|applySet|setScene|renderCharacters|typewriter)\s*\(', l) or re.search(r'\bstate\.', l):
+            forbidden.append(f"L{i}: {l.strip()[:120]}")
+    if forbidden:
+        print("!! 新文件存在引擎内部符号引用（运行时将 ReferenceError）:")
+        for f in forbidden:
+            print(f"    ! {f}")
+
     total_unmatched = 0
     for fn in funcs:
         body = extract(old_lines, fn)

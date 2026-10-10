@@ -26,6 +26,9 @@
    v2.8.9：玩法模板减量（第 5 批 / 共 6 批）——图像与光影 12 个玩法迁至
            js/games/imagery.js（shadow/candle/stamp/astrolabe/sandpaint/kaleido/topo/
            windmill/ripple/bottle/echoloc/lens）
+   v2.9.0：修复 v2.8.7 迁移回归——matchTarotCombo / matchDreamweave 辅助函数移至
+           perception.js；tarot / dreamweave / compass 三处效果块补入 finish
+           （applyAdd 等引擎内部符号在 games 文件不可达，原样遗留会 ReferenceError）
    ======================================== */
 
 (function () {
@@ -2967,80 +2970,7 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v0.8.0 占卜抽牌 runTarot
-     node.tarot = {
-       prompt: "学姐翻开牌阵——过去 / 现在 / 未来",
-       deck: [
-         { id, name, upright, reversed, svg? }
-       ],
-       positions: ["过去", "现在", "未来"],
-       // 抽完牌后按组合判定
-       combos: [
-         { ids: ["a","b","c"], tag: "triple_light", label: "三张全是光明",
-           add?, personality?, memory?, next },
-         { ids: ["a","b"], tag: "pair_ab", next } // 部分匹配也支持
-       ],
-       fallback: { tag: "default", next } // 都不匹配
-     }
-     ============================================================ */
 
-  function matchTarotCombo(tarot, pickedCards) {
-    const drawnIds = pickedCards.map(c => c?.id).filter(Boolean);
-    const combos = tarot.combos || [];
-    // 优先匹配完整组合
-    for (const c of combos) {
-      if (c.ids && c.ids.length === drawnIds.length &&
-          c.ids.every(id => drawnIds.includes(id))) {
-        return c;
-      }
-    }
-    // 再匹配部分组合（2 张）
-    for (const c of combos) {
-      if (c.ids && c.ids.length === 2 && c.ids.every(id => drawnIds.includes(id))) {
-        return c;
-      }
-    }
-    // 最后单张
-    for (const c of combos) {
-      if (c.ids && c.ids.length === 1 && drawnIds.includes(c.ids[0])) {
-        return c;
-      }
-    }
-    return tarot.fallback || { tag: "default", label: "——牌阵无言", next: null };
-  }
-
-  /* ============================================================
-     v0.8.0 梦境编织 runDreamweave
-     node.dreamweave = {
-       prompt: "把碎片按你的直觉拖进画布——",
-       fragments: [
-         { id, label, desc, color }
-       ],
-       // 解析拼接顺序
-       interpretations: [
-         { seq: ["a","b","c"], tag: "flow", label, text, add?, memory?, next }
-       ],
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
-
-  function matchDreamweave(dw, seq) {
-    const interps = dw.interpretations || [];
-    // 优先匹配完全相同顺序
-    for (const i of interps) {
-      if (i.seq && i.seq.length === seq.length && i.seq.every((id, idx) => id === seq[idx])) {
-        return i;
-      }
-    }
-    // 再匹配包含（顺序无关，只要都包含）
-    for (const i of interps) {
-      if (i.seq && i.seq.length === seq.length && i.seq.every(id => seq.includes(id))) {
-        return i;
-      }
-    }
-    return dw.fallback || { tag: "default", label: "——梦不成形", next: null };
-  }
 
   /* ============================================================
      v0.8.0 笔迹选择 runHandwriting

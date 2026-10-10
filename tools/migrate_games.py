@@ -276,7 +276,10 @@ def transform(func_name, type_name, doc, body, flags):
 
     # ---- 校验残留 ----
     for bad in ["MutationObserver", "mo.observe", "reading", "layer.remove()",
-                'el.dialogBox', "appendChild(layer)"]:
+                'el.dialogBox', "appendChild(layer)",
+                # 引擎内部符号在 games 文件中不可达（flashHint 除外，经 GameKit 解构）
+                "applyAdd", "updateHeartBar", "gotoNode(", "state.", "setScene",
+                "renderCharacters", "typewriter("]:
         if bad in text:
             raise ValueError(f"转换后仍残留: {bad}")
     if "currentNodeId" in text:

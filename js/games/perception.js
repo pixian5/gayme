@@ -27,6 +27,81 @@
        fallback: { tag: "default", next } // 都不匹配
      }
      ============================================================ */
+  /* ============================================================
+     v0.8.0 占卜抽牌 tarot · 组合判定辅助
+     node.tarot = {
+       prompt: "学姐翻开牌阵——过去 / 现在 / 未来",
+       deck: [
+         { id, name, upright, reversed, svg? }
+       ],
+       positions: ["过去", "现在", "未来"],
+       // 抽完牌后按组合判定
+       combos: [
+         { ids: ["a","b","c"], tag: "triple_light", label: "三张全是光明",
+           add?, personality?, memory?, next },
+         { ids: ["a","b"], tag: "pair_ab", next } // 部分匹配也支持
+       ],
+       fallback: { tag: "default", next } // 都不匹配
+     }
+     ============================================================ */
+
+  function matchTarotCombo(tarot, pickedCards) {
+    const drawnIds = pickedCards.map(c => c?.id).filter(Boolean);
+    const combos = tarot.combos || [];
+    // 优先匹配完整组合
+    for (const c of combos) {
+      if (c.ids && c.ids.length === drawnIds.length &&
+          c.ids.every(id => drawnIds.includes(id))) {
+        return c;
+      }
+    }
+    // 再匹配部分组合（2 张）
+    for (const c of combos) {
+      if (c.ids && c.ids.length === 2 && c.ids.every(id => drawnIds.includes(id))) {
+        return c;
+      }
+    }
+    // 最后单张
+    for (const c of combos) {
+      if (c.ids && c.ids.length === 1 && drawnIds.includes(c.ids[0])) {
+        return c;
+      }
+    }
+    return tarot.fallback || { tag: "default", label: "——牌阵无言", next: null };
+  }
+
+  /* ============================================================
+     v0.8.0 梦境编织 dreamweave · 解读判定辅助
+     node.dreamweave = {
+       prompt: "把碎片按你的直觉拖进画布——",
+       fragments: [
+         { id, label, desc, color }
+       ],
+       // 解析拼接顺序
+       interpretations: [
+         { seq: ["a","b","c"], tag: "flow", label, text, add?, memory?, next }
+       ],
+       fallback: { tag: "default", next }
+     }
+     ============================================================ */
+
+  function matchDreamweave(dw, seq) {
+    const interps = dw.interpretations || [];
+    // 优先匹配完全相同顺序
+    for (const i of interps) {
+      if (i.seq && i.seq.length === seq.length && i.seq.every((id, idx) => id === seq[idx])) {
+        return i;
+      }
+    }
+    // 再匹配包含（顺序无关，只要都包含）
+    for (const i of interps) {
+      if (i.seq && i.seq.length === seq.length && i.seq.every(id => seq.includes(id))) {
+        return i;
+      }
+    }
+    return dw.fallback || { tag: "default", label: "——梦不成形", next: null };
+  }
+
   register("tarot", function (tarot, nodeId) {
 
     const shell = createShell({ kind: "tarot", prefix: "tarot", nodeId });
@@ -107,26 +182,17 @@
       const combo = matchTarotCombo(tarot, pickedCards);
       // 保存
       const past = pickedCards[0], present = pickedCards[1], future = pickedCards[2];
-      Saves.saveTarotRecord(nodeId,
-        past ? { id: past.id, name: past.name, reversed: past._reversed } : null,
-        present ? { id: present.id, name: present.name, reversed: present._reversed } : null,
-        future ? { id: future.id, name: future.name, reversed: future._reversed } : null,
-        combo.tag);
-      // 应用效果
-      if (combo.add) { applyAdd(combo.add); updateHeartBar(); }
-      if (combo.personality) {
-        for (const dim in combo.personality) Saves.addPersonality(dim, combo.personality[dim]);
-      }
-      if (combo.memory) {
-        if (!Saves.isMemoryUnlocked(combo.memory.id)) {
-          Saves.saveMemory(combo.memory.id, combo.memory.text);
-          flashHint(`✦ 新记忆：${combo.memory.title}`);
-        }
-      }
-      // 显示解读
       shell.finish({
         label: `${combo.label || "解读"}`,
         text: `${combo.text || ""}`,
+        add: combo.add,
+        personality: combo.personality,
+        memory: combo.memory,
+        record: () => Saves.saveTarotRecord(nodeId,
+          past ? { id: past.id, name: past.name, reversed: past._reversed } : null,
+          present ? { id: present.id, name: present.name, reversed: present._reversed } : null,
+          future ? { id: future.id, name: future.name, reversed: future._reversed } : null,
+          combo.tag),
         next: combo.next,
       });
     };
@@ -208,21 +274,13 @@
       // 匹配解读
       const interp = matchDreamweave(dw, sequence);
       // 保存
-      Saves.saveDreamweaveRecord(nodeId, sequence.slice(), interp.text || "", interp.tag);
-      if (interp.add) { applyAdd(interp.add); updateHeartBar(); }
-      if (interp.personality) {
-        for (const dim in interp.personality) Saves.addPersonality(dim, interp.personality[dim]);
-      }
-      if (interp.memory) {
-        if (!Saves.isMemoryUnlocked(interp.memory.id)) {
-          Saves.saveMemory(interp.memory.id, interp.memory.text);
-          flashHint(`✦ 新记忆：${interp.memory.title}`);
-        }
-      }
-      // 显示解读
       shell.finish({
         label: `${interp.label || "解读"}`,
         text: `${interp.text || ""}`,
+        add: interp.add,
+        personality: interp.personality,
+        memory: interp.memory,
+        record: () => Saves.saveDreamweaveRecord(nodeId, sequence.slice(), interp.text || "", interp.tag),
         next: interp.next,
       });
     };

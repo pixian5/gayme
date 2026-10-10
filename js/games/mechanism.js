@@ -883,21 +883,14 @@
       for (const t of thresholds) {
         if (diff <= (t.max ?? tolerance)) { matched = t; break; }
       }
-      Saves.saveCompassRecord(nodeId, Math.round(angle), target, diff, matched.tag);
-      if (matched.add) { applyAdd(matched.add); updateHeartBar(); }
-      if (matched.personality) {
-        for (const dim in matched.personality) Saves.addPersonality(dim, matched.personality[dim]);
-      }
-      if (matched.memory) {
-        if (!Saves.isMemoryUnlocked(matched.memory.id)) {
-          Saves.saveMemory(matched.memory.id, matched.memory.text);
-          flashHint(`✦ 新记忆：${matched.memory.title}`);
-        }
-      }
       draw();
       shell.finish({
         label: `${matched.label || "解读"} · 偏差 ${diff.toFixed(0)}°`,
         text: `${matched.text || ""}`,
+        add: matched.add,
+        personality: matched.personality,
+        memory: matched.memory,
+        record: () => Saves.saveCompassRecord(nodeId, Math.round(angle), target, diff, matched.tag),
         next: matched.next,
       });
     };
