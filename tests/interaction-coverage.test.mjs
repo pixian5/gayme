@@ -5,7 +5,6 @@ import test from "node:test";
 
 const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
 const engine = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
-const afterword = fs.readFileSync(new URL("../js/games/afterword.js", import.meta.url), "utf8");
 const context = { console, window: {} };
 vm.createContext(context);
 vm.runInContext(`${script}\nthis.__script = SCRIPT;`, context);
@@ -17,29 +16,32 @@ const handlers = {
   rhythm: "runRhythm", scent: "runScent", scentRecall: "triggerScentRecall",
   silenceChoice: "runSilenceChoice", touch: "runTouch", temperature: "runTemperature",
   tarot: "runTarot", dreamweave: "runDreamweave", handwriting: "runHandwriting",
-  spectrum: "runSpectrum", constellation: "runConstellation", stethoscope: "runStethoscope",
-  puzzle: "runPuzzle", perfume: "runPerfume", tea: "runTea", astronomy: "runAstronomy",
-  dice: "runDice", wind: "runWind",
-  decode: "runDecode", rain: "runRain", rubbing: "runRubbing", collect: "runCollect",
+  spectrum: "runSpectrum", stethoscope: "runStethoscope",
+  puzzle: "runPuzzle", perfume: "runPerfume", tea: "runTea",
+  dice: "runDice",
+  decode: "runDecode", rubbing: "runRubbing", collect: "runCollect",
   focus: "runFocus", scentmem: "runScentmem", tealeaf: "runTealeaf", shadow: "runShadow",
-  candle: "runCandle", dial: "runDial", foggy: "runFoggy", sugar: "runSugar",
-  chime: "runChime", hourglass: "runHourglass", kite: "runKite", lock: "runLock",
-  orbit: "runOrbit", firefly: "runFirefly", windchime: "runWindchime",
+  candle: "runCandle", dial: "runDial", sugar: "runSugar",
+  chime: "runChime", hourglass: "runHourglass", lock: "runLock",
+  
   bottle: "runBottle", echoloc: "runEcholoc", compass: "runCompass", telegraph: "runTelegraph",
   balance: "runBalance", pendulum: "runPendulum", metronome: "runMetronome",
-  starchart: "runStarchart", lens: "runLens", tuning: "runTuning", eclipse: "runEclipse",
+  lens: "runLens", tuning: "runTuning",
   stamp: "runStamp", astrolabe: "runAstrolabe", sandpaint: "runSandpaint", kaleido: "runKaleido",
   abacus: "runAbacus", gear: "runGear", topo: "runTopo", sundial: "runSundial",
   windmill: "runWindmill",
-  ripple: "runRipple", celestial: "runCelestial",
-  vane: "runVane", clepsydra: "runClepsydra",
+  ripple: "runRipple",
+  clepsydra: "runClepsydra",
 };
-
 /* v2.7.9 起，后日谈与身心感知玩法迁出 engine.js，经 GameKit 注册、由引擎触发；
-   v2.8.4 起，手作与器物玩法（craft.js）同样迁出 */
+   v2.8.4 起，手作与器物玩法（craft.js）同样迁出；
+   v2.8.5 起引擎用通用分发循环触发所有已注册玩法；
+   v2.8.6 起，自然天象玩法（nature.js）迁出 */
+const afterword = fs.readFileSync(new URL("../js/games/afterword.js", import.meta.url), "utf8");
 const senses = fs.readFileSync(new URL("../js/games/senses.js", import.meta.url), "utf8");
 const craft = fs.readFileSync(new URL("../js/games/craft.js", import.meta.url), "utf8");
-const gameFiles = { afterword, senses, craft };
+const nature = fs.readFileSync(new URL("../js/games/nature.js", import.meta.url), "utf8");
+const gameFiles = { afterword, senses, craft, nature };
 const gameKitHandlers = {
   postcard: "afterword", timeline: "afterword", triage: "afterword", wall: "afterword", proofread: "afterword",
   breath: "senses", timecapsule: "senses", fold: "senses", reflection: "senses",
@@ -47,6 +49,9 @@ const gameKitHandlers = {
   origami: "craft", jigsaw: "craft", mosaic: "craft", weave: "craft", dye: "craft",
   stele: "craft", palette: "craft", lantern: "craft", mirror: "craft", chess: "craft",
   flag: "craft", drum: "craft", piano: "craft",
+  astronomy: "nature", wind: "nature", rain: "nature", constellation: "nature", foggy: "nature",
+  kite: "nature", orbit: "nature", firefly: "nature", windchime: "nature", starchart: "nature",
+  eclipse: "nature", celestial: "nature", vane: "nature",
 };
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {
