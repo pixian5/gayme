@@ -170,6 +170,23 @@ const COMPOSE_RECIPES = [
 ];
 window.COMPOSE_RECIPES = COMPOSE_RECIPES;
 
+/* 合成回忆（v2.9.6）：合成产物解锁时写入记忆图鉴——让合成不只是真结局门票 */
+const COMPOSED_MEMORIES = {
+  "祭信":   { id: "合成·祭信",   title: "樱花祭的回信",
+              text: "那一晚的信，写完就封上了口。樱花落在信封上，像谁盖下的邮戳。" },
+  "未寄信": { id: "合成·未寄信", title: "没贴邮票的信",
+              text: "抽屉最深处有一封没贴邮票的信。收信人那一栏，她始终没敢写。" },
+  "挣紫":   { id: "合成·挣紫",   title: "挣出来的紫",
+              text: "画布上涂了又涂的紫。她说：紫是憋在胸口的那口气——画出来，才能喘上来。" },
+  "她就是我": { id: "合成·她就是我", title: "角色A的底稿",
+              text: "稿纸上角色A说过的话，她本人一句都没说过。可你知道——那就是她。" },
+  "她的选择": { id: "合成·她的选择", title: "并排的两张纸",
+              text: "报名表和特招协议并排放在桌上。她最后选的，不是那条更稳的路。" },
+  "替她回": { id: "合成·替她回", title: "代笔的勇气",
+              text: "有些信不是写给收信人的，是写给不敢回信的自己。你替她落笔的那一刻，她终于敢看了。" },
+};
+window.COMPOSED_MEMORIES = COMPOSED_MEMORIES;
+
 /* ============ CG 定义（SVG 字符画） ============ */
 const CGS = [
   { id: "cg_meet_shiyu", title: "走廊的初次相遇", heroine: "林诗雨", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="240" fill="#2a1a3a"/><rect y="180" width="400" height="60" fill="#1a0a2a"/><line x1="50" y1="0" x2="50" y2="180" stroke="#5a3a6a" stroke-width="2"/><line x1="350" y1="0" x2="350" y2="180" stroke="#5a3a6a" stroke-width="2"/><circle cx="120" cy="100" r="40" fill="#fde2cc"/><rect x="80" y="140" width="80" height="80" fill="#3a5a8a"/><circle cx="280" cy="100" r="40" fill="#fde0c8"/><rect x="240" y="140" width="80" height="80" fill="#4a5868"/><text x="200" y="220" text-anchor="middle" fill="#ffb8c8" font-size="14" font-family="serif">— 走廊的初次相遇 —</text></svg>` },
@@ -723,7 +740,7 @@ const SCRIPT = {
           text: "拼起来是「樱信·夜名」。一封夜里写的、署名樱的信。我盯着那个「名」——那不是我的名字，是学姐的。",
           add: { affection: { shiyu: 0 } }, personality: { honest: 2, brave: 1 },
           memory: { id: "拼图·樱信", title: "署名樱的信", text: "你拼出「樱信·夜名」——一封夜里写的、署名樱的信。" },
-          next: "d4_evening_scent" },
+          next: "d4_puzzle_named" },
         { order: ["shred_1","shred_2","shred_5","shred_3"], tag: "letter_blank",
           label: "——樱信·无名",
           text: "拼起来是「樱信·无名」。一封樱的信，但没有署名。也许——她本来就没打算让人知道是她。",
@@ -740,6 +757,11 @@ const SCRIPT = {
         text: "碎片拼不起来。我叹了口气，把那张空白碎片收好——也许有些信，本来就不该被拼回来。",
         next: "d4_evening_scent" }
     }
+  },
+  d4_puzzle_named: {
+    day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
+    text: "「樱信·夜名」。我把那个「名」字在指尖描了一遍又一遍。署名是樱——可夜里写信的人，为什么不敢写下自己的名字？我把碎片按原样收好。明天，我想当面问问她。",
+    next: "d4_evening_scent"
   },
 
   /* ============ v0.9.0 气味调香 ============ */
@@ -764,24 +786,34 @@ const SCRIPT = {
           text: "樱花、旧纸、暮木。一瓶樱时信笺。苏念闻了闻：「……像一封写给黄昏的信。」她说这就是她要的。",
           add: { affection: { sunian: 2 } }, personality: { kind: 2, honest: 1 },
           memory: { id: "调香·樱时", title: "樱时信笺", text: "你调出樱时信笺。苏念说像一封写给黄昏的信。" },
-          next: "common_day5_afternoon" },
+          next: "d5_perfume_sakura" },
         { ids: ["lemon_zest","ink","rain_warm"], tag: "summer_ink",
           label: "——夏墨暖雨",
           text: "柠檬、墨水、暖雨。一瓶夏天的墨水。苏念皱眉：「太冲——但也对。」她说这就是夏织的味道。",
           add: { affection: { xiazhi: 1, sunian: 1 } }, personality: { active: 2 },
           memory: { id: "调香·夏墨", title: "夏墨暖雨", text: "你调出夏墨暖雨。苏念说这就是夏织的味道。" },
-          next: "common_day5_afternoon" },
+          next: "d5_perfume_other" },
         { ids: ["cherry_blossom","ink","dusk_wood"], tag: "quiet_dusk",
           label: "——静暮",
           text: "樱花、墨水、暮木。一瓶很静的香水。苏念没说话，把瓶盖拧紧：「这瓶先收着。」",
           add: { affection: { shiyu: 1, sunian: 1 } }, personality: { kind: 1, honest: 1 },
           memory: { id: "调香·静暮", title: "静暮", text: "你调出很静的香水。苏念说先收着。" },
-          next: "common_day5_afternoon" }
+          next: "d5_perfume_other" }
       ],
       fallback: { tag: "default_scent", label: "——不成香",
         text: "三种气味凑在一起，没成什么特别的香。苏念笑笑：「也行——一瓶普通的香水。」",
-        next: "common_day5_afternoon" }
+        next: "d5_perfume_other" }
     }
+  },
+  d5_perfume_sakura: {
+    day: 5, time: "noon", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "她把「樱时信笺」举到窗光下看了很久，忽然塞回我手里：「这瓶送你——第一瓶，要留证据。」瓶签的空白处，她一笔一画写下调香的日期。「等樱花祭那天再开封。正好。」",
+    next: "common_day5_afternoon"
+  },
+  d5_perfume_other: {
+    day: 5, time: "noon", bg: "art_room", char: "sunian", speaker: "苏念",
+    text: "无论哪一瓶，苏念都收进了她的木匣，贴上手写标签——日期、天气、还有一起调香的人。「气味是会跑的记忆，」她说，「标签是拴住它的绳子。」",
+    next: "common_day5_afternoon"
   },
   common_day5_afternoon: {
     day: 5, time: "afternoon", bg: "art_room", char: null, speaker: "",
@@ -3372,13 +3404,23 @@ const SCRIPT = {
           add: { affection: { shiyu: 2, shen: 1, sunian: 1 } },
           personality: { careful: 2, honest: 1 },
           memory: { id: "旗阵·辨识", title: "庭院的旗杆", text: "你按描述选对了一面红底白圆的旗。" },
-          next: "d15_rewind" }
+          next: "d15_flag_hit" }
       ],
       fallback: { tag: "miss",
         label: "——选错了",
         text: "你选错了那一面。她说：选错了——也不是错，只是这次没看清。她把旗降下来。",
-        next: "d15_rewind" }
+        next: "d15_flag_miss" }
     }
+  },
+  d15_flag_hit: {
+    day: 15, time: "evening", bg: "courtyard", char: null, speaker: "",
+    text: "她看着那面选对的旗，看了很久。风把旗面吹得猎猎作响，她忽然笑了——「你的眼睛，比我想象的可靠。」这句话说得很轻，轻得像在说给风听。可我记住了。",
+    next: "d15_rewind"
+  },
+  d15_flag_miss: {
+    day: 15, time: "evening", bg: "courtyard", char: null, speaker: "",
+    text: "旗面在风里翻了个面——选错了。她没有怪我，只是把旗重新升上去：「没关系。循环这么多次，总有一次会选对的。」说这句话的时候，她没有看我。",
+    next: "d15_rewind"
   },
 
   d15_rewind: {

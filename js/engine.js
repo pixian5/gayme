@@ -42,6 +42,8 @@
            （测试通过后发布仓库根目录，configure-pages 自动开启 Pages，附 .nojekyll）
    v2.9.5：仓库整理——7 份多模型分析文档归档 docs/analysis/；根目录截图与临时产物清理；
            新增「文档索引.md」（逐篇介绍 docs/）；README 全面刷新（进度 / 路线 / 约定 / 工具链）
+   v2.9.6：玩法结果影响叙事——d15 旗阵 / d4 拼图 / d5 调香的结果分流到 5 个新叙事节点；
+           关键词合成解锁时写入「合成回忆」（6 段，进记忆图鉴，COMPOSED_MEMORIES 数据驱动）
    ======================================== */
 
 (function () {
@@ -1338,6 +1340,12 @@
         const result = btn.dataset.result, resultName = btn.dataset.resultName;
         if (Saves.composeKeyword(a, b, result)) {
           flashHint(`✦ 合成成功：${resultName}`);
+          // 合成回忆（v2.9.6）：合成产物解锁时写入记忆图鉴，让合成不只是真结局门票
+          const memory = window.COMPOSED_MEMORIES?.[result];
+          if (memory && !Saves.isMemoryUnlocked(memory.id)) {
+            Saves.saveMemory(memory.id, memory.text);
+            flashHint(`✦ 合成回忆：${memory.title}`);
+          }
           renderKeywords();
         }
       };
