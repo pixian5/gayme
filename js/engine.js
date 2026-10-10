@@ -35,6 +35,9 @@
            辅助函数同步移入对应 games 文件；engine.js 降为纯引擎（约 3.4k 行）
    v2.9.2：CSS 拆分——玩法浮层样式（v0.6.0 起全部分节）拆至 css/games.css（约 7.3k 行），
            style.css 保留基础与引擎 UI（约 1.2k 行）；加载顺序保持级联不变
+   v2.9.3：字体子集治理——tools/collect_font_charset.py（字符集收集）、
+           tools/check_font_coverage.py（cmap 覆盖检查）、tools/rebuild_font_subset.sh
+           （一键重建，含 WiFi 提示）；当前基线缺 30 字符（13 汉字 + 符号），待重建
    ======================================== */
 
 (function () {
