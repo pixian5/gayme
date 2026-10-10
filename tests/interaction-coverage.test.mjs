@@ -18,29 +18,28 @@ const handlers = {
   handwriting: "runHandwriting",
   spectrum: "runSpectrum",
   shadow: "runShadow",
-  candle: "runCandle", dial: "runDial",
-  chime: "runChime", hourglass: "runHourglass", lock: "runLock",
+  candle: "runCandle",
   
-  bottle: "runBottle", echoloc: "runEcholoc", compass: "runCompass", telegraph: "runTelegraph",
-  balance: "runBalance", pendulum: "runPendulum", metronome: "runMetronome",
-  lens: "runLens", tuning: "runTuning",
+  bottle: "runBottle", echoloc: "runEcholoc",
+lens: "runLens",
   stamp: "runStamp", astrolabe: "runAstrolabe", sandpaint: "runSandpaint", kaleido: "runKaleido",
-  abacus: "runAbacus", gear: "runGear", topo: "runTopo", sundial: "runSundial",
+topo: "runTopo",
   windmill: "runWindmill",
   ripple: "runRipple",
-  clepsydra: "runClepsydra",
 };
 /* v2.7.9 起，后日谈与身心感知玩法迁出 engine.js，经 GameKit 注册、由引擎触发；
    v2.8.4 起，手作与器物玩法（craft.js）同样迁出；
    v2.8.5 起引擎用通用分发循环触发所有已注册玩法；
    v2.8.6 起，自然天象玩法（nature.js）迁出；
-   v2.8.7 起，知觉与心绪玩法（perception.js）迁出 */
+   v2.8.7 起，知觉与心绪玩法（perception.js）迁出；
+   v2.8.8 起，机械与律动玩法（mechanism.js）迁出 */
 const afterword = fs.readFileSync(new URL("../js/games/afterword.js", import.meta.url), "utf8");
 const senses = fs.readFileSync(new URL("../js/games/senses.js", import.meta.url), "utf8");
 const craft = fs.readFileSync(new URL("../js/games/craft.js", import.meta.url), "utf8");
 const nature = fs.readFileSync(new URL("../js/games/nature.js", import.meta.url), "utf8");
 const perception = fs.readFileSync(new URL("../js/games/perception.js", import.meta.url), "utf8");
-const gameFiles = { afterword, senses, craft, nature, perception };
+const mechanism = fs.readFileSync(new URL("../js/games/mechanism.js", import.meta.url), "utf8");
+const gameFiles = { afterword, senses, craft, nature, perception, mechanism };
 const gameKitHandlers = {
   postcard: "afterword", timeline: "afterword", triage: "afterword", wall: "afterword", proofread: "afterword",
   breath: "senses", timecapsule: "senses", fold: "senses", reflection: "senses",
@@ -55,6 +54,10 @@ const gameKitHandlers = {
   perfume: "perception", tea: "perception", dice: "perception", decode: "perception",
   rubbing: "perception", collect: "perception", focus: "perception", scentmem: "perception",
   tealeaf: "perception", sugar: "perception",
+  dial: "mechanism", chime: "mechanism", hourglass: "mechanism", lock: "mechanism",
+  compass: "mechanism", telegraph: "mechanism", balance: "mechanism", pendulum: "mechanism",
+  metronome: "mechanism", tuning: "mechanism", abacus: "mechanism", gear: "mechanism",
+  sundial: "mechanism", clepsydra: "mechanism",
 };
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {

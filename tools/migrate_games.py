@@ -99,29 +99,30 @@ def transform(func_name, type_name, doc, body, flags):
 
     # ---- 3. 结果面板 ----
     m = re.search(
-        r'[ ]{6}const reading = document\.createElement\("div"\);\n'
-        r'[ ]{6}reading\.className = "([\w-]+)-reading";\n'
-        r'[ ]{6}reading\.innerHTML = `<div class="[\w-]+-reading-title">(.*?)</div>\n\s*'
+        r'(?P<i1>[ ]{6,12})const reading = document\.createElement\("div"\);\n'
+        r'(?P=i1)reading\.className = "([\w-]+)-reading";\n'
+        r'(?P=i1)reading\.innerHTML = `<div class="[\w-]+-reading-title">(.*?)</div>\n\s*'
         r'<div class="[\w-]+-reading-text">(.*?)</div>\n\s*'
         r'<button class="[\w-]+-reading-close">继续</button>`;\n'
-        r'[ ]{6}reading\.querySelector\("\.[\w-]+-reading-close"\)\.(?:onclick|addEventListener\("click"\))[^=]*=?\s*\(? ?\(\) => \{\n'
-        r'(.*?)\n[ ]{6}\};\n'
-        r'[ ]{6}layer\.appendChild\(reading\);\n',
+        r'(?P=i1)reading\.querySelector\("\.[\w-]+-reading-close"\)\.(?:onclick|addEventListener\("click"\))[^=]*=?\s*\(? ?\(\) => \{\n'
+        r'(.*?)\n(?P=i1)\};\n'
+        r'(?P=i1)layer\.appendChild\(reading\);\n',
         text, re.S)
     if not m:
         raise ValueError("结果面板形态不符")
-    prefix = m.group(1)
-    title_expr = re.sub(r"\s+", " ", m.group(2)).strip()
-    text_expr = re.sub(r"\s+", " ", m.group(3)).strip()
-    close_body = m.group(4)
+    i1 = m.group("i1")
+    prefix = m.group(2)
+    title_expr = re.sub(r"\s+", " ", m.group(3)).strip()
+    text_expr = re.sub(r"\s+", " ", m.group(4)).strip()
+    close_body = m.group(5)
 
     # 关闭处理必须是标准跳转：reading.remove / layer.remove / SCRIPT 查表 / matched.next 覆盖
     mm = re.match(
-        r'^(?:[ ]{8}reading\.remove\(\);\n)?'
-        r'[ ]{8}layer\.remove\(\);\n'
-        r'[ ]{8}const node = SCRIPT\[currentNodeId\];\n'
-        r'[ ]{8}const jumpTo = (\w+)\.next \|\| \(node && node\.next\);\n'
-        r'[ ]{8}if \(jumpTo\) gotoNode\(jumpTo\);$',
+        r'^(?:[ ]{8,14}reading\.remove\(\);\n)?'
+        r'[ ]{8,14}layer\.remove\(\);\n'
+        r'[ ]{8,14}const node = SCRIPT\[currentNodeId\];\n'
+        r'[ ]{8,14}const jumpTo = (\w+)\.next \|\| \(node && node\.next\);\n'
+        r'[ ]{8,14}if \(jumpTo\) gotoNode\(jumpTo\);$',
         close_body, re.S)
     if not mm:
         raise ValueError("结果面板关闭逻辑不是标准跳转（matched.next || node.next）")
@@ -142,33 +143,36 @@ def transform(func_name, type_name, doc, body, flags):
         return mm2
 
     m_mem = strip_tail(
-        r'[ ]{6}if \((\w+)\.memory\) \{\n'
-        r'[ ]{8}if \(!Saves\.isMemoryUnlocked\(\1\.memory\.id\)\) \{\n'
-        r'[ ]{10}Saves\.saveMemory\(\1\.memory\.id, \1\.memory\.text\);\n'
-        r'[ ]{10}flashHint\(`✦ 新记忆：\$\{\1\.memory\.title\}`\);\n'
-        r'[ ]{8}\}\n'
-        r'[ ]{6}\}\n')
+        r'(?P<ie>[ ]{6,12})if \((\w+)\.memory\) \{\n'
+        r'(?P=ie)  if \(!Saves\.isMemoryUnlocked\(\2\.memory\.id\)\) \{\n'
+        r'(?P=ie)    Saves\.saveMemory\(\2\.memory\.id, \2\.memory\.text\);\n'
+        r'(?P=ie)    flashHint\(`✦ 新记忆：\$\{\2\.memory\.title\}`\);\n'
+        r'(?P=ie)  \}\n'
+        r'(?P=ie)\}\n')
     if m_mem:
-        eff["memory"] = m_mem.group(1)
+        eff["memory"] = m_mem.group(2)
+        head_indent = m_mem.group("ie")
 
     m_pers = strip_tail(
-        r'[ ]{6}if \((\w+)\.personality\) \{\n'
-        r'[ ]{8}for \(const dim in \1\.personality\) Saves\.addPersonality\(dim, \1\.personality\[dim\]\);\n'
-        r'[ ]{6}\}\n')
+        r'(?P<ie>[ ]{6,12})if \((\w+)\.personality\) \{\n'
+        r'(?P=ie)  for \(const dim in \2\.personality\) Saves\.addPersonality\(dim, \2\.personality\[dim\]\);\n'
+        r'(?P=ie)\}\n')
     if m_pers:
-        eff["personality"] = m_pers.group(1)
+        eff["personality"] = m_pers.group(2)
+        head_indent = m_pers.group("ie")
 
     m_add = strip_tail(
-        r'[ ]{6}if \((\w+)\.add\) \{ applyAdd\(\1\.add\); updateHeartBar\(\); \}\n')
+        r'(?P<ie>[ ]{6,12})if \((\w+)\.add\) \{ applyAdd\(\2\.add\); updateHeartBar\(\); \}\n')
     if m_add:
-        eff["add"] = m_add.group(1)
+        eff["add"] = m_add.group(2)
+        head_indent = m_add.group("ie")
 
     # 记录行：可能多行（参数跨行），按括号配平吞并
     rec_lines = []
     while True:
-        mm3 = re.search(r'([ ]{6}Saves\.save\w+\(currentNodeId[^\n]*\n)\Z', head)
+        mm3 = re.search(r'((?P<ir>[ ]{6,12})Saves\.save\w+\(currentNodeId[^\n]*\n)\Z', head)
         if not mm3:
-            mm3 = re.search(r'([ ]{6}Saves\.save\w+\(currentNodeId[^\n]*\)\n)\Z', head)
+            mm3 = re.search(r'((?P<ir>[ ]{6,12})Saves\.save\w+\(currentNodeId[^\n]*\)\n)\Z', head)
             if not mm3:
                 break
         cand = mm3.group(1)
@@ -247,24 +251,25 @@ def transform(func_name, type_name, doc, body, flags):
     shell += f'{shell_indent}const layer = shell.layer;\n'
 
     # ---- 组装 finish ----
-    props = [f'        label: `{title_expr}`,' if title_expr else None,
-             f'        text: `{text_expr}`,' if text_expr else None]
+    pi = i1  # finish 调用与面板同缩进，属性再深 2 格
+    props = [f'{pi}  label: `{title_expr}`,' if title_expr else None,
+             f'{pi}  text: `{text_expr}`,' if text_expr else None]
     if eff["add"]:
-        props.append(f'        add: {eff["add"]}.add,')
+        props.append(f'{pi}  add: {eff["add"]}.add,')
     if eff["personality"]:
-        props.append(f'        personality: {eff["personality"]}.personality,')
+        props.append(f'{pi}  personality: {eff["personality"]}.personality,')
     if eff["memory"]:
-        props.append(f'        memory: {eff["memory"]}.memory,')
+        props.append(f'{pi}  memory: {eff["memory"]}.memory,')
     if eff["record"]:
         rec = eff["record"].rstrip()
         if rec.count("(") != rec.count(")"):
             raise ValueError("record 语句括号不配平")
         rec_stmt = rec.strip().rstrip(";").replace("currentNodeId", "nodeId")
-        props.append(f'        record: () => {rec_stmt},')
+        props.append(f'{pi}  record: () => {rec_stmt},')
     if matched_var:
-        props.append(f'        next: {matched_var}.next,')
+        props.append(f'{pi}  next: {matched_var}.next,')
     props = [p for p in props if p]
-    finish = "      shell.finish({\n" + "\n".join(props) + "\n      });\n"
+    finish = f"{pi}shell.finish({{\n" + "\n".join(props) + f"\n{pi}}});\n"
 
     text = text.replace("@@SHELL@@", shell, 1)
     text = text.replace("@@FINISH@@", finish, 1)
