@@ -15,13 +15,10 @@ const handlers = {
   dream: "enterDream", doodle: "runDoodle", collage: "runCollage", photo: "runPhoto",
   rhythm: "runRhythm", scent: "runScent", scentRecall: "triggerScentRecall",
   silenceChoice: "runSilenceChoice", touch: "runTouch", temperature: "runTemperature",
-  tarot: "runTarot", dreamweave: "runDreamweave", handwriting: "runHandwriting",
-  spectrum: "runSpectrum", stethoscope: "runStethoscope",
-  puzzle: "runPuzzle", perfume: "runPerfume", tea: "runTea",
-  dice: "runDice",
-  decode: "runDecode", rubbing: "runRubbing", collect: "runCollect",
-  focus: "runFocus", scentmem: "runScentmem", tealeaf: "runTealeaf", shadow: "runShadow",
-  candle: "runCandle", dial: "runDial", sugar: "runSugar",
+  handwriting: "runHandwriting",
+  spectrum: "runSpectrum",
+  shadow: "runShadow",
+  candle: "runCandle", dial: "runDial",
   chime: "runChime", hourglass: "runHourglass", lock: "runLock",
   
   bottle: "runBottle", echoloc: "runEcholoc", compass: "runCompass", telegraph: "runTelegraph",
@@ -36,12 +33,14 @@ const handlers = {
 /* v2.7.9 起，后日谈与身心感知玩法迁出 engine.js，经 GameKit 注册、由引擎触发；
    v2.8.4 起，手作与器物玩法（craft.js）同样迁出；
    v2.8.5 起引擎用通用分发循环触发所有已注册玩法；
-   v2.8.6 起，自然天象玩法（nature.js）迁出 */
+   v2.8.6 起，自然天象玩法（nature.js）迁出；
+   v2.8.7 起，知觉与心绪玩法（perception.js）迁出 */
 const afterword = fs.readFileSync(new URL("../js/games/afterword.js", import.meta.url), "utf8");
 const senses = fs.readFileSync(new URL("../js/games/senses.js", import.meta.url), "utf8");
 const craft = fs.readFileSync(new URL("../js/games/craft.js", import.meta.url), "utf8");
 const nature = fs.readFileSync(new URL("../js/games/nature.js", import.meta.url), "utf8");
-const gameFiles = { afterword, senses, craft, nature };
+const perception = fs.readFileSync(new URL("../js/games/perception.js", import.meta.url), "utf8");
+const gameFiles = { afterword, senses, craft, nature, perception };
 const gameKitHandlers = {
   postcard: "afterword", timeline: "afterword", triage: "afterword", wall: "afterword", proofread: "afterword",
   breath: "senses", timecapsule: "senses", fold: "senses", reflection: "senses",
@@ -52,6 +51,10 @@ const gameKitHandlers = {
   astronomy: "nature", wind: "nature", rain: "nature", constellation: "nature", foggy: "nature",
   kite: "nature", orbit: "nature", firefly: "nature", windchime: "nature", starchart: "nature",
   eclipse: "nature", celestial: "nature", vane: "nature",
+  tarot: "perception", dreamweave: "perception", stethoscope: "perception", puzzle: "perception",
+  perfume: "perception", tea: "perception", dice: "perception", decode: "perception",
+  rubbing: "perception", collect: "perception", focus: "perception", scentmem: "perception",
+  tealeaf: "perception", sugar: "perception",
 };
 
 test("每类剧情互动都有节点入口和引擎处理器", () => {
