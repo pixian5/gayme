@@ -8,6 +8,8 @@
            取消钩子（onCancel）替代各玩法自建的 MutationObserver 清理。
    v2.8.5：新增 types() 暴露注册表清单，引擎 gotoNode 用通用循环分发已注册玩法，
            不再为每个已迁移玩法手写分发分支。
+   v2.9.1：createShell 支持 keepDialog（直跳型玩法保持对话框可见的原行为）；
+           暴露 host 宿主桥对象，直跳型玩法的条件跳转 / 加成可直接调用宿主能力。
    ======================================== */
 (function () {
   "use strict";
@@ -82,7 +84,8 @@
     layer.className = `${kind}-layer`;
     layer.id = `${kind}-layer`;
 
-    document.getElementById("dialog-box")?.classList.add("hidden");
+    // 直跳型玩法（collage/photo/rhythm 等）原本不隐藏对话框，用 keepDialog 保持原行为
+    if (!options.keepDialog) document.getElementById("dialog-box")?.classList.add("hidden");
     document.getElementById("game").appendChild(layer);
 
     let cleaned = false;
@@ -158,5 +161,5 @@
     return `${verb || "已处理"} ${count} / ${total}`;
   }
 
-  window.GameKit = { attachHost, register, has, types, run, createShell, showReading, formatProgress, escapeHtml, flashHint };
+  window.GameKit = { attachHost, register, has, types, run, createShell, showReading, formatProgress, escapeHtml, flashHint, host };
 })();

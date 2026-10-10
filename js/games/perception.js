@@ -102,6 +102,31 @@
     return dw.fallback || { tag: "default", label: "——梦不成形", next: null };
   }
 
+  function matchPuzzle(pz, seq) {
+    const interps = pz.interpretations || [];
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every((id, idx) => id === seq[idx])) {
+        return i;
+      }
+    }
+    for (const i of interps) {
+      if (i.order && i.order.length === seq.length && i.order.every(id => seq.includes(id))) {
+        return i;
+      }
+    }
+    return pz.fallback || { tag: "default", label: "——拼不成形", next: null };
+  }
+
+  function matchPerfume(pf, ids) {
+    const recipes = pf.recipes || [];
+    for (const r of recipes) {
+      if (r.ids && r.ids.length === ids.length && r.ids.every(id => ids.includes(id))) {
+        return r;
+      }
+    }
+    return pf.fallback || { tag: "default", label: "——香不成方", next: null };
+  }
+
   register("tarot", function (tarot, nodeId) {
 
     const shell = createShell({ kind: "tarot", prefix: "tarot", nodeId });

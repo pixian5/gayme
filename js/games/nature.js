@@ -24,6 +24,26 @@
        fallback: { tag, next }
      }
      ============================================================ */
+  function matchConstellation(cs, seq) {
+    const consts = cs.constellations || [];
+    for (const c of consts) {
+      if (c.stars && c.stars.length === seq.length && c.stars.every((id, i) => id === seq[i])) {
+        return c;
+      }
+    }
+    for (const c of consts) {
+      if (c.stars && c.stars.length === seq.length && c.stars.every(id => seq.includes(id))) {
+        return c;
+      }
+    }
+    for (const c of consts) {
+      if (c.stars && c.stars.every(id => seq.includes(id))) {
+        return c;
+      }
+    }
+    return cs.fallback || { tag: "default", label: "——星图无言", next: null };
+  }
+
   register("astronomy", function (a, nodeId) {
     const shell = createShell({ kind: "astronomy", prefix: "as", nodeId });
     const layer = shell.layer;
