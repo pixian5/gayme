@@ -3,9 +3,10 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v2.8.4**（开发测试版 · Demo）
+- 当前版本：**v2.9.5**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
+- 在线试玩：https://pixian5.github.io/gayme/ （push 到 main 后由 GitHub Actions 自动部署）
 
 ## 运行方式
 
@@ -23,88 +24,61 @@ npm run test:syntax
 ```
 
 改动完成门槛：`npm test` 全过 + `npm run test:syntax` + `git diff --check` + 浏览器回归。
+推送 main 后 GitHub Actions 会自动跑同一套测试并部署 Pages。
 
 ## 【当前开发进度】
 
-剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（409 个剧情节点），31 项测试全过；v2.7.9 建立玩法框架基座（GameKit），v2.8.0 完成 13 个玩法迁移与一致性测试，v2.8.1~v2.8.2 补齐内容纵深（家庭线 / 三人旧交 / 长链分章 / 学姐中段线索），v2.8.3 转向工程瘦身：saves.js 引入存档方法工厂（1918→1208 行），中文字体改为自托管 Noto Serif SC 子集（660KB）。**v2.8.4 启动玩法模板减量（共 6 批）**：第 1 批把 13 个手作与器物玩法迁至 `js/games/craft.js`，engine.js 从 16172 行 / 590,035 字符降到 14614 行 / 552,240 字符（−6.4%）。工程重心已从「新增玩法」转向「结构瘦身 + 内容纵深 + 表现升级」。
+剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（409 个剧情节点），31 项测试全过。
+**工程债务已清偿（v2.8.5 → v2.9.5）**：v2.8.5 GameKit 通用分发；v2.8.6~v2.9.1 六批玩法迁移收官
+（engine.js 的 63 个玩法全部迁至 js/games/ 八个模块，engine.js 14,614 → 3,373 行，降为纯引擎；
+迁移全程用自动化转换器 + 等价性校验器，并顺带修复 7 处监听/定时器泄漏与残留跳转 bug）；
+v2.9.2 玩法样式拆至 css/games.css；v2.9.3 字体子集覆盖检查工具化（基线缺 30 字符待重建）；
+v2.9.4 GitHub Actions CI + Pages 自动部署；v2.9.5 仓库整理（分析文档归档、文档索引）。
 
-详细内容见 → [docs/202609292356当前开发进度.md](docs/202609292356当前开发进度.md)
+详细内容见 → [docs/202610110541当前开发进度.md](docs/202610110541当前开发进度.md)
 
 ## 【下一步待实现】
 
-按 v2.7.9 → v2.8.7 路线推进：~~玩法框架基座（GameKit）~~ → ~~减重与一致性（v2.8.0）~~ → ~~内容纵深 A（v2.8.1）~~ → ~~内容纵深 B（v2.8.2 学姐线索 + 长链分章）~~ → ~~工程瘦身 + 字体落地（v2.8.3）~~ → 玩法模板减量 6 批（~~第 1 批 v2.8.4~~ → 第 2~6 批 v2.8.5~v2.8.9）→ 玩法结果影响叙事 → 音频/立绘 → 移动端打磨 → GitHub Pages 试玩发布。
+~~玩法框架基座~~ → ~~六批玩法迁移~~ → ~~CSS 拆分~~ → ~~发布链路~~ → 字体子集重建（WiFi 环境一条命令）
+→ 浏览器全玩法回归 → 玩法结果影响叙事 → 真实音频 / 立绘 / CG（需资产）→ 移动端打磨 → 试玩发布。
 
-当前批次详情 → [docs/202609300249玩法模板减量第1批.md](docs/202609300249玩法模板减量第1批.md)
-
-详细内容见 → [docs/202609292356下一步开发方案.md](docs/202609292356下一步开发方案.md)
+详细内容见 → [docs/202610110541下一步待实现.md](docs/202610110541下一步待实现.md)
 
 ## 文档索引
 
-### 进度与规划
-| 文档 | 作用 |
-|---|---|
-| [docs/202609292356当前开发进度.md](docs/202609292356当前开发进度.md) | 当前版本的状态快照：已完成模块、代码体量、已知债务 |
-| [docs/202609292356下一步开发方案.md](docs/202609292356下一步开发方案.md) | v2.7.9 → v2.8.7 的详细执行路线与验收标准 |
-
-### 版本记录（docs/）
-| 文档 | 作用 |
-|---|---|
-| [v2.6.1-review-fixes.md](docs/v2.6.1-review-fixes.md) | 序章到星座玩法断链修复、存档边界校验 |
-| [v2.6.3-development-foundation.md](docs/v2.6.3-development-foundation.md) | 测试基座、存储 schema v3、生命周期令牌 |
-| [v2.6.4-story-afterword.md](docs/v2.6.4-story-afterword.md) | 后日谈与明信片印记玩法 |
-| [v2.6.9-story-playtest.md](docs/v2.6.9-story-playtest.md) | 第 15 日回溯承接、涂色玩法修复 |
-| [v2.7.0-story-playtest.md](docs/v2.7.0-story-playtest.md) | 后日谈现实回信 |
-| [v2.7.1-story-timeline.md](docs/v2.7.1-story-timeline.md) | 时间线排序玩法 |
-| [v2.7.2-story-reply-corner.md](docs/v2.7.2-story-reply-corner.md) | 半年后回信角 |
-| [v2.7.3-story-triage.md](docs/v2.7.3-story-triage.md) | 回信分拣与互动层竞态修复 |
-| [v2.7.4-story-wall.md](docs/v2.7.4-story-wall.md) | 毕业前留言墙 |
-| [v2.7.5-interaction-guard.md](docs/v2.7.5-interaction-guard.md) | 互动层推进保护 |
-| [v2.7.6-story-proofread.md](docs/v2.7.6-story-proofread.md) | 校刊校对玩法 |
-| [v2.7.7-story-consistency.md](docs/v2.7.7-story-consistency.md) | 剧情合理性复核（真结局判定、时间线、关键词解锁） |
-| [v2.7.8-story-consistency.md](docs/v2.7.8-story-consistency.md) | 星座路径收束、旧存档节点别名兼容、favicon |
-| [v2.7.9-gamekit.md](docs/v2.7.9-gamekit.md) | 玩法框架基座 GameKit、后日谈 5 个玩法迁移与回归修复 |
-| [v2.8.0-gamekit-batch2.md](docs/v2.8.0-gamekit-batch2.md) | 第二批 8 个玩法迁移、GameKit 能力扩展、一致性测试与死代码清理 |
-| [v2.8.1-story-depth.md](docs/v2.8.1-story-depth.md) | 沈屿家庭线铺垫与三人旧交回忆（回收 d2_noon_9 / d3_sunian_5 伏笔） |
-| [v2.8.2-longchain-chapters.md](docs/v2.8.2-longchain-chapters.md) | 长链分三章呼吸点与学姐中段线索（d10_senior_slip） |
-| [202609300202工程瘦身与自托管字体.md](docs/202609300202工程瘦身与自托管字体.md) | v2.8.3：saves.js 存档方法工厂化（1918→1208 行）与自托管 Noto Serif SC 子集字体，含子集重建步骤 |
-| [202609300249玩法模板减量第1批.md](docs/202609300249玩法模板减量第1批.md) | v2.8.4：玩法模板减量（共 6 批）路线、第 1 批 13 个手作玩法迁至 craft.js、等价校验与回归方法 |
-
-### 外部分析（项目根目录）
-| 文档 | 作用 |
-|---|---|
-| [glm开发建议.md](glm开发建议.md) | GLM 的剧情全梳理 + 分层开发建议（含 10 条叙事约束，当前权威上下文） |
-| [glm.md](glm.md) | GLM 的剧情合理性专项梳理（v2.7.7，指出学园祭缺失等时间线问题） |
-| [Kimi开发建议.md](Kimi开发建议.md) | Kimi 的系统盘点与技术债/重构建议 |
-| [qwen开发方案.md](qwen开发方案.md) | Qwen 的完整分析 + 代码拆分详细方案 |
-| [seed开发建议.md](seed开发建议.md) | Seed 的剧情梳理与分优先级建议 |
-| [seed开发方案.md](seed开发方案.md) | Seed 的开发方案（与上篇配套） |
-| [代码审查m3.md](代码审查m3.md) | v2.6.0 时期的详细代码审查报告 |
+全部文档（版本记录 / 规划 / 外部分析 / 工具说明）的逐篇介绍见 → [文档索引.md](文档索引.md)
 
 ## 目录结构
 
 ```
-index.html          入口（含字体 preload 与 9 个脚本按序加载，engine.js 最后）
-css/style.css       全部视觉/动效/响应式（顶部为自托管 @font-face）
-fonts/              自托管 Noto Serif SC 子集（Regular/Bold woff2，共 660KB，覆盖 1713 字符）
+index.html          入口（字体 preload；样式 style.css + games.css；脚本 12 个按序加载，engine.js 最后）
+css/style.css       基础与引擎 UI 样式（顶部为自托管 @font-face）
+css/games.css       全部玩法浮层样式（94 套，v2.9.2 拆出）
+fonts/              自托管 Noto Serif SC 子集（Regular/Bold woff2；重建见 tools/rebuild_font_subset.sh）
 js/saves.js         存档与图鉴数据层（localStorage，106 个键；记录型存取由 recordStore 工厂生成）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 409 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
 js/minigames.js     3 个基础迷你游戏（writing / running / painting）
-js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生命周期 / 进度文案 / 宿主桥
-js/games/           已迁移的玩法模块：afterword.js（后日谈 5）、senses.js（身心感知 8）、craft.js（手作与器物 13）
-js/engine.js        引擎 + 其余玩法实现
-tests/              Node 原生测试
-docs/               版本记录与规划文档
+js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生命周期 / host 桥 / 通用分发 types()
+js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 13 / nature 13 /
+                    perception 14 / mechanism 14 / imagery 12 / direct 10（直跳型）
+js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
+tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套
+tests/              Node 原生测试（31 项）
+docs/               版本记录与规划文档（7 份多模型分析文档在 docs/analysis/）
 ```
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v2.8.4，下一版 v2.8.5）
-- 版本同步点：`VERSION`、`index.html`（10 处 `?v=` + 标题页 `vX.Y.Z · Demo`）、`package.json`、`js/engine.js` 头部注释
-- 玩法迁移：新玩法一律用 `GameKit.createShell()` + `shell.finish()`，不再手写浮层 / 结果面板 / `MutationObserver`；
-  早期直跳型（无结果面板）玩法待 GameKit 补 `silent` 收尾选项后迁移（见第 6 批）
-- 迁移后的玩法文件需在 `tests/interaction-coverage.test.mjs` 的 `gameKitHandlers` 中登记来源
-- 新增玩法存储：使用 `js/saves.js` 的 `recordStore` / `unlockListStore` 工厂，不再手写 get/save/读单条三件套
-- 字体：中文由自托管子集提供，新增文案若出现子集未覆盖的汉字，需按[docs/202609300202工程瘦身与自托管字体.md](docs/202609300202工程瘦身与自托管字体.md)重建子集
+- 版本号：每次修改 +0.0.1，满十进一（当前 v2.9.5，下一版 v2.9.6）
+- 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
+  `index.html`（`?v=` 与标题页）；`js/engine.js` 头注释手工补一行变更说明（一致性测试兜底）
+- 玩法开发：新玩法一律 `GameKit.register()` + `createShell()` / `shell.finish()`，
+  经引擎的通用分发循环自动触发；样式写进 css/games.css；实现放 js/games/ 对应主题文件
+- 新增玩法存储：使用 `js/saves.js` 的 `recordStore` / `unlockListStore` 工厂
+- games 文件内**禁止引用引擎内部符号**（applyAdd / gotoNode / state 等）——用 GameKit 宿主桥，
+  tools/equivalence_check.py 会扫描
+- 字体：新增文案若出现子集未覆盖的汉字 → `bash tools/rebuild_font_subset.sh`
+- 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
 - 提交：中文 commit，完成后推送 gitee（origin）与 github
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
