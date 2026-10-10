@@ -12,6 +12,8 @@
            自托管 Noto Serif SC 子集字体（fonts/，约 320KB/字重）
    v2.8.4：玩法模板减量（第 1 批 / 共 6 批）——手作与器物 13 个玩法迁至
            js/games/craft.js（engine.js 16172→14612 行）
+   v2.8.5：通用玩法分发——gotoNode 以 GameKit.types() 循环统一分发已注册玩法，
+           删除 23 个逐类型手写分支（triage/wall/proofread 特殊分支保留）
    ======================================== */
 
 (function () {
@@ -587,85 +589,13 @@
       return;
     }
 
-    // v1.0.0 呼吸引导节点
-    if (node.breath) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("breath", node.breath, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.0.0 时光胶囊节点
-    if (node.timecapsule) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("timecapsule", node.timecapsule, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.0.0 信纸折痕节点
-    if (node.fold) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("fold", node.fold, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.0.0 倒影对齐节点
-    if (node.reflection) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("reflection", node.reflection, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.1.0 光影描绘节点
-    if (node.lightdraw) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("lightdraw", node.lightdraw, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.1.0 声音模仿节点
-    if (node.mimic) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("mimic", node.mimic, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.1.0 季节切换节点
-    if (node.season) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("season", node.season, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.1.0 脉搏同步节点
-    if (node.pulse) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("pulse", node.pulse, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v1.2.0 茶席品茗节点
     if (node.tea) {
@@ -687,25 +617,7 @@
       return;
     }
 
-    // v1.2.0 颜料调配节点
-    if (node.palette) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("palette", node.palette, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v1.2.0 琴键演奏节点
-    if (node.piano) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("piano", node.piano, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v1.3.0 占星骰子节点
     if (node.dice) {
@@ -887,15 +799,6 @@
       return;
     }
 
-    // v1.7.0 折纸造型节点
-    if (node.origami) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("origami", node.origami, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v1.7.0 星轨追踪节点
     if (node.orbit) {
@@ -1117,15 +1020,6 @@
       return;
     }
 
-    // v2.3.0 染缸调色节点
-    if (node.dye) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("dye", node.dye, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v2.3.0 风车叶片节点
     if (node.windmill) {
@@ -1137,35 +1031,8 @@
       return;
     }
 
-    // v2.3.0 经纬编织节点
-    if (node.weave) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("weave", node.weave, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.4.0 镜面对称节点
-    if (node.mirror) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("mirror", node.mirror, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.4.0 灯笼排列节点
-    if (node.lantern) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("lantern", node.lantern, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v2.4.0 水波纹节点
     if (node.ripple) {
@@ -1177,25 +1044,7 @@
       return;
     }
 
-    // v2.4.0 马赛克拼图节点
-    if (node.mosaic) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("mosaic", node.mosaic, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.5.0 碑帖拼合节点
-    if (node.stele) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("stele", node.stele, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v2.5.0 星轨推演节点
     if (node.celestial) {
@@ -1207,15 +1056,6 @@
       return;
     }
 
-    // v2.5.0 节拍鼓点节点
-    if (node.drum) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("drum", node.drum, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v2.5.0 风向标节点
     if (node.vane) {
@@ -1237,55 +1077,10 @@
       return;
     }
 
-    // v2.6.0 拼图归位节点
-    if (node.jigsaw) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("jigsaw", node.jigsaw, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.6.0 棋局推演节点
-    if (node.chess) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("chess", node.chess, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.6.0 旗阵辨识节点
-    if (node.flag) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("flag", node.flag, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.6.4 后日谈明信片印记
-    if (node.postcard) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("postcard", node.postcard, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
-    // v2.7.3 后日谈时间线
-    if (node.timeline) {
-      setScene(node.bg);
-      renderCharacters(node);
-      window.GameKit?.run("timeline", node.timeline, nodeId);
-      updateDayBar(node);
-      updateHeartBar();
-      return;
-    }
 
     // v2.7.3 后日谈回信分拣
     if (node.triage) {
@@ -1345,6 +1140,22 @@
       updateDayBar(node);
       updateHeartBar();
       return;
+    }
+
+    // 通用玩法分发：所有经 GameKit 注册的已迁移玩法（js/games/*.js）在此统一触发。
+    // 带打字机前置的特殊玩法（triage / wall / proofread）已在上方各自分支处理；
+    // 尚未迁移的玩法仍走上方各自的 if (node.xxx) 分支——它们的类型不在注册表里，不会被此循环命中。
+    if (window.GameKit) {
+      for (const type of window.GameKit.types()) {
+        if (node[type]) {
+          setScene(node.bg);
+          renderCharacters(node);
+          window.GameKit.run(type, node[type], nodeId);
+          updateDayBar(node);
+          updateHeartBar();
+          return;
+        }
+      }
     }
 
     // 普通节点/结局节点

@@ -59,11 +59,11 @@ test("每类剧情互动都有节点入口和引擎处理器", () => {
 });
 
 test("已迁移玩法经 GameKit 注册并由引擎触发", () => {
+  // v2.8.5 起引擎用通用分发循环统一触发所有已注册玩法，不再逐类型手写分支
+  assert.match(engine, /for \(const type of window\.GameKit\.types\(\)\)/, "缺少通用玩法分发循环");
   for (const [field, source] of Object.entries(gameKitHandlers)) {
     const ids = Object.entries(SCRIPT).filter(([, node]) => node && node[field] !== undefined).map(([id]) => id);
     assert.ok(ids.length > 0, `${field} 没有剧情节点入口`);
-    assert.match(engine, new RegExp(`if \\(node\\.${field}\\)`), `${field} 没有节点分发器`);
-    assert.match(engine, new RegExp(`GameKit\\?\\.run\\("${field}"`), `${field} 未通过 GameKit 触发`);
     assert.match(gameFiles[source], new RegExp(`register\\("${field}"`), `${field} 缺少 GameKit 注册`);
   }
 });

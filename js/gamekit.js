@@ -6,6 +6,8 @@
    宿主能力（跳转 / 数值 / 提示 / 转义）由 engine.js 启动时经 attachHost 注入。
    v2.8.0：结果面板支持独立前缀（br / tc / fd …）、收尾支持记忆解锁、
            取消钩子（onCancel）替代各玩法自建的 MutationObserver 清理。
+   v2.8.5：新增 types() 暴露注册表清单，引擎 gotoNode 用通用循环分发已注册玩法，
+           不再为每个已迁移玩法手写分发分支。
    ======================================== */
 (function () {
   "use strict";
@@ -46,6 +48,11 @@
 
   function has(type) {
     return registry.has(type);
+  }
+
+  /* 已注册玩法类型清单（按注册顺序），供引擎通用分发循环遍历 */
+  function types() {
+    return [...registry.keys()];
   }
 
   function run(type, config, nodeId) {
@@ -151,5 +158,5 @@
     return `${verb || "已处理"} ${count} / ${total}`;
   }
 
-  window.GameKit = { attachHost, register, has, run, createShell, showReading, formatProgress, escapeHtml, flashHint };
+  window.GameKit = { attachHost, register, has, types, run, createShell, showReading, formatProgress, escapeHtml, flashHint };
 })();
