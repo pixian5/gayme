@@ -47,6 +47,8 @@
    v2.9.7：音频升级——BGM 重写为三层程序化配乐（和弦垫 / 低音 / 五声随机游走旋律，
            look-ahead 调度器按音频时钟排程）；新增 5 种程序化音效（信件 / 关键词 /
            记忆 / 成功 / 失败），经 window.GameSfx 暴露；设置面板加音效音量滑杆
+   v2.9.8：自动存档——推进节点即静默记录最后位置（3 秒节流，pagehide/切后台强制落盘），
+           「继续游戏」自动取自动存档与快存槽中更新的一份；刷新 / 关页不再丢进度
    ======================================== */
 
 (function () {
@@ -363,6 +365,9 @@
         });
       }
       deliverTimecapsules(nodeId);
+
+      // 自动存档：推进到新节点即静默记录最后位置（读档恢复 restoring 时不写）
+      autoSave();
     }
 
     // 环境线索属于画面状态，读档时也必须重新渲染。
@@ -961,6 +966,17 @@
   function quickSave() {
     if (!state.inGame) return;
     flashHint(Saves.quickSave(snapshot()) ? "已快存" : "快存失败：浏览器存储不可用");
+  }
+
+  /* 自动存档（v2.9.8）：静默记录最后位置，防刷新 / 关页丢失。
+     节流 3 秒；读档恢复（restoring）与标题页不写；pagehide / 切后台时强制落盘。 */
+  let lastAutoSaveAt = 0;
+  function autoSave(force = false) {
+    if (!state.inGame) return;
+    const now = Date.now();
+    if (!force && now - lastAutoSaveAt < 3000) return;
+    lastAutoSaveAt = now;
+    Saves.autoSave(snapshot());
   }
 
   function saveToSlot(slot) {
@@ -3399,8 +3415,14 @@
       const a = btn.dataset.action;
       if (a === "new") newGame();
       else if (a === "continue") {
+        // 自动存档与快存槽都算「继续」的候选，取时间戳更新的一份
+        const auto = Saves.getAutoSnapshot();
         const quick = Saves.getQuickSave();
-        if (quick) restoreSnapshot(quick);
+        const candidates = [];
+        if (quick) candidates.push({ data: quick, at: quick.timestamp || 0 });
+        if (auto) candidates.push({ data: auto.snapshot, at: auto.savedAt || 0 });
+        candidates.sort((a, b) => b.at - a.at);
+        if (candidates.length) restoreSnapshot(candidates[0].data);
         else flashHint("没有可继续的存档");
       } else if (a === "load") openOverlay("load");
       else if (a === "gallery") openOverlay("gallery");
@@ -3468,6 +3490,12 @@
       else advance();
     } else if (e.key === "s" || e.key === "S") quickSave();
     else if (e.key === "a" || e.key === "A") document.getElementById("btn-auto").click();
+  });
+
+  // 自动存档兜底：关页 / 切后台时把未落盘的进度强制写入（绕过节流）
+  window.addEventListener("pagehide", () => autoSave(true));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") autoSave(true);
   });
 
   /* ============ 启动 ============ */

@@ -82,6 +82,32 @@ test("备份导出、导入和版本校验", () => {
   assert.equal(Saves.importData({ schemaVersion: 3, records: { unknown: true } }), false);
 });
 
+test("自动存档写入、读取与清空覆盖", () => {
+  assert.equal(Saves.getAutoSnapshot(), null);
+  assert.equal(Saves.autoSave(null), false);
+  assert.equal(Saves.autoSave({ variables: {} }), false);          // 缺 nodeId 拒绝
+  assert.equal(Saves.autoSave({ nodeId: "d4_puzzle", variables: {} }), true);
+  const auto = Saves.getAutoSnapshot();
+  assert.equal(auto.snapshot.nodeId, "d4_puzzle");
+  assert.ok(typeof auto.savedAt === "number");
+  // 损坏数据安全回退为空（清缓存模拟页面重载后的冷读）
+  store.set("sakura_letters_autosave_v2", "{bad json");
+  Saves.cache.clear();
+  assert.equal(Saves.getAutoSnapshot(), null);
+  // clearAll 清空所有存储键时覆盖自动存档
+  Saves.autoSave({ nodeId: "d5_perfume" });
+  Saves.clearAll();
+  assert.equal(Saves.getAutoSnapshot(), null);
+  // 导出包含自动存档，导入可恢复
+  Saves.autoSave({ nodeId: "d15_flag", variables: { affection: { shiyu: 3 } } });
+  const exported = Saves.exportData();
+  assert.ok(exported.records["sakura_letters_autosave_v2"]);
+  Saves.clearAll();
+  assert.equal(Saves.getAutoSnapshot(), null);
+  assert.equal(Saves.importData(exported), true);
+  assert.equal(Saves.getAutoSnapshot().snapshot.nodeId, "d15_flag");
+});
+
 test("后日谈回信分拣记录可写入并被清空", () => {
   const assignment = { room: "space", step: "step", listen: "listen" };
   assert.equal(Saves.saveTriageRecord("afterword_mailbox_triage", assignment, true, "correct"), true);

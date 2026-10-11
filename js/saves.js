@@ -8,6 +8,7 @@
 const SAVE_SLOTS = 9;
 const STORAGE_KEY   = "sakura_letters_saves_v2";
 const SETTINGS_KEY  = "sakura_letters_settings_v2";
+const AUTOSAVE_KEY   = "sakura_letters_autosave_v2";   // 自动存档（防刷新丢失，v2.9.8）
 const ENDINGS_KEY   = "sakura_letters_endings_v2";
 const KEYWORDS_KEY  = "sakura_letters_keywords_v2";
 const CG_KEY        = "sakura_letters_cg_v2";
@@ -156,7 +157,7 @@ const PROOFREAD_KEY    = "sakura_letters_proofread_v2";   // 后日谈校刊校�
 const META_KEY        = "sakura_letters_meta_v3";
 const STORAGE_SCHEMA_VERSION = 3;
 
-const GAME_STORAGE_KEYS = [STORAGE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
+const GAME_STORAGE_KEYS = [STORAGE_KEY, AUTOSAVE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
   FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
   CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
   DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY, COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
@@ -463,6 +464,19 @@ const Saves = {
 
   getQuickSave() { return this.data.slots[0]; },
   quickSave(snapshot) { return this.save(0, snapshot); },
+
+  /* v2.9.8 自动存档：推进节点时静默写入最后位置，刷新 / 关页后可从「继续游戏」恢复。
+     payload = { savedAt, snapshot }；写入失败静默返回 false（引擎节流重试）。 */
+  autoSave(snapshot) {
+    if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot) || !snapshot.nodeId) return false;
+    return this._write(AUTOSAVE_KEY, JSON.stringify({ savedAt: Date.now(), snapshot }));
+  },
+  getAutoSnapshot() {
+    const data = this._read(AUTOSAVE_KEY, null,
+      (v) => v && typeof v === "object" && !Array.isArray(v) && v.snapshot && v.snapshot.nodeId);
+    return data && data.snapshot ? data : null;
+  },
+  clearAutoSave() { return this._remove(AUTOSAVE_KEY); },
 
   /* ============ 结局图鉴 ============ */
   _loadEndings() {

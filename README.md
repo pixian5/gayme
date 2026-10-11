@@ -6,6 +6,7 @@
 - 当前版本：**v2.9.5**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
+- 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
 - 在线试玩：https://pixian5.github.io/gayme/ （push 到 main 后由 GitHub Actions 自动部署）
 
 ## 运行方式
