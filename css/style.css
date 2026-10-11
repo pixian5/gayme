@@ -17,6 +17,8 @@
 }
 
 /* ============ 基础 ============ */
+/* 移动端触控（v3.0.0）：manipulation 禁双击缩放，快速点击不误触放大 */
+#game, #game button, .choice-btn { touch-action: manipulation; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
 body {
@@ -281,7 +283,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   position: absolute;
   left: 5%;
   right: 5%;
-  bottom: 5%;
+  bottom: calc(5% + env(safe-area-inset-bottom));
   z-index: 10;
   min-height: 28%;
   padding: 28px 40px 36px;
@@ -372,11 +374,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ============ 顶部菜单条 ============ */
 #top-bar {
   position: absolute;
-  top: 0; right: 0;
+  top: env(safe-area-inset-top);
+  right: 0;
   z-index: 20;
   display: flex;
   gap: 6px;
-  padding: 10px 14px;
+  padding: 10px max(14px, env(safe-area-inset-right)) 10px max(14px, env(safe-area-inset-left));
   opacity: 0;
   transition: opacity 0.3s ease;
 }
@@ -695,8 +698,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ============ 日程条（左上） ============ */
 #day-bar {
   position: absolute;
-  top: 14px;
-  left: 14px;
+  top: calc(14px + env(safe-area-inset-top));
+  left: calc(14px + env(safe-area-inset-left));
   z-index: 18;
   padding: 8px 18px;
   background: linear-gradient(135deg, rgba(20,18,32,0.78), rgba(40,30,55,0.78));
@@ -750,8 +753,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ============ 好感度心条（右上） ============ */
 #heart-bar {
   position: absolute;
-  top: 62px;
-  right: 14px;
+  top: calc(62px + env(safe-area-inset-top));
+  right: calc(14px + env(safe-area-inset-right));
   z-index: 18;
   display: flex;
   flex-direction: column;
@@ -1207,14 +1210,20 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 /* ============ 响应式 ============ */
 @media (max-width: 768px) {
   .title-cn { font-size: 54px; letter-spacing: 14px; }
-  #dialog-box { left: 3%; right: 3%; padding: 22px 22px 30px; }
-  #dialog-text { font-size: 17px; }
+  #dialog-box { left: 3%; right: 3%; padding: 20px 20px 28px; bottom: calc(3% + env(safe-area-inset-bottom)); max-height: 46vh; }
+  #dialog-text { font-size: 17px; max-height: 30vh; overflow-y: auto; }
   .char-sprite { width: 60%; }
-  #heart-bar { min-width: 160px; top: 58px; right: 8px; padding: 8px 10px; }
+  #heart-bar { min-width: 160px; top: calc(58px + env(safe-area-inset-top)); right: 8px; padding: 8px 10px; }
   .heart-name { width: 30px; font-size: 11px; }
   #day-bar { font-size: 12px; letter-spacing: 2px; padding: 6px 12px; }
-  #top-bar { gap: 4px; padding: 8px 8px; }
-  #top-bar button { width: 32px; height: 32px; font-size: 14px; }
+  /* 触控目标 ≥44px（v3.0.0）：顶栏按钮从 32px 放大，不易误触；
+     窄屏 12 个按钮一行放不下，换行右对齐 */
+  #top-bar { gap: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: 100%;
+             padding: 8px max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left)); }
+  #top-bar button { width: 40px; height: 40px; font-size: 16px; }
+  /* 选项按钮：小屏占宽 86% + 最小高度 48px，拇指可点 */
+  .choice-btn { width: 86%; padding: 14px 18px; font-size: 17px; min-height: 48px; }
+  .overlay-panel { width: 94%; max-height: 86vh; }
   .dream-scene { width: 130px; height: 130px; font-size: 12px; }
   #doodle-canvas { max-width: 90vw; }
 }
