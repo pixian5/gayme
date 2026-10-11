@@ -250,7 +250,7 @@ const MOMENTS = [
   },
   {
     id: "m_d3_group", char: "xiazhi", likes: 12,
-    text: "今天林诗雨和苏念跑来接我。\n我笑了一下，没让人看出来眼睛红了。\n谢谢你们。",
+    text: "林诗雨和苏念跑到场边来接我。\n我笑了一下，没让人看出来眼睛红了。\n谢谢你们。",
     likeAffection: { affection: { xiazhi: 1, shiyu: 1, sunian: 1 } },
     comments: [
       { text: "我们都在。", value: "c1", add: { affection: { xiazhi: 1 } }, personality: { kind: 2, honest: 1 } },
@@ -645,7 +645,7 @@ const SCRIPT = {
   /* ============ v0.9.0 星座连线 ============ */
   d1_night_stars: {
     day: 1, time: "night", bg: "rooftop", char: "shiyu", speaker: "林诗雨",
-    text: "——晚上天台。风很轻。林诗雨指着头顶：「你看，那几颗连起来，像不像一封信？」",
+    text: "——晚自习后。林诗雨在楼梯口等我：「天台今晚有星，值得迟到一次。」风很轻。她指着头顶：「你看，那几颗连起来，像不像一封信？」",
     next: "d1_night_home",
     constellation: {
       prompt: "夜空散布星点——按你的直觉连成一个图案",
@@ -691,7 +691,7 @@ const SCRIPT = {
 
   /* ============ v0.9.0 心声听诊 ============ */
   d3_stethoscope: {
-    day: 3, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织",
+    day: 3, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织",
     text: "——运动会预选后，夏织跑完最后一圈，坐在草地上喘气。她忽然把你的手按在自己胸口：「你听——它还在跳。」",
     next: "common_day3_afternoon",
     stethoscope: {
@@ -760,7 +760,7 @@ const SCRIPT = {
   },
   d4_puzzle_named: {
     day: 4, time: "evening", bg: "home_room", char: null, speaker: "",
-    text: "「樱信·夜名」。我把那个「名」字在指尖描了一遍又一遍。署名是樱——可夜里写信的人，为什么不敢写下自己的名字？我把碎片按原样收好。明天，我想当面问问她。",
+    text: "「樱信·夜名」。我把那个「名」字在指尖描了一遍又一遍。署名是樱——可夜里写信的人，为什么不敢写下自己的名字？我把碎片按原样收好，把那个字抄在手心。等哪一天能对上号，我再当面问她。",
     next: "d4_evening_scent"
   },
 
@@ -1158,7 +1158,7 @@ const SCRIPT = {
   /* ============ v0.7.0 触觉关怀 ============ */
   d4_touch: {
     day: 4, time: "evening", bg: "home_room", char: "shiyu", speaker: "林诗雨",
-    text: "——门被轻轻推开。林诗雨站在门口，抱着稿纸。「我听见你屋里有动静……我可以进来吗？」她看上去眼睛红红的。",
+    text: "——门被轻轻推开。林诗雨站在门口，扬了扬手里的查寝登记表：「班长特权，顺便收作业。」她抱着稿纸，「我听见你屋里有动静……我可以进来吗？」她看上去眼睛红红的。",
     next: "d4_temperature",
     touch: {
       prompt: "她抱着一摞稿纸站在门口——你想怎么安慰她？点击立绘不同部位。",
@@ -2072,7 +2072,7 @@ const SCRIPT = {
   // 第三章「归位」开场（第 12 日）
   d12_chapter_open: {
     day: 12, time: "morning", bg: "hallway", speaker: "沈屿",
-    text: "第 12 日。她说最后一段路叫「归位」——把借来的东西还给原处，把散开的自己收回来。她说这话时在走神。我知道她在想什么：等这一切结束，她就要离开了。",
+    text: "第 12 日。她说最后一段路叫「归位」——把借来的东西还给原处，把散开的自己收回来。走廊尽头的公告栏贴着学园祭的回顾海报：诗雨的本子、夏织的展、苏念的画——我们约好的那个节目，她们三个人一起完成了，署名里没有我。她说这话时在走神。我知道她在想什么：等这一切结束，她就要离开了。",
     next: "d12_sundial"
   },
 
@@ -2357,7 +2357,7 @@ const SCRIPT = {
   /* ============ v1.9.0 新玩法触发节点 ============ */
   // 罗盘导航
   d8_compass: {
-    day: 8, time: "morning", bg: "sea", char: null, speaker: "",
+    day: 8, time: "afternoon", bg: "sea", char: null, speaker: "",
     text: "她带你到海边。她说——风从那个方向来。她递给你一只旧罗盘：把它对准风的方向。她不告诉你风从哪个方向来。",
     next: "d8_telegraph",
     compass: {
@@ -2708,7 +2708,7 @@ const SCRIPT = {
   // 沙画凝形
   d10_sandpaint: {
     day: 10, time: "night", bg: "home_room", char: null, speaker: "",
-    text: "她拿出一盘沙。一盘沙，一个漏斗，一张暗格纸。她说——按纸上的图，把沙铺回它该在的地方。她说：沙不会自己成图，成图的是手。",
+    text: "一盘沙，一个漏斗，一张暗格纸。铺沙的时候她没说话，只在我手抖的时候按了按我的手腕。沙落满暗格的那一刻，图浮现出来——原来手稳不稳，沙都知道。",
     next: "d11_kaleido",
     sandpaint: {
       prompt: "在沙盘上点选格子，还原星图",
@@ -2746,7 +2746,7 @@ const SCRIPT = {
   // 万花筒
   d11_kaleido: {
     day: 11, time: "morning", bg: "home_room", char: null, speaker: "",
-    text: "她递来一只旧万花筒。她说——转到最后一片彩玻璃归位，图案才会齐。她说：你看到的不是玻璃，是你转出来的对称。",
+    text: "今天本该是学园祭。教学楼前的喧闹隔着窗传进来，我们没有过去——她递来一只旧万花筒，说：转到最后一片彩玻璃归位，图案才会齐。看见了吗？对称从来不是玻璃给的，是你转出来的。",
     next: "d11_abacus",
     kaleido: {
       prompt: "旋转万花筒，让彩色玻璃归位拼出对称图案",
@@ -2777,7 +2777,7 @@ const SCRIPT = {
   // 算盘珠
   d11_abacus: {
     day: 11, time: "noon", bg: "library", char: null, speaker: "",
-    text: "她推来一把旧算盘。她说——按我念的数，把珠子拨到对的地方。她说：珠子不会算账，算账的是手和心。",
+    text: "祭典的音乐声里，她推来一把旧算盘，念数让我拨珠。噼啪响了一整页，她忽然说：慢一点。珠子不会算账——算账的是心，手只是替心跟上。",
     next: "d11_gear",
     abacus: {
       prompt: "按目标数拨动算珠",
@@ -2808,7 +2808,7 @@ const SCRIPT = {
   // 齿轮咬合
   d11_gear: {
     day: 11, time: "afternoon", bg: "workshop", char: null, speaker: "",
-    text: "她拿出一组旧齿轮。她说——把每个齿轮的标记齿都转到顶部，它们才会一起咬住。她说：齿轮不会自己转，转它们的是手。",
+    text: "学园祭的人潮在墙外来来去去。她拿出一组旧齿轮，让我把每个标记齿都转到顶部。最后一枚咬合时，整组齿轮忽然一起转动。她说：记住这个手感——一件事成了，是因为每个都到了位。",
     next: "d11_topo",
     gear: {
       prompt: "旋转每个齿轮，让标记齿对齐顶部",
@@ -3683,10 +3683,10 @@ const SCRIPT = {
 
   /* —— BAD —— */
   sy_10_bad: { day: 6, time: "evening", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……消失一次。也对。也许她真的该消失一次。", next: "sy_11_bad" },
-  sy_11_bad: { day: 7, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", next: "sy_12_bad" },
-  sy_12_bad: { day: 7, time: "morning", bg: "library", char: null, speaker: "", text: "抽屉里那一叠稿纸，最末一行永远停在那里：「她回过头，看见了自己从未活过的人生。」", next: "sy_ending_bad" },
+  sy_11_bad: { day: 13, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", next: "sy_12_bad" },
+  sy_12_bad: { day: 13, time: "morning", bg: "library", char: null, speaker: "", text: "抽屉里那一叠稿纸，最末一行永远停在那里：「她回过头，看见了自己从未活过的人生。」", next: "sy_ending_bad" },
   sy_ending_bad: {
-    day: 7, time: "morning", bg: "ending_bad", char: null, speaker: "",
+    day: 13, time: "morning", bg: "ending_bad", char: null, speaker: "",
     text: "我再也没有见过她。听说她去了北方一座很远的城市，读了她不喜欢的法律系。",
     ending: { id: "shiyu_bad", type: "BAD ENDING", title: "未 活 过", text: "她回过头，看见的依然是没走过的人生。" }
   },
@@ -3768,11 +3768,11 @@ const SCRIPT = {
 
   /* —— BAD —— */
   xz_10_bad: { day: 6, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……对。我自己就够了。", next: "xz_11_bad" },
-  xz_11_bad: { day: 7, time: "morning", bg: "rain", char: "xiazhi", speaker: "", text: "全国赛前一周，她在雨里独自加练。我没去。听说她摔了一跤，膝盖磕在跑道沿上。", next: "xz_12_bad" },
-  xz_12_bad: { day: 7, time: "morning", bg: "winter", char: null, speaker: "", text: "韧带拉伤。医生说至少半年不能跑。全国赛的名额转给了别人。", next: "xz_13_bad" },
-  xz_13_bad: { day: 7, time: "morning", bg: "winter", char: null, speaker: "", text: "她在医院给我发了一条消息：「你说得对，我自己就够了。可惜我自己不够。」", next: "xz_ending_bad" },
+  xz_11_bad: { day: 28, time: "morning", bg: "rain", char: "xiazhi", speaker: "", text: "全国赛前一周，她在雨里独自加练。我没去。听说她摔了一跤，膝盖磕在跑道沿上。", next: "xz_12_bad" },
+  xz_12_bad: { day: 28, time: "morning", bg: "winter", char: null, speaker: "", text: "韧带拉伤。医生说至少半年不能跑。全国赛的名额转给了别人。", next: "xz_13_bad" },
+  xz_13_bad: { day: 28, time: "morning", bg: "winter", char: null, speaker: "", text: "她在医院给我发了一条消息：「你说得对，我自己就够了。可惜我自己不够。」", next: "xz_ending_bad" },
   xz_ending_bad: {
-    day: 7, time: "morning", bg: "ending_bad", char: null, speaker: "",
+    day: 28, time: "morning", bg: "ending_bad", char: null, speaker: "",
     text: "她休学了。听说是回了她爸那边。再后来，田径社的招新传单上，王牌那一栏空着。",
     ending: { id: "xiazhi_bad", type: "BAD ENDING", title: "一 个 人", text: "她终于一个人了。可一个人，从来不是她想要的。" }
   },
@@ -3805,7 +3805,7 @@ const SCRIPT = {
   },
   sn_5b_release: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
   sn_5b_calm: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
-  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "我不知道。这就是问题。我画了三年，画到忘了自己本来想画什么。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。", next: "sn_7" },
+  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", next: "sn_7" },
   sn_7: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你看这幅——", next: "sn_8" },
   sn_8: { day: 5, time: "afternoon", bg: "art_room", speaker: "", text: "她把那张未完成的紫推到我面前。我第一次看清：那片紫里，藏着一只翅膀，半张脸，一只手。", next: "sn_9" },
   sn_9: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。", next: "sn_minigame", keyword: "挣" },
@@ -3864,18 +3864,18 @@ const SCRIPT = {
   },
 
   /* ============ 真结局入口（需合成"樱花信"才能打破循环） ============ */
-  true_end_entry: {
+  true_end_entry: { day: 11, time: "night",
     // 仅在三女主 GOOD 全通后触发
     bg: "cherry_full", char: null, speaker: "",
-    text: "（三段回望结束。学姐留在窗台上的最后一封信，今天还没拆。今晚就是樱花祭，你要替她回信。）",
+    text: "（三段回望结束。这一次，日子终于走到了它一直绕开的那一天——学姐留在窗台上的最后一封信，今天还没拆。今晚就是樱花祭，你要替她回信。）",
     keyword: ["学姐", "樱花祭", "回信"],
     next: "true_2"
   },
-  true_2: { bg: "home_room", char: null, speaker: "", text: "我打开最后一封匿名信。这一次，署名了。", next: "true_3", keyword: "学姐" },
-  true_3: { bg: "home_room", char: "senior", speaker: "学姐", text: "——三年前，我也是转学生。我三条路都走了一半，最后休了学。我以为我会回来，结果没回。", next: "true_4" },
-  true_4: { bg: "home_room", char: "senior", speaker: "学姐", text: "我留信给你，是想看看，有没有人能走得比我远。你做到了。三个人，你都让他们敢了。", next: "true_5" },
-  true_5: { bg: "home_room", char: "senior", speaker: "学姐", text: "今晚是樱花祭。请你替我回最后一封信。也写给自己——你想成为什么样的人。", next: "true_choice" },
-  true_choice: {
+  true_2: { day: 11, time: "night", bg: "home_room", char: null, speaker: "", text: "我打开最后一封匿名信。这一次，署名了。", next: "true_3", keyword: "学姐" },
+  true_3: { day: 11, time: "night", bg: "home_room", char: "senior", speaker: "学姐", text: "——三年前，我也是转学生。我三条路都走了一半，最后休了学。我以为我会回来，结果没回。——你早就该问：休了学的人，为什么还在这里。因为我回来的从来不是人。这所学校的时间在我停下的那一年就不走了，你们看见的我，是信替我留下的影子。信在，影子就在；等有人把信写完，我才能真的走。", next: "true_4" },
+  true_4: { day: 11, time: "night", bg: "home_room", char: "senior", speaker: "学姐", text: "我留信给你，是想看看，有没有人能走得比我远。你做到了。三个人，你都让他们敢了。", next: "true_5" },
+  true_5: { day: 11, time: "night", bg: "home_room", char: "senior", speaker: "学姐", text: "今晚是樱花祭。请你替我回最后一封信。也写给自己——你想成为什么样的人。去合成台看看吧——把「祭信」和「未寄信」放在一起，合成那封只有你合得成的信。把它带来，我就收下这三年。", next: "true_choice" },
+  true_choice: { day: 11, time: "night",
     bg: "cherry_full",
     choice: {
       prompt: "你的回信——你想成为什么样的人？",
@@ -3897,27 +3897,27 @@ const SCRIPT = {
     }
   },
   // 普通选项路径：循环未打破
-  true_6: { bg: "festival", char: "shen", speaker: "", text: "樱花祭之夜。我在樱花树下，写下回信。然后，我写下自己人生的第一行字。", next: "true_7", cg_unlock: "cg_true", keyword: "回信" },
-  true_7: { bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_8" },
-  true_8: { bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_9" },
-  true_9: { bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。", next: "true_ending" },
-  true_ending: {
+  true_6: { day: 11, time: "night", bg: "festival", char: "shen", speaker: "", text: "樱花祭之夜。我在樱花树下，写下回信。然后，我写下自己人生的第一行字。", next: "true_7", cg_unlock: "cg_true", keyword: "回信" },
+  true_7: { day: 11, time: "night", bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_8" },
+  true_8: { day: 11, time: "night", bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_9" },
+  true_9: { day: 11, time: "night", bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。", next: "true_ending" },
+  true_ending: { day: 11, time: "night",
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。",
     ending: { id: "true_unbroken", type: "LOOP ENDING", title: "未 破 环", text: "你替她回了一封信，也写下自己；但真正的樱花信还没有合成。" }
   },
 
   /* ============ 打破循环路径（合成"樱花信"后解锁） ============ */
-  true_break_loop: {
+  true_break_loop: { day: 11, time: "night",
     bg: "cherry_full", char: "senior", speaker: "学姐",
     text: "——你做到了。你把祭信与未寄信合在了一起。这封信，我等了三年。",
     next: "true_break_2",
     memory: { id: "打破循环", title: "樱花信", text: "把祭信与未寄信合在一起，就是打破循环的钥匙。" }
   },
-  true_break_2: { bg: "cherry_full", char: "senior", speaker: "学姐", text: "三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。", next: "true_break_3" },
-  true_break_3: { bg: "cherry_full", char: "senior", speaker: "学姐", text: "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。", next: "true_break_4" },
+  true_break_2: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。", next: "true_break_3" },
+  true_break_3: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。", next: "true_break_4" },
   // 真实书写信件：玩家自己打字写信
-  true_break_4: {
+  true_break_4: { day: 11, time: "night",
     bg: "festival", char: "shen", speaker: "",
     text: "樱花树下，我把纸铺开。这一次，不是抄，不是选。是我自己写。",
     letter: {
@@ -3934,32 +3934,32 @@ const SCRIPT = {
     },
     next: "true_break_5d"
   },
-  true_break_5a: { bg: "festival", char: "senior", speaker: "学姐", text: "「敢」——你写的第一个字是敢。我也想敢一次。今天起，我替自己敢。", next: "true_break_6" },
-  true_break_5b: { bg: "festival", char: "senior", speaker: "学姐", text: "「放」——你说得对。我也可以放下。放下这三年，放下那个没敢回信的自己。", next: "true_break_6" },
-  true_break_5c: { bg: "festival", char: "senior", speaker: "学姐", text: "「想念」——你说你想念。我也想念。可想念不该是停下的理由。", next: "true_break_6" },
-  true_break_5d: { bg: "festival", char: "senior", speaker: "学姐", text: "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。", next: "true_break_6" },
-  true_break_6: { bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_break_7", cg_unlock: "cg_true" },
-  true_break_7: { bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_break_8" },
-  true_break_8: { bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。这一次，是真的写下了。", next: "true_break_ending" },
-  true_break_ending: {
+  true_break_5a: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「敢」——你写的第一个字是敢。我也想敢一次。今天起，我替自己敢。", next: "true_break_6" },
+  true_break_5b: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「放」——你说得对。我也可以放下。放下这三年，放下那个没敢回信的自己。", next: "true_break_6" },
+  true_break_5c: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「想念」——你说你想念。我也想念。可想念不该是停下的理由。", next: "true_break_6" },
+  true_break_5d: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。", next: "true_break_6" },
+  true_break_6: { day: 11, time: "night", bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_break_7", cg_unlock: "cg_true" },
+  true_break_7: { day: 11, time: "night", bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_break_8" },
+  true_break_8: { day: 11, time: "night", bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。这一次，是真的写下了。", next: "true_break_ending" },
+  true_break_ending: { day: 11, time: "night",
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。",
     ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信 · 破 环", text: "你合成了樱花信，打破了时间的循环。" }
   },
 
   /* ============ 真结局后日谈：樱海以后 ============ */
-  afterword_entry: {
+  afterword_entry: { day: 14, time: "night",
     bg: "festival", char: null, speaker: "",
     text: "樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
     next: "afterword_three"
   },
-  afterword_three: {
+  afterword_three: { day: 14, time: "night",
     bg: "cafeteria", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "林诗雨",
     text: "我把下一章交给校刊了。夏织开始做康复训练，苏念把画室的门打开了一半。我们没有替谁走完路，只是约好每周见一次。",
     next: "afterword_postcard"
   },
-  afterword_postcard: {
+  afterword_postcard: { day: 14, time: "night",
     bg: "school_gate", char: null, speaker: "",
     text: "学姐寄来一张明信片。她在卡片边角留下了新城市的收件地址，却没有写回寄件地址。我们决定替她补上两枚印记，再按这个地址寄回去——不问她什么时候回来，只告诉她：这里有人记得。",
     next: "afterword_stamp",
@@ -3982,18 +3982,18 @@ const SCRIPT = {
       fallback: { label: "——还没决定", text: "你们选了两枚还说不清的印记。也没关系，明信片先寄出去，答案可以在路上慢慢长出来。", add: { affection: { shen: 1 } }, personality: { patient: 1 }, next: "afterword_stamp" }
     }
   },
-  afterword_stamp: {
+  afterword_stamp: { day: 14, time: "night",
     bg: "school_gate", char: "shiyu", speaker: "林诗雨",
     text: "邮筒吞下明信片时，林诗雨问：「这次不会再回来了吗？」我说：「会回来，但不是回到原点。」她把这句话写进了下一章。",
     next: "afterword_4"
   },
-  afterword_4: {
+  afterword_4: { day: 14, time: "night",
     bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "风从海那边吹过来。夏织先迈开步子，诗雨把稿纸夹好，苏念把门再推开一点。她们都没有回头叫我。因为这一次，我已经在她们身边。",
     next: "afterword_signature"
   },
-  afterword_signature: {
+  afterword_signature: { day: 14, time: "night",
     bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     choice: {
       prompt: "替明信片补上一句落款",
@@ -4004,28 +4004,28 @@ const SCRIPT = {
       ]
     }
   },
-  afterword_signature_meet: {
+  afterword_signature_meet: { day: 14, time: "night",
     bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
     text: "我们写下「下次见」，却没有写日期。不是催学姐回来，只是承认未来仍然有相遇的可能。",
     next: "afterword_reply_arrival"
   },
-  afterword_signature_care: {
+  afterword_signature_care: { day: 14, time: "night",
     bg: "cherry_full", char: "xiazhi", speaker: "夏织",
     text: "夏织把「照顾好自己」写得很重。这句话不需要回信，也不需要证明；只要学姐收到，就够了。",
     next: "afterword_reply_arrival"
   },
-  afterword_signature_blank: {
+  afterword_signature_blank: { day: 14, time: "night",
     bg: "cherry_full", char: "sunian", speaker: "苏念",
     text: "我们留了一行空白。不是因为无话可说，而是把下一个字交给学姐自己。",
     next: "afterword_reply_arrival"
   },
   /* ============ 后日谈追加：循环结束后的现实回信 ============ */
-  afterword_reply_arrival: {
+  afterword_reply_arrival: { day: 21, time: "night",
     bg: "school_gate", char: null, speaker: "",
     text: "一周后，按新城市地址寄出的明信片又从邮筒里折返回来。学姐没有在回信上写回寄件地址，只在空白处写了一句：「我没有回樱海，但我在新城市打开了一扇窗。」",
     next: "afterword_reply"
   },
-  afterword_reply: {
+  afterword_reply: { day: 21, time: "night",
     bg: "school_gate", char: null, speaker: "",
     text: "三个人把明信片传了一圈。没有人再问她什么时候回来——这一次，我们只想认真回一句现在的话。",
     letter: {
@@ -4041,27 +4041,27 @@ const SCRIPT = {
       defaultReply: { next: "afterword_reply_default" }
     }
   },
-  afterword_reply_meet: {
+  afterword_reply_meet: { day: 21, time: "night",
     bg: "cherry_full", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把回信折好：「我们可以期待见面，但不用把期待变成她必须完成的作业。」她在落款旁边添了一朵很小的樱花。",
     next: "afterword_timeline"
   },
-  afterword_reply_release: {
+  afterword_reply_release: { day: 21, time: "night",
     bg: "school_gate", char: "xiazhi", speaker: "夏织",
     text: "夏织把信投进邮筒：「那就继续跑吧。不是离开樱海才算赢，跑到自己想去的地方就算。」",
     next: "afterword_timeline"
   },
-  afterword_reply_write: {
+  afterword_reply_write: { day: 21, time: "night",
     bg: "cafeteria", char: "sunian", speaker: "苏念",
     text: "苏念在回信末尾画了一扇半开的门：「下一章不用等我批准。你先写今天的这一页。」",
     next: "afterword_timeline"
   },
-  afterword_reply_default: {
+  afterword_reply_default: { day: 21, time: "night",
     bg: "cherry_full", char: null, speaker: "",
     text: "我们没有替学姐解释这句话，只把自己的近况写进去。回信不必漂亮，能抵达就已经足够。",
     next: "afterword_timeline"
   },
-  afterword_timeline: {
+  afterword_timeline: { day: 21, time: "night",
     bg: "school_gate", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "我们把明信片摊在桌上，按日期核对这段没有倒流的日子。不是寻找下一封匿名信，只是确认：发生过的事，已经有了先后。",
@@ -4091,18 +4091,18 @@ const SCRIPT = {
     }
   },
   /* ============ 后日谈追加：半年后的回信角 ============ */
-  afterword_autumn: {
+  afterword_autumn: { day: 180, time: "night",
     bg: "school_gate", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "半年后，樱海学园换上了薄薄的秋色。我们把旧公告栏改成了「回信角」，并把规则写在旁边：愿意公开的纸条写上署名和日期；不愿署名的，也可以明确选择匿名。我们不再把任何人的困惑交给一封没有来处的信。",
     next: "afterword_mailbox"
   },
-  afterword_mailbox: {
+  afterword_mailbox: { day: 181, time: "night",
     bg: "classroom", char: null, speaker: "",
     text: "第一张纸条没有写名字：「如果我暂时不知道要去哪里，还能先留在这里吗？」三个人看了很久，谁也不想替她决定答案。我们把笔递给了你。",
     next: "afterword_mailbox_reply",
   },
-  afterword_mailbox_reply: {
+  afterword_mailbox_reply: { day: 181, time: "night",
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "回信角的第一封公开回信——不需要漂亮，只要让对方知道，犹豫也可以被认真对待。",
@@ -4119,31 +4119,31 @@ const SCRIPT = {
       defaultReply: { next: "afterword_mailbox_default" }
     }
   },
-  afterword_mailbox_stay: {
+  afterword_mailbox_stay: { day: 181, time: "night",
     bg: "classroom", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把「可以先留在这里」圈了出来，又补了一句：「留下不是放弃寻找，只是今天不用急着证明自己。」她第一次写建议时，没有把它写成答案。",
     personality: { kind: 1, patient: 1 },
     next: "afterword_mailbox_rules"
   },
-  afterword_mailbox_step: {
+  afterword_mailbox_step: { day: 181, time: "night",
     bg: "school_gate", char: "xiazhi", speaker: "夏织",
     text: "夏织本来想写「那就跑起来」，最后改成：「先试一小步，明天再看。」她说，真正的起跑不是把人推向终点，而是把脚下这一格照亮。",
     personality: { brave: 1, kind: 1 },
     next: "afterword_mailbox_rules"
   },
-  afterword_mailbox_listen: {
+  afterword_mailbox_listen: { day: 181, time: "night",
     bg: "art_room", char: "sunian", speaker: "苏念",
     text: "苏念没有填满纸条，只在下面写：「如果你愿意，可以把下一句也留在这里。」空白没有替对方沉默，它只是先把位置留出来。",
     personality: { kind: 1, honest: 1 },
     next: "afterword_mailbox_rules"
   },
-  afterword_mailbox_default: {
+  afterword_mailbox_default: { day: 181, time: "night",
     bg: "classroom", char: null, speaker: "",
     text: "你写下了一句暂时无法归类的话。三个人没有把它改成更像答案的样子，只把日期和你们的名字写在下面：有人会读到，也有人愿意继续听。",
     personality: { honest: 1, patient: 1 },
     next: "afterword_mailbox_rules"
   },
-  afterword_mailbox_rules: {
+  afterword_mailbox_rules: { day: 181, time: "night",
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "林诗雨",
     text: "第一封回信贴上墙后，我们又写下回信角的第一条规则。它不能保证每个人马上找到方向，但至少不能让好意变成新的压力。",
@@ -4156,22 +4156,22 @@ const SCRIPT = {
       ]
     }
   },
-  afterword_mailbox_rule_sign: {
+  afterword_mailbox_rule_sign: { day: 181, time: "night",
     bg: "school_gate", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把姓名栏和日期栏画得很直：「署名不是为了追责，是为了让关心有一个真实的落点。」回信角终于和那封匿名信不一样了。",
     next: "afterword_mailbox_triage"
   },
-  afterword_mailbox_rule_ask: {
+  afterword_mailbox_rule_ask: { day: 181, time: "night",
     bg: "cafeteria", char: "xiazhi", speaker: "夏织",
     text: "夏织点头：「先问一句，至少不会把自己的经验塞给别人。」她把「你现在需要什么？」写在公告栏最上面。",
     next: "afterword_mailbox_triage"
   },
-  afterword_mailbox_rule_space: {
+  afterword_mailbox_rule_space: { day: 181, time: "night",
     bg: "art_room", char: "sunian", speaker: "苏念",
     text: "苏念在角落画了一个半开的方框：「空白也算回信。」它不是把人晾在那里，而是承认有些话要等准备好才说。",
     next: "afterword_mailbox_triage"
   },
-  afterword_mailbox_triage: {
+  afterword_mailbox_triage: { day: 181, time: "night",
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "规则写好后，公告栏旁又出现了三张纸条。我们先把它们读完，再决定回什么——不是给人贴标签，而是确认眼前这句话真正需要什么。",
@@ -4205,7 +4205,7 @@ const SCRIPT = {
     }
   },
   /* ============ 后日谈追加：毕业前的留言墙 ============ */
-  afterword_wall: {
+  afterword_wall: { day: 370, time: "night",
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "又过半年，春末的开放日快结束了。回信角前留下四张纸条：有人明确说可以公开，有人只想把话交还自己，还有人替朋友写了一半。我们先确认每句话能不能被看见，再决定它该去哪里。",
@@ -4240,14 +4240,14 @@ const SCRIPT = {
       }
     }
   },
-  afterword_wall_reflection: {
+  afterword_wall_reflection: { day: 370, time: "night",
     bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "林诗雨",
     text: "墙上最后只留下那张明确允许署名的海报。诗雨把其余三张分别交还，夏织在规则下面补了一行：「公开之前，先问写下它的人。」苏念没有把空白填满。",
     next: "afterword_proofread"
   },
   /* ============ 后日谈追加：校刊校对 ============ */
-  afterword_proofread: {
+  afterword_proofread: { day: 372, time: "night",
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "毕业前，校刊编辑部想记录回信角。摊开的稿件里，有些话可以作为事实写入，有些只是我们当时的猜测，还有一句涉及苏念要不要公开下一幅画。我们决定先校对，再把故事交给读者。",
@@ -4284,17 +4284,17 @@ const SCRIPT = {
       }
     }
   },
-  afterword_proofread_clean: {
+  afterword_proofread_clean: { day: 372, time: "night",
     bg: "classroom", char: "shiyu", speaker: "林诗雨",
     text: "诗雨把校刊最后一行改成：「我们记得发生过什么，也承认还有什么不知道。」她说，留白不是文章没写完，而是把别人的下一句还给别人。",
     next: "afterword_ending"
   },
-  afterword_proofread_recheck: {
+  afterword_proofread_recheck: { day: 372, time: "night",
     bg: "art_room", char: "sunian", speaker: "苏念",
     text: "苏念看完修改稿，只圈出一句：「下一幅画要不要公开，等我自己说。」你们把这句话留在原稿旁边，没有替她删掉，也没有替她答应。",
     next: "afterword_ending"
   },
-  afterword_ending: {
+  afterword_ending: { day: 373, time: "night",
     bg: "ending_true", char: null, speaker: "",
     text: "樱海以后没有新的谜题，只有一群人把昨天写过的字带进今天。校刊留下了事实，也留下了没有答案的地方。故事没有被封存——它只是终于交还给了每一个正在生活的人。",
     ending: { id: "afterword", type: "AFTERWORD", title: "樱海以后", text: "信寄出以后，三个人各自继续往前走。" }
