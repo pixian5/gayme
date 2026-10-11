@@ -55,7 +55,7 @@ v2.9.4 GitHub Actions CI + Pages 自动部署；v2.9.5 仓库整理（分析文�
 index.html          入口（字体 preload；样式 style.css + games.css；脚本 12 个按序加载，engine.js 最后）
 css/style.css       基础与引擎 UI 样式（顶部为自托管 @font-face）
 css/games.css       全部玩法浮层样式（94 套，v2.9.2 拆出）
-fonts/              自托管 Noto Serif SC 子集（Regular/Bold woff2；重建见 tools/rebuild_font_subset.sh）
+fonts/              自托管 Noto Serif SC 子集（非 Mac 平台兜底；macOS 优先用本机 Songti SC，重建见 tools/rebuild_font_subset.sh）
 js/saves.js         存档与图鉴数据层（localStorage，106 个键；记录型存取由 recordStore 工厂生成）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 409 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
