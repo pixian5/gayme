@@ -44,6 +44,9 @@
            新增「文档索引.md」（逐篇介绍 docs/）；README 全面刷新（进度 / 路线 / 约定 / 工具链）
    v2.9.6：玩法结果影响叙事——d15 旗阵 / d4 拼图 / d5 调香的结果分流到 5 个新叙事节点；
            关键词合成解锁时写入「合成回忆」（6 段，进记忆图鉴，COMPOSED_MEMORIES 数据驱动）
+   v2.9.7：音频升级——BGM 重写为三层程序化配乐（和弦垫 / 低音 / 五声随机游走旋律，
+           look-ahead 调度器按音频时钟排程）；新增 5 种程序化音效（信件 / 关键词 /
+           记忆 / 成功 / 失败），经 window.GameSfx 暴露；设置面板加音效音量滑杆
    ======================================== */
 
 (function () {
@@ -326,7 +329,7 @@
       if (node.keyword) {
         const keywords = Array.isArray(node.keyword) ? node.keyword : [node.keyword];
         const unlocked = keywords.filter(keyword => Saves.unlockKeyword(keyword));
-        if (unlocked.length) flashHint(`新关键词：${unlocked.join("、")}`);
+        if (unlocked.length) { flashHint(`新关键词：${unlocked.join("、")}`); playSfx("keyword"); }
       }
       if (node.cg_unlock) {
         if (Saves.unlockCG(node.cg_unlock)) flashHint(`新 CG：${CGS.find(c => c.id === node.cg_unlock)?.title || ""}`);
@@ -334,6 +337,7 @@
       if (node.memory && !Saves.isMemoryUnlocked(node.memory.id)) {
         if (Saves.saveMemory(node.memory.id, node.memory.text)) {
           flashHint(`✦ 记忆片段：${node.memory.title || node.memory.id}`);
+          playSfx("memory");
         }
       }
       if (node.inbox) {
@@ -396,6 +400,7 @@
 
     // 信件节点
     if (node.letter) {
+      playSfx("letter");
       setScene(node.bg);
       renderCharacters(node);
       el.dialogBox.classList.remove("hidden");
@@ -1139,6 +1144,11 @@
         <select id="cfg-bgm"><option value="true" ${s.bgm ? "selected" : ""}>开启</option><option value="false" ${!s.bgm ? "selected" : ""}>关闭</option></select>
       </div>
       <div class="config-row">
+        <label>音效音量</label>
+        <input type="range" id="cfg-sfxvolume" min="0" max="1" step="0.1" value="${escapeHtml(String(s.sfxVolume ?? 0.6))}">
+        <span id="cfg-sfxvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.sfxVolume ?? 0.6) * 100)}%</span>
+      </div>
+      <div class="config-row">
         <label style="color:#ff8888;">清空所有存档与图鉴</label>
         <button id="cfg-clear" style="padding:8px 16px;background:rgba(255,80,80,0.4);border:1px solid rgba(255,100,100,0.6);border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;">清空</button>
       </div>
@@ -1167,6 +1177,14 @@
       Saves.updateSetting("bgm", e.target.value === "true");
       if (Saves.settings.bgm && state.currentBg) playBgmForScene(state.currentBg);
       else stopBgm();
+    };
+    const sfxSlider = document.getElementById("cfg-sfxvolume");
+    const sfxVal = document.getElementById("cfg-sfxvolume-val");
+    sfxSlider.oninput = () => {
+      const v = parseFloat(sfxSlider.value);
+      sfxVal.textContent = Math.round(v * 100) + "%";
+      Saves.updateSetting("sfxVolume", v);
+      if (sfxGain) sfxGain.gain.value = v;
     };
     document.getElementById("cfg-export").onclick = () => {
       const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
@@ -1345,6 +1363,7 @@
           if (memory && !Saves.isMemoryUnlocked(memory.id)) {
             Saves.saveMemory(memory.id, memory.text);
             flashHint(`✦ 合成回忆：${memory.title}`);
+            playSfx("memory");
           }
           renderKeywords();
         }
@@ -3173,11 +3192,42 @@
     if (particleType !== "none") particleAnim = requestAnimationFrame(animateParticles);
   }
 
-  /* ============ BGM（Web Audio 程序生成） ============ */
+  /* ============ BGM 与音效（Web Audio 程序生成 v2.9.7）============
+     三层程序化配乐：和弦垫（triangle 长音）+ 低音（正弦根音）
+     + 五声音阶随机游走旋律（级进为主，偶发跳进与长音）。
+     look-ahead 调度器按 AudioContext 时钟精确排程，场景切换即停旧谱、新谱从下拍起。
+     另提供 5 种程序化音效（信件 / 关键词 / 记忆 / 成功 / 失败），经 window.GameSfx 暴露。 */
   let audioCtx = null;
   let bgmGain = null;
+  let sfxGain = null;
   let currentBgm = null;
-  let bgmTimer = null;
+  let bgmSchedulerTimer = null;
+  let bgmStep = 0;
+  let bgmNextTime = 0;
+  let bgmConfig = null;
+  let bgmMelIdx = 2;
+
+  const midiFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
+
+  /* 每个 mood：4 小节和弦进行（MIDI 三和弦）、旋律音阶（MIDI）、
+     旋律密度（每八分音符发声概率）、音色与三层音量配比 */
+  const BGM_MOODS = {
+    default: { bpm: 76, chords: [[48, 55, 52], [45, 52, 48], [41, 48, 45], [43, 50, 47]],
+               scale: [60, 62, 64, 67, 69, 72, 74, 76], density: 0.5,
+               melodyWave: "sine", padLevel: 0.05, bassLevel: 0.09, melLevel: 0.16 },
+    bright:  { bpm: 100, chords: [[55, 59, 62], [60, 64, 67], [55, 59, 62], [50, 57, 54]],
+               scale: [67, 69, 71, 74, 76, 79, 81], density: 0.62,
+               melodyWave: "triangle", padLevel: 0.045, bassLevel: 0.08, melLevel: 0.14 },
+    sad:     { bpm: 66, chords: [[45, 48, 52], [41, 45, 48], [43, 47, 50], [40, 44, 47]],
+               scale: [57, 60, 62, 64, 67, 69, 72], density: 0.38,
+               melodyWave: "sine", padLevel: 0.055, bassLevel: 0.09, melLevel: 0.15 },
+    calm:    { bpm: 60, chords: [[43, 50, 47], [41, 48, 45], [45, 52, 48], [43, 50, 47]],
+               scale: [60, 62, 64, 67, 69, 72], density: 0.32,
+               melodyWave: "sine", padLevel: 0.05, bassLevel: 0.08, melLevel: 0.14 },
+    active:  { bpm: 116, chords: [[52, 56, 59], [55, 59, 62], [57, 61, 64], [55, 59, 62]],
+               scale: [64, 67, 69, 71, 74, 76, 79], density: 0.7,
+               melodyWave: "triangle", padLevel: 0.04, bassLevel: 0.09, melLevel: 0.15 },
+  };
 
   function ensureAudio() {
     if (!audioCtx) {
@@ -3186,6 +3236,9 @@
         bgmGain = audioCtx.createGain();
         bgmGain.gain.value = Saves.settings.bgmVolume;
         bgmGain.connect(audioCtx.destination);
+        sfxGain = audioCtx.createGain();
+        sfxGain.gain.value = Saves.settings.sfxVolume ?? 0.6;
+        sfxGain.connect(audioCtx.destination);
       } catch (e) { console.warn("AudioContext 不可用", e); }
     }
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
@@ -3199,49 +3252,108 @@
     else if (["art_room", "library", "home_room", "night"].includes(scene)) mood = "calm";
     else if (["field", "sportsmeet", "summer"].includes(scene)) mood = "active";
     if (currentBgm === mood) return;
-    currentBgm = mood;
     playMelody(mood);
+  }
+
+  function stopBgm() {
+    if (bgmSchedulerTimer) { clearInterval(bgmSchedulerTimer); bgmSchedulerTimer = null; }
+    currentBgm = null;
+    bgmConfig = null;
   }
 
   function playMelody(mood) {
     if (!audioCtx) return;
     stopBgm();
-    // 简单旋律：根据 mood 选不同的音阶
-    const scales = {
-      default: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88], // C大调
-      bright:  [392.00, 440.00, 493.88, 523.25, 587.33, 659.25],         // G大调上行
-      sad:     [220.00, 246.94, 261.63, 293.66, 329.63, 349.23],         // A小调
-      calm:    [196.00, 220.00, 261.63, 293.66, 329.63],                  // G五声
-      active:  [329.63, 392.00, 440.00, 493.88, 523.25, 587.33],         // 跳跃
-    };
-    const scale = scales[mood] || scales.default;
-    const tempo = { default: 600, bright: 400, sad: 800, calm: 900, active: 300 }[mood] || 600;
-
-    let step = 0;
-    function playNote() {
+    currentBgm = mood;
+    bgmConfig = BGM_MOODS[mood] || BGM_MOODS.default;
+    bgmStep = 0;
+    bgmMelIdx = Math.min(2, bgmConfig.scale.length - 1);
+    bgmNextTime = audioCtx.currentTime + 0.1;
+    const stepDur = 60 / bgmConfig.bpm / 4;   // 十六分音符
+    bgmSchedulerTimer = setInterval(() => {
       if (!audioCtx || currentBgm !== mood) return;
-      const freq = scale[Math.floor(Math.random() * scale.length)];
+      while (bgmNextTime < audioCtx.currentTime + 0.5) {
+        scheduleBgmStep(bgmConfig, bgmStep, bgmNextTime, stepDur);
+        bgmStep++;
+        bgmNextTime += stepDur;
+      }
+    }, 150);
+  }
+
+  /* 排程一个十六分音符步：和弦垫 / 低音 / 旋律 */
+  function scheduleBgmStep(cfg, step, when, stepDur) {
+    const inBar = step % 16;
+    const chord = cfg.chords[Math.floor(step / 16) % cfg.chords.length];
+    // 和弦垫：每小节第一拍铺满整小节（慢起慢落）
+    if (inBar === 0) {
+      chord.forEach((n) => {
+        const osc = audioCtx.createOscillator();
+        const env = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.value = midiFreq(n);
+        env.gain.setValueAtTime(0, when);
+        env.gain.linearRampToValueAtTime(cfg.padLevel, when + stepDur * 6);
+        env.gain.linearRampToValueAtTime(0, when + stepDur * 16);
+        osc.connect(env); env.connect(bgmGain);
+        osc.start(when); osc.stop(when + stepDur * 16 + 0.05);
+      });
+    }
+    // 低音：每半小节一个根音（低八度）
+    if (inBar === 0 || inBar === 8) {
+      const osc = audioCtx.createOscillator();
+      const env = audioCtx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = midiFreq(chord[0] - 12);
+      env.gain.setValueAtTime(0, when);
+      env.gain.linearRampToValueAtTime(cfg.bassLevel, when + 0.02);
+      env.gain.exponentialRampToValueAtTime(0.001, when + stepDur * 7);
+      osc.connect(env); env.connect(bgmGain);
+      osc.start(when); osc.stop(when + stepDur * 8);
+    }
+    // 旋律：八分音符网格上的随机游走（80% 级进 / 20% 跳进，偶发长音）
+    if (inBar % 2 === 0 && Math.random() < cfg.density) {
+      const leap = Math.random() < 0.8 ? 1 : 2;
+      bgmMelIdx = Math.max(0, Math.min(cfg.scale.length - 1,
+        bgmMelIdx + (Math.random() < 0.5 ? leap : -leap)));
+      const dur = stepDur * (Math.random() < 0.3 ? 6 : 3);
+      const osc = audioCtx.createOscillator();
+      const env = audioCtx.createGain();
+      osc.type = cfg.melodyWave;
+      osc.frequency.value = midiFreq(cfg.scale[bgmMelIdx]);
+      env.gain.setValueAtTime(0, when);
+      env.gain.linearRampToValueAtTime(cfg.melLevel, when + 0.03);
+      env.gain.exponentialRampToValueAtTime(0.001, when + dur);
+      osc.connect(env); env.connect(bgmGain);
+      osc.start(when); osc.stop(when + dur + 0.05);
+    }
+  }
+
+  /* 程序化音效：kind → (时间偏移, 频率) 序列，sine 短包络 */
+  function playSfx(kind) {
+    ensureAudio();
+    if (!audioCtx || Saves.settings.sfx === false) return;
+    const t = audioCtx.currentTime;
+    const seq = {
+      letter:  [[0, 880], [0.09, 1174.66]],
+      keyword: [[0, 987.77], [0.08, 1318.51]],
+      memory:  [[0, 1318.51], [0.07, 1567.98], [0.14, 2093.0]],
+      success: [[0, 523.25], [0.09, 659.25], [0.18, 783.99], [0.27, 1046.5]],
+      fail:    [[0, 392.0], [0.12, 311.13]],
+    }[kind];
+    if (!seq) return;
+    seq.forEach(([dt, freq]) => {
       const osc = audioCtx.createOscillator();
       const env = audioCtx.createGain();
       osc.type = "sine";
       osc.frequency.value = freq;
-      env.gain.setValueAtTime(0, audioCtx.currentTime);
-      env.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 0.05);
-      env.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + tempo/1000);
-      osc.connect(env);
-      env.connect(bgmGain);
-      osc.start();
-      osc.stop(audioCtx.currentTime + tempo/1000 + 0.1);
-      step++;
-      bgmTimer = setTimeout(playNote, tempo);
-    }
-    playNote();
+      env.gain.setValueAtTime(0, t + dt);
+      env.gain.linearRampToValueAtTime(0.22, t + dt + 0.015);
+      env.gain.exponentialRampToValueAtTime(0.001, t + dt + 0.5);
+      osc.connect(env); env.connect(sfxGain);
+      osc.start(t + dt); osc.stop(t + dt + 0.55);
+    });
   }
-
-  function stopBgm() {
-    if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; }
-    currentBgm = null;
-  }
+  window.GameSfx = { play: playSfx };
 
   /* ============ 事件绑定 ============ */
   el.dialogBox.addEventListener("click", () => {

@@ -113,6 +113,9 @@
     function finish(result) {
       const matched = result || {};
       if (typeof matched.record === "function") matched.record();
+      // 结果音效（v2.9.7）：完美 / 失败两档，其余静默
+      window.GameSfx?.play(matched.tag === "perfect" ? "success"
+        : matched.tag === "miss" ? "fail" : null);
       if (matched.add) {
         host.applyAdd?.(matched.add);
         host.updateHeartBar?.();
