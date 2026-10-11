@@ -17,90 +17,412 @@ const CHARACTERS = {
 
 /* ============ 立绘 SVG ============ */
 const PORTRAITS = {
-  shiyu: `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="syh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2438"/><stop offset="1" stop-color="#161020"/></linearGradient><linearGradient id="syu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a7aaa"/><stop offset="1" stop-color="#3a5a8a"/></linearGradient></defs>
-    <path d="M30,90 Q40,30 100,28 Q160,30 170,90 L172,300 L28,300 Z" fill="url(#syu)"/>
-    <path d="M40,80 Q50,25 100,25 Q150,25 160,80 L168,240 L128,240 L128,130 L72,130 L72,240 L32,240 Z" fill="url(#syh)"/>
-    <ellipse cx="100" cy="110" rx="40" ry="46" fill="#fde2cc"/>
-    <path d="M58,82 Q66,52 100,52 Q134,52 142,82 Q132,70 100,70 Q68,70 58,82 Z" fill="url(#syh)"/>
-    <path d="M58,82 Q66,76 78,76 Q72,98 58,98 Z" fill="url(#syh)"/>
-    <path d="M142,82 Q134,76 122,76 Q128,98 142,98 Z" fill="url(#syh)"/>
-    <ellipse cx="84" cy="116" rx="5" ry="7" fill="#3a3a5a"/>
-    <ellipse cx="116" cy="116" rx="5" ry="7" fill="#3a3a5a"/>
-    <circle cx="84" cy="116" r="12" fill="none" stroke="#4a4a5a" stroke-width="2.2"/>
-    <circle cx="116" cy="116" r="12" fill="none" stroke="#4a4a5a" stroke-width="2.2"/>
-    <line x1="96" y1="116" x2="104" y2="116" stroke="#4a4a5a" stroke-width="2.2"/>
-    <path d="M93,138 Q100,141 107,138" stroke="#c87878" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M55,210 L100,185 L145,210 L150,300 L50,300 Z" fill="#fff8fa" opacity="0.95"/>
-    <path d="M100,185 L100,300" stroke="#3a5a8a" stroke-width="2"/>
-    <path d="M84,212 L100,228 L116,212" fill="#d87090" stroke="#3a5a8a" stroke-width="1.5"/>
+  shiyu: `<svg viewBox="0 0 240 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sy_hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3a3452"/><stop offset="0.55" stop-color="#262138"/><stop offset="1" stop-color="#151022"/>
+      </linearGradient>
+      <linearGradient id="sy_hair2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#5a5478" stop-opacity="0.55"/><stop offset="1" stop-color="#262138" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="sy_face" cx="0.5" cy="0.42" r="0.75">
+        <stop offset="0" stop-color="#fdeade"/><stop offset="0.8" stop-color="#f6dccb"/><stop offset="1" stop-color="#eec9b4"/>
+      </radialGradient>
+      <linearGradient id="sy_iris" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7fa8d8"/><stop offset="0.6" stop-color="#4a6ea8"/><stop offset="1" stop-color="#2a3f68"/>
+      </linearGradient>
+      <linearGradient id="sy_uniform" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#33415e"/><stop offset="1" stop-color="#1f2940"/>
+      </linearGradient>
+    </defs>
+    <!-- 后发 -->
+    <path d="M56,110 C50,52 88,26 120,26 C152,26 190,52 184,110 C182,150 188,196 194,246 L178,246 C176,206 172,170 170,150 L70,150 C68,170 64,206 62,246 L46,246 C52,196 58,150 56,110 Z" fill="url(#sy_hair)"/>
+    <path d="M56,110 C52,60 88,28 120,28 C152,28 188,60 184,110 L184,140 L56,140 Z" fill="url(#sy_hair2)"/>
+    <!-- 颈 -->
+    <path d="M106,140 L134,140 L134,168 C134,178 106,178 106,168 Z" fill="#eec9b4"/>
+    <path d="M106,146 C114,152 126,152 134,146 L134,158 C126,164 114,164 106,158 Z" fill="#dfb49c" opacity="0.7"/>
+    <!-- 身体：校服 -->
+    <path d="M120,160 C158,160 196,190 202,250 L206,360 L34,360 L38,250 C44,190 82,160 120,160 Z" fill="url(#sy_uniform)"/>
+    <!-- 白衬衫领 -->
+    <path d="M100,158 L120,186 L140,158 C134,150 106,150 100,158 Z" fill="#f4f6f8"/>
+    <path d="M100,158 L120,186 L108,192 L92,166 Z" fill="#e2e6ea"/>
+    <path d="M140,158 L120,186 L132,192 L148,166 Z" fill="#e2e6ea"/>
+    <!-- 水色领结 -->
+    <path d="M120,190 L104,182 L104,202 Z" fill="#a8c5e8"/>
+    <path d="M120,190 L136,182 L136,202 Z" fill="#a8c5e8"/>
+    <circle cx="120" cy="192" r="5" fill="#6a8ec0"/>
+    <!-- 外套衣襟与褶皱 -->
+    <path d="M96,176 C86,196 80,232 78,262 L64,262 C66,224 76,192 88,172 Z" fill="#1a2236" opacity="0.8"/>
+    <path d="M144,176 C154,196 160,232 162,262 L176,262 C174,224 164,192 152,172 Z" fill="#1a2236" opacity="0.8"/>
+    <path d="M60,290 L180,290" stroke="#16203a" stroke-width="2" opacity="0.5"/>
+    <path d="M52,318 L188,318" stroke="#16203a" stroke-width="2" opacity="0.4"/>
+    <!-- 脸 -->
+    <path d="M120,44 C150,44 166,66 166,94 C166,120 152,146 120,150 C88,146 74,120 74,94 C74,66 90,44 120,44 Z" fill="url(#sy_face)"/>
+    <!-- 耳 -->
+    <ellipse cx="75" cy="104" rx="7" ry="10" fill="#f0d2bc"/>
+    <ellipse cx="165" cy="104" rx="7" ry="10" fill="#f0d2bc"/>
+    <!-- 刘海 -->
+    <path d="M120,28 C86,28 68,54 70,88 C70,96 72,102 74,108 C78,92 84,80 92,74 C88,88 88,98 90,106 C96,90 104,78 114,72 C110,84 110,94 112,102 C120,86 130,76 142,70 C140,82 142,92 146,100 C152,86 158,78 166,76 C170,88 170,100 168,110 C172,100 174,92 172,84 C170,52 152,28 120,28 Z" fill="url(#sy_hair)"/>
+    <!-- 发丝高光 -->
+    <path d="M92,38 C80,48 74,64 74,80" stroke="#8a84b0" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <path d="M148,36 C162,46 168,62 168,78" stroke="#8a84b0" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <path d="M104,34 C98,40 94,50 92,60" stroke="#6a6490" stroke-width="1.6" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <path d="M136,34 C142,40 146,50 148,60" stroke="#6a6490" stroke-width="1.6" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <!-- 眉 -->
+    <path d="M86,96 C92,92 100,92 106,95" stroke="#3a3450" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <path d="M134,95 C140,92 148,92 154,96" stroke="#3a3450" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <!-- 眼 -->
+    <path d="M84,104 C88,98 100,98 105,104" stroke="#241f38" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M135,104 C140,98 152,98 156,104" stroke="#241f38" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="94" cy="112" rx="9" ry="10.5" fill="url(#sy_iris)"/>
+    <ellipse cx="145" cy="112" rx="9" ry="10.5" fill="url(#sy_iris)"/>
+    <circle cx="94" cy="113" r="4" fill="#1a2438"/>
+    <circle cx="145" cy="113" r="4" fill="#1a2438"/>
+    <circle cx="91" cy="108" r="2.6" fill="#ffffff"/>
+    <circle cx="142" cy="108" r="2.6" fill="#ffffff"/>
+    <circle cx="97" cy="116" r="1.4" fill="#ffffff" opacity="0.8"/>
+    <circle cx="148" cy="116" r="1.4" fill="#ffffff" opacity="0.8"/>
+    <path d="M85,118 C89,121 100,121 104,118" stroke="#c8a090" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <path d="M136,118 C140,121 151,121 155,118" stroke="#c8a090" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <!-- 眼镜 -->
+    <rect x="82" y="100" width="25" height="21" rx="10" fill="none" stroke="#8a94a8" stroke-width="2"/>
+    <rect x="133" y="100" width="25" height="21" rx="10" fill="none" stroke="#8a94a8" stroke-width="2"/>
+    <path d="M107,108 L133,108" stroke="#8a94a8" stroke-width="2"/>
+    <path d="M82,106 L76,104 M158,106 L164,104" stroke="#8a94a8" stroke-width="2"/>
+    <path d="M85,103 L98,118" stroke="#ffffff" stroke-width="1.6" opacity="0.35"/>
+    <path d="M136,103 L149,118" stroke="#ffffff" stroke-width="1.6" opacity="0.35"/>
+    <!-- 鼻与嘴 -->
+    <path d="M119,124 L121,130 L118,131" stroke="#dfb49c" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M112,138 C116,141 124,141 128,138" stroke="#c87878" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <!-- 腮红 -->
+    <ellipse cx="86" cy="126" rx="8" ry="4" fill="#f0a8a0" opacity="0.35"/>
+    <ellipse cx="154" cy="126" rx="8" ry="4" fill="#f0a8a0" opacity="0.35"/>
+    <!-- 前发侧束（盖在眼镜腿上） -->
+    <path d="M70,86 C66,110 68,140 62,168 C72,150 76,120 76,100 Z" fill="url(#sy_hair)"/>
+    <path d="M170,86 C174,110 172,140 178,168 C168,150 164,120 164,100 Z" fill="url(#sy_hair)"/>
+    <!-- 轮廓光 -->
+    <path d="M74,92 C74,66 92,46 118,42" stroke="#c8c4e0" stroke-width="2" fill="none" opacity="0.35" stroke-linecap="round"/>
+    <path d="M46,246 C44,220 48,180 56,150" stroke="#9a94c0" stroke-width="1.6" fill="none" opacity="0.3"/>
   </svg>`,
 
-  xiazhi: `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="xzh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a5a30"/><stop offset="1" stop-color="#5a3818"/></linearGradient><linearGradient id="xzu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0a868"/><stop offset="1" stop-color="#d88848"/></linearGradient></defs>
-    <path d="M30,90 Q40,30 100,28 Q160,30 170,90 L172,300 L28,300 Z" fill="url(#xzu)"/>
-    <path d="M48,75 Q55,30 100,28 Q145,30 152,75 L150,150 Q140,140 130,138 L132,100 Q100,95 68,100 L70,138 Q60,140 50,150 Z" fill="url(#xzh)"/>
-    <ellipse cx="100" cy="112" rx="40" ry="46" fill="#f5c898"/>
-    <path d="M60,82 Q68,55 100,55 Q132,55 140,82 Q120,68 100,68 Q80,68 60,82 Z" fill="url(#xzh)"/>
-    <path d="M58,82 Q50,70 48,55 Q60,62 64,75 Z" fill="url(#xzh)"/>
-    <path d="M142,82 Q150,70 152,55 Q140,62 136,75 Z" fill="url(#xzh)"/>
-    <ellipse cx="84" cy="118" rx="5" ry="7" fill="#4a2a1a"/>
-    <ellipse cx="116" cy="118" rx="5" ry="7" fill="#4a2a1a"/>
-    <path d="M80,108 Q84,104 90,108" stroke="#4a2a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M110,108 Q116,104 120,108" stroke="#4a2a1a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M90,140 Q100,146 110,140" stroke="#a85040" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <circle cx="68" cy="128" r="5" fill="#f59878" opacity="0.6"/>
-    <circle cx="132" cy="128" r="5" fill="#f59878" opacity="0.6"/>
-    <path d="M55,210 L100,185 L145,210 L150,300 L50,300 Z" fill="#fff5e8" opacity="0.95"/>
-    <path d="M100,185 L100,300" stroke="#d88848" stroke-width="2"/>
-    <path d="M84,212 L100,228 L116,212" fill="#f0a868" stroke="#a8602a" stroke-width="1.5"/>
+  xiazhi: `<svg viewBox="0 0 240 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="xz_hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#a06a38"/><stop offset="0.55" stop-color="#8a5a30"/><stop offset="1" stop-color="#5a3818"/>
+      </linearGradient>
+      <linearGradient id="xz_hair2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#d88848" stop-opacity="0.5"/><stop offset="1" stop-color="#8a5a30" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="xz_face" cx="0.5" cy="0.42" r="0.75">
+        <stop offset="0" stop-color="#ffe8d4"/><stop offset="0.8" stop-color="#f8d4b8"/><stop offset="1" stop-color="#eec2a4"/>
+      </radialGradient>
+      <linearGradient id="xz_iris" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e8a058"/><stop offset="0.6" stop-color="#c87838"/><stop offset="1" stop-color="#8a4f20"/>
+      </linearGradient>
+      <linearGradient id="xz_uniform" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#3a4560"/><stop offset="1" stop-color="#232c44"/>
+      </linearGradient>
+    </defs>
+    <!-- 高马尾（左后甩） -->
+    <path d="M64,96 C40,110 30,150 36,196 C40,226 52,252 70,266 C60,240 58,208 62,180 C64,160 70,130 78,116 Z" fill="url(#xz_hair)"/>
+    <path d="M64,96 C46,112 38,152 44,192" stroke="#d88848" stroke-width="2.4" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <!-- 后发 -->
+    <path d="M60,104 C56,58 88,28 120,28 C152,28 184,58 180,104 L180,148 C176,158 164,164 156,166 L84,166 C76,164 64,158 60,148 Z" fill="url(#xz_hair)"/>
+    <path d="M60,104 C58,64 88,32 120,32 C152,32 182,64 180,104 L180,130 L60,130 Z" fill="url(#xz_hair2)"/>
+    <!-- 颈 -->
+    <path d="M106,140 L134,140 L134,168 C134,178 106,178 106,168 Z" fill="#eec2a4"/>
+    <path d="M106,146 C114,152 126,152 134,146 L134,158 C126,164 114,164 106,158 Z" fill="#dfae92" opacity="0.7"/>
+    <!-- 身体：校服外套敞开 + 橙色运动衫 -->
+    <path d="M120,160 C158,160 196,190 202,250 L206,360 L34,360 L38,250 C44,190 82,160 120,160 Z" fill="url(#xz_uniform)"/>
+    <path d="M120,168 C136,168 152,176 158,190 L142,238 C132,232 108,232 98,238 L82,190 C88,176 104,168 120,168 Z" fill="#f0a858"/>
+    <path d="M120,168 L120,232" stroke="#d88848" stroke-width="2"/>
+    <!-- 白衬衫领 -->
+    <path d="M100,158 L120,186 L140,158 C134,150 106,150 100,158 Z" fill="#f4f6f8"/>
+    <path d="M100,158 L120,186 L108,192 L92,166 Z" fill="#e2e6ea"/>
+    <path d="M140,158 L120,186 L132,192 L148,166 Z" fill="#e2e6ea"/>
+    <!-- 领结 -->
+    <path d="M120,190 L106,183 L106,201 Z" fill="#d87050"/>
+    <path d="M120,190 L134,183 L134,201 Z" fill="#d87050"/>
+    <circle cx="120" cy="192" r="4.5" fill="#a85038"/>
+    <!-- 外套衣襟 -->
+    <path d="M94,178 C84,198 78,232 76,262 L62,262 C64,224 74,192 86,172 Z" fill="#1a2236" opacity="0.8"/>
+    <path d="M146,178 C156,198 162,232 164,262 L178,262 C176,224 166,192 154,172 Z" fill="#1a2236" opacity="0.8"/>
+    <path d="M58,292 L182,292" stroke="#182035" stroke-width="2" opacity="0.5"/>
+    <!-- 脸 -->
+    <path d="M120,44 C150,44 166,66 166,94 C166,120 152,146 120,150 C88,146 74,120 74,94 C74,66 90,44 120,44 Z" fill="url(#xz_face)"/>
+    <!-- 耳 -->
+    <ellipse cx="75" cy="104" rx="7" ry="10" fill="#f2c8a8"/>
+    <ellipse cx="165" cy="104" rx="7" ry="10" fill="#f2c8a8"/>
+    <!-- 刘海（斜扫，动感） -->
+    <path d="M120,28 C86,28 68,54 70,88 C70,98 73,106 76,112 C80,94 88,80 98,72 C96,86 98,96 102,104 C110,88 120,76 132,70 C130,84 132,94 136,102 C144,88 152,80 160,78 C166,88 168,100 166,110 C172,96 172,84 170,80 C166,50 150,28 120,28 Z" fill="url(#xz_hair)"/>
+    <path d="M98,72 C92,82 88,94 87,104" stroke="#e8a868" stroke-width="2" fill="none" opacity="0.55" stroke-linecap="round"/>
+    <path d="M132,70 C130,82 131,92 134,100" stroke="#e8a868" stroke-width="2" fill="none" opacity="0.55" stroke-linecap="round"/>
+    <!-- 呆毛 -->
+    <path d="M118,30 C122,20 132,16 140,20 C132,20 126,24 124,32 Z" fill="url(#xz_hair)"/>
+    <!-- 眉（有精神的上挑） -->
+    <path d="M86,93 C92,88 100,88 106,92" stroke="#6a4320" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M134,92 C140,88 148,88 154,93" stroke="#6a4320" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <!-- 眼（亮） -->
+    <path d="M84,103 C88,96 100,96 105,103" stroke="#3a2412" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+    <path d="M135,103 C140,96 152,96 156,103" stroke="#3a2412" stroke-width="4.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="94" cy="112" rx="9.5" ry="11" fill="url(#xz_iris)"/>
+    <ellipse cx="145" cy="112" rx="9.5" ry="11" fill="url(#xz_iris)"/>
+    <circle cx="94" cy="113" r="4.2" fill="#2a1808"/>
+    <circle cx="145" cy="113" r="4.2" fill="#2a1808"/>
+    <circle cx="91" cy="107" r="2.8" fill="#ffffff"/>
+    <circle cx="142" cy="107" r="2.8" fill="#ffffff"/>
+    <circle cx="98" cy="117" r="1.5" fill="#ffffff" opacity="0.85"/>
+    <circle cx="149" cy="117" r="1.5" fill="#ffffff" opacity="0.85"/>
+    <path d="M85,119 C89,122 100,122 104,119" stroke="#d89878" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <path d="M136,119 C140,122 151,122 155,119" stroke="#d89878" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <!-- 鼻与嘴（开朗张笑） -->
+    <path d="M119,124 L121,130 L118,131" stroke="#dfae92" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M111,136 C114,144 126,144 129,136 C126,139 114,139 111,136 Z" fill="#b85840"/>
+    <path d="M111,136 C114,138 126,138 129,136" stroke="#8a4030" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+    <!-- 腮红（运动红晕，明显） -->
+    <ellipse cx="84" cy="125" rx="9" ry="4.5" fill="#f09070" opacity="0.45"/>
+    <ellipse cx="156" cy="125" rx="9" ry="4.5" fill="#f09070" opacity="0.45"/>
+    <!-- 前发侧束 -->
+    <path d="M70,86 C66,110 68,138 62,164 C72,146 76,118 76,98 Z" fill="url(#xz_hair)"/>
+    <path d="M170,86 C174,110 172,138 178,164 C168,146 164,118 164,98 Z" fill="url(#xz_hair)"/>
+    <!-- 轮廓光 -->
+    <path d="M74,92 C74,66 92,46 118,42" stroke="#f8d8b0" stroke-width="2" fill="none" opacity="0.4" stroke-linecap="round"/>
+    <path d="M46,246 C44,220 48,180 56,150" stroke="#d88848" stroke-width="1.6" fill="none" opacity="0.35"/>
   </svg>`,
 
-  sunian: `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="snh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0e8ff"/><stop offset="0.5" stop-color="#b8a8e0"/><stop offset="1" stop-color="#7a68a8"/></linearGradient><linearGradient id="snu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9a8ac8"/><stop offset="1" stop-color="#6a5a98"/></linearGradient></defs>
-    <path d="M30,90 Q40,30 100,28 Q160,30 170,90 L172,300 L28,300 Z" fill="url(#snu)"/>
-    <path d="M38,80 Q45,25 100,22 Q155,25 162,80 L170,260 L120,260 L120,135 L80,135 L80,260 L30,260 Z" fill="url(#snh)"/>
-    <ellipse cx="100" cy="108" rx="40" ry="46" fill="#fceddc"/>
-    <path d="M56,80 Q62,48 100,46 Q138,48 144,80 Q130,62 100,62 Q70,62 56,80 Z" fill="url(#snh)"/>
-    <path d="M56,80 Q48,95 46,140 Q58,120 60,95 Z" fill="url(#snh)"/>
-    <path d="M144,80 Q152,95 154,140 Q142,120 140,95 Z" fill="url(#snh)"/>
-    <ellipse cx="84" cy="114" rx="5" ry="7" fill="#5a4a78"/>
-    <ellipse cx="116" cy="114" rx="5" ry="7" fill="#5a4a78"/>
-    <path d="M78,104 Q84,100 92,104" stroke="#7a68a8" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M108,104 Q116,100 122,104" stroke="#7a68a8" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M94,136 Q100,138 106,136" stroke="#b87090" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M55,210 L100,185 L145,210 L150,300 L50,300 Z" fill="#f0e8ff" opacity="0.95"/>
-    <path d="M100,185 L100,300" stroke="#6a5a98" stroke-width="2"/>
-    <path d="M76,210 Q100,200 124,210 Q120,225 100,228 Q80,225 76,210 Z" fill="#7a68a8" opacity="0.7"/>
+  sunian: `<svg viewBox="0 0 240 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sn_hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c8b8ec"/><stop offset="0.5" stop-color="#a898d8"/><stop offset="1" stop-color="#7a68b0"/>
+      </linearGradient>
+      <linearGradient id="sn_hair2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#e8e0f8" stop-opacity="0.6"/><stop offset="1" stop-color="#a898d8" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="sn_face" cx="0.5" cy="0.42" r="0.75">
+        <stop offset="0" stop-color="#fdeee2"/><stop offset="0.8" stop-color="#f6dccd"/><stop offset="1" stop-color="#ecc8b8"/>
+      </radialGradient>
+      <linearGradient id="sn_iris" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b09ae0"/><stop offset="0.6" stop-color="#8a72c8"/><stop offset="1" stop-color="#5a4898"/>
+      </linearGradient>
+      <linearGradient id="sn_uniform" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#443c60"/><stop offset="1" stop-color="#2c2545"/>
+      </linearGradient>
+    </defs>
+    <!-- 后发（长直发，垂到画面底部） -->
+    <path d="M58,104 C52,50 88,26 120,26 C152,26 188,50 182,104 C184,160 190,240 196,360 L164,360 C168,280 170,200 168,152 L72,152 C70,200 72,280 76,360 L44,360 C50,240 56,160 58,104 Z" fill="url(#sn_hair)"/>
+    <path d="M58,104 C54,56 88,28 120,28 C152,28 186,56 182,104 L182,136 L58,136 Z" fill="url(#sn_hair2)"/>
+    <!-- 发丝 -->
+    <path d="M62,120 C60,180 58,260 60,340" stroke="#d8ccf0" stroke-width="1.8" fill="none" opacity="0.4"/>
+    <path d="M178,120 C180,180 182,260 180,340" stroke="#d8ccf0" stroke-width="1.8" fill="none" opacity="0.4"/>
+    <path d="M70,110 C66,170 66,250 70,330" stroke="#9a8ac8" stroke-width="1.5" fill="none" opacity="0.35"/>
+    <!-- 颈 -->
+    <path d="M106,140 L134,140 L134,168 C134,178 106,178 106,168 Z" fill="#ecc8b8"/>
+    <path d="M106,146 C114,152 126,152 134,146 L134,158 C126,164 114,164 106,158 Z" fill="#dfb4a0" opacity="0.7"/>
+    <!-- 身体：校服 + 淡紫开衫 -->
+    <path d="M120,160 C158,160 196,190 202,250 L206,360 L34,360 L38,250 C44,190 82,160 120,160 Z" fill="url(#sn_uniform)"/>
+    <path d="M88,166 C76,192 68,232 66,268 L76,268 C80,236 88,204 98,182 Z" fill="#8a7ac0" opacity="0.9"/>
+    <path d="M152,166 C164,192 172,232 174,268 L164,268 C160,236 152,204 142,182 Z" fill="#8a7ac0" opacity="0.9"/>
+    <!-- 白衬衫领 -->
+    <path d="M100,158 L120,186 L140,158 C134,150 106,150 100,158 Z" fill="#f4f4f8"/>
+    <path d="M100,158 L120,186 L108,192 L92,166 Z" fill="#e4e4ec"/>
+    <path d="M140,158 L120,186 L132,192 L148,166 Z" fill="#e4e4ec"/>
+    <!-- 紫色细领结 -->
+    <path d="M120,190 L107,183 L107,200 Z" fill="#a898d8"/>
+    <path d="M120,190 L133,183 L133,200 Z" fill="#a898d8"/>
+    <circle cx="120" cy="191" r="4" fill="#7a68b0"/>
+    <!-- 衣褶 -->
+    <path d="M60,295 L180,295" stroke="#241d3a" stroke-width="2" opacity="0.5"/>
+    <!-- 脸 -->
+    <path d="M120,44 C150,44 166,66 166,94 C166,120 152,146 120,150 C88,146 74,120 74,94 C74,66 90,44 120,44 Z" fill="url(#sn_face)"/>
+    <!-- 耳（右耳后别画笔） -->
+    <ellipse cx="75" cy="104" rx="7" ry="10" fill="#f0d2be"/>
+    <ellipse cx="165" cy="104" rx="7" ry="10" fill="#f0d2be"/>
+    <path d="M168,100 L182,64 L186,66 L172,102 Z" fill="#c8a060"/>
+    <path d="M181,62 L186,64 L184,70 Z" fill="#7a68a8"/>
+    <!-- 刘海（中分微垂） -->
+    <path d="M120,28 C86,28 68,54 70,88 C70,98 72,106 75,112 C78,94 84,82 92,76 C90,88 91,98 94,106 C100,92 108,80 118,74 C116,86 117,96 120,104 C126,88 134,78 146,72 C145,84 147,94 150,102 C156,90 162,82 168,78 C172,90 172,100 169,110 C173,100 174,92 172,84 C170,52 152,28 120,28 Z" fill="url(#sn_hair)"/>
+    <path d="M92,76 C86,86 82,98 81,108" stroke="#e0d4f5" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <path d="M146,72 C144,84 145,94 148,102" stroke="#e0d4f5" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <!-- 眉（细，微蹙） -->
+    <path d="M86,95 C92,91 100,91 106,94" stroke="#6a5a90" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M134,94 C140,91 148,91 154,95" stroke="#6a5a90" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- 眼（安静，上睑平直） -->
+    <path d="M84,106 C89,101 100,101 105,106" stroke="#2c2444" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M135,106 C140,101 151,101 156,106" stroke="#2c2444" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="94" cy="113" rx="9" ry="10.5" fill="url(#sn_iris)"/>
+    <ellipse cx="145" cy="113" rx="9" ry="10.5" fill="url(#sn_iris)"/>
+    <circle cx="94" cy="114" r="4" fill="#241c40"/>
+    <circle cx="145" cy="114" r="4" fill="#241c40"/>
+    <circle cx="91" cy="109" r="2.5" fill="#ffffff" opacity="0.9"/>
+    <circle cx="142" cy="109" r="2.5" fill="#ffffff" opacity="0.9"/>
+    <circle cx="97" cy="117" r="1.3" fill="#ffffff" opacity="0.7"/>
+    <circle cx="148" cy="117" r="1.3" fill="#ffffff" opacity="0.7"/>
+    <!-- 上睑影（安静感） -->
+    <path d="M85,104 C90,100 100,100 104,104" stroke="#c8b8e0" stroke-width="2" fill="none" opacity="0.5"/>
+    <path d="M136,104 C141,100 151,100 155,104" stroke="#c8b8e0" stroke-width="2" fill="none" opacity="0.5"/>
+    <path d="M85,119 C89,122 100,122 104,119" stroke="#c8a094" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <path d="M136,119 C140,122 151,122 155,119" stroke="#c8a094" stroke-width="1.4" fill="none" opacity="0.7"/>
+    <!-- 鼻与嘴（抿嘴，安静） -->
+    <path d="M119,124 L121,130 L118,131" stroke="#dfb4a0" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M113,139 C117,141 123,141 127,139" stroke="#b87878" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- 腮红（淡） -->
+    <ellipse cx="86" cy="126" rx="8" ry="4" fill="#e8a0a8" opacity="0.3"/>
+    <ellipse cx="154" cy="126" rx="8" ry="4" fill="#e8a0a8" opacity="0.3"/>
+    <!-- 前发侧束（垂到胸前） -->
+    <path d="M70,86 C66,116 68,150 60,182 C72,160 76,124 76,98 Z" fill="url(#sn_hair)"/>
+    <path d="M170,86 C174,116 172,150 180,182 C168,160 164,124 164,98 Z" fill="url(#sn_hair)"/>
+    <!-- 轮廓光 -->
+    <path d="M74,92 C74,66 92,46 118,42" stroke="#efeaff" stroke-width="2" fill="none" opacity="0.4" stroke-linecap="round"/>
+    <path d="M44,360 C46,300 52,240 56,200" stroke="#c8b8e8" stroke-width="1.6" fill="none" opacity="0.35"/>
   </svg>`,
 
-  shen: `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="shh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3428"/><stop offset="1" stop-color="#1a1610"/></linearGradient><linearGradient id="shu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a8898"/><stop offset="1" stop-color="#4a5868"/></linearGradient></defs>
-    <path d="M30,90 Q40,30 100,28 Q160,30 170,90 L172,300 L28,300 Z" fill="url(#shu)"/>
-    <path d="M50,75 Q55,28 100,26 Q145,28 150,75 L148,130 Q120,120 100,120 Q80,120 52,130 Z" fill="url(#shh)"/>
-    <ellipse cx="100" cy="110" rx="40" ry="46" fill="#fde0c8"/>
-    <path d="M60,82 Q66,55 100,55 Q134,55 140,82 Q120,70 100,70 Q80,70 60,82 Z" fill="url(#shh)"/>
-    <ellipse cx="84" cy="116" rx="5" ry="7" fill="#2a2a3a"/>
-    <ellipse cx="116" cy="116" rx="5" ry="7" fill="#2a2a3a"/>
-    <path d="M78,106 Q84,102 92,106" stroke="#2a2a3a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M108,106 Q116,102 122,106" stroke="#2a2a3a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M92,138 Q100,142 108,138" stroke="#a86858" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M55,210 L100,185 L145,210 L150,300 L50,300 Z" fill="#e8e8f0" opacity="0.95"/>
-    <path d="M100,185 L100,300" stroke="#4a5868" stroke-width="2"/>
-    <path d="M84,212 L100,228 L116,212" fill="#7a8898" stroke="#2a3848" stroke-width="1.5"/>
+  shen: `<svg viewBox="0 0 240 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sh_hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4a4038"/><stop offset="0.55" stop-color="#38302a"/><stop offset="1" stop-color="#241e1a"/>
+      </linearGradient>
+      <linearGradient id="sh_hair2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#7a6c5c" stop-opacity="0.45"/><stop offset="1" stop-color="#38302a" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="sh_face" cx="0.5" cy="0.42" r="0.75">
+        <stop offset="0" stop-color="#fce8d8"/><stop offset="0.8" stop-color="#f4d8c2"/><stop offset="1" stop-color="#e8c4ac"/>
+      </radialGradient>
+      <linearGradient id="sh_iris" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8a9ab0"/><stop offset="0.6" stop-color="#5a6a88"/><stop offset="1" stop-color="#38445e"/>
+      </linearGradient>
+      <linearGradient id="sh_cardigan" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4a5060"/><stop offset="1" stop-color="#2e3442"/>
+      </linearGradient>
+    </defs>
+    <!-- 后发（短发） -->
+    <path d="M62,100 C58,56 88,30 120,30 C152,30 182,56 178,100 C177,116 174,128 170,136 L70,136 C66,128 63,116 62,100 Z" fill="url(#sh_hair)"/>
+    <path d="M62,100 C60,62 88,34 120,34 C152,34 180,62 178,100 L178,120 L62,120 Z" fill="url(#sh_hair2)"/>
+    <!-- 颈 -->
+    <path d="M106,142 L134,142 L134,170 C134,180 106,180 106,170 Z" fill="#e8c4ac"/>
+    <path d="M106,148 C114,154 126,154 134,148 L134,160 C126,166 114,166 106,160 Z" fill="#d8ac94" opacity="0.7"/>
+    <!-- 身体：深色开衫为底 -->
+    <path d="M120,162 C158,162 196,192 202,252 L206,360 L34,360 L38,252 C44,192 82,162 120,162 Z" fill="url(#sh_cardigan)"/>
+    <!-- 白衬衫中襟（V 领下露出的前襟） -->
+    <path d="M100,162 L120,190 L140,162 C146,200 148,290 146,360 L94,360 C92,290 94,200 100,162 Z" fill="#f0eee8"/>
+    <path d="M112,206 L112,356 M128,206 L128,356" stroke="#d8d4c8" stroke-width="1.6"/>
+    <!-- 开衫翻边（沿中襟两侧） -->
+    <path d="M100,162 C92,210 90,290 92,360 L104,360 C102,290 104,210 110,176 Z" fill="#3c4250"/>
+    <path d="M140,162 C148,210 150,290 148,360 L136,360 C138,290 136,210 130,176 Z" fill="#3c4250"/>
+    <!-- 衬衫领 -->
+    <path d="M100,160 L120,188 L140,160 C134,152 106,152 100,160 Z" fill="#ffffff"/>
+    <path d="M100,160 L120,188 L108,194 L92,168 Z" fill="#e4e2da"/>
+    <path d="M140,160 L120,188 L132,194 L148,168 Z" fill="#e4e2da"/>
+    <!-- 开衫肩线 -->
+    <path d="M84,176 C96,166 144,166 156,176" stroke="#3c4250" stroke-width="3" fill="none"/>
+    <!-- 脸（下颌稍宽） -->
+    <path d="M120,44 C151,44 167,66 167,94 C167,122 152,148 120,152 C88,148 73,122 73,94 C73,66 89,44 120,44 Z" fill="url(#sh_face)"/>
+    <!-- 耳 -->
+    <ellipse cx="74" cy="104" rx="7" ry="10" fill="#f0d0b8"/>
+    <ellipse cx="166" cy="104" rx="7" ry="10" fill="#f0d0b8"/>
+    <!-- 碎刘海 -->
+    <path d="M120,30 C86,30 68,56 70,90 C70,98 72,104 75,110 C80,94 86,82 94,76 C92,88 93,98 96,106 C102,90 110,78 120,72 C118,84 119,94 122,102 C128,88 136,78 148,72 C147,84 149,94 153,102 C158,90 163,82 167,80 C171,90 171,100 168,110 C173,100 174,92 172,84 C170,54 152,30 120,30 Z" fill="url(#sh_hair)"/>
+    <path d="M94,76 C88,86 85,96 84,106" stroke="#8a7a68" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <path d="M148,72 C146,84 147,94 150,102" stroke="#8a7a68" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <!-- 眉（平直，平静） -->
+    <path d="M85,94 C92,91 100,91 106,93" stroke="#3a322a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M134,93 C140,91 148,91 155,94" stroke="#3a322a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <!-- 眼 -->
+    <path d="M84,103 C89,97 100,97 105,103" stroke="#2a241e" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M135,103 C140,97 151,97 156,103" stroke="#2a241e" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <ellipse cx="94" cy="111" rx="8.5" ry="10" fill="url(#sh_iris)"/>
+    <ellipse cx="145" cy="111" rx="8.5" ry="10" fill="url(#sh_iris)"/>
+    <circle cx="94" cy="112" r="3.8" fill="#1c222e"/>
+    <circle cx="145" cy="112" r="3.8" fill="#1c222e"/>
+    <circle cx="91" cy="107" r="2.4" fill="#ffffff"/>
+    <circle cx="142" cy="107" r="2.4" fill="#ffffff"/>
+    <circle cx="97" cy="115" r="1.3" fill="#ffffff" opacity="0.8"/>
+    <circle cx="148" cy="115" r="1.3" fill="#ffffff" opacity="0.8"/>
+    <path d="M85,118 C89,121 100,121 104,118" stroke="#c8a094" stroke-width="1.4" fill="none" opacity="0.65"/>
+    <path d="M136,118 C140,121 151,121 155,118" stroke="#c8a094" stroke-width="1.4" fill="none" opacity="0.65"/>
+    <!-- 鼻与嘴（平缓微抿） -->
+    <path d="M119,124 L121,130 L118,131" stroke="#d8ac94" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M113,138 C117,140 123,140 127,138" stroke="#b07868" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- 腮红（极淡） -->
+    <ellipse cx="85" cy="126" rx="7" ry="3.5" fill="#e8a090" opacity="0.22"/>
+    <ellipse cx="155" cy="126" rx="7" ry="3.5" fill="#e8a090" opacity="0.22"/>
+    <!-- 前发侧束 -->
+    <path d="M70,84 C66,108 68,136 62,162 C72,144 76,116 76,96 Z" fill="url(#sh_hair)"/>
+    <path d="M170,84 C174,108 172,136 178,162 C168,144 164,116 164,96 Z" fill="url(#sh_hair)"/>
+    <!-- 轮廓光 -->
+    <path d="M74,92 C74,66 92,46 118,42" stroke="#c8bca8" stroke-width="2" fill="none" opacity="0.35" stroke-linecap="round"/>
+    <path d="M46,252 C44,226 48,188 56,158" stroke="#6a7488" stroke-width="1.6" fill="none" opacity="0.3"/>
   </svg>`,
 
-  senior: `<svg viewBox="0 0 200 300" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="srh" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d8d8a8"/><stop offset="1" stop-color="#a8a878"/></linearGradient><linearGradient id="sru" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8b890"/><stop offset="1" stop-color="#888860"/></linearGradient></defs>
-    <path d="M30,90 Q40,30 100,28 Q160,30 170,90 L172,300 L28,300 Z" fill="url(#sru)"/>
-    <path d="M45,80 Q52,30 100,28 Q148,30 155,80 L150,180 Q120,170 100,170 Q80,170 50,180 Z" fill="url(#srh)"/>
-    <ellipse cx="100" cy="112" rx="40" ry="46" fill="#fcedc8"/>
-    <path d="M58,84 Q66,55 100,55 Q134,55 142,84 Q120,72 100,72 Q80,72 58,84 Z" fill="url(#srh)"/>
-    <ellipse cx="84" cy="118" rx="5" ry="7" fill="#3a3a2a"/>
-    <ellipse cx="116" cy="118" rx="5" ry="7" fill="#3a3a2a"/>
-    <path d="M92,140 Q100,144 108,140" stroke="#886848" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-    <path d="M55,210 L100,185 L145,210 L150,300 L50,300 Z" fill="#f8f8d8" opacity="0.95"/>
-    <path d="M84,212 L100,228 L116,212" fill="#b8b890" stroke="#888860" stroke-width="1.5"/>
+  senior: `<svg viewBox="0 0 240 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sr_hair" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c8c8a0"/><stop offset="0.5" stop-color="#a8a880"/><stop offset="1" stop-color="#787858"/>
+      </linearGradient>
+      <linearGradient id="sr_hair2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#eaeac8" stop-opacity="0.55"/><stop offset="1" stop-color="#a8a880" stop-opacity="0"/>
+      </linearGradient>
+      <radialGradient id="sr_face" cx="0.5" cy="0.42" r="0.75">
+        <stop offset="0" stop-color="#fdece0"/><stop offset="0.8" stop-color="#f5dccb"/><stop offset="1" stop-color="#eac8b4"/>
+      </radialGradient>
+      <linearGradient id="sr_cardigan" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#d8c8a8"/><stop offset="1" stop-color="#b8a480"/>
+      </linearGradient>
+    </defs>
+    <!-- 后发（长发+低马尾） -->
+    <path d="M58,104 C52,50 88,26 120,26 C152,26 188,50 182,104 C184,150 188,200 194,252 L166,252 L164,150 L76,150 C74,200 72,220 70,252 L46,252 C52,200 56,150 58,104 Z" fill="url(#sr_hair)"/>
+    <path d="M58,104 C54,56 88,28 120,28 C152,28 186,56 182,104 L182,136 L58,136 Z" fill="url(#sr_hair2)"/>
+    <!-- 低马尾（垂在右后） -->
+    <path d="M178,130 C196,150 202,196 196,246 C194,268 188,288 180,300 C184,270 184,240 178,214 C174,190 170,160 166,142 Z" fill="url(#sr_hair)"/>
+    <path d="M182,140 C194,164 198,204 192,244" stroke="#eaeac8" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <!-- 发绳 -->
+    <path d="M170,138 C178,134 186,136 190,142 C184,146 176,146 170,144 Z" fill="#b8788a"/>
+    <!-- 颈 -->
+    <path d="M106,140 L134,140 L134,168 C134,178 106,178 106,168 Z" fill="#ecc8b4"/>
+    <path d="M106,146 C114,152 126,152 134,146 L134,158 C126,164 114,164 106,158 Z" fill="#dfb4a0" opacity="0.7"/>
+    <!-- 身体：米色开衫 + 白衬衫 -->
+    <path d="M120,160 C158,160 196,190 202,250 L206,360 L34,360 L38,250 C44,190 82,160 120,160 Z" fill="url(#sr_cardigan)"/>
+    <path d="M120,164 L120,240" stroke="#a08c68" stroke-width="2"/>
+    <!-- 白衬衫领 -->
+    <path d="M100,158 L120,186 L140,158 C134,150 106,150 100,158 Z" fill="#f8f6f0"/>
+    <path d="M100,158 L120,186 L108,192 L92,166 Z" fill="#eae6dc"/>
+    <path d="M140,158 L120,186 L132,192 L148,166 Z" fill="#eae6dc"/>
+    <!-- 开衫衣襟 -->
+    <path d="M92,176 C84,200 80,238 78,272 L64,272 C66,232 74,196 84,174 Z" fill="#c8b490" opacity="0.85"/>
+    <path d="M148,176 C156,200 160,238 162,272 L176,272 C174,232 166,196 156,174 Z" fill="#c8b490" opacity="0.85"/>
+    <!-- 细腰带 -->
+    <path d="M58,296 L182,296" stroke="#a08c68" stroke-width="3" opacity="0.7"/>
+    <!-- 脸（略微修长） -->
+    <path d="M120,44 C149,44 165,66 165,94 C165,120 151,147 120,151 C89,147 75,120 75,94 C75,66 91,44 120,44 Z" fill="url(#sr_face)"/>
+    <!-- 耳 -->
+    <ellipse cx="75" cy="104" rx="7" ry="10" fill="#f0d2be"/>
+    <ellipse cx="165" cy="104" rx="7" ry="10" fill="#f0d2be"/>
+    <circle cx="165" cy="110" r="2" fill="#d8b0a0"/>
+    <!-- 刘海（柔和斜分） -->
+    <path d="M120,28 C86,28 68,54 70,88 C70,98 73,106 76,112 C80,94 86,82 94,76 C92,88 93,98 96,106 C102,92 110,80 122,74 C120,86 121,96 124,104 C130,90 138,80 150,74 C149,86 151,96 154,104 C160,92 164,84 168,80 C172,92 172,100 169,110 C173,100 174,92 172,84 C170,52 152,28 120,28 Z" fill="url(#sr_hair)"/>
+    <path d="M94,76 C88,86 84,96 83,106" stroke="#eaeade" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <path d="M150,74 C148,86 150,96 153,104" stroke="#eaeade" stroke-width="2" fill="none" opacity="0.5" stroke-linecap="round"/>
+    <!-- 眉（柔和弯） -->
+    <path d="M86,95 C92,90 100,90 106,93" stroke="#7a7050" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M134,93 C140,90 148,90 154,95" stroke="#7a7050" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- 眼（温柔闭眼笑 ^^） -->
+    <path d="M85,110 C90,104 101,104 106,110" stroke="#4a4232" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+    <path d="M134,110 C139,104 150,104 155,110" stroke="#4a4232" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+    <path d="M86,111 C91,106 100,106 105,111" stroke="#8a8060" stroke-width="1.4" fill="none" opacity="0.5"/>
+    <path d="M135,111 C140,106 149,106 154,111" stroke="#8a8060" stroke-width="1.4" fill="none" opacity="0.5"/>
+    <!-- 睫毛 -->
+    <path d="M84,110 L80,113 M156,110 L160,113" stroke="#4a4232" stroke-width="2" stroke-linecap="round"/>
+    <!-- 鼻与嘴（温和浅笑） -->
+    <path d="M119,124 L121,130 L118,131" stroke="#dfb4a0" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M112,136 C116,140 124,140 128,136" stroke="#c07868" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+    <!-- 腮红 -->
+    <ellipse cx="85" cy="125" rx="8" ry="4" fill="#f0a0a0" opacity="0.35"/>
+    <ellipse cx="155" cy="125" rx="8" ry="4" fill="#f0a0a0" opacity="0.35"/>
+    <!-- 前发侧束 -->
+    <path d="M70,86 C66,112 68,140 60,168 C72,148 76,120 76,98 Z" fill="url(#sr_hair)"/>
+    <path d="M170,86 C174,112 172,140 180,168 C168,148 164,120 164,98 Z" fill="url(#sr_hair)"/>
+    <!-- 轮廓光 -->
+    <path d="M74,92 C74,66 92,46 118,42" stroke="#f2f2dc" stroke-width="2" fill="none" opacity="0.45" stroke-linecap="round"/>
+    <path d="M48,252 C46,226 50,190 56,160" stroke="#c8c8a0" stroke-width="1.6" fill="none" opacity="0.35"/>
   </svg>`,
 };
 
