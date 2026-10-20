@@ -19,6 +19,13 @@
 /* ============ 基础 ============ */
 /* 移动端触控（v3.0.0）：manipulation 禁双击缩放，快速点击不误触放大 */
 #game, #game button, .choice-btn { touch-action: manipulation; }
+/* 减动效（v3.2.0）：系统开启「减弱动态效果」时关闭动画与过渡 */
+@media (prefers-reduced-motion: reduce) {
+  #game, #game *, #game *::before, #game *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; }
 body {

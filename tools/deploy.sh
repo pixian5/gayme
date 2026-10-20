@@ -15,7 +15,7 @@ DEST="/var/www/sakura"
 
 echo "==> 打包并上传到 ${USER}@${HOST}:${PORT} → ${DEST}"
 # tar 管道直传（macOS bsdtar 与服务器 GNU tar 兼容；xattr 告警无害）
-tar czf - index.html css js fonts favicon.svg .nojekyll 2>/dev/null \
+tar czf - index.html css js fonts favicon.svg .nojekyll manifest.webmanifest sw.js assets icons 2>/dev/null \
   | ssh -i "$KEY" -p "$PORT" -o BatchMode=yes "ubuntu@${HOST}" \
     "tar xzf - -C ${DEST}/ && echo '==> 上传完成'"
 

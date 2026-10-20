@@ -37,7 +37,13 @@ def main():
     html, n2 = re.subn(r"v[\d.]+ · Demo", f"v{ver} · Demo", html)
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页）")
+
+    # sw.js 缓存版本（PWA 预缓存随版本换仓，保证更新可达）
+    sw = open("sw.js", encoding="utf-8").read()
+    sw, n3 = re.subn(r"sakura-v[\d.]+", f"sakura-v{ver}", sw)
+    with open("sw.js", "w", encoding="utf-8") as f:
+        f.write(sw)
+    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处）")
 
 
 if __name__ == "__main__":

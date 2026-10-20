@@ -70,6 +70,10 @@
    （v3.1.2 同步：README 进度/路线刷新至当前状态）
    v3.1.3：部署扩展——自有服务器 oh.sbbz.tech 上线（nginx · HTTPS 8080 · 通配符证书），
            tools/deploy.sh 一键部署（tar over ssh :2424）；与 GitHub Pages 双源并行
+   v3.2.0：发布与体验基建——PWA 离线化（manifest + Service Worker 预缓存，bump 工具
+           同步缓存版本）；OG 分享卡片（assets/og-cover.jpg + meta）；CI 自动部署
+           自有服务器（专用密钥 + deploy-server.yml）；证书续期 reloadcmd 闭环；
+           prefers-reduced-motion 减动效（CSS 动画 + 粒子）
    ======================================== */
 
 (function () {
@@ -3178,6 +3182,8 @@
   }
 
   function updateParticles(scene) {
+    // 减动效（v3.2.0）：系统开启「减弱动态效果」时不生成粒子
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { stopParticles(); return; }
     const newType = getParticleType(scene);
     if (newType === particleType) return;
     particleType = newType;
