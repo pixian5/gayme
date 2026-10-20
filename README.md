@@ -3,11 +3,12 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.1.2**（开发测试版 · Demo）
+- 当前版本：**v3.1.3**（开发测试版 · Demo）
 - 技术形态：纯前端，零依赖、零构建，浏览器直接运行
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
-- 在线试玩：https://pixian5.github.io/gayme/ （push 到 main 后由 GitHub Actions 自动部署）
+- 在线试玩：https://pixian5.github.io/gayme/ （push 后 GitHub Actions 自动部署）
+- 自有服务器：https://oh.sbbz.tech:8080/ （push 后运行 `bash tools/deploy.sh` 同步部署）
 
 ## 运行方式
 
@@ -80,5 +81,5 @@ docs/               版本记录与规划文档（7 份多模型分析文档在 
   tools/equivalence_check.py 会扫描
 - 字体：新增文案若出现子集未覆盖的汉字 → `bash tools/rebuild_font_subset.sh`
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
-- 提交：中文 commit，完成后推送 gitee（origin）与 github
+- 提交：中文 commit，完成后推送 gitee（origin）与 github，并运行 `bash tools/deploy.sh` 同步自有服务器
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
