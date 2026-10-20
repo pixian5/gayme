@@ -30,6 +30,7 @@ jobs:
         run: |
           install -m 600 /dev/null ~/deploy_key
           echo "$SSH_KEY" > ~/deploy_key
+          mkdir -p ~/.ssh
           ssh-keyscan -p $PORT $HOST >> ~/.ssh/known_hosts 2>/dev/null
           tar czf - index.html css js fonts favicon.svg .nojekyll manifest.webmanifest sw.js assets icons \
             | ssh -i ~/deploy_key -p $PORT "ubuntu@$HOST" "tar xzf - -C /var/www/sakura/"
