@@ -65,6 +65,9 @@
             沈屿·碎发平静 / 学姐·闭眼温笑+低马尾），script.js +17KB
    v3.1.1：10 张 CG 同步重绘——场景纵深（窗光/看台/摊位/聚光灯）、人物穿校服、
            学园祭灯笼去表情化加棱线穗子、真结局樱花树冠重建（+17KB）
+   v3.1.2：移动端顶栏折叠——窄屏默认只留 8 个高频按钮，低频 5 个（朋友圈/历史/
+           关键词/CG/流程图）收进「⋯」展开，不再换行占两行
+   （v3.1.2 同步：README 进度/路线刷新至当前状态）
    ======================================== */
 
 (function () {
@@ -3392,6 +3395,11 @@
     if (state.isTyping) skipTyping();
     else if (state.inGame) advance();
   });
+
+  // 移动端折叠菜单入口（v3.1.2）：切换低频按钮显隐
+  document.getElementById("btn-more").onclick = () => {
+    el.topBar.classList.toggle("expanded");
+  };
 
   el.topBar.querySelectorAll("button[data-menu]").forEach((btn) => {
     btn.onclick = () => {
