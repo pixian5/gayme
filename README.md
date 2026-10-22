@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.2.1**（开发测试版 · Demo）
+- 当前版本：**v3.2.2**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -32,24 +32,29 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 
 ## 【当前开发进度】
 
-剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（414 个节点），32 项静态测试
-+ 浏览器 e2e 回归全过。**v3.2.1**：e2e 浏览器回归落地（修复 4 个根因 bug：ROOT 路径 /
-进程不退出 / window.Saves / closeOverlay）并接入 CI；`__game` 导出补齐 closeOverlay。
-此前 v2.8.5 → v3.2.0：工程债务清偿（玩法全部模块化、engine.js 14,614→3,478 行纯引擎、
-CSS 拆分、CI + Pages 自动部署）；功能增强（自动存档防刷新丢失、三层程序化 BGM + 5 种
-音效、玩法结果影响叙事、合成回忆、PWA 离线化、OG 分享卡片、CI 自动部署服务器、证书
-续期闭环）；剧情治理（414 节点全量走查 + 12 项合理性修补）；表现升级（移动端安全区与
-触控适配、顶栏折叠菜单、5 张立绘 + 10 张 CG 全面重绘、减动效）。
+剧情主线、后日谈、90 个互动玩法与存档/图鉴系统全部完成（416 个节点），32 项静态测试
++ 浏览器 e2e 回归全过。**v3.2.2**：多周目内容纵深 + 发行体验——P1-1 主线 39 节点新增
+多周目差异化文本（loopText 随循环次数变化，覆盖序章/共通线/循环点/女主线重走）；P1-2
+合成系统扩展（回忆 6→11 段、配方 7→11 条，补樱花信回忆 + 4 组新组合）；P1-3 学姐线
+形态 B（后日谈插入学姐视角回忆 3 节点，不动结局结构）；P0-2 符号兜底（btn-more ⋯→☰，
+check_font_coverage 符号回退区扩展，剩 91 汉字缺字待 P0-1 重建）；P2-1 关于页反馈入口
+（mailto）+ 版本号统一 GAME_VERSION 常量；P2-2 首屏性能（14 脚本 defer 化，服务器 nginx
+gzip 已开）；P3 存档审计（107 键无重复无容量风险）。此前 v3.2.1：e2e 浏览器回归落地
+（修复 4 个根因 bug：ROOT 路径 / 进程不退出 / window.Saves / closeOverlay）并接入 CI。
+再往前 v2.8.5 → v3.2.0：工程债务清偿、功能增强、剧情治理、表现升级（详见下）。
 
-详细内容见 → [docs/20261022-2226-当前开发进度-Doubao.md](docs/20261022-2226-当前开发进度-Doubao.md)
+详细内容见 → [docs/20261022-2328-多周目内容纵深与发行体验-Doubao.md](docs/20261022-2328-多周目内容纵深与发行体验-Doubao.md)
 
 ## 【下一步待实现】
 
-剩余可选项：真实录音 BGM（需音频素材）、AI 位图立绘/CG（需生图服务或自备图片）、
-试玩反馈驱动的玩法同质化调整、字体子集重建（缺 85 字符，需 WiFi 环境）。工程与美术
-占位问题已全部关闭。完整分优先级的开发路线见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
+- **P0-1 字体子集重建**（排队，需 WiFi 环境约 23MB 下载）：当前缺 91 汉字（含本轮多周目
+  文本新引入的字），跑 `tools/rebuild_font_subset.sh`。
+- **学姐线形态 A**：新增学姐专属结局（动真结局结构），需用户拍板后再做。
+- 其余可选项：真实录音 BGM（需音频素材）、AI 位图立绘/CG（需生图服务或自备图片）、
+  试玩反馈驱动的玩法同质化调整、itch.io 等外部平台分发（未确认）。
+  完整分优先级的开发路线见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
 
-详细内容见 → [docs/20261022-2226-下一步待实现-Doubao.md](docs/20261022-2226-下一步待实现-Doubao.md)
+详细内容见 → [docs/20261022-2328-下一步待实现-Doubao.md](docs/20261022-2328-下一步待实现-Doubao.md)
 
 ## 文档索引
 
@@ -62,7 +67,7 @@ index.html          入口（字体 preload；样式 style.css + games.css；脚
 css/style.css       基础与引擎 UI 样式（顶部为自托管 @font-face）
 css/games.css       全部玩法浮层样式（94 套，v2.9.2 拆出）
 fonts/              自托管 Noto Serif SC 子集（非 Mac 平台兜底；macOS 优先用本机 Songti SC，重建见 tools/rebuild_font_subset.sh）
-js/saves.js         存档与图鉴数据层（localStorage，106 个键；记录型存取由 recordStore 工厂生成）
+js/saves.js         存档与图鉴数据层（localStorage，107 个键；记录型存取由 recordStore 工厂生成）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 409 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
 js/minigames.js     3 个基础迷你游戏（writing / running / painting）
@@ -78,10 +83,10 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v3.2.1，下一版 v3.2.2）
+- 版本号：每次修改 +0.0.1，满十进一（当前 v3.2.2，下一版 v3.2.3）
 - 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
-  `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）；`js/engine.js` 头注释手工补一行
-  变更说明（一致性测试兜底）
+  `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/ `js/engine.js`（GAME_VERSION 常量）；
+  `js/engine.js` 头注释手工补一行变更说明（一致性测试兜底）
 - 玩法开发：新玩法一律 `GameKit.register()` + `createShell()` / `shell.finish()`，
   经引擎的通用分发循环自动触发；样式写进 css/games.css；实现放 js/games/ 对应主题文件
 - 新增玩法存储：使用 `js/saves.js` 的 `recordStore` / `unlockListStore` 工厂

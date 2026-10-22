@@ -43,7 +43,14 @@ def main():
     sw, n3 = re.subn(r"sakura-v[\d.]+", f"sakura-v{ver}", sw)
     with open("sw.js", "w", encoding="utf-8") as f:
         f.write(sw)
-    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处）")
+
+    # engine.js 运行时版本常量（renderAbout 展示用）
+    eng = open("js/engine.js", encoding="utf-8").read()
+    eng, n4 = re.subn(r'GAME_VERSION = "[\d.]+"', f'GAME_VERSION = "{ver}"', eng)
+    with open("js/engine.js", "w", encoding="utf-8") as f:
+        f.write(eng)
+
+    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处；engine.js 常量 {n4} 处）")
 
 
 if __name__ == "__main__":

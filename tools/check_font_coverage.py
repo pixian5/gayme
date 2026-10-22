@@ -13,8 +13,23 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 FONTS = ["fonts/NotoSerifSC-Regular.woff2", "fonts/NotoSerifSC-Bold.woff2"]
-# 已知走系统 emoji / 符号回退、不要求子集覆盖的字符类（私人使用区与常见 emoji 区段）
-FALLBACK_RANGES = [(0x1F000, 0x1FAFF), (0x2600, 0x27BF), (0xFE00, 0xFE0F), (0x200D, 0x200D)]
+# 已知走系统 emoji / 符号回退、不要求子集覆盖的字符类。
+# v3.3.0 扩展：UI 按钮使用 emoji（💾⚙️▶▶ 等）与常见符号（⏩⏱⏳⟲⋯☰■□△▽◆◇〖〗％－￥），
+# 这些字符在现代浏览器/系统字体（macOS PingFang、Windows Segoe UI Emoji、Linux Noto Color Emoji）均有回退，
+# 与正文汉字缺失不同——不算子集缺口，只记录不阻断。
+FALLBACK_RANGES = [
+    (0x1F000, 0x1FAFF),  # 补充符号/表情符号区
+    (0x2600, 0x27BF),    # 杂项符号与装饰（☰ ★ ♪ ⚙ 等）
+    (0xFE00, 0xFE0F),    # 变体选择符
+    (0x200D, 0x200D),    # 零宽连接符（emoji 序列）
+    (0x2190, 0x21FF),    # 箭头
+    (0x2300, 0x23FF),    # 杂项技术符号（⏩ ⏱ ⏳）
+    (0x2500, 0x25FF),    # 框线与几何形状（■ □ △ ▽ ◆ ◇）
+    (0x27C0, 0x27FF),    # 杂项数学符号-B（⟲）
+    (0x22EE, 0x22EF),    # ⋮ 竖省略号 / ⋯ 横省略号
+    (0x3010, 0x301F),    # CJK 括号（〖〗〔〕 等）
+    (0xFF00, 0xFFEF),    # 全角形式（％ － ￥ 等）
+]
 
 
 def is_fallback(cp):

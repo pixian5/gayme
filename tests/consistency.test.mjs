@@ -24,7 +24,8 @@ test("版本号在 VERSION / index.html / package.json 三处一致", () => {
 });
 
 test("js 目录下所有脚本都在 index.html 中加载，且 engine.js 最后加载", () => {
-  const loaded = [...html.matchAll(/<script src="([^"?]+)/g)].map(match => match[1]);
+  // v3.3.0：支持 <script src> 与 <script defer src>（defer 化后属性顺序变化）
+  const loaded = [...html.matchAll(/<script[^>]*src="([^"?]+)/g)].map(match => match[1]);
   const rootFiles = fs.readdirSync(new URL("../js", import.meta.url))
     .filter(name => name.endsWith(".js"))
     .map(name => `js/${name}`);

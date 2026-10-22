@@ -76,10 +76,22 @@
            prefers-reduced-motion 减动效（CSS 动画 + 粒子）
    v3.2.1：e2e 收尾——新增 tests/browser/engine.e2e.mjs 浏览器运行时回归并接入 CI
            （e2e.yml）；__game 导出补齐 closeOverlay（与 openOverlay 对称，供测试/调试）
+   v3.2.2：多周目内容纵深 + 发行体验（详见 docs）——①P1-1 主线 39 节点新增 loopText
+           多周目差异化文本（序章/共通线/循环点/女主线重走，随 loopCount 变化）；
+           ②P1-2 合成系统扩展（樱花信补专属回忆 + 新增 4 组双关键词组合，回忆 6→11 段、
+           配方 7→11 条）；③P1-3 学姐线形态 B（后日谈插入学姐视角回忆 3 节点，不动结局结构）；
+           ④P0-2 符号兜底（btn-more ⋯→☰；check_font_coverage 符号回退区扩展，91 汉字缺字
+           待 P0-1 字体重建，需 WiFi 排队）；⑤P2-1 关于页反馈入口（mailto）+ 版本号统一为
+           GAME_VERSION 常量（bump 脚本同步，修复 renderAbout 写死 v2.7.8）；⑥P2-2 首屏性能
+           （index.html 14 脚本 defer 化；服务器 nginx gzip 已开启覆盖主要类型）；
+           ⑦P3 存档审计（107 键无重复无容量风险，README 同步）；⑧e2e 保持 chromium 单浏览器
    ======================================== */
 
 (function () {
   "use strict";
+
+  /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
+  const GAME_VERSION = "3.2.2";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1307,9 +1319,16 @@
       <div style="text-align:center;padding:30px 10px;line-height:2;">
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
-        <p style="color:#e8e0d0;">v2.7.8 · Demo</p>
+        <p style="color:#e8e0d0;">v${GAME_VERSION} · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
+        <p style="margin-top:26px;">
+          <a href="mailto:hqlak47@gmail.com?subject=%E3%80%8A%E6%A8%B1%E6%97%B6%E4%BF%A1%E7%AE%80%E3%80%8B%E5%8F%8D%E9%A6%88"
+             style="display:inline-block;padding:8px 22px;border:1px solid rgba(255,200,220,0.4);border-radius:20px;
+                    color:#ffd8e4;text-decoration:none;font-size:13px;letter-spacing:2px;background:rgba(180,80,120,0.15);">
+            ✉ 反馈建议 · 邮件直达
+          </a>
+        </p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
         ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
       </div>

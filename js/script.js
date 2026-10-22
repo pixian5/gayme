@@ -489,6 +489,11 @@ const COMPOSE_RECIPES = [
   { a: "全国赛", b: "特招",   result: "她的选择", resultName: "她的选择", desc: "夏织要的不是名次，而是被允许做选择。" },
   { a: "学姐",   b: "回信",   result: "替她回",   resultName: "替她回",   desc: "替学姐回她没敢回给自己的那封信。" },
   { a: "祭信",   b: "未寄信", result: "樱花信",   resultName: "樱花信",   desc: "把祭信与未寄信合在一起，就是打破循环的钥匙。" },
+  // v3.3.0 合成扩展：更多关键词组合
+  { a: "小说",   b: "紫",     result: "彼此书页", resultName: "彼此的书页", desc: "她的稿纸和他的画布，在同一张桌上摊开。" },
+  { a: "全国赛", b: "角色A",  result: "起跑底稿", resultName: "起跑线的底稿", desc: "她起跑前，也在纸上写过一个名字。" },
+  { a: "樱花祭", b: "学姐",   result: "樱花的旧约", resultName: "樱花的旧约", desc: "很多年前，她也曾在樱花祭做过同样的选择。" },
+  { a: "匿名信", b: "回信",   result: "纸的来处", resultName: "纸的来处",   desc: "信是写给谁的，其实从来都不难猜。" },
 ];
 window.COMPOSE_RECIPES = COMPOSE_RECIPES;
 
@@ -506,6 +511,17 @@ const COMPOSED_MEMORIES = {
               text: "报名表和特招协议并排放在桌上。她最后选的，不是那条更稳的路。" },
   "替她回": { id: "合成·替她回", title: "代笔的勇气",
               text: "有些信不是写给收信人的，是写给不敢回信的自己。你替她落笔的那一刻，她终于敢看了。" },
+  // v3.3.0 合成回忆扩展
+  "樱花信": { id: "合成·樱花信", title: "寄往循环之外",
+              text: "祭信与未寄信叠在一起，折痕刚好吻合。原来她写给我的每一句，都是写给她自己的下一句。" },
+  "彼此书页": { id: "合成·彼此书页", title: "摊开的纸页",
+              text: "她的稿纸和她的画布摊在同一张桌上。紫渗进字缝，字落进紫里——她们的故事，一直在互相补全。" },
+  "起跑底稿": { id: "合成·起跑底稿", title: "起跑前的名字",
+              text: "秒表按下之前，她在掌心写了一个名字，又擦掉。那场比赛她跑得飞快——像在追赶纸上的那个角色。" },
+  "樱花的旧约": { id: "合成·樱花的旧约", title: "更早的春天",
+              text: "校刊旧页里夹着一张照片：很多年前的樱花祭，一个女生站在同样的位置，面前也放着一封没寄出的信。她不是第一个走这条路的人。" },
+  "纸的来处": { id: "合成·纸的来处", title: "信纸背面",
+              text: "信纸背面有一行极淡的字，是写给自己看的：「如果你收到这封信，说明我终于寄出去了。」" },
 };
 window.COMPOSED_MEMORIES = COMPOSED_MEMORIES;
 
@@ -617,15 +633,30 @@ const SCRIPT = {
     ],
     next: "prologue_2"
   },
-  prologue_2: { day: 1, time: "morning", bg: "cherry_full", speaker: "", text: "我，沈屿。两周前父亲说工作调动，母亲说随你便。两个人已经冷战三个月。我选了住校。", next: "prologue_3" },
-  prologue_3: { day: 1, time: "morning", bg: "school_gate", speaker: "", text: "手里攥着皱巴巴的入学通知书，胸口闷得发紧。教学楼的钟响起来时，我还没找到教务处。", next: "prologue_4" },
-  prologue_4: { day: 1, time: "morning", bg: "hallway", chars: [{id:"shiyu", pos:"center"}], speaker: "???", text: "——同学，你挡在路中间了。", next: "prologue_5", keyword: "林诗雨" },
+  prologue_2: { day: 1, time: "morning", bg: "cherry_full", speaker: "", text: "我，沈屿。两周前父亲说工作调动，母亲说随你便。两个人已经冷战三个月。我选了住校。",
+    loopText: ["我，沈屿。两周前父亲说工作调动，母亲说随你便。两个人已经冷战三个月。我选了住校。",
+"我，沈屿。两周前父亲说工作调动，母亲说随你便——等等。这句话我说过。连『随你便』三个字的停顿，都和记忆里一模一样。",
+"沈屿。这一次我没有等那句『随你便』落地。我比它更早知道，母亲下一句不会来了。"], next: "prologue_3" },
+  prologue_3: { day: 1, time: "morning", bg: "school_gate", speaker: "", text: "手里攥着皱巴巴的入学通知书，胸口闷得发紧。教学楼的钟响起来时，我还没找到教务处。",
+    loopText: ["手里攥着皱巴巴的入学通知书，胸口闷得发紧。教学楼的钟响起来时，我还没找到教务处。",
+"手里攥着皱巴巴的入学通知书。钟响的节奏我也记得——上一次，是它把我推到了那个戴眼镜的女生面前。",
+"入学通知书被我攥得比上次还皱。我甚至记得钟会响几声。可我还是让它响完——有些路，第二次走才看得清岔口。"], next: "prologue_4" },
+  prologue_4: { day: 1, time: "morning", bg: "hallway", chars: [{id:"shiyu", pos:"center"}], speaker: "???", text: "——同学，你挡在路中间了。",
+    loopText: ["——同学，你挡在路中间了。",
+"——同学，你挡在路中间了。……这句台词，和记忆里一字不差。连她抱作业本的姿势都是。",
+"——同学，你挡在路中间了。她没有变。变的只是我——这一次，我没有急着让开。我想看看她接下来说什么，哪怕我已经知道了。"], next: "prologue_5", keyword: "林诗雨" },
   prologue_5: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "", text: "回过头，是个戴眼镜的女生。黑长直，臂弯里抱着一摞作业本，神情是优等生特有的那种礼貌。", next: "prologue_6" },
-  prologue_6: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨", text: "我是高二(3)班班长，林诗雨。你就是今天转来的沈屿吧？班主任让我来接你。", next: "prologue_7" },
+  prologue_6: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨", text: "我是高二(3)班班长，林诗雨。你就是今天转来的沈屿吧？班主任让我来接你。",
+    loopText: ["我是高二(3)班班长，林诗雨。你就是今天转来的沈屿吧？班主任让我来接你。",
+"我是高二(3)班班长，林诗雨。——她说到『林诗雨』三个字时，会下意识扶一下眼镜。我记得。",
+"我是高二(3)班班长，林诗雨。她把自我介绍又说了一遍，好像我们是第一次见面。可我知道，她稿纸上那句『角色 A 推开门』，午休前会被划掉第三次。"], next: "prologue_7" },
   prologue_7: { day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "沈屿", text: "……麻烦你了。", next: "prologue_8" },
   prologue_8: {
     day: 1, time: "morning", bg: "hallway", char: "shiyu", speaker: "林诗雨",
     text: "跟我来。座位在你前面，看不清黑板就说一声。",
+    loopText: ["跟我来。座位在你前面，看不清黑板就说一声。",
+"跟我来。座位在你前面，看不清黑板就说一声。——这句话，她上一轮也说过。那时我没听出她声音里藏着的紧张。",
+"跟我来。她转身时衣摆带起的风，和记忆里是同一种。这一次我跟得慢了些——我在数，她递地图时手指会抖几下。三次，和上次一样。"],
     next: "prologue_9",
     add: { affection: { shiyu: 1 } },
     cg_unlock: "cg_meet_shiyu",
@@ -657,36 +688,75 @@ const SCRIPT = {
   },
   prologue_9: { day: 1, time: "morning", bg: "classroom", char: null, speaker: "", text: "推开门的瞬间，整间教室的目光都甩了过来。班主任咳嗽一声，才把它们压回去。", next: "prologue_10" },
   prologue_10: { day: 1, time: "morning", bg: "classroom", speaker: "班主任", text: "都安静。这是新转来的沈屿同学，希望大家多照顾。诗雨，带他到座位。", next: "prologue_11" },
-  prologue_11: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "", text: "我坐下的瞬间，前面的林诗雨回过头，把一张校园地图推到我桌上。地图画得极细致。", next: "prologue_12" },
+  prologue_11: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "", text: "我坐下的瞬间，前面的林诗雨回过头，把一张校园地图推到我桌上。地图画得极细致。",
+    loopText: ["我坐下的瞬间，前面的林诗雨回过头，把一张校园地图推到我桌上。地图画得极细致。",
+"我坐下的瞬间，她回过头，把地图推过来。还是那张画了三遍才敢递出的地图——这一次，我多看了它两秒。",
+"地图落在桌角的声音，我都能背出来了。可我还是把它摊开——画得很细致，像她每次把真心藏进纸里的样子。"], next: "prologue_12" },
   prologue_12: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "林诗雨", text: "食堂、图书馆、医务室都标了。找不到就回来问我，别乱跑。", next: "prologue_13" },
   prologue_13: { day: 1, time: "morning", bg: "classroom", speaker: "沈屿", text: "……谢谢。地图画得很清楚。", next: "prologue_14" },
   prologue_14: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "林诗雨", text: "嗯。", next: "prologue_15" },
-  prologue_15: { day: 1, time: "morning", bg: "classroom", speaker: "", text: "她转回去的瞬间，地图边角露出极小一行字，像是被反复涂改过：「角色 A 推开门——」", next: "prologue_16", keyword: "角色A" },
-  prologue_16: { day: 1, time: "morning", bg: "classroom", speaker: "沈屿", text: "（……角色 A？她在写什么？）", next: "prologue_17" },
+  prologue_15: { day: 1, time: "morning", bg: "classroom", speaker: "", text: "她转回去的瞬间，地图边角露出极小一行字，像是被反复涂改过：「角色 A 推开门——」",
+    loopText: ["她转回去的瞬间，地图边角露出极小一行字，像是被反复涂改过：「角色 A 推开门——」",
+"地图边角那行字还在：「角色 A 推开门——」。上一轮，我把它当成一个谜。这一轮我知道，那是她写给自己的门。",
+"『角色 A 推开门——』。这行字被划掉三次又写回来，和记忆里分毫不差。我忽然想告诉她：门不用推开，敲一敲就有人应。"], next: "prologue_16", keyword: "角色A" },
+  prologue_16: { day: 1, time: "morning", bg: "classroom", speaker: "沈屿", text: "（……角色 A？她在写什么？）",
+    loopText: ["（……角色 A？她在写什么？）",
+"（角色 A。上一次我在意的是她在写什么；这一次我在想，她什么时候才肯让角色 A 走出来。）",
+"（角色 A 就是她自己——这个答案，上上轮我就知道了。可知道答案和走到她面前，隔着一整个春天。）"], next: "prologue_17" },
   prologue_17: { day: 1, time: "morning", bg: "classroom", char: "shiyu", speaker: "林诗雨", text: "看什么？上课了。", next: "prologue_18" },
   prologue_18: { day: 1, time: "morning", bg: "classroom", speaker: "", text: "上午的课结束得很慢。下课铃一响，教室瞬间炸开。我正想躲出去透气——", next: "prologue_19" },
-  prologue_19: { day: 1, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织", text: "转学生！正好——你是新来的对吧？田径社缺人，下午来试一下！", next: "prologue_20", cg_unlock: "cg_meet_xiazhi" },
+  prologue_19: { day: 1, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织", text: "转学生！正好——你是新来的对吧？田径社缺人，下午来试一下！",
+    loopText: ["转学生！正好——你是新来的对吧？田径社缺人，下午来试一下！",
+"转学生！——她每次喊『转学生』，都是这个调子，上扬，像起跑的枪声。",
+"她还是风风火火地扑过来，像一枚停不下来的发令枪。我知道她左脚踝那道旧伤会在哪一步发疼——这一轮，我打算早一点看见。"], next: "prologue_20", cg_unlock: "cg_meet_xiazhi" },
   prologue_20: { day: 1, time: "noon", bg: "field", speaker: "沈屿", text: "你是……？", next: "prologue_21" },
-  prologue_21: { day: 1, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织", text: "夏织，田径社王牌兼招新委员！哇你腿挺长的，天生练短跑的料。", next: "prologue_22", add: { affection: { xiazhi: 1 } } },
+  prologue_21: { day: 1, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织", text: "夏织，田径社王牌兼招新委员！哇你腿挺长的，天生练短跑的料。",
+    loopText: ["夏织，田径社王牌兼招新委员！哇你腿挺长的，天生练短跑的料。",
+"夏织。她的自我介绍和我记的一字不差——连『哇你腿挺长的』那句都在。她笑的时候，眼睛是弯的。",
+"夏织，田径社王牌。这句话她说了三次，一次比一次更怕被听见。我在想，她什么时候才能不靠『跑』来证明自己值得被留下。"], next: "prologue_22", add: { affection: { xiazhi: 1 } } },
   prologue_22: { day: 1, time: "noon", bg: "field", speaker: "沈屿", text: "我没怎么跑过……", next: "prologue_23" },
   prologue_23: { day: 1, time: "noon", bg: "field", char: "xiazhi", speaker: "夏织", text: "没事，下午放学来操场就行。不来我就去班里堵你！", next: "prologue_24" },
-  prologue_24: { day: 1, time: "noon", bg: "hallway", char: null, speaker: "", text: "她风一样走了。我盯着手里被塞进的传单，苦笑。下午放学，我故意绕了远路，结果还是迷了路。", next: "prologue_25" },
+  prologue_24: { day: 1, time: "noon", bg: "hallway", char: null, speaker: "", text: "她风一样走了。我盯着手里被塞进的传单，苦笑。下午放学，我故意绕了远路，结果还是迷了路。",
+    loopText: ["她风一样走了。我盯着手里被塞进的传单，苦笑。下午放学，我故意绕了远路，结果还是迷了路。",
+"她风一样走了，传单塞进我手里的角度都没变。下午放学我故意绕远路——结果还是迷了路。可这一次，我是故意迷的。",
+"传单上『田径社招新』四个字，我都能默写了。我还是绕了远路。有些迷路是注定的——它把你送到该去的人面前。"], next: "prologue_25" },
   prologue_25: { day: 1, time: "evening", bg: "art_room", char: "sunian", speaker: "???", text: "……别动。", next: "prologue_26", cg_unlock: "cg_meet_sunian" },
-  prologue_26: { day: 1, time: "evening", bg: "art_room", speaker: "", text: "推开半掩的门，画室里只有一个女生，对着画布发呆。她的头发是淡紫渐变，像被人泼了一桶月光。", next: "prologue_27", keyword: "紫" },
-  prologue_27: { day: 1, time: "evening", bg: "art_room", char: "sunian", speaker: "苏念", text: "门。你挡到光了。", next: "prologue_28" },
+  prologue_26: { day: 1, time: "evening", bg: "art_room", speaker: "", text: "推开半掩的门，画室里只有一个女生，对着画布发呆。她的头发是淡紫渐变，像被人泼了一桶月光。",
+    loopText: ["推开半掩的门，画室里只有一个女生，对着画布发呆。她的头发是淡紫渐变，像被人泼了一桶月光。",
+"推开半掩的门。还是那个对着画布发呆的女生，头发淡紫，像月光泼上去的。画布上的紫，也和上次一样，没有干透。",
+"画室的门没有锁，她也没有抬头。我知道她卡在那片紫里三年了——这一次，我不打算只说『抱歉，我迷路了』。"], next: "prologue_27", keyword: "紫" },
+  prologue_27: { day: 1, time: "evening", bg: "art_room", char: "sunian", speaker: "苏念", text: "门。你挡到光了。",
+    loopText: ["门。你挡到光了。",
+"门。你挡到光了。——她说话还是这么短。短到像她画布上那片不肯干的紫，什么都不肯多说。",
+"『门。你挡到光了。』这句话她说过三遍，一遍比一遍轻。我知道那不是赶我走——是她太久没被谁挡住过光。"], next: "prologue_28" },
   prologue_28: { day: 1, time: "evening", bg: "art_room", speaker: "沈屿", text: "抱歉，我迷路了……", next: "prologue_29" },
   prologue_29: { day: 1, time: "evening", bg: "art_room", char: "sunian", speaker: "苏念", text: "美术室在东侧尽头。你走反了。出去时把门带上。", next: "prologue_30" },
-  prologue_30: { day: 1, time: "evening", bg: "art_room", speaker: "", text: "她连头都没回。画布上是一片未干的紫，像是把整个黄昏都压了进去。", next: "prologue_31" },
+  prologue_30: { day: 1, time: "evening", bg: "art_room", speaker: "", text: "她连头都没回。画布上是一片未干的紫，像是把整个黄昏都压了进去。",
+    loopText: ["她连头都没回。画布上是一片未干的紫，像是把整个黄昏都压了进去。",
+"她连头都没回。紫还是那片紫——可我忽然懂了，那不是颜色，是一个人憋了三年的那口气。",
+"那片紫里，我看见了上一轮没看见的东西：她在画里留了一道缝。她一直在等一个人，把那道缝指给她看。"], next: "prologue_31" },
   prologue_31: { day: 1, time: "evening", bg: "school_gate", char: null, speaker: "", text: "走出校门时，太阳已经压到海面上。樱花大道尽头是橘色的海。", next: "prologue_32" },
-  prologue_32: { day: 1, time: "evening", bg: "school_gate", speaker: "", text: "书包侧袋里多了一样东西——一张折成樱花瓣形状的信纸，没有署名。", next: "prologue_33", keyword: "匿名信", cg_unlock: "cg_letter" },
-  prologue_33: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "「致转学生：第一个周末，请你做一个选择。樱海有三条未走完的路，你会走哪一条？」", next: "prologue_34" },
+  prologue_32: { day: 1, time: "evening", bg: "school_gate", speaker: "", text: "书包侧袋里多了一样东西——一张折成樱花瓣形状的信纸，没有署名。",
+    loopText: ["书包侧袋里多了一样东西——一张折成樱花瓣形状的信纸，没有署名。",
+"书包侧袋里，那张折成樱花瓣的信纸准时出现。上一轮我吓了一跳；这一轮，我伸手接住了它。",
+"信纸落在侧袋里的声音很轻，可我已经在等它了。折痕和上一次一模一样——写信的人，大概不知道我已经认得她的字。"], next: "prologue_33", keyword: "匿名信", cg_unlock: "cg_letter" },
+  prologue_33: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "「致转学生：第一个周末，请你做一个选择。樱海有三条未走完的路，你会走哪一条？」",
+    loopText: ["「致转学生：第一个周末，请你做一个选择。樱海有三条未走完的路，你会走哪一条？」",
+"「致转学生：第一个周末，请你做一个选择……」上一轮，我把它当成恐吓。这一轮，我把它读成一句请求——有人希望我替她走完。",
+"『樱海有三条未走完的路』。我知道写信的人，三条路都没走完。这一次我对着信纸轻声说：我会的，一条一条来。"], next: "prologue_34" },
   prologue_34: { day: 1, time: "evening", bg: "home_room", speaker: "沈屿", text: "……谁放的？", next: "prologue_35" },
-  prologue_35: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "没有人回答。窗外樱花簌簌。我决定先睡，第二天再看。", next: "d1_night_stars" },
+  prologue_35: { day: 1, time: "evening", bg: "home_room", speaker: "", text: "没有人回答。窗外樱花簌簌。我决定先睡，第二天再看。",
+    loopText: ["没有人回答。窗外樱花簌簌。我决定先睡，第二天再看。",
+"没有人回答。樱花还是那样簌簌地落。我没有睡——我知道明早醒来，一切都会重来，而我要带着记得的东西出发。",
+"我关灯躺下，数着窗外的樱花瓣。它们落下的节奏我能背出来。可这一轮，我不打算睡了——我想在循环开始前，先想清楚要写下什么。"], next: "d1_night_stars" },
 
   /* ============ 共通线 · 第 2 日 ============ */
   common_day2_morning: {
     day: 2, time: "morning", bg: "classroom", char: "shiyu", speaker: "",
     text: "第二天早自习。林诗雨的笔在纸上沙沙作响，写一会儿又涂掉。夏织从前门探了个头进来，被她躲开了。苏念的座位是空的——美术社的人常翘早自习。",
+    loopText: ["第二天早自习。林诗雨的笔在纸上沙沙作响，写一会儿又涂掉。夏织从前门探了个头进来，被她躲开了。苏念的座位是空的——美术社的人常翘早自习。",
+"第二天早自习。诗雨的笔在纸上沙沙作响，涂改的节奏我都记得。夏织探进来的头、苏念空着的座位——一切按部就班，像一场排好的戏。而我，是唯一记得剧本的人。",
+"早自习的沙沙声、夏织的头、苏念的缺席——我闭上眼都能数出来。可这次我不急着改变谁。我在等她们自己先开口。"],
     next: "day2_choice"
   },
   day2_choice: {
@@ -816,7 +886,10 @@ const SCRIPT = {
     // v0.5.0 朋友圈：夏织发布动态
     moment: "m_d2_xiazhi"
   },
-  d2_noon_2: { day: 2, time: "noon", bg: "cafeteria", chars: [{id:"xiazhi", pos:"left"}, {id:"shiyu", pos:"right"}], speaker: "夏织", text: "这儿这儿！转学生，坐我跟班长中间！", next: "d2_noon_3" },
+  d2_noon_2: { day: 2, time: "noon", bg: "cafeteria", chars: [{id:"xiazhi", pos:"left"}, {id:"shiyu", pos:"right"}], speaker: "夏织", text: "这儿这儿！转学生，坐我跟班长中间！",
+    loopText: ["这儿这儿！转学生，坐我跟班长中间！",
+"这儿这儿！转学生！——她招手的样子和上次一样，好像我们是多年没见的老朋友。我走过去，坐在她指的位置。",
+"她拍着身边的空位喊我。那个位置我坐过一遍了——但这一轮，我想换个角度，看看她说完那句话之后，低着头的样子。"], next: "d2_noon_3" },
   d2_noon_3: { day: 2, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "夏织和林诗雨居然坐在一起。一个像太阳，一个像月亮，气场却并不冲突。", next: "d2_noon_4" },
   d2_noon_4: { day: 2, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "夏织，运动会报名表你交了没？", next: "d2_noon_5" },
   d2_noon_5: { day: 2, time: "noon", bg: "cafeteria", char: "xiazhi", speaker: "夏织", text: "交了交了。女子 100 米、4×100 接力。诗雨你呢？", next: "d2_noon_6" },
@@ -825,7 +898,10 @@ const SCRIPT = {
   d2_noon_8: { day: 2, time: "noon", bg: "cafeteria", char: "xiazhi", speaker: "夏织", text: "苏念？她运动会从来都请假。美术社那帮人跟我们不是一个次元。", next: "d2_noon_9" },
   d2_noon_9: { day: 2, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……她其实来过。去年看了一会儿就走了，没报名。", next: "d2_noon_10" },
   d2_noon_10: { day: 2, time: "noon", bg: "cafeteria", speaker: "", text: "我注意到她们说苏念时，眼神都温和了一些。原来三个人之间，是有故事的。", next: "d2_evening" },
-  d2_evening: { day: 2, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上回宿舍。匿名信的事还压在心里。我决定先把信收好，明天再想。临睡前做了个奇怪的梦——", next: "d2_dreamweave" },
+  d2_evening: { day: 2, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上回宿舍。匿名信的事还压在心里。我决定先把信收好，明天再想。临睡前做了个奇怪的梦——",
+    loopText: ["晚上回宿舍。匿名信的事还压在心里。我决定先把信收好，明天再想。临睡前做了个奇怪的梦——",
+"晚上回宿舍。匿名信还压在原处，折痕却像被人多看了一眼。我没有像上次那样把它放回抽屉深处——我把它放在枕边，让明天的我第一眼就能看见。",
+"我躺在黑暗里，等那个梦准时来找我。它总会来的，像信一样准时。这一轮我打算记住梦的每一帧——循环里，记得住的人才有资格改写。"], next: "d2_dreamweave" },
 
   /* ============ v0.8.0 梦境编织 ============ */
   d2_dreamweave: {
@@ -962,7 +1038,10 @@ const SCRIPT = {
   },
 
   /* ============ 第 3 日 · 运动会预选 ============ */
-  common_day3_morning: { day: 3, time: "morning", bg: "classroom", speaker: "班主任", text: "运动会预选今天下午开始。各项目负责人课间到体育组抽签。", next: "d3_choice" },
+  common_day3_morning: { day: 3, time: "morning", bg: "classroom", speaker: "班主任", text: "运动会预选今天下午开始。各项目负责人课间到体育组抽签。",
+    loopText: ["运动会预选今天下午开始。各项目负责人课间到体育组抽签。",
+"运动会预选今天下午开始。——连班主任这句通知的尾音，我都记得。下午会发生什么，我也记得：夏织会崴脚，诗雨会攥着冰袋站在场边。",
+"『预选今天下午开始』。我抬头看了夏织一眼，她正趴在桌上补觉，不知道几小时后她的左脚会背叛她。这一轮，我要赶在那之前出现。"], next: "d3_choice" },
 
   /* ============ v0.9.0 星座连线 ============ */
   d1_night_stars: {
@@ -1140,6 +1219,9 @@ const SCRIPT = {
   common_day5_afternoon: {
     day: 5, time: "afternoon", bg: "art_room", char: null, speaker: "",
     text: "香水在窗边慢慢沉下来。离开美术室时，我终于决定，接下来的路要认真走完。",
+    loopText: ["香水在窗边慢慢沉下来。离开美术室时，我终于决定，接下来的路要认真走完。",
+"香水在窗边慢慢沉下来。上一轮我也在这里下了决心，可决心没有带进循环。这一轮我把它写在信纸背面——我要带着它去见该见的人。",
+"最后一缕香散尽时，我对着空气说：这一次，我不会再让决定烂在肚子里。窗外樱花正落，我知道它们还会再开。"],
     next: "common_day5_morning"
   },
   d3_choice: {
@@ -1175,15 +1257,24 @@ const SCRIPT = {
   d3_sunian_3: { day: 3, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……我不去人多的地方。", next: "d3_sunian_4" },
   d3_sunian_4: { day: 3, time: "morning", bg: "art_room", speaker: "沈屿", text: "那去年你为什么来过一次？", next: "d3_sunian_5" },
   d3_sunian_5: { day: 3, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……我想看一个人跑。后来她摔了，我没看完就走了。", next: "d3_noon" },
-  d3_noon: { day: 3, time: "noon", bg: "sportsmeet", char: null, speaker: "", text: "下午，运动会预选。操场被各色运动服染成流动的色块。", next: "d3_noon_2" },
+  d3_noon: { day: 3, time: "noon", bg: "sportsmeet", char: null, speaker: "", text: "下午，运动会预选。操场被各色运动服染成流动的色块。",
+    loopText: ["下午，运动会预选。操场被各色运动服染成流动的色块。",
+"下午，运动会预选。各色运动服汇成的色块和记忆里一样，可我的视线只跟着一个人移动——我知道她会在 60 米处踉跄。",
+"枪响之前，操场上的喧闹我能听出每一个层次。人群会为夏织欢呼，也会在她摔倒时安静下来——那几秒的安静，我上一轮就记住了。"], next: "d3_noon_2" },
   d3_noon_2: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "", text: "女子 100 米预选。夏织在第三道。发令枪响，她第一个冲出去。", next: "d3_noon_3", cg_unlock: "cg_sportsmeet" },
   d3_noon_3: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "", text: "——但 60 米处，她左脚一软。她踉跄了一下，咬着牙没倒，最后第二名冲线。", next: "d3_noon_4" },
   d3_noon_4: { day: 3, time: "noon", bg: "sportsmeet", char: "xiazhi", speaker: "夏织", text: "……没事。没事！只是崴了一下。", next: "d3_noon_5" },
-  d3_noon_5: { day: 3, time: "noon", bg: "sportsmeet", chars: [{id:"shiyu", pos:"left"}, {id:"sunian", pos:"right"}], speaker: "", text: "我看到林诗雨和苏念都站在场边。林诗雨手里攥着冰袋，苏念抱着画本，谁都没说话。", next: "d3_noon_6" },
+  d3_noon_5: { day: 3, time: "noon", bg: "sportsmeet", chars: [{id:"shiyu", pos:"left"}, {id:"sunian", pos:"right"}], speaker: "", text: "我看到林诗雨和苏念都站在场边。林诗雨手里攥着冰袋，苏念抱着画本，谁都没说话。",
+    loopText: ["我看到林诗雨和苏念都站在场边。林诗雨手里攥着冰袋，苏念抱着画本，谁都没说话。",
+"我看到诗雨攥着冰袋、苏念抱着画本站在场边，谁都没说话——上一轮我以为是她们怯场。这一轮我才看懂：她们不是不敢上前，是在等一个比自己更合适的时机。",
+"她们还是站在那里，安静得像一幅画。我知道几分钟后，画里会多一个冲出去的影子。这一轮，那个影子是我。"], next: "d3_noon_6" },
   d3_noon_6: { day: 3, time: "noon", bg: "sportsmeet", speaker: "", text: "夏织抬头看到她们，愣了一下，然后笑得眼睛弯成月亮：「都来啦？」", next: "d3_stethoscope" },
   d3_evening: {
     day: 3, time: "evening", bg: "home_room", char: null, speaker: "",
     text: "回宿舍。我打开抽屉，匿名信旁边又多了一封。我忽然想起白天画在林诗雨稿纸上的那一笔——一个字，从指尖跑了出去。",
+    loopText: ["回宿舍。我打开抽屉，匿名信旁边又多了一封。我忽然想起白天画在林诗雨稿纸上的那一笔——一个字，从指尖跑了出去。",
+"回宿舍。抽屉里又多了一封信，像有人掐着表放的。我盯着白天在诗雨稿纸上落下的那个字——它跑出去了，这次我不打算把它追回来。",
+"第二封信躺在匿名信旁边，连角度都和上次一样。我拿起它时没有拆——我知道里面问的，是上一轮我没答完的问题。"],
     next: "letter_1",
     // v0.6.0 回声：玩家画过的"敢"在夜里复现
     echo: {
@@ -1289,7 +1380,10 @@ const SCRIPT = {
   },
 
   /* ============ 第 4 日 · 学园祭筹备 ============ */
-  common_day4_morning: { day: 4, time: "morning", bg: "classroom", speaker: "班主任", text: "学园祭还有一周。各班今天定主题。文艺社、田径社、美术社都要出节目。", next: "d4_choice" },
+  common_day4_morning: { day: 4, time: "morning", bg: "classroom", speaker: "班主任", text: "学园祭还有一周。各班今天定主题。文艺社、田径社、美术社都要出节目。",
+    loopText: ["学园祭还有一周。各班今天定主题。文艺社、田径社、美术社都要出节目。",
+"学园祭还有一周。三个社要出节目——上一轮我以为这是巧合，这一轮我知道，有人在背后把她们推到了同一个舞台。",
+"『学园祭还有一周』。公告栏的纸还是白的，可我已经能看见一周后它贴满海报的样子。这一轮，我想让那三张海报，署上同一个名字。"], next: "d4_choice" },
   d4_choice: {
     day: 4, time: "morning", bg: "classroom",
     choice: {
@@ -1397,7 +1491,10 @@ const SCRIPT = {
   },
   d4_sunian_shot_good: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这张。你看，紫在里面活着。", next: "d4_noon", memory: { id: "苏念·海报", title: "取景里的紫", text: "你取的景把紫光斑拍了进去。她说，紫在里面活着。" } },
   d4_sunian_shot_bad: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……没取到。但没关系，画本身就在。", next: "d4_noon", memory: { id: "苏念·海报", title: "没取到的紫", text: "你没把紫光斑取进去。她说，画本身就在。" } },
-  d4_noon: { day: 4, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。", next: "d4_noon_2" },
+  d4_noon: { day: 4, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。",
+    loopText: ["中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。",
+"中午，她们三个又坐到了一桌——上一轮我以为这是破天荒。这一轮我端着托盘走过去，才发现那张桌子，本来就是给四个人留的。",
+"她们三个坐在同一张桌前，中间空着一个位子。我走过去坐下时，没有人抬头，但夏织往旁边挪了挪——她们早就习惯了我存在，只是嘴上不说。"], next: "d4_noon_2" },
   d4_noon_2: { day: 4, time: "noon", bg: "cafeteria", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "夏织", text: "我提议——学园祭那天，我们三个一起出节目。诗雨写本子，我跑展，苏念画海报。", next: "d4_noon_3" },
   d4_noon_3: { day: 4, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……可以。", next: "d4_noon_4" },
   d4_noon_4: { day: 4, time: "noon", bg: "cafeteria", char: "sunian", speaker: "苏念", text: "海报……我画。", next: "d4_noon_5" },
@@ -1408,7 +1505,10 @@ const SCRIPT = {
     // v0.5.0 朋友圈：三女主同时发动态
     moment: ["m_d4_shiyu", "m_d3_group"]
   },
-  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。", next: "d4_puzzle" },
+  d4_evening: { day: 4, time: "evening", bg: "home_room", char: null, speaker: "", text: "晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。",
+    loopText: ["晚上。第三封信到了。「问题：如果三条路其实通向同一个地方，你还要走吗？」我没急着回信，先坐在窗边——窗外的味道忽然很熟。",
+"晚上。第三封信准时落在窗台。「如果三条路其实通向同一个地方」——上一轮我被这个问题绊住了。这一轮我知道答案：要。因为路不是用来选的，是用来走的。",
+"信纸展开的沙沙声，我已经很熟悉了。窗外的味道也熟——是颜料、是汗水、是书页。我忽然明白，那个写信的人，正把三条路的味道一起寄给我。"], next: "d4_puzzle" },
 
   /* ============ v0.7.0 气味收集 ============ */
   d4_evening_scent: {
@@ -2371,12 +2471,18 @@ const SCRIPT = {
   d6_chapter_open: {
     day: 6, time: "morning", bg: "hallway", speaker: "沈屿",
     text: "第 6 日。学姐说，接下来这些天，她想带我做一些「她当年没做完的事」。我不知道那是什么。只知道从今天起，日子像在整理一间旧屋子——一件一件，把蒙尘的东西拿起来，擦干净，再放回去。",
+    loopText: ["第 6 日。学姐说，接下来这些天，她想带我做一些「她当年没做完的事」。我不知道那是什么。只知道从今天起，日子像在整理一间旧屋子——一件一件，把蒙尘的东西拿起来，擦干净，再放回去。",
+"第 6 日。学姐又提起那些「她当年没做完的事」。上一轮我只觉得她在追忆；这一轮我听出了别的东西——她不是在整理旧屋子，是在找一把能打开某扇门的钥匙。",
+"她说要带我做完那些事时，声音比记忆里更轻。我忽然懂了：她不是在教我怎么整理旧物，是在把她的遗憾，一件件交到我手里。"],
     next: "d6_kite"
   },
   // 第二章「节奏」开场（第 9 日）
   d9_chapter_open: {
     day: 9, time: "morning", bg: "hallway", speaker: "沈屿",
     text: "第 9 日。旧物整理到了一半。我发现她挑的东西都有节奏——风铃、瓶中信、回声、罗盘，一样比一样安静。像是在教我：听见世界的方式，不止「看见」一种。",
+    loopText: ["第 9 日。旧物整理到了一半。我发现她挑的东西都有节奏——风铃、瓶中信、回声、罗盘，一样比一样安静。像是在教我：听见世界的方式，不止「看见」一种。",
+"第 9 日。她挑的东西还是那些——风铃、瓶中信、回声、罗盘。上一轮我学的是「听见」，这一轮我才发现，她挑每一样东西时，都先自己听过一遍。",
+"她递来的每一样旧物，我都认得它们的下一个去处。这一轮我开始留意另一件事：她说『教』这个字的时候，从来不说『教会了我』。"],
     next: "d9_metronome"
   },
   // 学姐中段线索（第 10 日）
@@ -2395,6 +2501,9 @@ const SCRIPT = {
   d12_chapter_open: {
     day: 12, time: "morning", bg: "hallway", speaker: "沈屿",
     text: "第 12 日。她说最后一段路叫「归位」——把借来的东西还给原处，把散开的自己收回来。走廊尽头的公告栏贴着学园祭的回顾海报：诗雨的本子、夏织的展、苏念的画——我们约好的那个节目，她们三个人一起完成了，署名里没有我。她说这话时在走神。我知道她在想什么：等这一切结束，她就要离开了。",
+    loopText: ["第 12 日。她说最后一段路叫「归位」——把借来的东西还给原处，把散开的自己收回来。走廊尽头的公告栏贴着学园祭的回顾海报：诗雨的本子、夏织的展、苏念的画——我们约好的那个节目，她们三个人一起完成了，署名里没有我。她说这话时在走神。我知道她在想什么：等这一切结束，她就要离开了。",
+"第 12 日。「归位」。海报上还是那三张作品，署名里没有我——上一轮我心口发酸，这一轮我读懂了：她们不是把我忘了，是把我写进了没有署名的部分里。而学姐，她又在想离开了。",
+"『归位』——把借来的东西还给原处。我盯着海报看了很久，忽然明白学姐为什么总在走神：她把自己也借出去了，还没想好要怎么还。这一轮，我打算替她记住这一点。"],
     next: "d12_sundial"
   },
 
@@ -2662,6 +2771,9 @@ const SCRIPT = {
   d8_old_photo: {
     day: 8, time: "morning", bg: "classroom", speaker: "沈屿",
     text: "上午课间，我在活动室整理旧物箱，翻到一张去年的照片：夏织在跑道上摔倒，看台边站着两个人——林诗雨手里攥着冰袋，苏念抱着画本。两个人都没有上前。",
+    loopText: ["上午课间，我在活动室整理旧物箱，翻到一张去年的照片：夏织在跑道上摔倒，看台边站着两个人——林诗雨手里攥着冰袋，苏念抱着画本。两个人都没有上前。",
+"上午课间，那张照片还是躺在旧物箱里。上一轮我看见的是『两个人都没有上前』；这一轮我看见了更多——冰袋和画本，是早就准备好的。她们不是没上前，是还没学会怎么上前。",
+"照片翻过来，背面有一行小字，上一轮我漏掉了：「明年，要有人先跑过去。」字迹是三个人的。这一轮，我把它放回了原处——等她们自己记得。"],
     next: "d8_old_photo_2"
   },
   d8_old_photo_2: {
@@ -3756,6 +3868,9 @@ const SCRIPT = {
   d5_loop_arrival: {
     day: 5, time: "morning", bg: "rooftop", char: null, speaker: "",
     text: "第 5 日的风还没有变。口袋里的匿名信却比记忆里多了一道折痕，像有人在我回去之前，替我把答案藏进了纸里。",
+    loopText: ["第 5 日的风还没有变。口袋里的匿名信却比记忆里多了一道折痕，像有人在我回去之前，替我把答案藏进了纸里。",
+"第 5 日的风还是没有变。我摸了摸口袋里的信——折痕还在，说明我带着上一轮的答案回来了。这一次，风没变，变的是我。",
+"我又回到了这个早晨。风、信、折痕，一样不少。我站在天台上把信展开又折好，像在给某个还没出发的自己留一张地图。"],
     next: "d5_loop_choice"
   },
   d5_loop_choice: {
@@ -3932,9 +4047,15 @@ const SCRIPT = {
 
   /* ============ 林诗雨线 · 4 章 × 3 结局 ============ */
   route_shiyu_1: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "", text: "周六图书馆。林诗雨一个人坐在老位置，稿纸叠得更高了。", next: "sy_2" },
-  sy_2: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "你来了。我以为你不会来。", next: "sy_3" },
+  sy_2: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "你来了。我以为你不会来。",
+    loopText: ["你来了。我以为你不会来。",
+"你来了。我以为你不会来。——她连这句都说得和上次一样。可我知道她稿纸上的角色 A，这一次会走得更远一点。",
+"『我以为你不会来』。我来了，上一轮也来了。这一轮我坐下时没有说话，只是把她上一轮没写完的那句开场，在心里默背了一遍。"], next: "sy_3" },
   sy_3: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "你说不写会忘掉自己。我来看看，你还记不记得自己。", next: "sy_4" },
-  sy_4: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……我妈昨天翻了我的书包。", next: "sy_5" },
+  sy_4: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……我妈昨天翻了我的书包。",
+    loopText: ["……我妈昨天翻了我的书包。",
+"……我妈昨天翻了我的书包。——上一轮我急着安慰她。这一轮我听完才开口：她需要的不是安慰，是有人替她把那句『我想写下去』说出来。",
+"她低着头说完那句话，和上一轮一模一样。我忽然想：循环给了我很多次『重来』，可她只有一次『被听懂』的机会。"], next: "sy_5" },
   sy_5: {
     day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨",
     text: "她没说什么。只是把稿纸原样放回去，做了一桌我最爱吃的菜。比骂我还可怕。",
@@ -4015,9 +4136,15 @@ const SCRIPT = {
 
   /* ============ 夏织线 · 4 章 × 3 结局 ============ */
   route_xiazhi_1: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "", text: "周末的操场空旷。夏织一个人在跑道上，影子被太阳拉得很长。", next: "xz_2" },
-  xz_2: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "你来啦？正好，帮我计个时。", next: "xz_3" },
+  xz_2: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "你来啦？正好，帮我计个时。",
+    loopText: ["你来啦？正好，帮我计个时。",
+"你来啦？正好，帮我计个时。——她的计时表还是那块。上一轮我只顾着看时间，这一轮我看见她按表时，指尖在发抖。",
+"她把秒表塞给我时，笑还是那么亮。我知道她今天会跑出什么成绩——可这一轮，我想在她跑之前，先跟她说一句上一轮没说出口的话。"], next: "xz_3" },
   xz_3: { day: 5, time: "afternoon", bg: "field", speaker: "沈屿", text: "你一个人练？教练呢？", next: "xz_4" },
-  xz_4: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "教练上周辞退我了。他说我发挥不稳定，浪费特招名额。", next: "xz_5", keyword: ["全国赛", "特招"] },
+  xz_4: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "教练上周辞退我了。他说我发挥不稳定，浪费特招名额。",
+    loopText: ["教练上周辞退我了。他说我发挥不稳定，浪费特招名额。",
+"教练上周辞退我了。——这句话她上一轮也说过，说完还笑。这一轮我数了数：她笑的时候，声音比上次低了半个调。",
+"她说『浪费特招名额』时，把『浪费』两个字咬得很轻。我忽然明白，她怕的不是没名额，是怕自己真的只是『不稳定』。"], next: "xz_5", keyword: ["全国赛", "特招"] },
   xz_5: { day: 5, time: "afternoon", bg: "field", speaker: "沈屿", text: "那你还跑？", next: "xz_6" },
   xz_6: {
     day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织",
@@ -4101,9 +4228,15 @@ const SCRIPT = {
 
   /* ============ 苏念线 · 4 章 × 3 结局 ============ */
   route_sunian_1: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "", text: "周末的美术室，窗帘半拉着。苏念坐在地上，周围是揉成团的草稿。", next: "sn_2" },
-  sn_2: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你又来了。", next: "sn_3" },
+  sn_2: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你又来了。",
+    loopText: ["你又来了。",
+"你又来了。——她每次都是这三个字，不多不少。上一轮我以为她在赶我；这一轮我听出来了：她说『又』的时候，眼睛会往画布上躲。",
+"『你又来了。』三个字，她说得比上一轮轻。我坐下来，没有解释为什么来——她也不需要解释。她需要有人坐在她旁边，看着她把紫调出来。"], next: "sn_3" },
   sn_3: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "你说画不完。我来看看，是不是真的画不完。", next: "sn_4" },
-  sn_4: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "省展邀请函上个月寄来。让我交一幅新作。我答应了，然后撕了四十七张草稿。每一张都差一点。差那一点，就不是我。", next: "sn_5" },
+  sn_4: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "省展邀请函上个月寄来。让我交一幅新作。我答应了，然后撕了四十七张草稿。每一张都差一点。差那一点，就不是我。",
+    loopText: ["省展邀请函上个月寄来。让我交一幅新作。我答应了，然后撕了四十七张草稿。每一张都差一点。差那一点，就不是我。",
+"省展邀请函，四十七张草稿。上一轮我记住的是数字；这一轮我记住的是她说『差那一点，就不是我』时，画布上那一片被压平的紫。",
+"她说她撕了四十七张草稿。我知道还有第四十八张，正藏在画板后面——上一轮她没给我看。这一轮，我想先给她看一句她可以落笔的开场。"], next: "sn_5" },
   sn_5: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_5b" },
   // v0.5.0 涂鸦：让苏念画一笔自己
   sn_5b: {
@@ -4345,6 +4478,22 @@ const SCRIPT = {
   afterword_reply_arrival: { day: 21, time: "night",
     bg: "school_gate", char: null, speaker: "",
     text: "一周后，按新城市地址寄出的明信片又从邮筒里折返回来。学姐没有在回信上写回寄件地址，只在空白处写了一句：「我没有回樱海，但我在新城市打开了一扇窗。」",
+    next: "afterword_senior_window"
+  },
+  /* ============ v3.3.0 后日谈追加：学姐视角（形态 B，不动结局结构） ============ */
+  afterword_senior_window: { day: 21, time: "night",
+    bg: "school_gate", char: null, speaker: "",
+    text: "（镜头切到新城市。）学姐租的公寓窗外也有一棵樱树，比樱海的矮，开得却一样用力。她把明信片放在窗台上，没有立刻回信——她只是看着那棵樱树，像在看一封写了很久的信。",
+    next: "afterword_senior_flashback"
+  },
+  afterword_senior_flashback: { day: 21, time: "night",
+    bg: "art_room", char: null, speaker: "",
+    text: "（回忆）三年前的樱花祭，她也站在同一棵树下，手里攥着一封没寄出的信。她以为错过就是终点，于是把信锁进抽屉，也把自己锁进「不被需要」的念头里。现在她看着窗外的矮樱树，才明白那封信没有白写——它只是在等一个替她寄出去的人。",
+    next: "afterword_senior_letter"
+  },
+  afterword_senior_letter: { day: 21, time: "night",
+    bg: "home_room", char: null, speaker: "学姐",
+    text: "她桌上摊着三样东西：校刊寄来的回信、贴着两枚印记的明信片背面、一张画了一半的门。她看了很久，最后没有把它们收进抽屉。她坐下写回信，第一句是：「我没有回去，是因为我终于知道自己正在往哪里走了。」",
     next: "afterword_reply"
   },
   afterword_reply: { day: 21, time: "night",
