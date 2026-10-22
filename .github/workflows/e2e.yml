@@ -1,0 +1,37 @@
+# 浏览器 e2e 回归：push main / PR 时在 ubuntu runner 装 chromium 跑真实浏览器测试
+# （覆盖静态测试测不到的运行时行为：页面加载 / 推进链 / 玩法挂载 / 快存-刷新-读档 / 破环链 / 控制台零错误）
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 缓存 Playwright 浏览器内核
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-chromium
+
+      - name: 安装 chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: 运行 e2e
+        run: npm run test:e2e

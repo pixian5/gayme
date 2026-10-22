@@ -74,6 +74,8 @@
            同步缓存版本）；OG 分享卡片（assets/og-cover.jpg + meta）；CI 自动部署
            自有服务器（专用密钥 + deploy-server.yml）；证书续期 reloadcmd 闭环；
            prefers-reduced-motion 减动效（CSS 动画 + 粒子）
+   v3.2.1：e2e 收尾——新增 tests/browser/engine.e2e.mjs 浏览器运行时回归并接入 CI
+           （e2e.yml）；__game 导出补齐 closeOverlay（与 openOverlay 对称，供测试/调试）
    ======================================== */
 
 (function () {
@@ -3544,5 +3546,5 @@
   init();
 
   // 暴露调试接口
-  window.__game = { state, gotoNode, newGame, backToTitle, openOverlay };
+  window.__game = { state, gotoNode, newGame, backToTitle, openOverlay, closeOverlay };
 })();
