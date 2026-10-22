@@ -85,13 +85,18 @@
            GAME_VERSION 常量（bump 脚本同步，修复 renderAbout 写死 v2.7.8）；⑥P2-2 首屏性能
            （index.html 14 脚本 defer 化；服务器 nginx gzip 已开启覆盖主要类型）；
            ⑦P3 存档审计（107 键无重复无容量风险，README 同步）；⑧e2e 保持 chromium 单浏览器
+   v3.2.3：部署链路去 GitHub CI/CD——移除 .github/workflows 全部 4 个 workflow（ci/e2e/
+           deploy-pages/deploy-server），GitHub 仓库降级纯备份；服务器改为 root cron 每 3 分钟
+           自动拉取部署（/usr/local/bin/sakura-deploy.sh：gitee 主源→github 备源，rsync 到
+           /var/www/sakura，版本校验，日志 /var/log/sakura-deploy.log）；本地测试为唯一门槛，
+           push 后不阻塞等 CI；新增根目录「经验」文件夹（部署/规范/避坑/内容 4 篇经验）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.2.2";
+  const GAME_VERSION = "3.2.3";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
