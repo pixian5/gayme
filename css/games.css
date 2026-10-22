@@ -1468,7 +1468,7 @@
   border: 1px solid rgba(255,200,220,0.25);
   border-radius: 12px;
   color: #fff8ee;
-  font-family: "Noto Serif SC", serif;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "PingFang SC", serif;
   font-size: 17px; line-height: 1.8;
   letter-spacing: 1px;
   resize: none; outline: none;
@@ -1594,7 +1594,7 @@
 .fd-paper-text {
   font-size: 22px; color: #8a6848;
   letter-spacing: 8px;
-  font-family: "Noto Serif SC", serif;
+  font-family: "Songti SC", "STSong", "Noto Serif SC", "PingFang SC", serif;
 }
 .fd-crease {
   position: absolute; left: 0; right: 0; height: 1px;

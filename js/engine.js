@@ -90,13 +90,17 @@
            自动拉取部署（/usr/local/bin/sakura-deploy.sh：gitee 主源→github 备源，rsync 到
            /var/www/sakura，版本校验，日志 /var/log/sakura-deploy.log）；本地测试为唯一门槛，
            push 后不阻塞等 CI；新增根目录「经验」文件夹（部署/规范/避坑/内容 4 篇经验）
+   v3.2.4：字体子集重建——修正 noto-cjk 源地址（SubsetOTF/SC），补齐 91 个缺失汉字
+           （覆盖检查 0 缺失）；字体栈改为本机优先（两处玩法样式去掉硬编码 Noto），
+           @font-face 限定 unicode-range，本机有宋体时不再下载 woff2；
+           语法测试改为扫描 js 目录全部脚本与 sw.js；README 计数、死链与版本约定修正
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.2.3";
+  const GAME_VERSION = "3.2.4";
 
   /* ---------- DOM 引用 ---------- */
   const el = {

@@ -16,7 +16,7 @@ for W in Regular Bold; do
   if [ ! -f "$SRC_DIR/NotoSerifSC-$W.otf" ]; then
     echo "下载 NotoSerifSC-$W.otf（约 11.6MB）..."
     curl -L --fail -o "$SRC_DIR/NotoSerifSC-$W.otf" \
-      "https://github.com/notofonts/noto-cjk/raw/main/Serif/OTF/SimplifiedChinese/NotoSerifSC-$W.otf"
+      "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Serif/SubsetOTF/SC/NotoSerifSC-$W.otf"
   fi
 done
 
@@ -40,4 +40,4 @@ done
 # 5) 复查覆盖
 .venv/bin/python tools/check_font_coverage.py
 ls -lh fonts/*.woff2
-echo "重建完成。注意：fonts/ 未带 ?v= 版本参数（CSS 引用），如需强刷用户缓存请改名并同时改 css/style.css 的 @font-face 与 index.html 的 preload。"
+echo "重建完成。字体内容变更时，请同步提升 css/style.css 与 sw.js 中 woff2 URL 的 ?v= 参数，强刷用户缓存。"
