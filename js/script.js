@@ -842,8 +842,8 @@ const SCRIPT = {
     }
   },
   // 涂鸦后的两个分支汇合回主线
-  d2_library_encourage: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这一笔这么用力。原来推开门也可以是这种姿势。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔，她照着写下了开场。" }, echoSave: { id: "echo_brave", text: "敢", ctx: "图书馆·帮林诗雨画开场" } },
-  d2_library_calm: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……很安静的一笔。原来她推开门时也可以不害怕。", next: "d2_library_9", memory: { id: "诗雨·开场", title: "推门一笔", text: "你画的那一笔很安静，她跟着写下了开场。" } },
+  d2_library_encourage: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这一笔这么用力。原来推开门也可以是这种姿势。", next: "d2_library_9", memory: { id: "诗雨·开场·鼓励", title: "推门一笔", text: "你画的那一笔，她照着写下了开场。" }, echoSave: { id: "echo_brave", text: "敢", ctx: "图书馆·帮林诗雨画开场" } },
+  d2_library_calm: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……很安静的一笔。原来她推开门时也可以不害怕。", next: "d2_library_9", memory: { id: "诗雨·开场·安静", title: "推门一笔", text: "你画的那一笔很安静，她跟着写下了开场。" } },
   d2_library_9: { day: 2, time: "morning", bg: "library", speaker: "", text: "窗外的樱花被风吹进图书馆，落在她摊开的稿纸上。她没去拂，只是看着它。", next: "d2_noon" },
 
   d2_field_1: { day: 2, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "来了来了！热身先跑两圈——欸你怎么脸那么白，没吃早饭？", next: "d2_field_2" },
@@ -1286,15 +1286,15 @@ const SCRIPT = {
       choices: [
         { text: "承认：是我说的。", value: "admit",
           add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 2 },
-          memory: { id: "回声·敢", title: "夜里承认", text: "夜里我承认了——是我写的「敢」。她没说，但她听见了。" },
+          memory: { id: "回声·敢·承认", title: "夜里承认", text: "夜里我承认了——是我写的「敢」。她没说，但她听见了。" },
           next: "letter_1" },
         { text: "否认：那不是我说的。", value: "deny",
           add: { affection: { shiyu: -1 } }, personality: { honest: -2 },
-          memory: { id: "回声·敢", title: "夜里否认", text: "夜里我否认了。但那个字，确实是我写的。" },
+          memory: { id: "回声·敢·否认", title: "夜里否认", text: "夜里我否认了。但那个字，确实是我写的。" },
           next: "letter_1" },
         { text: "沉默：不回答。", value: "silent",
           add: { affection: { shiyu: 0 } }, personality: { kind: 1 },
-          memory: { id: "回声·敢", title: "夜里沉默", text: "夜里我沉默了。沉默也是一种回答。" },
+          memory: { id: "回声·敢·沉默", title: "夜里沉默", text: "夜里我沉默了。沉默也是一种回答。" },
           next: "letter_1" },
       ]
     }
@@ -1429,8 +1429,8 @@ const SCRIPT = {
       }
     }
   },
-  d4_shiyu_poem_good: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……意象这么多。你写的不是诗，是一整片春天。", next: "d4_noon", memory: { id: "诗雨·题记", title: "丰沛的诗", text: "你拼的诗意象丰沛。她把它写进了章末。" } },
-  d4_shiyu_poem_spare: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这么少。可诗里最美的就是省略号。", next: "d4_noon", memory: { id: "诗雨·题记", title: "省略的诗", text: "你拼的诗只有寥寥几个字。她说，省略也是诗。" } },
+  d4_shiyu_poem_good: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……意象这么多。你写的不是诗，是一整片春天。", next: "d4_noon", memory: { id: "诗雨·题记·丰沛", title: "丰沛的诗", text: "你拼的诗意象丰沛。她把它写进了章末。" } },
+  d4_shiyu_poem_spare: { day: 4, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……这么少。可诗里最美的就是省略号。", next: "d4_noon", memory: { id: "诗雨·题记·省略", title: "省略的诗", text: "你拼的诗只有寥寥几个字。她说，省略也是诗。" } },
   d4_xiazhi_1: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "田径社要办一个「奔跑接力」展，让来宾体验短跑。你帮我搭跑道。", next: "d4_xiazhi_2" },
   d4_xiazhi_2: { day: 4, time: "morning", bg: "field", speaker: "", text: "我们搬了一上午的桩和彩带。她左脚踝贴着膏药，但没说。", next: "d4_xiazhi_3" },
   d4_xiazhi_3: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……沈屿，你说跑下去，真的能跑出去吗？", next: "d4_xiazhi_rhythm" },
@@ -1455,8 +1455,8 @@ const SCRIPT = {
       }
     }
   },
-  d4_xiazhi_sync: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……你跟上了。很少人跟得上我。她说这话时没看我，看的是跑道尽头。", next: "d4_noon", memory: { id: "夏织·同步", title: "跟上她的呼吸", text: "你跟上了夏织的节奏。她没说，但她记住了。" } },
-  d4_xiazhi_lost: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……乱了？没关系。节奏这东西，乱了再找回来就行。", next: "d4_noon", memory: { id: "夏织·同步", title: "乱了的呼吸", text: "你没跟上夏织的节奏。她说，乱了再找回来就行。" } },
+  d4_xiazhi_sync: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……你跟上了。很少人跟得上我。她说这话时没看我，看的是跑道尽头。", next: "d4_noon", memory: { id: "夏织·同步·跟上", title: "跟上她的呼吸", text: "你跟上了夏织的节奏。她没说，但她记住了。" } },
+  d4_xiazhi_lost: { day: 4, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……乱了？没关系。节奏这东西，乱了再找回来就行。", next: "d4_noon", memory: { id: "夏织·同步·乱了", title: "乱了的呼吸", text: "你没跟上夏织的节奏。她说，乱了再找回来就行。" } },
   d4_sunian_1: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……美术社要办画展。我得交一幅。", next: "d4_sunian_2" },
   d4_sunian_2: { day: 4, time: "morning", bg: "art_room", speaker: "沈屿", text: "你不是卡了三年吗？", next: "d4_sunian_3" },
   d4_sunian_3: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……学园祭的展出作品得先交。省展邀请要的是另一幅新作，不能拿这幅顶上。帮我搬旧画，看看有没有能改的。", next: "d4_sunian_4" },
@@ -1491,8 +1491,8 @@ const SCRIPT = {
       }
     }
   },
-  d4_sunian_shot_good: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这张。你看，紫在里面活着。", next: "d4_noon", memory: { id: "苏念·海报", title: "取景里的紫", text: "你取的景把紫光斑拍了进去。她说，紫在里面活着。" } },
-  d4_sunian_shot_bad: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……没取到。但没关系，画本身就在。", next: "d4_noon", memory: { id: "苏念·海报", title: "没取到的紫", text: "你没把紫光斑取进去。她说，画本身就在。" } },
+  d4_sunian_shot_good: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这张。你看，紫在里面活着。", next: "d4_noon", memory: { id: "苏念·海报·取景", title: "取景里的紫", text: "你取的景把紫光斑拍了进去。她说，紫在里面活着。" } },
+  d4_sunian_shot_bad: { day: 4, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "……没取到。但没关系，画本身就在。", next: "d4_noon", memory: { id: "苏念·海报·未取", title: "没取到的紫", text: "你没把紫光斑取进去。她说，画本身就在。" } },
   d4_noon: { day: 4, time: "noon", bg: "cafeteria", char: null, speaker: "", text: "中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。",
     loopText: ["中午吃饭时，三女主破天荒坐到了一桌。我端着托盘远远看着。",
 "中午，她们三个又坐到了一桌——上一轮我以为这是破天荒。这一轮我端着托盘走过去，才发现那张桌子，本来就是给四个人留的。",
@@ -1564,7 +1564,7 @@ const SCRIPT = {
       options: [
         { text: "我不知道怎么回。", value: "dont_know",
           add: { affection: { shiyu: 0 } }, personality: { honest: 1 },
-          memory: { id: "沉默·回信", title: "夜里承认不知道", text: "夜里我承认我不知道怎么回。她没说话，但她听见了。" },
+          memory: { id: "沉默·回信·承认", title: "夜里承认不知道", text: "夜里我承认我不知道怎么回。她没说话，但她听见了。" },
           next: "d4_touch" },
         { text: "我不想回。", value: "refuse",
           add: { affection: { shiyu: -1 } }, personality: { brave: 1 },
@@ -1573,7 +1573,7 @@ const SCRIPT = {
       silent: {
         text: "（你保持沉默。窗外的樱花落了一片，盖在信纸上。）",
         add: { affection: { shiyu: 0 } }, personality: { kind: 1 },
-        memory: { id: "沉默·回信", title: "夜里的沉默", text: "夜里我什么也没说。沉默也是一种回答。" },
+        memory: { id: "沉默·回信·沉默", title: "夜里的沉默", text: "夜里我什么也没说。沉默也是一种回答。" },
         next: "d4_touch"
       }
     }
@@ -4269,8 +4269,8 @@ const SCRIPT = {
       }
     }
   },
-  sn_5b_release: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
-  sn_5b_calm: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
+  sn_5b_release: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔·用力", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
+  sn_5b_calm: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔·安静", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
   sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", next: "sn_7" },
   sn_7: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你看这幅——", next: "sn_8" },
   sn_8: { day: 5, time: "afternoon", bg: "art_room", speaker: "", text: "她把那张未完成的紫推到我面前。我第一次看清：那片紫里，藏着一只翅膀，半张脸，一只手。", next: "sn_9" },

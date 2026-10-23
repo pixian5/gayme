@@ -50,3 +50,21 @@ test("free letter 回信分支的 memory 必须为字符串 id（v3.3.0 契约�
     "letter matchings 中出现对象格式 memory（应改为字符串 id）"
   );
 });
+test("SCRIPT 内 memory id 全局唯一（v3.3.2 契约）", () => {
+  // v3.3.2 修复：7 组分支互斥记忆共用 id，saveMemory 按 id 去重导致后解锁分支的记忆
+  // 被吞（图鉴永远缺分支记忆）。契约：同一 memory id 只能出现一次。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const ids = [...script.matchAll(/memory: \{[^}]*?id: "([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(ids.length >= 100, `memory 字段数量异常（${ids.length}）`);
+  const seen = new Set();
+  const dups = new Set();
+  for (const id of ids) {
+    if (seen.has(id)) dups.add(id);
+    seen.add(id);
+  }
+  assert.deepEqual(
+    [...dups],
+    [],
+    `存在重复 memory id（会吞掉后解锁的分支记忆）：${[...dups].join("、")}`
+  );
+});
