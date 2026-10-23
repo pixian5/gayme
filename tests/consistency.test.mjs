@@ -38,3 +38,15 @@ test("js 目录下所有脚本都在 index.html 中加载，且 engine.js 最后
   }
   assert.equal(loaded[loaded.length - 1], "js/engine.js", "engine.js 必须最后加载");
 });
+
+test("free letter 回信分支的 memory 必须为字符串 id（v3.3.0 契约）", () => {
+  // 引擎 showLetter 只支持字符串 memory id（Saves.saveMemory 严格 === 比较）；
+  // 对象格式 { id, text } 会导致记忆永远无法解锁。此前 4 组 matchings 曾用对象格式。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const bad = [...script.matchAll(/\{ id: "[^"]*", keywords: \[[^\]]*\]\s*,([^}]*?)memory: \{/g)];
+  assert.deepEqual(
+    bad.map((m) => m[0].slice(0, 60)),
+    [],
+    "letter matchings 中出现对象格式 memory（应改为字符串 id）"
+  );
+});

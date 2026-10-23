@@ -1,10 +1,10 @@
-/* 引擎运行时 e2e 测试（v3.2.1）：真实浏览器跑引擎，覆盖静态测试测不到的行为回归。
+/* 引擎运行时 e2e 测试（v3.3.0）：真实浏览器跑引擎，覆盖静态测试测不到的行为回归。
    用法：
      npm i -D playwright && npx playwright install chromium   # 首次
      npm run test:e2e                 # 默认 chromium
      BROWSER=firefox npm run test:e2e # firefox
-   CI：.github/workflows/e2e.yml 自动安装并运行。
-   覆盖：页面加载 / 推进链 / 八个玩法模块抽样挂载 / 快存-刷新-读档 / 真结局破环链 / 控制台零错误。 */
+   覆盖：页面加载 / 推进链 / 八个玩法模块抽样挂载 / 快存-刷新-读档 / 真结局破环链 /
+        学姐线入口与结局 / 控制台零错误。 */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
@@ -71,7 +71,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     Saves.updateSetting("bgm", false);
     Saves.updateSetting("sfxVolume", 0);
   });
-  console.log("[e2e] 1/6 页面加载完成");
+  console.log("[e2e] 1/7 页面加载完成");
 
   // 1) 新游戏 + 连续推进
   await page.evaluate(() => window.__game.newGame());
@@ -79,7 +79,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     await page.evaluate((n) => window.__game.gotoNode(n), nid);
   }
   assert.equal(await page.evaluate("window.__game.state.currentNode"), "common_day3_morning");
-  console.log("[e2e] 2/6 推进链通过");
+  console.log("[e2e] 2/7 推进链通过");
 
   // 2) 八个玩法模块抽样挂载（每文件 1-2 个）
   const samples = {
@@ -102,7 +102,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
       assert.ok(mounted, `${file} 玩法 ${type}（${nodeId}）浮层未挂载`);
     }
   }
-  console.log("[e2e] 3/6 八模块玩法抽样挂载通过");
+  console.log("[e2e] 3/7 八模块玩法抽样挂载通过");
 
   // 3) 快存 → 真实刷新 → 继续游戏恢复
   await page.evaluate(() => { window.__game.newGame(); window.__game.gotoNode("d4_puzzle"); });
@@ -111,7 +111,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   await page.waitForLoadState("domcontentloaded");
   await page.evaluate(() => document.querySelector('#title-screen button[data-action="continue"]').click());
   assert.equal(await page.evaluate("window.__game.state.currentNode"), "d4_puzzle", "刷新后继续游戏未恢复");
-  console.log("[e2e] 4/6 快存-刷新-读档通过");
+  console.log("[e2e] 4/7 快存-刷新-读档通过");
 
   // 4) 全部浮层面板可开关（UI 拆分后的主要安全网）
   await page.evaluate(() => window.__game.newGame());
@@ -122,7 +122,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     assert.ok(open && bodyLen > 50, `浮层 ${panel} 未正常渲染`);
     await page.evaluate(() => window.__game.closeOverlay());
   }
-  console.log("[e2e] 5/6 浮层面板开关通过");
+  console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING
   await page.evaluate(() => {
@@ -165,9 +165,81 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     return null;
   });
   assert.equal(ending, "true_end", "破环链未到达 TRUE ENDING");
-  console.log("[e2e] 6/6 真结局破环链通过");
+  console.log("[e2e] 6/7 真结局破环链通过");
 
-  // 6) 全程控制台零错误
+  // 6) 学姐线：入口条件、隐藏选项、结局入图鉴、不解锁后日谈
+  await page.evaluate(() => {
+    const endings = JSON.parse(localStorage.getItem("sakura_letters_endings_v2") || "{}");
+    endings.unlocked = ["true_unbroken"];
+    localStorage.setItem("sakura_letters_endings_v2", JSON.stringify(endings));
+    const flags = JSON.parse(localStorage.getItem("sakura_letters_flags_v2") || "{}");
+    flags.loopCount = 0; flags.playCount = 1;
+    localStorage.setItem("sakura_letters_flags_v2", JSON.stringify(flags));
+  });
+  await page.reload();
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForFunction(() => typeof Saves !== "undefined" && window.__game, null, { timeout: 15000 });
+  await page.evaluate(() => { window.__game.newGame(); window.__game.gotoNode("d5_route_check"); });
+  let routeOptions = await page.evaluate(() => [...document.querySelectorAll("#choices button")].map((b) => b.textContent));
+  assert.equal(routeOptions.length, 3, "未满足循环条件时不应出现学姐线入口: " + JSON.stringify(routeOptions));
+
+  await page.evaluate(() => {
+    Saves.endings.unlocked = [];  // 模拟未解锁 true_unbroken
+    window.__game.state.loopCount = 1;
+    window.__game.newGame();
+    window.__game.gotoNode("d5_route_check");
+  });
+  routeOptions = await page.evaluate(() => [...document.querySelectorAll("#choices button")].map((b) => b.textContent));
+  assert.equal(routeOptions.length, 3, "缺少 true_unbroken 时不应出现学姐线入口: " + JSON.stringify(routeOptions));
+
+  await page.evaluate(() => {
+    Saves.endings.unlocked = ["true_unbroken"];
+    Saves.setFlag("loopCount", 1);
+    window.__game.state.loopCount = 1;  // newGame 不重读 flag，测试里同步运行时状态
+    window.__game.newGame();
+    window.__game.gotoNode("d5_route_check");
+  });
+  routeOptions = await page.evaluate(() => [...document.querySelectorAll("#choices button")].map((b) => b.textContent));
+  assert.equal(routeOptions.length, 4, "学姐线隐藏入口未出现: " + JSON.stringify(routeOptions));
+  assert.ok(routeOptions.some((text) => text.includes("旧校舍")), "学姐线入口文案缺失");
+  await page.evaluate(() => {
+    [...document.querySelectorAll("#choices button")].find((b) => b.textContent.includes("旧校舍")).click();
+  });
+  assert.equal(await page.evaluate("window.__game.state.currentNode"), "route_senior_1", "未进入学姐线");
+
+  await page.evaluate(() => window.__game.gotoNode("senior_ending"));
+  await page.waitForFunction(
+    () => !document.getElementById("ending-screen").classList.contains("hidden"),
+    null,
+    { timeout: 15000 }
+  );
+  const seniorEnding = await page.evaluate(() => ({
+    visible: !document.getElementById("ending-screen").classList.contains("hidden"),
+    title: document.getElementById("ending-title").textContent,
+    unlocked: Saves.isEndingUnlocked("senior_shadow"),
+    trueEnd: Saves.isEndingUnlocked("true_end"),
+    loopCount: window.__game.state.loopCount,
+  }));
+  assert.ok(seniorEnding.visible, "学姐结局画面未显示");
+  assert.equal(seniorEnding.title, "看 见");
+  assert.equal(seniorEnding.unlocked, true, "学姐结局未入图鉴");
+  assert.equal(seniorEnding.trueEnd, false, "学姐线不应授予真结局");
+  assert.equal(seniorEnding.loopCount, 2, "学姐线结局应作为普通循环结局 +1");
+
+  await page.reload();
+  await page.waitForLoadState("domcontentloaded");
+  await page.waitForFunction(() => typeof Saves !== "undefined" && window.__game, null, { timeout: 15000 });
+  const afterwordHidden = await page.evaluate(() => {
+    const btn = document.querySelector('#title-screen button[data-action="afterword"]');
+    return btn.classList.contains("hidden") || getComputedStyle(btn).display === "none";
+  });
+  assert.ok(afterwordHidden, "学姐线不应解锁后日谈");
+  await page.evaluate(() => window.__game.openOverlay("gallery"));
+  const galleryCards = await page.evaluate(() => document.querySelectorAll("#overlay-body .gallery-card").length);
+  assert.equal(galleryCards, 13, "结局图鉴应为 13 张");
+  console.log("[e2e] 7/7 学姐线入口与结局通过");
+
+  // 7) 全程控制台零错误
   assert.deepEqual(errors, [], "存在控制台错误: " + JSON.stringify(errors.slice(0, 5)));
   // 浏览器与服务器的关闭统一由 test.after 兜底（失败时也能退出进程）
 });

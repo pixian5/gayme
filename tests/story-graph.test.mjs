@@ -269,3 +269,48 @@ test("剧情时间跨度和关键文本相互一致", () => {
   assert.equal(SCRIPT.d5_route_check.choice.options.length, 3);
   assert.equal(SCRIPT.d5_route_check.if, undefined);
 });
+
+test("学姐线入口、结局与回信分支元数据正确", () => {
+  const loopChoice = SCRIPT.d5_route_check.choice.loopChoice;
+  assert.equal(loopChoice.length, 1);
+  assert.equal(loopChoice[0].minLoop, 1);
+  assert.equal(loopChoice[0].requires_ending, "true_unbroken");
+  assert.equal(loopChoice[0].next, "route_senior_1");
+  assert.match(engineSource, /opt\.requires_ending && !Saves\.isEndingUnlocked\(opt\.requires_ending\)/);
+
+  assert.equal(SCRIPT.senior_ending.ending.id, "senior_shadow");
+  assert.equal(SCRIPT.senior_ending.ending.type, "SIDE ENDING");
+  assert.equal(ENDINGS.filter(ending => ending.id === "senior_shadow").length, 1);
+  assert.equal(ENDINGS.length, 13);
+
+  const letter = SCRIPT.senior_12.letter;
+  assert.equal(letter.type, "free");
+  assert.equal(letter.matchings.length, 3);
+  const replies = [...letter.matchings, letter.defaultReply];
+  for (const reply of replies) {
+    let id = reply.next;
+    let guard = 0;
+    while (id && !SCRIPT[id]?.ending && guard++ < 10) id = SCRIPT[id].next;
+    assert.equal(SCRIPT[id]?.ending?.id, "senior_shadow", `${reply.id || "默认"} 未接回学姐结局`);
+  }
+});
+
+test("学姐线全部节点可达且不改真结局判定", () => {
+  const roots = ["route_senior_1"];
+  const reachable = new Set(roots);
+  const queue = roots.slice();
+  while (queue.length) {
+    const current = queue.shift();
+    for (const [from, target] of refs) {
+      if (from === current && SCRIPT[target] && !reachable.has(target)) {
+        reachable.add(target);
+        queue.push(target);
+      }
+    }
+  }
+  const routeIds = Object.keys(SCRIPT).filter(id => id === "route_senior_1" || id.startsWith("senior_"));
+  assert.equal(routeIds.length, 24);
+  assert.deepEqual(routeIds.filter(id => !reachable.has(id)), []);
+  assert.match(source, /function isTrueEndUnlocked\(\)[\s\S]*?Saves\.isEndingUnlocked\("true_end"\)/);
+  assert.doesNotMatch(source, /function isTrueEndUnlocked\(\)[\s\S]*?senior_shadow/);
+});

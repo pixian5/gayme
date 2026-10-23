@@ -536,6 +536,7 @@ const CGS = [
   { id: "cg_shiyu_good", title: "回 头", heroine: "林诗雨", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cg7_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffdf9e"/><stop offset="0.6" stop-color="#f0a878"/><stop offset="1" stop-color="#d88060"/></linearGradient><radialGradient id="cg7_sun" cx="0.72" cy="0.4" r="0.5"><stop offset="0" stop-color="#fff4d8" stop-opacity="0.9"/><stop offset="1" stop-color="#fff4d8" stop-opacity="0"/></radialGradient></defs><rect width="400" height="240" fill="url(#cg7_sky)"/><rect width="400" height="240" fill="url(#cg7_sun)"/><circle cx="288" cy="96" r="26" fill="#fff8e0"/><circle cx="288" cy="96" r="40" fill="#fff8e0" opacity="0.3"/><path d="M0,160 L400,152 L400,240 L0,240 Z" fill="#8a6850"/><path d="M0,160 L400,152" stroke="#a08260" stroke-width="3"/><g fill="#5a4a68" opacity="0.85"><rect x="20" y="90" width="46" height="70"/><rect x="330" y="84" width="50" height="72"/></g><g fill="#3a2c4a"><rect x="26" y="98" width="10" height="12"/><rect x="42" y="98" width="10" height="12"/><rect x="338" y="92" width="10" height="12"/><rect x="354" y="92" width="10" height="12"/></g><g><ellipse cx="176" cy="196" rx="40" ry="7" fill="#4a3020" opacity="0.5"/><circle cx="176" cy="106" r="18" fill="#f8dcc4"/><path d="M156,100 C156,74 196,74 196,100 L198,90 C198,66 154,66 154,90 Z" fill="#2a2438"/><path d="M158,96 C150,120 152,146 148,166 L162,166 C164,146 166,120 166,102 Z" fill="#2a2438"/><path d="M194,98 C202,120 204,146 208,166 L194,166 C192,146 190,120 190,102 Z" fill="#2a2438"/><path d="M160,126 C152,138 148,150 146,160 M192,126 C200,138 204,150 206,160" stroke="#2a2438" stroke-width="9" stroke-linecap="round"/><path d="M162,118 L190,118 L196,168 L156,168 Z" fill="#3a4a6e"/><path d="M176,124 L176,164" stroke="#2c3854" stroke-width="2"/><path d="M168,122 L176,132 L184,122" fill="none" stroke="#a8c5e8" stroke-width="2.4"/><circle cx="176" cy="106" r="2" fill="#e8a0a0" opacity="0.4"/></g><path d="M282,84 C296,74 312,74 322,82" stroke="#fff4d8" stroke-width="2" fill="none" opacity="0.6"/><g fill="#ffd8a0"><ellipse cx="80" cy="70" rx="5" ry="2.4" transform="rotate(22 80 70)"/><ellipse cx="140" cy="52" rx="5" ry="2.4" transform="rotate(-18 140 52)"/><ellipse cx="240" cy="60" rx="5" ry="2.4" transform="rotate(30 240 60)"/></g><text x="200" y="228" text-anchor="middle" fill="#5a3818" font-size="14" font-family="serif">— 回 头 —</text></svg>` },
   { id: "cg_xiazhi_good", title: "终 点 线", heroine: "夏织", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cg8_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#68b8e8"/><stop offset="1" stop-color="#c0e2f2"/></linearGradient><linearGradient id="cg8_track" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d09858"/><stop offset="1" stop-color="#a06830"/></linearGradient></defs><rect width="400" height="240" fill="url(#cg8_sky)"/><ellipse cx="80" cy="40" rx="44" ry="12" fill="#ffffff" opacity="0.8"/><ellipse cx="300" cy="28" rx="52" ry="14" fill="#ffffff" opacity="0.65"/><rect y="120" width="400" height="120" fill="url(#cg8_track)"/><rect x="0" y="112" width="400" height="8" fill="#ffffff"/><rect x="352" y="112" width="6" height="8" fill="#1a1a1a"/><g stroke="#f4e8d0" stroke-width="3.4" opacity="0.9"><line x1="0" y1="150" x2="400" y2="140"/><line x1="0" y1="180" x2="400" y2="164"/><line x1="0" y1="212" x2="400" y2="190"/></g><g><path d="M356,120 L356,196" stroke="#ffffff" stroke-width="5"/><g fill="#ff8080"><path d="M357,124 L378,130 L357,136 Z"/><path d="M357,138 L378,144 L357,150 Z"/></g></g><g><ellipse cx="300" cy="182" rx="34" ry="6" fill="#6a4820" opacity="0.5"/><circle cx="288" cy="98" r="14.5" fill="#f8d4b8"/><path d="M275,92 C275,78 301,78 301,92 L303,84 C303,66 273,66 273,84 Z" fill="#8a5a30"/><path d="M275,88 C266,98 260,112 256,124 L264,126 C268,112 272,102 280,94 Z" fill="#8a5a30"/><path d="M280,110 L298,112 L306,152 L282,154 Z" fill="#33415e"/><path d="M282,114 C272,116 262,116 252,114" stroke="#f8d4b8" stroke-width="7" stroke-linecap="round"/><path d="M296,114 C306,118 316,120 328,120" stroke="#f8d4b8" stroke-width="7" stroke-linecap="round"/><path d="M284,152 L278,188 L286,190 L294,156 L304,188 L312,186 L306,152 Z" fill="#f8d4b8"/><path d="M276,186 L287,188 M304,186 L313,184" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/><rect x="284" y="122" width="11" height="8" fill="#ffffff" opacity="0.9"/><path d="M296,112 C312,106 330,102 344,102" stroke="#f8d4b8" stroke-width="7" stroke-linecap="round" opacity="0.95"/></g><g stroke="#ffffff" stroke-width="2" opacity="0.6"><line x1="230" y1="100" x2="186" y2="82"/><line x1="236" y1="116" x2="182" y2="106"/><line x1="246" y1="132" x2="192" y2="130"/></g><text x="200" y="230" text-anchor="middle" fill="#5a3818" font-size="14" font-family="serif">— 终 点 线 —</text></svg>` },
   { id: "cg_sunian_good", title: "挣", heroine: "苏念", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cg9_bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2440"/><stop offset="1" stop-color="#1a142e"/></linearGradient><radialGradient id="cg9_spot" cx="0.5" cy="0.42" r="0.55"><stop offset="0" stop-color="#fff8e8" stop-opacity="0.5"/><stop offset="0.7" stop-color="#fff8e8" stop-opacity="0.12"/><stop offset="1" stop-color="#fff8e8" stop-opacity="0"/></radialGradient><linearGradient id="cg9_purple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a78c8"/><stop offset="0.55" stop-color="#6a58a8"/><stop offset="1" stop-color="#4a3a88"/></linearGradient></defs><rect width="400" height="240" fill="url(#cg9_bg)"/><rect width="400" height="240" fill="url(#cg9_spot)"/><rect x="88" y="40" width="224" height="150" rx="4" fill="#3a3050"/><rect x="96" y="48" width="208" height="134" fill="#f4f0e4"/><rect x="100" y="52" width="200" height="126" fill="url(#cg9_purple)"/><g><path d="M158,178 C150,150 152,116 166,92 C172,80 184,72 196,72 C186,84 182,98 184,112 C190,100 198,94 208,92 C200,102 196,116 198,130 C206,120 216,116 226,118 C216,124 208,136 206,148 C204,160 196,172 184,178 C176,181 166,181 158,178 Z" fill="#e8d8f8"/><path d="M170,140 C176,126 186,116 198,112 C192,122 188,134 188,146 C182,144 176,142 170,140 Z" fill="#c8b8e8" opacity="0.7"/><circle cx="194" cy="98" r="7" fill="#f8f0ff"/><path d="M191,96 C192,93 196,92 198,94" stroke="#8a72c8" stroke-width="1.4" fill="none"/><path d="M190,104 C193,106 197,106 200,104" stroke="#8a72c8" stroke-width="1.4" fill="none" stroke-linecap="round"/></g><path d="M100,52 L100,178" stroke="#fff8e8" stroke-width="1.6" opacity="0.25"/><rect x="60" y="190" width="280" height="10" rx="3" fill="#3a3050"/><g fill="#8a7ac8"><ellipse cx="84" cy="206" rx="12" ry="3.4"/><rect x="300" y="198" width="24" height="9" rx="2" fill="#c8a060"/></g><g stroke="#c8b8e8" stroke-width="1.6" opacity="0.5"><line x1="120" y1="30" x2="150" y2="16"/><line x1="260" y1="28" x2="290" y2="14"/></g><text x="200" y="226" text-anchor="middle" fill="#c8b8e8" font-size="15" font-family="serif">— 挣 —</text></svg>` },
+  { id: "cg_senior_shadow", title: "看 见", heroine: "学姐", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="cg11_sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#241e38"/><stop offset="0.6" stop-color="#4a3458"/><stop offset="1" stop-color="#8a5a78"/></linearGradient><radialGradient id="cg11_glow" cx="0.62" cy="0.35" r="0.5"><stop offset="0" stop-color="#ffd8a8" stop-opacity="0.45"/><stop offset="1" stop-color="#ffd8a8" stop-opacity="0"/></radialGradient><linearGradient id="cg11_ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2038"/><stop offset="1" stop-color="#160e22"/></linearGradient></defs><rect width="400" height="240" fill="url(#cg11_sky)"/><rect width="400" height="240" fill="url(#cg11_glow)"/><circle cx="322" cy="52" r="16" fill="#fff4d8" opacity="0.9"/><circle cx="322" cy="52" r="26" fill="#fff4d8" opacity="0.15"/><rect x="34" y="78" width="210" height="98" rx="2" fill="#241a34"/><rect x="44" y="88" width="26" height="22" fill="#ffcf8a" opacity="0.75"/><rect x="84" y="88" width="26" height="22" fill="#ffcf8a" opacity="0.25"/><rect x="124" y="88" width="26" height="22" fill="#ffcf8a" opacity="0.15"/><rect x="164" y="88" width="26" height="22" fill="#ffcf8a" opacity="0.25"/><rect x="204" y="88" width="26" height="22" fill="#ffcf8a" opacity="0.6"/><path d="M28,78 L244,78 L236,70 L36,70 Z" fill="#1a1228"/><rect y="176" width="400" height="64" fill="url(#cg11_ground)"/><rect y="176" width="400" height="4" fill="#4a3858"/><rect y="196" width="400" height="3" fill="#3a2a48" opacity="0.8"/><g fill="#1a1226"><circle cx="178" cy="146" r="11"/><path d="M166,158 C166,170 168,180 170,190 L188,190 C190,178 190,168 188,158 Z"/><circle cx="222" cy="150" r="10"/><path d="M211,161 C211,172 213,181 215,190 L231,190 C233,180 233,170 231,161 Z"/></g><rect x="192" y="176" width="22" height="14" rx="1.5" fill="#fff6e6" transform="rotate(-6 203 183)"/><path d="M193,177 L203,184 L213,177" stroke="#d8b8a0" stroke-width="1" fill="none" transform="rotate(-6 203 183)"/><g fill="#f0a8b8" opacity="0.85"><ellipse cx="70" cy="120" rx="5" ry="2.4" transform="rotate(24 70 120)"/><ellipse cx="130" cy="60" rx="5" ry="2.4" transform="rotate(-20 130 60)"/><ellipse cx="280" cy="92" rx="5" ry="2.4" transform="rotate(32 280 92)"/><ellipse cx="356" cy="140" rx="5" ry="2.4" transform="rotate(-26 356 140)"/><ellipse cx="250" cy="204" rx="5" ry="2.4" transform="rotate(16 250 204)"/><ellipse cx="58" cy="206" rx="5" ry="2.4" transform="rotate(-34 58 206)"/></g><text x="200" y="228" text-anchor="middle" fill="#ffd8e4" font-size="14" font-family="serif">— 看 见 —</text></svg>` },
   { id: "cg_true", title: "樱 花 信", heroine: "真结局", svg: `<svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="cg10_sky" cx="0.5" cy="0.38" r="0.85"><stop offset="0" stop-color="#fff4e0"/><stop offset="0.45" stop-color="#f0b0b8"/><stop offset="1" stop-color="#7a4a6e"/></radialGradient><linearGradient id="cg10_ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2848"/><stop offset="1" stop-color="#241634"/></linearGradient><linearGradient id="cg10_paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f8ecd8"/></linearGradient><radialGradient id="cg10_glow" cx="0.5" cy="0.52" r="0.4"><stop offset="0" stop-color="#fff8e0" stop-opacity="0.75"/><stop offset="1" stop-color="#fff8e0" stop-opacity="0"/></radialGradient></defs><rect width="400" height="240" fill="url(#cg10_sky)"/><g fill="#fff8ee" opacity="0.9"><circle cx="50" cy="30" r="2"/><circle cx="120" cy="20" r="1.6"/><circle cx="260" cy="24" r="1.8"/><circle cx="340" cy="34" r="2.2"/><circle cx="30" cy="66" r="1.5"/></g><g fill="#3a2848"><circle cx="128" cy="80" r="30"/><circle cx="164" cy="62" r="34"/><circle cx="200" cy="52" r="38"/><circle cx="236" cy="62" r="34"/><circle cx="272" cy="80" r="30"/><circle cx="146" cy="96" r="24"/><circle cx="254" cy="96" r="24"/></g><path d="M200,86 L200,168" stroke="#2c1e3a" stroke-width="9"/><path d="M200,110 C186,104 174,96 168,88 M200,118 C214,112 226,104 232,96" stroke="#2c1e3a" stroke-width="5" fill="none"/><g fill="#f0a8b8"><ellipse cx="80" cy="120" rx="6" ry="2.8" transform="rotate(26 80 120)"/><ellipse cx="330" cy="110" rx="6" ry="2.8" transform="rotate(-22 330 110)"/><ellipse cx="46" cy="160" rx="6" ry="2.8" transform="rotate(-38 46 160)"/><ellipse cx="356" cy="166" rx="6" ry="2.8" transform="rotate(30 356 166)"/><ellipse cx="120" cy="200" rx="6" ry="2.8" transform="rotate(14 120 200)"/><ellipse cx="284" cy="204" rx="6" ry="2.8" transform="rotate(-28 284 204)"/></g><rect y="168" width="400" height="72" fill="url(#cg10_ground)"/><rect width="400" height="240" fill="url(#cg10_glow)"/><g transform="rotate(-2 200 148)"><rect x="152" y="112" width="96" height="72" rx="3" fill="url(#cg10_paper)"/><path d="M200,118 C195,110 184,108 178,114 C172,120 174,130 180,134 L200,148 L220,134 C226,130 228,120 222,114 C216,108 205,110 200,118 Z" fill="#e87888"/><g stroke="#c8b8a0" stroke-width="1.2" opacity="0.8"><line x1="164" y1="158" x2="236" y2="156"/><line x1="164" y1="168" x2="228" y2="167"/></g></g><g fill="#ffdf9e"><path d="M150,180 L158,180 L156,192 L152,192 Z"/><path d="M244,178 L252,178 L250,190 L246,190 Z"/></g><text x="200" y="228" text-anchor="middle" fill="#fff8ee" font-size="16" font-family="serif">— 樱 花 信 —</text></svg>` },
 ];
 
@@ -550,6 +551,7 @@ const ENDINGS = [
   { id: "sunian_good",  heroine: "苏念",   title: "挣",     type: "GOOD",   desc: "她松开了手。" },
   { id: "sunian_normal",heroine: "苏念",   title: "网 展", type: "NORMAL", desc: "她在自己的网展开了个展。" },
   { id: "sunian_bad",   heroine: "苏念",   title: "按 住",   type: "BAD",    desc: "她按住了自己。" },
+  { id: "senior_shadow", heroine: "学姐",  title: "看 见",   type: "SIDE",   desc: "循环没有破，她也没有走；但这一次，她不再是没人看见的影子。" },
   { id: "true_unbroken", heroine: "真结局前章", title: "未 破 环", type: "LOOP ENDING", desc: "你写下了回信，但循环仍在等待最后一步。" },
   { id: "true_end",     heroine: "真结局", title: "樱 花 信", type: "TRUE",  desc: "你替她回了一封信，也写下自己。" },
   { id: "afterword",    heroine: "三人",   title: "樱海以后", type: "AFTERWORD", desc: "信寄出以后，三个人各自继续往前走。" },
@@ -879,8 +881,8 @@ const SCRIPT = {
       type: "free",
       hint: "写下你的建议…",
       matchings: [
-        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: { id: "诗雨·敢", text: "你说：敢。她记下了。" } },
-        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: { id: "诗雨·停", text: "你说：停一停。她沉默了。" } },
+        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: "诗雨·敢" },
+        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·停" },
       ]
     },
     // v0.5.0 朋友圈：夏织发布动态
@@ -4041,6 +4043,15 @@ const SCRIPT = {
         { text: "图书馆找林诗雨", next: "route_shiyu_1" },
         { text: "操场找夏织",     next: "route_xiazhi_1" },
         { text: "美术室找苏念",   next: "route_sunian_1" },
+      ],
+      // 学姐线（v3.3.0 形态 A）：听完真相且仍在循环中，才会看见旧校舍的灯
+      loopChoice: [
+        {
+          minLoop: 1,
+          text: "⟲ 去旧校舍找学姐",
+          next: "route_senior_1",
+          requires_ending: "true_unbroken",
+        }
       ]
     }
   },
@@ -4071,8 +4082,8 @@ const SCRIPT = {
       type: "free",
       hint: "回她一句…",
       matchings: [
-        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: { id: "诗雨·凌晨", text: "你说：写下去。她在屏幕那头点了头。" } },
-        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: { id: "诗雨·凌晨", text: "你说：先睡吧。她合上了本子。" } },
+        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨" },
+        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨" },
       ]
     }
   },
@@ -4161,8 +4172,8 @@ const SCRIPT = {
       type: "free",
       hint: "老实告诉她…",
       matchings: [
-        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: { id: "夏织·教练", text: "你说：你能跑。她笑了。" } },
-        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: { id: "夏织·教练", text: "你说：先治伤。她沉默了。" } },
+        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练" },
+        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练" },
       ]
     },
     // v0.5.0 朋友圈：夏织深夜动态
@@ -4400,6 +4411,165 @@ const SCRIPT = {
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。",
     ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信 · 破 环", text: "你合成了樱花信，打破了时间的循环。" }
+  },
+
+  /* ============ 学姐线（v3.3.0 形态 A）：留在循环里，但被看见 ============ */
+  route_senior_1: {
+    day: 5, time: "afternoon", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "旧校舍的走廊比记忆里更安静。学姐站在尽头，像一直站在那里，从来没离开过。她看见我，没有惊讶，只说了一句：「这次，你没有去她们那边。」",
+    keyword: "学姐",
+    next: "senior_2"
+  },
+  senior_2: {
+    day: 5, time: "afternoon", bg: "hallway", char: "senior", speaker: "沈屿",
+    text: "「我想看看，你一直站着的这个地方。」",
+    next: "senior_3"
+  },
+  senior_3: {
+    day: 5, time: "afternoon", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她侧过身，让出半条走廊。「三年前，我停在这里。你是来替我走完，还是来陪我停一会儿？」",
+    choice: {
+      prompt: "你为什么来旧校舍？",
+      options: [
+        { text: "我替你走完。",     next: "senior_4a" },
+        { text: "我陪你停一会儿。", next: "senior_4b" },
+        { text: "我来看看你。",     next: "senior_4c" },
+      ]
+    }
+  },
+  senior_4a: {
+    day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "「替不了。」她摇头，声音很轻，「三年前我也以为，只要有人替我走完，我就能走。后来才明白，路要自己走，信要自己回。」",
+    next: "senior_5"
+  },
+  senior_4b: {
+    day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "「……那就坐一会儿。」她在窗台上坐下，拍了拍旁边的位置，「这里很久没有人坐过了。」",
+    next: "senior_5"
+  },
+  senior_4c: {
+    day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "「看我？」她笑了一下，「一个停在半路的人，有什么好看的。」我说：「半路也是路。」她没再说话。",
+    next: "senior_5"
+  },
+  senior_5: {
+    day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "「三年前，我也收到过一封写给自己的信。我没回。不是不会写，是不敢写。你有没有过这种时候——明明知道该回，却把信压在抽屉最底下？」",
+    memory: { id: "学姐·抽屉里的信", title: "抽屉最底下", text: "三年前她收到一封写给自己的信，没敢回，压在抽屉最底下。" },
+    next: "senior_6"
+  },
+  senior_6: {
+    day: 6, time: "morning", bg: "library", char: "senior", speaker: "学姐",
+    text: "「今天陪我做三件没做完的事。」她把一本借了三年的书放在桌上，「第一件，把它还回去。」",
+    next: "senior_7"
+  },
+  senior_7: {
+    day: 7, time: "morning", bg: "rooftop", char: "senior", speaker: "学姐",
+    text: "「第二件，把这圈跑完。」她站在天台边，风把校服吹得很响，「三年前我跑到这里，就停了。」",
+    next: "senior_8"
+  },
+  senior_8: {
+    day: 8, time: "afternoon", bg: "art_room", char: "senior", speaker: "学姐",
+    text: "「第三件，把这张画补完。」画架上只有一片没有边界的蓝，「可我忘了，当年想画什么。」",
+    choice: {
+      prompt: "在这张画上补什么？",
+      options: [
+        { text: "画一扇开着的窗。",       next: "senior_9a" },
+        { text: "画一条没有终点的路。",   next: "senior_9b" },
+        { text: "什么都不画，留白。",     next: "senior_9c" },
+      ]
+    }
+  },
+  senior_9a: {
+    day: 8, time: "afternoon", bg: "art_room", char: "senior", speaker: "学姐",
+    text: "她看了很久，说：「窗。原来我当年想画的是窗，不是门。门要有人开，窗只要自己推开。」",
+    next: "senior_10"
+  },
+  senior_9b: {
+    day: 8, time: "afternoon", bg: "art_room", char: "senior", speaker: "学姐",
+    text: "「路。」她把笔放下，「可路不一定非要有人等在终点。走下去本身，也算数。」",
+    next: "senior_10"
+  },
+  senior_9c: {
+    day: 8, time: "afternoon", bg: "art_room", char: "senior", speaker: "学姐",
+    text: "「留白。」她笑了，「也好。没画完的地方，不一定都要补上。」",
+    next: "senior_10"
+  },
+  senior_10: {
+    day: 9, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "「三天。你把我想做又没做的事，陪我做完了。」她看着窗外，「可你还是没问我，为什么我走不了。」我说：「你不想说，我就不问。」她低声说：「……你这个人，真让人没办法。」",
+    memory: { id: "学姐·没问出口", title: "没问出口", text: "她没有说她为什么走不了；我也没有问。有些答案，不该由追问换来。" },
+    next: "senior_11"
+  },
+  senior_11: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "樱花祭前夜。她把一叠信纸放在窗台上。「明天就是樱花祭。三年前，我就是在这一夜停下的。你可以现在回头，去合成那封信。那才是能让我走的东西。」",
+    choice: {
+      prompt: "最后一夜，你怎么选？",
+      options: [
+        { text: "留下，先给你写一封。",         next: "senior_12" },
+        { text: "去合成那封信。",               next: "senior_11b" },
+        { text: "什么都不做，陪你坐到天亮。",   next: "senior_11c" },
+      ]
+    }
+  },
+  senior_11b: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "我走到门口，又停下。「我想先问你一件事——你想让我去吗？」她沉默了很久，说：「我想让你自己选。」于是我走回来，拿起笔。",
+    next: "senior_12"
+  },
+  senior_11c: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "我没有拿笔，也没有去合成台。我只是在她旁边坐下。她问：「你不写吗？」我说：「今晚不写。今晚我在这儿。」",
+    next: "senior_14"
+  },
+  senior_12: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她把信纸推到我面前。这一次，不是抄，不是选。是我自己写。",
+    letter: {
+      id: "senior_letter_free",
+      type: "free",
+      prompt: "✦ 给学姐写一封信",
+      hint: "她不缺一封能让她离开的信。她缺一封写给她的信。",
+      matchings: [
+        { id: "留下", keywords: ["留", "陪", "一起", "不走", "停"], next: "senior_13_stay", memory: "学姐·留下" },
+        { id: "自由", keywords: ["走", "自由", "离开", "飞", "春天"], next: "senior_13_go", memory: "学姐·自由" },
+        { id: "看见", keywords: ["看见", "名字", "记得", "影子", "你"], next: "senior_13_see", memory: "学姐·看见" },
+      ],
+      defaultReply: { next: "senior_13_default", memory: "学姐·回信" }
+    },
+    next: "senior_13_default"
+  },
+  senior_13_stay: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她读得很慢。读到「留下」两个字时，她抬起头：「留下不是陪我停在原地。你想清楚了吗？」我说：「想清楚了。留下是陪你把日子过下去。」",
+    next: "senior_14"
+  },
+  senior_13_go: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她读到「走」的时候笑了。「你让我走。可我走不了。」我说：「那就先不走。自由又不是只有离开一种写法。」她把信按在胸口，很久没说话。",
+    next: "senior_14"
+  },
+  senior_13_see: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她读到「看见」两个字，手指停住了。「你写的不是信。」她说，「你写的是我。」",
+    next: "senior_14"
+  },
+  senior_13_default: {
+    day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
+    text: "她把信读完，折好，放进校服口袋。「原来被人回信，是这样的感觉。」",
+    next: "senior_14"
+  },
+  senior_14: {
+    day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐",
+    text: "樱花祭开始了。主会场的灯一盏盏亮起来，旧校舍这边只听得见风。她问：「你不去吗？」我说：「我在这儿。」她看着樱花，第一次没有说「回去吧」。",
+    cg_unlock: "cg_senior_shadow",
+    next: "senior_ending"
+  },
+  senior_ending: {
+    day: 11, time: "night", bg: "ending_true", char: null, speaker: "",
+    text: "那年樱花祭，我没有合成那封信。循环没有破，学姐也没有离开。但从那天起，旧校舍的灯会在每晚亮一会儿——不是等谁来救她，只是有人会来，陪她把没写完的那一页写完。她说，她第一次觉得，自己不是一个被留在信里的影子。",
+    ending: { id: "senior_shadow", type: "SIDE ENDING", title: "看 见", text: "循环没有破，她也没有走；但这一次，她不再是没人看见的影子。" }
   },
 
   /* ============ 真结局后日谈：樱海以后 ============ */

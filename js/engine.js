@@ -94,13 +94,18 @@
            （覆盖检查 0 缺失）；字体栈改为本机优先（两处玩法样式去掉硬编码 Noto），
            @font-face 限定 unicode-range，本机有宋体时不再下载 woff2；
            语法测试改为扫描 js 目录全部脚本与 sw.js；README 计数、死链与版本约定修正
+   v3.3.0：学姐线形态 A——二周目（loopCount≥1 且解锁 true_unbroken）第 5 日路线出现隐藏
+           第 4 选项「⟲ 去旧校舍找学姐」；24 节点专属剧情（3 选择点 + 1 次自由写信 4 分支 +
+           4 段记忆 + CG「看见」+ SIDE 结局 senior_shadow，图鉴 13 张）；引擎新增
+           requires_ending 选项过滤；free letter 回信记忆统一字符串 id（修 4 组对象格式
+           既有 bug，引擎兼容旧数据）；consistency 新增 memory 契约测试（共 35 项）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.2.4";
+  const GAME_VERSION = "3.3.0";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -742,6 +747,8 @@
       if (opt.requires_compose && !Saves.isComposed(opt.requires_compose)) return;
       // 记忆解锁的隐藏选项
       if (opt.requires_memory && !Saves.isMemoryUnlocked(opt.requires_memory)) return;
+      // 结局解锁的隐藏选项
+      if (opt.requires_ending && !Saves.isEndingUnlocked(opt.requires_ending)) return;
       const btn = document.createElement("button");
       btn.className = "choice-btn";
       if (opt.composed) btn.classList.add("composed-choice");
@@ -810,9 +817,10 @@
         const reply = matched.length > 0 ? matched[0] : (letter.defaultReply || { next: currentNodeId });
         el.choices.classList.add("hidden");
         el.choices.innerHTML = "";
-        // 解锁记忆（如果配对中包含）
-        if (reply.memory && !Saves.isMemoryUnlocked(reply.memory)) {
-          Saves.saveMemory(reply.memory, content);
+        // 解锁记忆（如果配对中包含）：memory 规范为字符串 id，兼容旧数据对象格式
+        if (reply.memory) {
+          const memId = typeof reply.memory === "string" ? reply.memory : reply.memory.id;
+          if (!Saves.isMemoryUnlocked(memId)) Saves.saveMemory(memId, content);
         }
         gotoNode(reply.next);
       };
@@ -832,6 +840,7 @@
       if (opt.requires && !opt.requires()) return;
       if (opt.requires_compose && !Saves.isComposed(opt.requires_compose)) return;
       if (opt.requires_memory && !Saves.isMemoryUnlocked(opt.requires_memory)) return;
+      if (opt.requires_ending && !Saves.isEndingUnlocked(opt.requires_ending)) return;
       const btn = document.createElement("button");
       btn.className = "choice-btn";
       btn.style.background = "linear-gradient(135deg, rgba(60,40,80,0.85), rgba(80,60,100,0.85))";
@@ -1330,7 +1339,7 @@
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
         <p style="color:#e8e0d0;">v${GAME_VERSION} · Demo</p>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
-        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 · 10 个主线结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
+        <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 + 学姐线 · 12 个结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         <p style="margin-top:26px;">
           <a href="mailto:hqlak47@gmail.com?subject=%E3%80%8A%E6%A8%B1%E6%97%B6%E4%BF%A1%E7%AE%80%E3%80%8B%E5%8F%8D%E9%A6%88"
              style="display:inline-block;padding:8px 22px;border:1px solid rgba(255,200,220,0.4);border-radius:20px;
@@ -1464,6 +1473,7 @@
       { title: "林诗雨线", nodes: ["route_shiyu_1", "sy_9", "sy_minigame", "sy_choice_1", "sy_ending_good", "sy_ending_normal", "sy_ending_bad"] },
       { title: "夏织线", nodes: ["route_xiazhi_1", "xz_9", "xz_minigame", "xz_choice_1", "xz_ending_good", "xz_ending_normal", "xz_ending_bad"] },
       { title: "苏念线", nodes: ["route_sunian_1", "sn_9", "sn_minigame", "sn_choice_1", "sn_ending_good", "sn_ending_normal", "sn_ending_bad"] },
+      { title: "学姐线", nodes: ["route_senior_1", "senior_3", "senior_6", "senior_10", "senior_11", "senior_12", "senior_14", "senior_ending"] },
       { title: "真结局", nodes: ["true_end_entry", "true_choice", "true_ending"] },
       { title: "后日谈", nodes: ["afterword_entry", "afterword_postcard", "afterword_reply", "afterword_timeline", "afterword_autumn", "afterword_mailbox_reply", "afterword_mailbox_rules", "afterword_mailbox_triage", "afterword_wall", "afterword_wall_reflection", "afterword_proofread", "afterword_proofread_clean", "afterword_proofread_recheck", "afterword_ending"] },
     ];
