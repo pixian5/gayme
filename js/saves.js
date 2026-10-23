@@ -616,10 +616,22 @@ const Saves = {
   saveInbox(msg) {
     const list = this.getInbox();
     if (!list.find(m => m.id === msg.id)) {
-      list.push(Object.assign({ ts: Date.now(), read: false, replied: null, expired: false }, msg));
+      // v3.3.6：新增 openedAt（限时消息首次打开时间戳，用于倒计时持久化防重置）
+      list.push(Object.assign({ ts: Date.now(), read: false, replied: null, expired: false, openedAt: null }, msg));
       return this._write(INBOX_KEY, JSON.stringify(list));
     }
     return false;
+  },
+  // v3.3.6：记录限时消息首次打开时间（只记一次），返回该时间戳；消息不存在返回 null
+  markInboxOpened(id) {
+    const list = this.getInbox();
+    const m = list.find(x => x.id === id);
+    if (!m) return null;
+    if (!m.openedAt) {
+      m.openedAt = Date.now();
+      if (!this._write(INBOX_KEY, JSON.stringify(list))) m.openedAt = Date.now(); // 写失败也返回本次时间，退回旧行为
+    }
+    return m.openedAt;
   },
   markInboxRead(id) {
     const list = this.getInbox();

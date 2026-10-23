@@ -71,6 +71,16 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     Saves.updateSetting("bgm", false);
     Saves.updateSetting("sfxVolume", 0);
   });
+  // v3.3.6：localhost 也应注册 Service Worker（此前只判 https，e2e 从未覆盖 SW）
+  const swRegistered = await page.evaluate(async () => {
+    if (!("serviceWorker" in navigator)) return false;
+    for (let i = 0; i < 30; i++) {
+      if (await navigator.serviceWorker.getRegistration()) return true;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return false;
+  });
+  assert.ok(swRegistered, "localhost 未注册 Service Worker");
   console.log("[e2e] 1/7 页面加载完成");
 
   // 1) 新游戏 + 连续推进
@@ -134,6 +144,22 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     }
     await page.evaluate(() => window.__game.closeOverlay());
   }
+  // v3.3.6：浮层焦点陷阱——连续 Tab 不逃逸到浮层之外
+  await page.evaluate(() => window.__game.openOverlay("config"));
+  for (let i = 0; i < 12; i++) await page.keyboard.press("Tab");
+  const focusInside = await page.evaluate(() => !!(document.activeElement && document.activeElement.closest?.("#overlay")));
+  assert.ok(focusInside, "浮层焦点陷阱失效：Tab 逃逸到浮层之外");
+  await page.evaluate(() => window.__game.closeOverlay());
+
+  // v3.3.6：inbox 限时消息倒计时持久化——首次打开时间只记一次
+  const inboxPersist = await page.evaluate(() => {
+    Saves.saveInbox({ id: "e2e_msg", from: "测试", deadline: 30000 });
+    const first = Saves.markInboxOpened("e2e_msg");
+    const second = Saves.markInboxOpened("e2e_msg");
+    return { first, second };
+  });
+  assert.ok(inboxPersist.first && inboxPersist.first === inboxPersist.second,
+    "inbox 首次打开时间未持久化（倒计时可无限重置）");
   console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING

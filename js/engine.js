@@ -117,13 +117,21 @@
            （诗雨·凌晨 / 夏织·教练）共用 id → 拆分独立；性格画像补齐 8 维度中文映射与
            默认结构（careful/patient/calm/creative 原以英文键名显示）；consistency 唯一性
            契约升级为对象 + 字符串全覆盖，新增 personality 白名单契约（共 39 项）
+   v3.3.5：交互 / 无障碍 / 设置面板修复——打字机对白区改用 aria-busy（避免屏幕阅读器逐字
+           播报）；修复 settings.sfx 不存在导致音效总开关恒假，改为按音效音量判定；设置面板
+           新增「背景音乐音量」滑杆；perspective-layer 补 class（视角浮层不再逃过交互锁/清理）；
+           minigame 节点隐藏对话框；删除选项空回执死代码；新增 settings 键白名单契约（共 40 项）
+   v3.3.6：inbox 限时消息倒计时持久化（首次打开时间戳，反复开关不再无限重置）；浮层焦点
+           陷阱（Tab 不再逃逸到背后顶栏/标题）；快进模式「跳过已读」自动连跳；localhost 也注册
+           Service Worker（e2e 可覆盖）；删除 engine.js 中与 js/games 重复的 66 块 node schema
+           注释（-904 行，纯体积）；e2e 补 SW/焦点/倒计时断言
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.5";
+  const GAME_VERSION = "3.3.6";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -380,6 +388,22 @@
       }, 1000);
       return;
     }
+    // v3.3.6：快进模式下的「跳过已读」自动连跳——仅对读过（visited>1）且无互动的纯文本节点，
+    // 播完即自动推进；遇到未读节点或选项/信件/小游戏等互动节点会自动停下
+    if (state.skipMode) {
+      const nodeId = state.currentNode;
+      const isPlain = !node.choice && !node.letter && !node.minigame && !node.echo
+        && !node.perspective && !node.dream && !node.scentRecall;
+      if (isPlain && (state.visitedNodes[nodeId] || 0) > 1 && node.next) {
+        clearTimeout(state.autoTimer);
+        state.autoTimer = setTimeout(() => {
+          if (!state.skipMode) return;
+          if (state.pendingInteraction || hasActiveInteractionLayer()) return;
+          if (state.currentNode === nodeId && SCRIPT[nodeId] === node) advance();
+        }, 80);
+        return;
+      }
+    }
     if (state.autoMode) {
       clearTimeout(state.autoTimer);
       state.autoTimer = setTimeout(() => {
@@ -535,8 +559,6 @@
       return;
     }
 
-
-
     // v0.7.0 气味闪回触发节点
     if (node.scentRecall) {
       setScene(node.bg);
@@ -546,18 +568,6 @@
       updateHeartBar();
       return;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1173,6 +1183,22 @@
     const active = document.activeElement;
     if (active && active.closest?.("#overlay")) el.topBar.querySelector("button")?.focus();
   }
+  // v3.3.6：浮层焦点陷阱——Tab / Shift+Tab 在浮层内循环，焦点不再逃逸到背后的顶栏与标题按钮
+  el.overlay.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const focusables = Array.from(
+      el.overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter((node) => !node.disabled && node.offsetParent !== null);
+    if (!focusables.length) { e.preventDefault(); el.overlayBody.focus(); return; }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !el.overlay.contains(active)) { e.preventDefault(); last.focus(); }
+    } else if (active === last || !el.overlay.contains(active)) {
+      e.preventDefault(); first.focus();
+    }
+  });
 
   function renderSaveSlots(mode) {
     let html = "";
@@ -1711,6 +1737,14 @@
     `;
     layer.appendChild(card);
 
+    // v3.3.6：限时消息倒计时持久化——首次打开记录时间戳；若离线期间已超时，
+    // 打开即判定过期（此前每次打开都从满值倒计时，反复开关可无限续命）
+    if (msg.replied === null && !msg.expired && msg.deadline) {
+      const openedAt = Saves.markInboxOpened(msg.id);
+      if (openedAt && Date.now() - openedAt >= msg.deadline) Saves.markInboxExpired(msg.id);
+      msg = Saves.getInbox().find((x) => x.id === msg.id) || msg;
+    }
+
     const isExpired = msg.expired && msg.replied === null;
     const isReplied = msg.replied !== null;
 
@@ -1737,8 +1771,8 @@
       close.onclick = () => layer.remove();
       card.appendChild(close);
     } else {
-      // 限时倒计时
-      let remaining = msg.deadline || 0;
+      // 限时倒计时（v3.3.6：按首次打开时间推算剩余，反复开关不再重置）
+      let remaining = Math.max(0, (msg.deadline || 0) - (Date.now() - (msg.openedAt || Date.now())));
       const countdown = document.createElement("div");
       countdown.className = "inbox-countdown";
       card.appendChild(countdown);
@@ -1976,29 +2010,7 @@
     layer.appendChild(exit);
   }
 
-  /* ============================================================
-     v0.6.0 拼贴诗系统 runCollage
-     —— 把已解锁关键词拖到画布，按意象密度判定走向
-     node.collage = {
-       prompt, minWords, maxWords,
-       words (可选: 自定义词表；不填则用已解锁关键词+合成词),
-       tag (评分维度阈值，{good:5,bad:2}),
-       scoreBonus: { good:{...}, normal:{...}, bad:{...} },
-       scoreJump:  { good:"nodeId", normal:"nodeId", bad:"nodeId" }
-     }
 
-  /* ============================================================
-     v0.6.0 回声系统 triggerEcho
-     —— 玩家说过的重要台词在关键节点复现，可选择承认/否认
-     node.echo = {
-       id (回声 ID), text (复现的台词), ctx (出处),
-       choices: [
-         { text:"承认", value:"admit", add:{...}, personality:{...}, next:"nodeId", memory:{...} },
-         { text:"否认", value:"deny",  add:{...}, personality:{...}, next:"nodeId", memory:{...} },
-         { text:"沉默", value:"silent", add:{...}, personality:{...}, next:"nodeId", memory:{...} }
-       ]
-     }
-     ============================================================ */
   function triggerEcho(echo, currentNodeId) {
     const layer = document.createElement("div");
     layer.className = "echo-layer";
@@ -2060,53 +2072,7 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v0.6.0 摄影构图系统 runPhoto
-     —— 场景内拖动取景框，按构图规则评分
-     node.photo = {
-       prompt, scene (可选: 自定义场景图，不填用当前 bg),
-       rules: ["thirds","center","diagonal"], // 评分规则
-       targets: [{x,y,w,h, label}],           // 取景目标（可点击的高价值区）
-       scoreBonus: { high:{...}, mid:{...}, low:{...} },
-       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
-     }
 
-  /* ============================================================
-     v0.6.0 节奏敲击系统 runRhythm
-     —— 对话中按节奏点击，模拟心跳/呼吸同步
-     node.rhythm = {
-       prompt,
-       bpm (节拍速度，60-180),
-       beats (总节拍数，8-32),
-       pattern (可选：自定义强弱拍 [1,0,1,0,...])
-       scoreBonus: { high:{...}, mid:{...}, low:{...} },
-       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
-     }
-
-  /* ============================================================
-     v0.7.0 气味收集系统 runScent
-     node.scent = {
-       prompt: "图书馆里有几种气味——细闻哪一个？",
-       items: [
-         { id, name, desc, scene?, tag? }
-       ],
-       min: 1,                  // 至少细闻几个
-       next: "nodeId"            // 可选，覆盖默认 next
-     }
-
-  /* ============================================================
-     v0.7.0 气味闪回触发 triggerScentRecall
-     node.scentRecall = {
-       scentId: "old_book",         // 要触发的气味 id（必须先收集过）
-       recallId: "recall_d3_old_book", // 闪回唯一 id，避免重复触发
-       text: "——我又闻到了那个味道。",
-       flashback: "「纸的味道会变。」她那时候这么说。",
-       choices: [
-         { text, value, add?, personality?, memory?, next }
-       ]
-     }
-     未收集过该气味时，跳过闪回，进入 node.next
-     ============================================================ */
   function triggerScentRecall(recall, currentNodeId) {
     const node = SCRIPT[currentNodeId];
     const hasScent = Saves.isScentCollected(recall.scentId);
@@ -2166,121 +2132,9 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v0.7.0 沉默选择 runSilenceChoice
-     node.silenceChoice = {
-       prompt: "她问：你为什么不说话？",
-       duration: 10,            // 倒计时秒数
-       options: [{ text, value, add?, personality?, memory?, next }],
-       silent: {                // 超时进入的沉默分支
-         text, add?, personality?, memory?, next
-       }
-     }
 
-  /* ============================================================
-     v0.7.0 触觉关怀 runTouch
-     node.touch = {
-       prompt: "她看上去很难过——",
-       char: "shiyu",            // 立绘角色（仅用于定位，渲染由 node.char 决定）
-       parts: [
-         { id, label, x, y, w, h, dialogue, add?, personality?, memory? }
-       ],
-       exitText: "（你收回手。）",
-       next: "nodeId"           // 可选
-     }
 
-  /* ============================================================
-     v0.7.0 温度感知 runTemperature
-     node.temperature = {
-       prompt: "她问：现在是什么感觉？",
-       scoreBonus: {
-         warm:    { affection: { ... }, personality: { ... } },
-         neutral: { ... },
-         cool:    { ... }
-       },
-       scoreJump: { warm: "...", neutral: "...", cool: "..." },
-       next: "..."  // 默认跳转
-     }
-     温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
 
-  /* ============================================================
-     v0.8.0 笔迹选择 runHandwriting
-     node.handwriting = {
-       prompt: "你拿笔开始写——选一种笔迹",
-       letter: "letter_2",
-       styles: [
-         { id, label, desc, add?, personality?, memory?, next }
-       ]
-     }
-
-  /* ============================================================
-     v0.8.0 情绪光谱 runSpectrum
-     node.spectrum = {
-       prompt: "此刻你的心，在哪？",
-       // x: -100(不悦) ~ +100(愉悦)；y: -100(平静) ~ +100(激活)
-       quadrants: {
-         // 象限 tag：右上愉悦激活/右下愉悦平静/左上不悦激活/左下不悦平静
-         q_tr: { tag: "joy_active",   label: "愉悦·激昂", add?, personality?, memory?, next },
-         q_br: { tag: "joy_calm",     label: "愉悦·平静", add?, personality?, memory?, next },
-         q_tl: { tag: "sad_active",   label: "不悦·激昂", add?, personality?, memory?, next },
-         q_bl: { tag: "sad_calm",     label: "不悦·平静", add?, personality?, memory?, next }
-       },
-       fallback: { tag: "center", next }
-     }
-
-  /* ============================================================
-     v0.9.0 星座连线 runConstellation
-     node.constellation = {
-       prompt: "夜空散布星点——按你的直觉连线",
-       stars: [ { id, x, y, name } ],   // x,y 为 0~100 百分比坐标
-       constellations: [
-         { stars: ["a","b","c"], tag: "trio", label, text, add?, personality?, memory?, next }
-       ],
-       min: 2,   // 至少连几颗
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 心声听诊 runStethoscope
-     node.stethoscope = {
-       prompt: "把听诊器贴在胸口——跟随心跳",
-       bpm: 72,
-       beats: 12,         // 总节拍数
-       window: 0.3,       // 命中窗口（秒，前后各一半）
-       thresholds: [
-         { min: 0.8, tag: "sync", label, text, add?, memory?, next },
-         { min: 0.5, tag: "half", label, text, next }
-       ],
-       fallback: { tag: "miss", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 信物拼图 runPuzzle
-     node.puzzle = {
-       prompt: "把碎片按你的记忆拼起来——",
-       pieces: [ { id, label, desc } ],
-       interpretations: [
-         { order: ["a","b","c","d"], tag, label, text, add?, memory?, next }
-       ],
-       min: 2,
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 气味调香 runPerfume
-     node.perfume = {
-       prompt: "用三种香调调一瓶香水——",
-       notes: ["前调", "中调", "后调"],
-       ingredients: [ { id, label, desc, note } ],  // note = "前调"/"中调"/"后调"
-       recipes: [
-         { ids: ["a","b","c"], tag, label, text, add?, memory?, next }
-       ],
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
 
   // 在指定节点触发时光胶囊投递（读取未投递的胶囊）
   function deliverTimecapsules(nodeId) {
@@ -2307,787 +2161,65 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v1.2.0 茶席品茗 runTea
-     node.tea = {
-       prompt: "泡一壶茶——",
-       target: { temp: 0.6, amount: 0.4, time: 0.5 }, // 0~1 目标值
-       tolerance: 0.15,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 星象观测 runAstronomy
-     node.astronomy = {
-       prompt: "旋转星图盘——对齐今夜的星座",
-       constellations: ["aries","taurus","gemini",...],  // 盘上星座
-       target: "libra",   // 目标星座
-       clue: "天秤座的星辰今夜最亮",
-       thresholds: [
-         { isTarget: true, tag, label, text, add?, memory?, next },
-         { isTarget: false, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 颜料调配 runPalette
-     node.palette = {
-       prompt: "调出她裙摆的颜色——",
-       target: { r: 216, g: 112, b: 144 },   // 0~255
-       tolerance: 30,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 琴键演奏 runPiano
-     node.piano = {
-       prompt: "弹奏她哼过的旋律——",
-       keys: 8,                    // 琴键数
-       sequence: [0,2,4,2,0],      // 目标序列（琴键索引）
-       showSequence: true,         // 是否先展示序列
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 占星骰子 runDice
-     node.dice = {
-       prompt: "掷三个骰子——解读命运",
-       rolls: 3,                    // 掷几次（保留最后一次或求和）
-       thresholds: [
-         { min: 15, tag, label, text, add?, memory?, next },   // sum >= 15
-         { min: 8,  tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 风向感知 runWind
-     node.wind = {
-       prompt: "调整帆角度——借风前进",
-       target: 80,            // 目标进度（0~100）
-       maxAttempts: 6,        // 最多调整次数
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5,  tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 梦境解码 runDecode
-     node.decode = {
-       prompt: "把梦境碎片重排成一句完整的话——",
-       scrambled: ["雨","在","窗","外","停","了"],   // 乱序字符
-       answer: "雨在窗外停了",                       // 正确答案
-       thresholds: [
-         { min: 1.0, tag, label, text, add?, memory?, next },   // 完全正确
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 雨滴节奏 runRain
-     node.rain = {
-       prompt: "听雨滴节奏——按节奏点击窗台",
-       drops: 8,                  // 雨滴数
-       interval: 1200,           // 雨滴间隔（ms）
-       tolerance: 0.25,          // 容差（占一拍比例）
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 拓印 runRubbing
-     node.rubbing = {
-       prompt: "用铅笔拓印——",
-       pattern: "leaf",   // 纹理类型（leaf/stone/wood/fabric）
-       min: 0.7,          // 最小覆盖率
-       thresholds: [
-         { min: 0.8, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 集字 runCollect
-     node.collect = {
-       prompt: "在飘落的字符中收集目标字——",
-       target: "雨",      // 目标字
-       total: 5,          // 目标字总数
-       duration: 15000,   // 持续时间 ms
-       thresholds: [
-         { min: 0.8, tag, label, text, add?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 光影对焦 runFocus
-     node.focus = {
-       prompt: "调整焦距——让画面变清晰",
-       target: 0.5,      // 目标焦距 0~1
-       tolerance: 0.1,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 气味记忆 runScentmem
-     node.scentmem = {
-       prompt: "辨认之前闻过的气味——",
-       samples: [
-         { id, name, desc, isTarget: true },   // 之前闻过的
-         { id, name, desc, isTarget: false }
-       ],
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 茶渍占卜 runTealeaf
-     node.tealeaf = {
-       prompt: "拖动茶杯——让茶渍在杯底流转",
-       shapes: [
-         { id: "heart", name: "心形", areas: [0,1,5], label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       min: 0.4,    // 最少茶渍覆盖率才能确认
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 影子对齐 runShadow
-     node.shadow = {
-       prompt: "拖动物体——让影子与目标轮廓重合",
-       lightAngle: 45,   // 光源角度（度）
-       target: [{x,y}, ...],  // 目标影子轮廓（归一化 0-1 坐标）
-       min: 0.6,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 烛火守护 runCandle
-     node.candle = {
-       prompt: "旋转挡风板——守护烛火不被风吹灭",
-       winds: 6,       // 风的阵数
-       duration: 2500, // 每阵风持续毫秒
-       gap: 800,       // 风之间间隔
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 电话拨号 runDial
-     node.dial = {
-       prompt: "拨出你记得的号码",
-       target: "1206437",   // 目标号码
-       preview: 4000,       // 预览毫秒（0=一直显示）
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 雾窗描绘 runFoggy
-     node.foggy = {
-       prompt: "在起雾的玻璃上拖动手指——描绘那个形状",
-       shape: "star",   // 目标形状 star/heart/moon/tree（用作 hint 与评分参考）
-       hintPath: [{x,y}, ...],  // 归一化 0-1 的目标路径
-       min: 0.4,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 糖块拼图 runSugar
-     node.sugar = {
-       prompt: "把糖块拖到对应位置——拼出图案",
-       pieces: [
-         { id: "a", shape: [[1,1],[1,0]], color: "#ff8a8a", x: 0.1, y: 0.1, target: {gx:0, gy:0} },
-         ...
-       ],
-       grid: { cols: 4, rows: 3, cell: 60 },
-       min: 0.6,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 钟调共振 runChime
-     node.chime = {
-       prompt: "调整钟摆角度——让它的音与目标共振",
-       target: 35,       // 目标角度（度）
-       tolerance: 5,     // 容差
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 沙漏计时 runHourglass
-     node.hourglass = {
-       prompt: "在沙漏完前翻转——让它在指定时刻落完",
-       target: 5000,   // 目标毫秒（沙应在此刻恰好落完）
-       duration: 8000, // 沙的总时长
-       tolerance: 600,
-       thresholds: [
-         { max: 400, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 风筝引线 runKite
-     node.kite = {
-       prompt: "牵引风筝穿过云阵，到达指定高度——",
-       target: 80,        // 目标高度（百分比 0-100）
-       duration: 12000,   // 总时长
-       obstacles: 6,      // 障碍数量（云/鸟）
-       thresholds: [
-         { max: 5, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 密码锁 runLock
-     node.lock = {
-       prompt: "根据线索拨出四位密码——",
-       target: "3-7-2-9",       // 目标密码（用-分隔）
-       preview: 4000,          // 预览毫秒（可选，0 表示不预览）
-       hints: ["三月", "七月", "二日", "九时"],
-       thresholds: [
-         { correct: 4, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 折纸造型 runOrigami
-     node.origami = {
-       prompt: "按步骤折叠纸张——",
-       steps: [ { id, label, desc } ],
-       targets: [
-         { steps: ["a","b","c","d"], tag, label, text, add?, personality?, memory?, next }
-       ],
-       min: 3,
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 星轨追踪 runOrbit
-     node.orbit = {
-       prompt: "追踪星轨——点击移动光标，跟随星点轨迹",
-       duration: 10000,
-       tolerance: 30,    // 像素容差
-       samples: 6,       // 采样点数量
-       thresholds: [
-         { max: 50, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 萤火引路 runFirefly
-     node.firefly = {
-       prompt: "拖动光点引导萤火虫归队——",
-       total: 8,            // 萤火虫总数
-       duration: 15000,
-       tolerance: 40,       // 拖动到萤火虫附近的吸引半径
-       thresholds: [
-         { max: 2, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 风铃调音 runWindchime
-     node.windchime = {
-       prompt: "拖动风铃片到对应高度——和目标音阶对齐",
-       target: [0.2, 0.35, 0.5, 0.65],   // 目标高度比例（按顺序对应 4 个铃）
-       tolerance: 0.05,
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 瓶中信 runBottle
-     node.bottle = {
-       prompt: "调整力度把瓶子投到对岸——",
-       target: 0.7,         // 目标距离比例（0-1）
-       tolerance: 0.08,
-       power: 1.0,          // 力度上限
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 回声定位 runEcholoc
-     node.echoloc = {
-       prompt: "听回声估算距离——按「发出」按钮，再点你估计的位置",
-       actual: 0.6,        // 实际距离比例（0-1）
-       duration: 8000,     // 等待玩家估算的时间
-       tolerance: 0.08,
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 罗盘导航 runCompass
-     node.compass = {
-       prompt: "拖动罗盘——让指针对准她说的方向",
-       target: 135,        // 目标角度（0-360，0=北）
-       tolerance: 8,       // 容差（度）
-       thresholds: [
-         { max: 8, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 密码电报 runTelegraph
-     node.telegraph = {
-       prompt: "听完电报——选出对应的字母",
-       code: "SOS",        // 目标字符
-       options: ["SOS","OK","HI","NO"],  // 选项
-       rhythm: [100,300,100,300,100,500], // 摩斯节奏：嘀(短)/嗒(长)/间隔(ms)
-       tolerance: 1,        // 容错数（错选容差）
-       thresholds: [
-         { max: 0, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 天平称重 runBalance
-     node.balance = {
-       prompt: "把物品放到天平两端——让它平衡",
-       items: [3, 5, 7, 2, 4],  // 可放置物品的重量
-       target: "balance",       // "balance"=平衡 或 数字=目标左-右差值
-       tolerance: 0.5,
-       thresholds: [
-         { max: 0.5, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 节拍器同步 runMetronome
-     node.metronome = {
-       prompt: "跟着节拍点击——节拍器每响一下，点一次「同步」",
-       bpm: 80,             // 节拍速度
-       total: 12,            // 总节拍数
-       tolerance: 0.12,     // 误差容忍（占周期比例）
-       thresholds: [
-         { min, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 星图连线 runStarchart
-     node.starchart = {
-       prompt: "按亮度顺序连接星星——画出她想要的星图",
-       stars: [ { id, x, y, brightness, label? } ],
-       expectedOrder: ["s1","s2","s3"],
-       tolerance: 1,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 透镜聚焦 runLens
-     node.lens = {
-       prompt: "调节透镜焦距——让光线汇聚到目标点",
-       target: 0.6,
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 弦音调音 runTuning
-     node.tuning = {
-       prompt: "调节琴弦张力——让它接近目标音高",
-       strings: [ { id, target, label } ],
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 日蚀对位 runEclipse
-     node.eclipse = {
-       prompt: "拖动月亮，让它的影子遮住那颗星",
-       target: 0.65,        // 目标位置（0-1）
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 印章对齐 runStamp
-     node.stamp = {
-       prompt: "旋转印章，让图案对齐目标角度",
-       target: 135,          // 目标角度（0-359）
-       tolerance: 5,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 星盘仪 runAstrolabe
-     node.astrolabe = {
-       prompt: "调整三层星盘，对齐目标刻度",
-       targets: [45, 120, 210],  // 三层目标角度
-       tolerance: 6,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 沙画凝形 runSandpaint
-     node.sandpaint = {
-       prompt: "在沙盘上点选格子，还原星图",
-       pattern: 5x5 (0/1),     // 目标图案
-       tolerance: 4,            // 允许偏差数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 万花筒 runKaleido
-     node.kaleido = {
-       prompt: "旋转万花筒，让图案对齐目标角度",
-       target: 90,
-       tolerance: 5,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 算盘珠 runAbacus
-     node.abacus = {
-       prompt: "拨算珠，让每档数量等于目标",
-       targets: [3, 5, 2],     // 每档目标数量
-       maxPerRod: 7,            // 每档最大珠数
-       tolerance: 0,            // 单档允许偏差
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 齿轮咬合 runGear
-     node.gear = {
-       prompt: "旋转三个齿轮，让标记齿对齐顶部",
-       teeth: [12, 10, 8],     // 每齿轮齿数
-       tolerance: 6,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 等高线 runTopo
-     node.topo = {
-       prompt: "在地图上点选海拔相同的点",
-       points: [ { x, y, h } ],  // 所有点（含海拔）
-       targetH: 0.6,              // 目标海拔
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 日晷对时 runSundial
-     node.sundial = {
-       prompt: "旋转日晷指针，对齐目标时间刻度",
-       target: 135,            // 目标角度
-       tolerance: 8,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 染缸调色 runDye
-     node.dye = {
-       prompt: "调节三色染缸，调出目标颜色",
-       target: { r: 200, g: 100, b: 80 },
-       tolerance: 30,            // 单通道容差
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 风车叶片 runWindmill
-     node.windmill = {
-       prompt: "旋转每个叶片，让风车正对风向",
-       blades: 4,               // 叶片数
-       target: 90,              // 目标角度（风向）
-       tolerance: 8,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 经纬编织 runWeave
-     node.weave = {
-       prompt: "交替点选经纬线，编织目标图案",
-       pattern: [ [0,1,0,1], [1,0,1,0], [0,1,0,1], [1,0,1,0] ], // 目标图案，1=经，0=纬
-       tolerance: 2,            // 允许错误格数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 镜面对称 runMirror
-     node.mirror = {
-       prompt: "点选格子让左半镜像右半",
-       pattern: [ [1,0,0,1], [0,1,1,0], [1,0,0,1], [0,1,1,0] ],  // 目标对称图案
-       tolerance: 1,            // 允许错误格数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 灯笼排列 runLantern
-     node.lantern = {
-       prompt: "按顺序点亮灯笼，还原目标序列",
-       target: [2, 0, 3, 1],     // 目标索引序列
-       count: 4,                  // 灯笼总数
-       tolerance: 0,              // 允许错位数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 水波纹 runRipple
-     node.ripple = {
-       prompt: "点击水面，让波纹覆盖所有目标点",
-       targets: [ {x:0.3,y:0.4}, {x:0.7,y:0.5}, {x:0.5,y:0.7} ],   // 目标位置
-       tolerance: 0.08,
-       duration: 8000,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 马赛克拼图 runMosaic
-     node.mosaic = {
-       prompt: "点选小方块，拼出目标图案",
-       pattern: [ [0,1,1,0], [1,1,1,1], [1,1,1,1], [0,1,1,0] ],  // 1=填，0=空
-       tolerance: 2,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 碑帖拼合 runStele
-     node.stele = {
-       prompt: "拖动碎片到正确位置，拼合碑文",
-       target: [2, 0, 3, 1],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
-       tolerance: 0,           // 允许错位数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 星轨推演 runCelestial
-     node.celestial = {
-       prompt: "滑动行星到目标角度",
-       planets: [ { target: 90, color: "#ff8060" }, { target: 270, color: "#80a0ff" } ],  // 目标角度 0-360
-       tolerance: 8,     // 允许误差度
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 节拍鼓点 runDrum
-     node.drum = {
-       prompt: "按节拍敲击鼓面，复现目标节奏",
-       sequence: [800, 400, 800, 400, 400],   // 每次敲击间隔（毫秒）
-       tolerance: 150,    // 允许时间误差毫秒
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 风向标 runVane
-     node.vane = {
-       prompt: "旋转风向标对齐目标方位",
-       target: 135,       // 目标角度 0-360
-       tolerance: 8,     // 允许误差度
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 漏刻计时 runClepsydra
-     node.clepsydra = {
-       prompt: "在目标时刻停止水流",
-       target: 5000,      // 目标毫秒
-       tolerance: 200,     // 允许误差毫秒
-       duration: 10000,   // 漏完总时长
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 拼图归位 runJigsaw
-     node.jigsaw = {
-       prompt: "点击碎片归位，拼出完整图案",
-       target: [1, 2, 0, 3],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
-       tolerance: 0,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 棋局推演 runChess
-     node.chess = {
-       prompt: "移动棋子到目标位置",
-       size: 4,
-       start: { x: 0, y: 0 },
-       target: { x: 3, y: 3 },
-       obstacles: [ { x: 1, y: 1 } ],
-       maxMoves: 8,
-       tolerance: 2,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 旗阵辨识 runFlag
-     node.flag = {
-       prompt: "按描述选择正确的旗帜",
-       description: "红底白圆居中",
-       options: [ { id: 0, label: "红底白圆居中" }, ... ],
-       target: 0,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 钟摆节奏 runPendulum
-     node.pendulum = {
-       prompt: "钟摆摆到目标位置时——点「停」",
-       target: 0.85,       // 目标位置（0-1，0=左极点，0.5=中，1=右极点）
-       tolerance: 0.06,
-       duration: 12000,    // 总时长
-       thresholds: [
-         { max: 0.06, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
