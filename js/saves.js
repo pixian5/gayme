@@ -586,10 +586,10 @@ const Saves = {
   getMemories() {
     return this._read(MEMORIES_KEY, [], Array.isArray);
   },
-  saveMemory(memoryId, text) {
+  saveMemory(memoryId, text, title) {
     const list = this.getMemories();
     if (!list.find(m => m.id === memoryId)) {
-      list.push({ id: memoryId, text, ts: Date.now() });
+      list.push({ id: memoryId, text, title: title || "", ts: Date.now() });
       return this._write(MEMORIES_KEY, JSON.stringify(list));
     }
     return false;

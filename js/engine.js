@@ -99,13 +99,16 @@
            4 段记忆 + CG「看见」+ SIDE 结局 senior_shadow，图鉴 13 张）；引擎新增
            requires_ending 选项过滤；free letter 回信记忆统一字符串 id（修 4 组对象格式
            既有 bug，引擎兼容旧数据）；consistency 新增 memory 契约测试（共 35 项）
+   v3.3.1：图鉴收集率统计——结局图鉴 / CG 图鉴 / 关键词面板顶部新增收集进度条
+           （结局 x/13、CG x/11、关键词/合成/记忆计数）；saveMemory 增加 title 字段，
+           记忆卡片展示友好标题（旧存档无 title 时回退 id）；e2e 补收集进度断言
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.0";
+  const GAME_VERSION = "3.3.1";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -390,7 +393,7 @@
         if (Saves.unlockCG(node.cg_unlock)) flashHint(`新 CG：${CGS.find(c => c.id === node.cg_unlock)?.title || ""}`);
       }
       if (node.memory && !Saves.isMemoryUnlocked(node.memory.id)) {
-        if (Saves.saveMemory(node.memory.id, node.memory.text)) {
+        if (Saves.saveMemory(node.memory.id, node.memory.text, node.memory.title)) {
           flashHint(`✦ 记忆片段：${node.memory.title || node.memory.id}`);
           playSfx("memory");
         }
@@ -1322,7 +1325,18 @@
   }
 
   function renderGallery() {
-    el.overlayBody.innerHTML = `<div class="gallery-grid">` + ENDINGS.map((e) => {
+    // 收集进度（v3.3.1）：已解锁结局 / 总结局，让玩家看到收集缺口
+    const unlockedCount = ENDINGS.filter((e) => Saves.isEndingUnlocked(e.id)).length;
+    const progressBar = `<div style="margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg, rgba(80,40,100,0.22), rgba(40,30,60,0.35));border:1px solid rgba(255,200,220,0.25);border-radius:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+        <span style="font-size:14px;color:#ffd8e4;letter-spacing:3px;">✦ 结局收集</span>
+        <span style="font-size:13px;color:#ffb8c8;">${unlockedCount} / ${ENDINGS.length}</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round((unlockedCount / ENDINGS.length) * 100)}%;background:linear-gradient(90deg,#ffb8c8,#c8a8e0);border-radius:4px;"></div>
+      </div>
+    </div>`;
+    el.overlayBody.innerHTML = progressBar + `<div class="gallery-grid">` + ENDINGS.map((e) => {
       const unlocked = Saves.isEndingUnlocked(e.id);
       return `<div class="gallery-card ${unlocked ? "unlocked" : "locked"}">
         <div class="g-type">${e.type} · ${e.heroine}</div>
@@ -1358,10 +1372,24 @@
   function renderKeywords() {
     const unlocked = Saves.getKeywords();
     const composed = Saves.getComposed();
+    const memoryList = Saves.getMemories();
     const allAvailable = unlocked.concat(composed); // 合成产物也可作为新合成原料
     const recipes = (window.COMPOSE_RECIPES || []).filter(r => allAvailable.includes(r.a) && allAvailable.includes(r.b));
 
-    let html = "";
+    // 收集进度（v3.3.1）：关键词 / 合成配方 / 记忆片段
+    const kwTotal = Object.keys(KEYWORDS).length;
+    const recipeTotal = (window.COMPOSE_RECIPES || []).length;
+    const progressBar = `<div style="margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg, rgba(80,40,100,0.22), rgba(40,30,60,0.35));border:1px solid rgba(255,200,220,0.25);border-radius:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+        <span style="font-size:14px;color:#ffd8e4;letter-spacing:3px;">✦ 收集进度</span>
+        <span style="font-size:13px;color:#ffb8c8;">关键词 ${unlocked.length}/${kwTotal} · 合成 ${composed.length}/${recipeTotal} · 记忆 ${memoryList.length} 段</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round(((unlocked.length + composed.length) / (kwTotal + recipeTotal)) * 100)}%;background:linear-gradient(90deg,#ffb8c8,#c8a8e0);border-radius:4px;"></div>
+      </div>
+    </div>`;
+
+    let html = progressBar;
 
     // 合成台
     if (recipes.length > 0) {
@@ -1410,7 +1438,7 @@
       memories.forEach(m => {
         html += `<div class="gallery-card unlocked" style="background:linear-gradient(135deg, rgba(200,168,224,0.18), rgba(140,100,180,0.18));border-color:rgba(200,168,224,0.5);">
           <div class="g-type" style="color:#c8a8e0;">记忆</div>
-          <div class="g-title" style="color:#e8d8f0;">${m.id}</div>
+          <div class="g-title" style="color:#e8d8f0;">${escapeHtml(m.title || m.id)}</div>
           <div class="g-desc">${escapeHtml(m.text.slice(0, 50))}${m.text.length > 50 ? '…' : ''}</div>
         </div>`;
       });
@@ -1441,7 +1469,7 @@
           // 合成回忆（v2.9.6）：合成产物解锁时写入记忆图鉴，让合成不只是真结局门票
           const memory = window.COMPOSED_MEMORIES?.[result];
           if (memory && !Saves.isMemoryUnlocked(memory.id)) {
-            Saves.saveMemory(memory.id, memory.text);
+            Saves.saveMemory(memory.id, memory.text, memory.title);
             flashHint(`✦ 合成回忆：${memory.title}`);
             playSfx("memory");
           }
@@ -1453,7 +1481,18 @@
 
   /* ============ CG 图鉴 ============ */
   function renderCGGallery() {
-    el.overlayBody.innerHTML = `<div class="cg-grid">` + CGS.map((cg) => {
+    // 收集进度（v3.3.1）：已解锁 CG / 总 CG
+    const unlockedCount = CGS.filter((cg) => Saves.isCGUnlocked(cg.id)).length;
+    const progressBar = `<div style="margin-bottom:16px;padding:14px 18px;background:linear-gradient(135deg, rgba(80,40,100,0.22), rgba(40,30,60,0.35));border:1px solid rgba(255,200,220,0.25);border-radius:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
+        <span style="font-size:14px;color:#ffd8e4;letter-spacing:3px;">✦ CG 收集</span>
+        <span style="font-size:13px;color:#ffb8c8;">${unlockedCount} / ${CGS.length}</span>
+      </div>
+      <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+        <div style="height:100%;width:${Math.round((unlockedCount / CGS.length) * 100)}%;background:linear-gradient(90deg,#ffb8c8,#c8a8e0);border-radius:4px;"></div>
+      </div>
+    </div>`;
+    el.overlayBody.innerHTML = progressBar + `<div class="cg-grid">` + CGS.map((cg) => {
       const unlocked = Saves.isCGUnlocked(cg.id);
       return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}">
         ${unlocked ? cg.svg : `<div class="cg-locked-placeholder"><div>？？？</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">${cg.heroine}</div></div>`}
@@ -1523,7 +1562,7 @@
         spot.classList.add("found");
         if (clue.keyword && Saves.unlockKeyword(clue.keyword)) flashHint(`✦ 线索解锁关键词：${clue.keyword}`);
         if (clue.memory && !Saves.isMemoryUnlocked(clue.memory.id)) {
-          Saves.saveMemory(clue.memory.id, clue.memory.text || clue.text);
+          Saves.saveMemory(clue.memory.id, clue.memory.text || clue.text, clue.memory.title);
           flashHint(`✦ 记忆片段：${clue.memory.id}`);
         }
         if (clue.personality) {
@@ -1967,7 +2006,7 @@
         if (c.add) { applyAdd(c.add); updateHeartBar(); }
         if (c.personality) for (const dim in c.personality) Saves.addPersonality(dim, c.personality[dim]);
         if (c.memory && !Saves.isMemoryUnlocked(c.memory.id)) {
-          Saves.saveMemory(c.memory.id, c.memory.text);
+          Saves.saveMemory(c.memory.id, c.memory.text, c.memory.title);
           flashHint(`✦ 记忆片段：${c.memory.id}`);
         }
         layer.remove();
@@ -2071,7 +2110,7 @@
         }
         if (choice.memory) {
           if (!Saves.isMemoryUnlocked(choice.memory.id)) {
-            Saves.saveMemory(choice.memory.id, choice.memory.text);
+            Saves.saveMemory(choice.memory.id, choice.memory.text, choice.memory.title);
             flashHint(`✦ 新记忆：${choice.memory.title}`);
           }
         }

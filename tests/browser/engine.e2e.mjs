@@ -237,6 +237,16 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   await page.evaluate(() => window.__game.openOverlay("gallery"));
   const galleryCards = await page.evaluate(() => document.querySelectorAll("#overlay-body .gallery-card").length);
   assert.equal(galleryCards, 13, "结局图鉴应为 13 张");
+  // 收集进度（v3.3.1）：图鉴顶部应显示「已解锁结局 x/13」进度
+  const progressText = await page.evaluate(() => document.querySelector("#overlay-body")?.textContent || "");
+  assert.match(progressText, /\d+ \/ 13/, "结局图鉴应显示收集进度 x/13");
+  // CG 图鉴与关键词面板同样带收集进度
+  await page.evaluate(() => window.__game.openOverlay("cg"));
+  const cgText = await page.evaluate(() => document.querySelector("#overlay-body")?.textContent || "");
+  assert.match(cgText, /\d+ \/ \d+/, "CG 图鉴应显示收集进度 x/11");
+  await page.evaluate(() => window.__game.openOverlay("keywords"));
+  const kwText = await page.evaluate(() => document.querySelector("#overlay-body")?.textContent || "");
+  assert.match(kwText, /收集进度/, "关键词面板应显示收集进度");
   console.log("[e2e] 7/7 学姐线入口与结局通过");
 
   // 7) 全程控制台零错误
