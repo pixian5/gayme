@@ -4576,7 +4576,8 @@ const SCRIPT = {
   afterword_entry: { day: 14, time: "night",
     bg: "festival", char: null, speaker: "",
     text: "樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
-    next: "afterword_three"
+    next: "afterword_three",
+    cg_unlock: "cg_festival" /* v3.3.3：学园祭之夜 CG 此前无任何解锁点（内容缺口），接入后日谈开篇 */
   },
   afterword_three: { day: 14, time: "night",
     bg: "cafeteria", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],

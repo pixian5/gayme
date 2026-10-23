@@ -107,13 +107,18 @@
            （诗雨·开场·鼓励/安静、回声·敢·承认/否认/沉默、诗雨·题记·丰沛/省略、
            夏织·同步·跟上/乱了、苏念·海报·取景/未取、沉默·回信·承认/沉默、
            苏念·一笔·用力/安静）；consistency 新增 memory id 全局唯一契约（共 36 项）
+   v3.3.3：CG 解锁缺口修复 + 引用契约——cg_festival「学园祭之夜」写了但从未有节点
+           cg_unlock 引用（玩家永远拿不到），接入后日谈开篇 afterword_entry；
+           深度审计全数据引用（结局/CG/关键词/配方/requires_* 无断链，
+           requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点契约与
+           requires_memory 契约（共 38 项）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.2";
+  const GAME_VERSION = "3.3.3";
 
   /* ---------- DOM 引用 ---------- */
   const el = {

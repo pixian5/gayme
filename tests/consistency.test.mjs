@@ -68,3 +68,25 @@ test("SCRIPT 内 memory id 全局唯一（v3.3.2 契约）", () => {
     `存在重复 memory id（会吞掉后解锁的分支记忆）：${[...dups].join("、")}`
   );
 });
+
+test("每张 CG 至少有一个解锁点（v3.3.3 契约）", () => {
+  // v3.3.3 修复：cg_festival「学园祭之夜」写了但从未有节点 cg_unlock 引用，
+  // 玩家永远无法解锁。契约：CGS 中每张 CG 必须有至少一个 cg_unlock 引用。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const cgIds = [...script.matchAll(/id: "(cg_[a-z_]+)", title:/g)].map((m) => m[1]);
+  assert.ok(cgIds.length >= 10, `CGS 数量异常（${cgIds.length}）`);
+  const unlocked = new Set([...script.matchAll(/cg_unlock: "(cg_[a-z_]+)"/g)].map((m) => m[1]));
+  const missing = cgIds.filter((id) => !unlocked.has(id));
+  assert.deepEqual(missing, [], `存在无解锁点的 CG（玩家永远拿不到）：${missing.join("、")}`);
+});
+
+test("requires_memory 引用的记忆 id 必须存在于数据源（v3.3.3 契约）", () => {
+  // 静态 memory 对象 id ∪ 字符串 memory（perspective / 回信）必须覆盖全部 requires_memory。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const objIds = new Set([...script.matchAll(/memory: \{ [^}]*?id: "([^"]+)"/g)].map((m) => m[1]));
+  const strIds = new Set([...script.matchAll(/memory: "([^"]+)"/g)].map((m) => m[1]));
+  const all = new Set([...objIds, ...strIds]);
+  const reqs = new Set([...script.matchAll(/requires_memory: "([^"]+)"/g)].map((m) => m[1]));
+  const missing = [...reqs].filter((id) => !all.has(id));
+  assert.deepEqual(missing, [], `requires_memory 引用不存在的记忆：${missing.join("、")}`);
+});
