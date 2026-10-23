@@ -125,13 +125,17 @@
            陷阱（Tab 不再逃逸到背后顶栏/标题）；快进模式「跳过已读」自动连跳；localhost 也注册
            Service Worker（e2e 可覆盖）；删除 engine.js 中与 js/games 重复的 66 块 node schema
            注释（-904 行，纯体积）；e2e 补 SW/焦点/倒计时断言
+   v3.3.7：图鉴记忆标题补全 + 多周目文本扩展——inbox / 自由回信 / 视角三处字符串 memory
+           写入补传 title（15 个 memoryTitle），图鉴卡片不再显示 id；d4_night_family×2、
+           d10_senior_slip×2、afterword_entry 补 loopText（40→45 节点）；consistency 新增
+           memoryTitle 覆盖与 loopText 结构契约（共 42 项）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.6";
+  const GAME_VERSION = "3.3.7";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -745,7 +749,7 @@
     card.appendChild(tag); card.appendChild(who); card.appendChild(text); card.appendChild(close);
     layer.appendChild(card);
     if (p.memory && !Saves.isMemoryUnlocked(p.memory)) {
-      Saves.saveMemory(p.memory, p.text);
+      Saves.saveMemory(p.memory, p.text, p.memoryTitle);
       flashHint(`✦ 解锁视角记忆`);
     }
   }
@@ -855,7 +859,7 @@
         // 解锁记忆（如果配对中包含）：memory 规范为字符串 id，兼容旧数据对象格式
         if (reply.memory) {
           const memId = typeof reply.memory === "string" ? reply.memory : reply.memory.id;
-          if (!Saves.isMemoryUnlocked(memId)) Saves.saveMemory(memId, content);
+          if (!Saves.isMemoryUnlocked(memId)) Saves.saveMemory(memId, content, reply.memoryTitle);
         }
         gotoNode(reply.next);
       };
@@ -1826,7 +1830,7 @@
           // 修复前错误地取 memory.id（字符串取不到 id → 回退 matched[0].id），导致 "brave" 等英文 id 混入图鉴
           if (matched.length > 0 && matched[0].memory) {
             const memId = typeof matched[0].memory === "string" ? matched[0].memory : matched[0].memory.id;
-            if (memId) Saves.saveMemory(memId, v);
+            if (memId) Saves.saveMemory(memId, v, matched[0].memoryTitle);
           }
           flashHint(matched.length > 0 ? `✦ 回复触发：${matched[0].id}` : "已寄出");
           layer.remove();

@@ -127,3 +127,33 @@ test("引擎引用的 settings 键必须都在 DEFAULT_SETTINGS 中（v3.3.5 契
   const unknown = [...used].filter((k) => !known.has(k));
   assert.deepEqual(unknown, [], `engine.js 引用了未定义的 settings 键：${unknown.join("、")}`);
 });
+
+test("每个字符串 memory 都配有 memoryTitle（v3.3.7 契约）", () => {
+  // v3.3.7：inbox / letter / perspective 的字符串 memory 此前无 title，图鉴卡片显示 id。
+  // 契约：script.js 中每个字符串 memory（排除 requires_memory）都要有对应 memoryTitle，
+  // 由引擎在 saveMemory 时传入，保证图鉴显示友好标题。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const memories = [...script.matchAll(/(?<![_\w])memory: "([^"]+)"/g)].map((m) => m[1]);
+  const titles = [...script.matchAll(/memoryTitle: "([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(memories.length >= 15, `字符串 memory 数量异常（${memories.length}）`);
+  assert.equal(memories.length, titles.length,
+    `字符串 memory 数(${memories.length}) 与 memoryTitle 数(${titles.length}) 不一致——有记忆缺图鉴标题`);
+  const seen = new Set();
+  const dups = titles.filter((t) => (seen.has(t) ? true : (seen.add(t), false)));
+  assert.deepEqual(dups, [], `memoryTitle 重复：${dups.join("、")}`);
+});
+
+test("loopText 数组结构规范（v3.3.7 契约）", () => {
+  // 多周目文本 loopText 至少 2 段（初周 + 至少一个既视感变体），字符串成对不成孤；
+  // 引擎按 idx = min(loopCount, len-1) 取文本，段数不足会退化成始终显示原句。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const arrays = [...script.matchAll(/loopText: \[([\s\S]*?)\]/g)].map((m) => m[1]);
+  assert.ok(arrays.length >= 45, `loopText 节点数量异常（${arrays.length}）`);
+  const bad = [];
+  for (const body of arrays) {
+    const quotes = (body.match(/"/g) || []).length;
+    if (quotes % 2 !== 0) bad.push("引号不成对");
+    else if (quotes / 2 < 2) bad.push(`仅 ${quotes / 2} 段`);
+  }
+  assert.deepEqual(bad, [], `loopText 结构异常：${bad.join("、")}`);
+});

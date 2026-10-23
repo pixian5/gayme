@@ -668,6 +668,7 @@ const SCRIPT = {
       who: "林诗雨",
       text: "——又是一个不敢抬头的转学生。我递出地图的时候手指在抖，他没看见。我也不想让他看见。其实那张地图我画了三遍。第一遍太潦草，第二遍太用力，第三遍——刚刚好。可我画了三遍这件事，谁也不知道。",
       memory: "诗雨·走廊",
+      memoryTitle: "走廊的另一面",
       requiresMemory: false // 序章直接可看，不需要先解锁记忆
     },
     // v0.5.0 环境线索：走廊里有可探索的细节
@@ -881,8 +882,8 @@ const SCRIPT = {
       type: "free",
       hint: "写下你的建议…",
       matchings: [
-        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: "诗雨·敢" },
-        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·停" },
+        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: "诗雨·敢", memoryTitle: "回信·推开门" },
+        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·停", memoryTitle: "回信·等一等" },
       ]
     },
     // v0.5.0 朋友圈：夏织发布动态
@@ -1649,11 +1650,17 @@ const SCRIPT = {
   d4_night_family: {
     day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
     text: "睡前，我点开和父母的对话框。上一次说话是住校第一晚，之后它就安静到了现在。我打了一段话——想说这里的樱花开了，想说食堂的糖醋排骨不如家里做的好吃，想说其实我有一点想家——写到一半，又全部删掉。",
+    loopText: ["睡前，我点开和父母的对话框。上一次说话是住校第一晚，之后它就安静到了现在。我打了一段话——想说这里的樱花开了，想说食堂的糖醋排骨不如家里做的好吃，想说其实我有一点想家——写到一半，又全部删掉。",
+"睡前，对话框又亮了。上一轮我把那些话删得干干净净；这一轮，我写到「想家」两个字时停了一下——原来这两个字每写一次，都比上一次轻一点，也真一点。",
+"睡前，我几乎是下意识点开了对话框。那些删过的话像旧识一样回来。这一轮我明白：删掉不是忘记，是还没准备好让它们被听见。"],
     next: "d4_night_family_2"
   },
   d4_night_family_2: {
     day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
     text: "最后输入框里只剩下三个字：「都挺好」。我盯着它看了很久，没有按发送。有些话要等到更会说话的时候——也可能，要等一个他们真正需要听见的时候。",
+    loopText: ["最后输入框里只剩下三个字：「都挺好」。我盯着它看了很久，没有按发送。有些话要等到更会说话的时候——也可能，要等一个他们真正需要听见的时候。",
+"输入框里又只剩下「都挺好」。上一轮我没按发送；这一轮我多看了那三个字一眼——它们不是谎话，是还没长熟的真心。",
+"「都挺好」——我甚至能背出自己打这三个字时的犹豫。这一轮我终于懂了：留着不发的，不是话，是一个还没敢回家的我。"],
     next: "d4_breath",
     memory: { id: "沈屿·未寄的话", title: "未寄的话", text: "有一句「都挺好」，你写好了，却留在了输入框里。" }
   },
@@ -2491,11 +2498,17 @@ const SCRIPT = {
   d10_senior_slip: {
     day: 10, time: "morning", bg: "rooftop", char: "senior", speaker: "学姐",
     text: "第 10 日早上，她在天台看云。她说：「这些天带你做的事，三年前我都做过一遍。只是那时候——」她停住了。后半句在风里打了个转，被她自己咽了回去，改口说：「算了。今天的云挺好。」",
+    loopText: ["第 10 日早上，她在天台看云。她说：「这些天带你做的事，三年前我都做过一遍。只是那时候——」她停住了。后半句在风里打了个转，被她自己咽了回去，改口说：「算了。今天的云挺好。」",
+"第 10 日早上，天台，云。她又说到「三年前我都做过一遍」。上一轮我没听出那半句的重量；这一轮，那个破折号像一扇没推开的门，在风里轻轻晃。",
+"同样的天台，同样咽回去的半句。这一轮我留意到另一件事：她说「那时候」三个字时，手一直扶着栏杆——像怕一松手，就掉回三年前。"],
     next: "d10_senior_slip_2"
   },
   d10_senior_slip_2: {
     day: 10, time: "morning", bg: "rooftop", speaker: "沈屿",
     text: "我没有追问。她说的「那时候」，大概就是三条路只走到一半的时候。风把云推得很快，像有什么事正在赶时间。",
+    loopText: ["我没有追问。她说的「那时候」，大概就是三条路只走到一半的时候。风把云推得很快，像有什么事正在赶时间。",
+"我依然没有追问。上一轮我以为「那时候」是遗憾；这一轮我读出另一层——她不是走不完，是舍不得走完。风还在推云。",
+"云被推得很快。这一轮，那半句的轮廓在我心里比记忆里更清楚：她说「三条路只走到一半」时，用的是「我」，不是「我们」。"],
     next: "d10_eclipse",
     memory: { id: "学姐·咽回去的半句", title: "咽回去的半句", text: "她说「三年前我都做过一遍，只是那时候——」，然后改口去说云。" }
   },
@@ -4082,8 +4095,8 @@ const SCRIPT = {
       type: "free",
       hint: "回她一句…",
       matchings: [
-        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨·写下去" },
-        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨·歇一歇" },
+        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨·写下去", memoryTitle: "回信·写下去" },
+        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨·歇一歇", memoryTitle: "回信·歇一歇" },
       ]
     }
   },
@@ -4172,8 +4185,8 @@ const SCRIPT = {
       type: "free",
       hint: "老实告诉她…",
       matchings: [
-        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练·陪练" },
-        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练·歇养" },
+        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练·陪练", memoryTitle: "回信·陪她跑" },
+        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练·歇养", memoryTitle: "回信·先歇伤" },
       ]
     },
     // v0.5.0 朋友圈：夏织深夜动态
@@ -4392,11 +4405,11 @@ const SCRIPT = {
       prompt: "✦ 替学姐回信，也写给自己",
       hint: "写下你想对三年前的学姐，或者三年后的自己说的话…",
       matchings: [
-        { id: "勇敢", keywords: ["敢", "勇气", "走", "回头", "写下"], next: "true_break_5a", memory: "写信-勇敢" },
-        { id: "放手", keywords: ["放", "松", "不用", "算了", "没关系"], next: "true_break_5b", memory: "写信-放手" },
-        { id: "想念", keywords: ["想", "念", "记得", "樱花", "春"], next: "true_break_5c", memory: "写信-想念" },
+        { id: "勇敢", keywords: ["敢", "勇气", "走", "回头", "写下"], next: "true_break_5a", memory: "写信-勇敢", memoryTitle: "写给学姐·勇敢" },
+        { id: "放手", keywords: ["放", "松", "不用", "算了", "没关系"], next: "true_break_5b", memory: "写信-放手", memoryTitle: "写给学姐·放手" },
+        { id: "想念", keywords: ["想", "念", "记得", "樱花", "春"], next: "true_break_5c", memory: "写信-想念", memoryTitle: "写给学姐·想念" },
       ],
-      defaultReply: { next: "true_break_5d", memory: "写信-默认" }
+      defaultReply: { next: "true_break_5d", memory: "写信-默认", memoryTitle: "写给学姐·留白" }
     },
     next: "true_break_5d"
   },
@@ -4532,11 +4545,11 @@ const SCRIPT = {
       prompt: "✦ 给学姐写一封信",
       hint: "她不缺一封能让她离开的信。她缺一封写给她的信。",
       matchings: [
-        { id: "留下", keywords: ["留", "陪", "一起", "不走", "停"], next: "senior_13_stay", memory: "学姐·留下" },
-        { id: "自由", keywords: ["走", "自由", "离开", "飞", "春天"], next: "senior_13_go", memory: "学姐·自由" },
-        { id: "看见", keywords: ["看见", "名字", "记得", "影子", "你"], next: "senior_13_see", memory: "学姐·看见" },
+        { id: "留下", keywords: ["留", "陪", "一起", "不走", "停"], next: "senior_13_stay", memory: "学姐·留下", memoryTitle: "回信·留下" },
+        { id: "自由", keywords: ["走", "自由", "离开", "飞", "春天"], next: "senior_13_go", memory: "学姐·自由", memoryTitle: "回信·自由" },
+        { id: "看见", keywords: ["看见", "名字", "记得", "影子", "你"], next: "senior_13_see", memory: "学姐·看见", memoryTitle: "回信·看见" },
       ],
-      defaultReply: { next: "senior_13_default", memory: "学姐·回信" }
+      defaultReply: { next: "senior_13_default", memory: "学姐·回信", memoryTitle: "回信·致学姐" }
     },
     next: "senior_13_default"
   },
@@ -4576,6 +4589,9 @@ const SCRIPT = {
   afterword_entry: { day: 14, time: "night",
     bg: "festival", char: null, speaker: "",
     text: "樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
+    loopText: ["樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
+"樱花祭后的第三天，摊子收起来了，日子没有立刻圆满。上一轮我发那条近况时手还有些抖；这一轮我懂了——缝是慢慢开的，不是一夜缝上的。",
+"又是樱花祭后的第三天。这一轮我记得：母亲问「什么时候回家」，不是催，是等。我给父亲的「工作安排」回了两个字——「收到」，比上一轮多了一个字。"],
     next: "afterword_three",
     cg_unlock: "cg_festival" /* v3.3.3：学园祭之夜 CG 此前无任何解锁点（内容缺口），接入后日谈开篇 */
   },
