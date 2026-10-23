@@ -4103,7 +4103,9 @@ const SCRIPT = {
   sy_6: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "她爱你，只是用错了方式。", next: "sy_7" },
   sy_7: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我知道。可那方式压了我十七年。小说写的是个优等生毕业前消失了。所有人都觉得她去了好大学，只有她自己知道，她去了很远的地方。", next: "sy_8", keyword: "小说" },
   sy_8: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "你想给她一个结局吗？", next: "sy_9" },
-  sy_9: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」", next: "sy_minigame" },
+  sy_9: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」", loopText: ["我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」",
+"我想。可我还是写不出。这一轮我听见了另一层意思：她不是在写一个消失的人，是在写一个不敢活的人——所以才一次次停笔。",
+"「我想。但我写不出。」这一轮我才发现，她说这句话时，手一直按在那行字上——那行「从未活过的人生」，是她替自己写的判词。"], next: "sy_minigame" },
   sy_minigame: {
     day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨",
     text: "……你愿不愿意替我写一句试试？就一句。写到这句之后，我就接着写。",
@@ -4127,7 +4129,9 @@ const SCRIPT = {
   sy_10_good: { day: 6, time: "evening", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……活下去？原来可以这么写啊。让她回头，然后活下去。", next: "sy_11_good" },
   sy_11_good: { day: 7, time: "evening", bg: "library", char: "shiyu", speaker: "", text: "她连夜写完了。第二天清晨把稿子推给我，眼睛红着。", next: "sy_12_good" },
   sy_12_good: { day: 8, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我投了校刊。用笔名。", next: "sy_13_good" },
-  sy_13_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "", text: "一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。", next: "sy_14_good", cg_unlock: "cg_shiyu_good" },
+  sy_13_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "", text: "一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。", loopText: ["一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。",
+"一个月后，校刊印出来了。上一轮我只看见她终于被印在封面上；这一轮我看见她递书时指尖在发抖——像把自己交出去一样。",
+"校刊、封面、她的笔名。这一轮我读懂了：这不是一本杂志，是她第一次允许自己被看见。"], next: "sy_14_good", cg_unlock: "cg_shiyu_good" },
   sy_14_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "林诗雨", text: "我妈看了。她哭了很久，然后说——再写一本。", next: "sy_15_good" },
   sy_15_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "林诗雨", text: "扉页我写了：「献给外婆，也献给那个让我回头的人。」", next: "sy_ending_good" },
   sy_ending_good: {
@@ -4150,7 +4154,9 @@ const SCRIPT = {
 
   /* —— BAD —— */
   sy_10_bad: { day: 6, time: "evening", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……消失一次。也对。也许她真的该消失一次。", next: "sy_11_bad" },
-  sy_11_bad: { day: 13, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", next: "sy_12_bad" },
+  sy_11_bad: { day: 13, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", loopText: ["一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」",
+"一周后的雨天，她没来。上一轮我盯着那张便条发愣；这一轮我在想：写下「谢谢你来图书馆」时，她是不是也盼着有人来追。",
+"同样的雨天，同样的便条。这一轮我明白——这不是告别，是一扇虚掩的门，等我推开却没来得及。"], next: "sy_12_bad" },
   sy_12_bad: { day: 13, time: "morning", bg: "library", char: null, speaker: "", text: "抽屉里那一叠稿纸，最末一行永远停在那里：「她回过头，看见了自己从未活过的人生。」", next: "sy_ending_bad" },
   sy_ending_bad: {
     day: 13, time: "morning", bg: "ending_bad", char: null, speaker: "",
@@ -4192,9 +4198,13 @@ const SCRIPT = {
     // v0.5.0 朋友圈：夏织深夜动态
     moment: "m_d2_xiazhi"
   },
-  xz_7: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", next: "xz_8" },
+  xz_7: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", loopText: ["我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。",
+"我爸每月打钱，附一句「最近怎么样」。上一轮我觉得她答得敷衍；这一轮我听出——「挺好的」三个字，也是他打钱时想要的答案。",
+"「最近怎么样」「挺好的」。这一轮我记住了：她每次打完这三个字，都会在跑道上多跑一圈，把回复时咽下的东西跑掉。"], next: "xz_8" },
   xz_8: { day: 5, time: "afternoon", bg: "field", speaker: "", text: "她说着笑起来，眼睛却红了一圈。", next: "xz_9" },
-  xz_9: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", next: "xz_minigame" },
+  xz_9: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", loopText: ["全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？",
+"全国赛下个月，她自己报的名。上一轮我当它是邀请；这一轮我才懂，那是她第一次向人伸手——伸手对她，比起跑还要难。",
+"「你愿意陪我练到那天吗？」这一轮我听清了她为什么停顿：她怕的不是我不答应，是又要一个人跑完。"], next: "xz_minigame" },
   xz_minigame: {
     day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织",
     text: "先陪我冲一组，看看我的节奏还在不在。",
@@ -4219,7 +4229,9 @@ const SCRIPT = {
   xz_11_good: { day: 6, time: "evening", bg: "summer", char: "xiazhi", speaker: "", text: "接下来整整一个月，我们清晨练起跑，黄昏练冲刺。她左脚的旧伤我每天帮她敷冰。成绩一点点回来。", next: "xz_12_good" },
   xz_12_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "夏织", text: "一个月后，今天跑进了 11.8。沈屿——我没跑过这么快。", next: "xz_13_good" },
   xz_13_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "夏织", text: "全国赛那天，你来当我的场外。我不需要教练，我需要你站在终点等我。", next: "xz_14_good" },
-  xz_14_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "", text: "发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。", next: "xz_15_good", cg_unlock: "cg_xiazhi_good" },
+  xz_14_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "", text: "发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。", loopText: ["发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。",
+"发令枪响，她第一个冲出去。上一轮我替她数着名次；这一轮我只看见她撞线时回头找我的那一眼——先找的不是成绩。",
+"一百米，十一个对手，第二名。这一轮我明白：她赢的不是名次，是终于有人站在终点等她。"], next: "xz_15_good", cg_unlock: "cg_xiazhi_good" },
   xz_15_good: { day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "夏织", text: "——第二名。沈屿，第二名！", next: "xz_ending_good" },
   xz_ending_good: {
     day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "",
@@ -4284,10 +4296,14 @@ const SCRIPT = {
   },
   sn_5b_release: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔·用力", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
   sn_5b_calm: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔·安静", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
-  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", next: "sn_7" },
+  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", loopText: ["这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。",
+"紫色是我哥最喜欢的颜色。上一轮我听见的是「留住他」；这一轮我听见后半句——「把自己也画了进去」，原来她也被留在了里面。",
+"画了三年，她把自己也画了进去。这一轮我看清了：她不是画不出新作，是一松手，怕连哥哥的颜色也一起弄丢。"], next: "sn_7" },
   sn_7: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你看这幅——", next: "sn_8" },
   sn_8: { day: 5, time: "afternoon", bg: "art_room", speaker: "", text: "她把那张未完成的紫推到我面前。我第一次看清：那片紫里，藏着一只翅膀，半张脸，一只手。", next: "sn_9" },
-  sn_9: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。", next: "sn_minigame", keyword: "挣" },
+  sn_9: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。", loopText: ["这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。",
+"「一个人想从紫里挣出来，却被她自己按住了。」上一轮我说出口；这一轮我迟疑了——那句话，说的是画里的她，还是画外的她？",
+"这一轮我盯着那片紫看了很久：挣出来的人，差一点就是她自己。我说的每一句，其实也在说给她听。"], next: "sn_minigame", keyword: "挣" },
   sn_minigame: {
     day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念",
     text: "……你既然看见了，那你帮我调一次色。紫色不止一种，找到对的那一种，她才肯出来。",
@@ -4312,7 +4328,9 @@ const SCRIPT = {
   sn_10_good: { day: 6, time: "evening", bg: "art_room", char: "sunian", speaker: "苏念", text: "松手……好。我试试。", next: "sn_11_good" },
   sn_11_good: { day: 6, time: "evening", bg: "autumn", char: "sunian", speaker: "", text: "接下来一个月，她每天画到深夜。我不打扰她，只在她画画时坐在角落看书。", next: "sn_12_good" },
   sn_12_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "苏念", text: "一个月后，省展要交的那幅新作画完了。", next: "sn_13_good" },
-  sn_13_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "", text: "画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。", next: "sn_14_good", cg_unlock: "cg_sunian_good" },
+  sn_13_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "", text: "画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。", loopText: ["画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。",
+"画布上的人挣出来了，眼神是亮的。上一轮我只看结果；这一轮我看见画名旁落款的位置空着——她还在犹豫要不要署名。",
+"《挣》——同一个题目，这一轮我看见的却是一个人从紫里稳稳站起，脚踩着边。她终于肯把自己签在旁边了。"], next: "sn_14_good", cg_unlock: "cg_sunian_good" },
   sn_14_good: { day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "苏念", text: "省展那天，它被放在入口第一幅。沈屿——是你让它出来的。", next: "sn_ending_good" },
   sn_ending_good: {
     day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "",

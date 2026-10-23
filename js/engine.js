@@ -129,13 +129,16 @@
            写入补传 title（15 个 memoryTitle），图鉴卡片不再显示 id；d4_night_family×2、
            d10_senior_slip×2、afterword_entry 补 loopText（40→45 节点）；consistency 新增
            memoryTitle 覆盖与 loopText 结构契约（共 42 项）
+   v3.3.8：多周目文本继续扩散——三条女主线高信号节点补 loopText（sy_9 / sy_13_good /
+           sy_11_bad / xz_7 / xz_9 / xz_14_good / sn_6 / sn_9 / sn_13_good，共 45→54
+           节点），均按「加深不反转」原则书写；引擎运行时无逻辑改动
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.7";
+  const GAME_VERSION = "3.3.8";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
