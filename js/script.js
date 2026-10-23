@@ -4082,8 +4082,8 @@ const SCRIPT = {
       type: "free",
       hint: "回她一句…",
       matchings: [
-        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨" },
-        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨" },
+        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨·写下去" },
+        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨·歇一歇" },
       ]
     }
   },
@@ -4172,8 +4172,8 @@ const SCRIPT = {
       type: "free",
       hint: "老实告诉她…",
       matchings: [
-        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练" },
-        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练" },
+        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练·陪练" },
+        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练·歇养" },
       ]
     },
     // v0.5.0 朋友圈：夏织深夜动态

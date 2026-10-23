@@ -112,13 +112,18 @@
            深度审计全数据引用（结局/CG/关键词/配方/requires_* 无断链，
            requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点契约与
            requires_memory 契约（共 38 项）
+   v3.3.4：记忆/图鉴数据契约再修复——inbox 免费回信记忆取 id 错误（字符串取 .id 得
+           undefined 回退成匹配键，写入 "brave" 等英文 id）；inbox 2 组分支互斥记忆
+           （诗雨·凌晨 / 夏织·教练）共用 id → 拆分独立；性格画像补齐 8 维度中文映射与
+           默认结构（careful/patient/calm/creative 原以英文键名显示）；consistency 唯一性
+           契约升级为对象 + 字符串全覆盖，新增 personality 白名单契约（共 39 项）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.3";
+  const GAME_VERSION = "3.3.4";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1762,7 +1767,12 @@
           if (matched.length > 0 && matched[0].personality) {
             for (const dim in matched[0].personality) Saves.addPersonality(dim, matched[0].personality[dim]);
           }
-          if (matched.length > 0 && matched[0].memory) Saves.saveMemory(matched[0].memory.id || matched[0].id, v);
+          // v3.3.4：inbox 记忆规范为字符串 id（与 free letter 一致）；兼容旧对象格式 { id, text }
+          // 修复前错误地取 memory.id（字符串取不到 id → 回退 matched[0].id），导致 "brave" 等英文 id 混入图鉴
+          if (matched.length > 0 && matched[0].memory) {
+            const memId = typeof matched[0].memory === "string" ? matched[0].memory : matched[0].memory.id;
+            if (memId) Saves.saveMemory(memId, v);
+          }
           flashHint(matched.length > 0 ? `✦ 回复触发：${matched[0].id}` : "已寄出");
           layer.remove();
           updateHeartBar();
@@ -3062,14 +3072,17 @@
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
     const p = prof.dims;
-    const dimName = { brave: "敢/慎", kind: "温/冷", active: "行/思", honest: "真/藏" };
+    // v3.3.4：维度中文名统一取自 Saves.personalityLabels（覆盖全部 8 维），
+    // 此前仅 4 维映射，careful/patient/calm/creative 会直接显示英文键名
+    const labels = Saves.personalityLabels();
     let bars = "";
     for (const dim in p) {
       const v = p[dim];
+      const label = labels[dim] ? `${labels[dim][0]}/${labels[dim][1]}` : dim;
       const pct = Math.min(50, Math.abs(v) * 10);
       const left = v >= 0 ? 50 : 50 - pct;
       bars += `<div class="p-bar">
-        <span style="width:48px;">${dimName[dim] || dim}</span>
+        <span style="width:48px;">${label}</span>
         <div class="p-bar-track"><div class="p-bar-fill" style="left:${left}%;width:${pct}%;"></div></div>
         <span style="width:30px;text-align:right;">${v > 0 ? "+" : ""}${v}</span>
       </div>`;

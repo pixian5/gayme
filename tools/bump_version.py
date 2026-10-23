@@ -30,6 +30,17 @@ def main():
         json.dump(pkg, f, ensure_ascii=False, indent=2)
         f.write("\n")
 
+    # package-lock.json（root 与 packages[""] 的 version —— npm install 会把它写成 package.json 的当前版本，
+    # v3.3.3 起纳入同步，避免 lock 版本漂移（曾滞留在 3.2.0））
+    with open("package-lock.json", encoding="utf-8") as f:
+        lock = json.load(f)
+    lock["version"] = ver
+    if isinstance(lock.get("packages"), dict) and "" in lock["packages"]:
+        lock["packages"][""]["version"] = ver
+    with open("package-lock.json", "w", encoding="utf-8") as f:
+        json.dump(lock, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
     # index.html：所有 ?v=x.y.z 与标题页 vX.Y.Z · Demo
     with open("index.html", encoding="utf-8") as f:
         html = f.read()
@@ -50,7 +61,7 @@ def main():
     with open("js/engine.js", "w", encoding="utf-8") as f:
         f.write(eng)
 
-    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处；engine.js 常量 {n4} 处）")
+    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处；engine.js 常量 {n4} 处；package-lock.json 已同步）")
 
 
 if __name__ == "__main__":

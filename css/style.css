@@ -1194,7 +1194,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   margin-bottom: 16px;
 }
 .personality-tags {
-  display: flex; gap: 8px; margin-top: 10px;
+  display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;
 }
 .p-tag {
   padding: 4px 12px;

@@ -24,6 +24,14 @@ const MOMENT_LIKES_KEY = "sakura_letters_moment_likes_v2";
 const MOMENT_COMMENTS_KEY = "sakura_letters_moment_comments_v2";
 const DREAM_KEY        = "sakura_letters_dream_v2";       // 梦境碎片
 const PERSONALITY_KEY  = "sakura_letters_personality_v2"; // 性格画像
+// v3.3.3：性格画像完整维度集合（剧情/玩法实际会写入的 8 个维度；
+// 此前默认结构仅 4 维，导致 careful/patient/calm/creative 在图鉴显示英文）
+const PERSONALITY_DIMS = ["brave", "kind", "active", "honest", "careful", "patient", "calm", "creative"];
+// v3.3.3：各维度正/负向中文标签 [正向, 负向]，供画像面板与性格标签统一取值
+const PERSONALITY_LABELS = {
+  brave: ["敢", "慎"], kind: ["温", "冷"], active: ["行", "思"], honest: ["真", "藏"],
+  careful: ["细", "粗"], patient: ["耐", "急"], calm: ["静", "躁"], creative: ["新", "守"],
+};
 const DOODLE_KEY       = "sakura_letters_doodle_v2";     // 涂鸦记录
 /* v0.6.0 新玩法存储 */
 const COLLAGE_KEY      = "sakura_letters_collage_v2";    // 拼贴诗
@@ -702,8 +710,11 @@ const Saves = {
 
   /* ============ 性格画像 ============ */
   getPersonality() {
-    return this._read(PERSONALITY_KEY, { brave: 0, kind: 0, active: 0, honest: 0 },
+    // v3.3.3：统一补全 8 维度（旧存档可能缺键、玩法只写入部分维度）
+    const p = this._read(PERSONALITY_KEY, {},
       v => v && typeof v === "object" && !Array.isArray(v));
+    for (const dim of PERSONALITY_DIMS) if (typeof p[dim] !== "number") p[dim] = 0;
+    return p;
   },
   addPersonality(dim, delta) {
     const p = this.getPersonality();
@@ -715,13 +726,15 @@ const Saves = {
   },
   getPersonalityProfile() {
     const p = this.getPersonality();
-    const tags = [];
-    tags.push(p.brave >= 0 ? "敢" : "慎");
-    tags.push(p.kind >= 0 ? "温" : "冷");
-    tags.push(p.active >= 0 ? "行" : "思");
-    tags.push(p.honest >= 0 ? "真" : "藏");
+    // v3.3.3：性格标签覆盖全部 8 维度（与画像条形一致）；此前仅 4 维，
+    // careful/patient/calm/creative 在图鉴以英文键名显示且不进标签
+    const tags = PERSONALITY_DIMS.map((dim) => {
+      const [hi, lo] = PERSONALITY_LABELS[dim];
+      return (p[dim] || 0) >= 0 ? hi : lo;
+    });
     return { tags, dims: p };
   },
+  personalityLabels() { return PERSONALITY_LABELS; },
 
   /* ============ 涂鸦记录 ============ */
   ...recordStore(DOODLE_KEY, "Doodle", ["mood", "stats"],

@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.3.3**（开发测试版 · Demo）
+- 当前版本：**v3.3.4**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -21,7 +21,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（38 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（39 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 ```
@@ -33,7 +33,12 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 ## 【当前开发进度】
 
 剧情主线、后日谈、92 种互动实现（89 个 GameKit 玩法 + 3 个基础小游戏）与存档/图鉴系统
-全部完成（417 节点 + 学姐线 24 节点 = 441 节点），38 项静态测试 + 浏览器 e2e 回归全过。
+全部完成（417 节点 + 学姐线 24 节点 = 441 节点），39 项静态测试 + 浏览器 e2e 回归全过。
+**v3.3.4**：记忆/图鉴数据契约再修复——inbox 免费回信记忆取 id 错误（字符串取 `.id` 回退成
+匹配键，写入 `brave` 等英文 id）；inbox 2 组分支互斥记忆（诗雨·凌晨 / 夏织·教练）共用 id
+→ 拆分独立；性格画像补齐 8 维度中文映射与默认结构（careful/patient/calm/creative 原显示
+英文）；唯一性契约升级为对象 + 字符串全覆盖并修正 requires_memory 自证口径，新增 personality
+白名单契约（39 项）。
 **v3.3.3**：CG 解锁缺口修复——cg_festival「学园祭之夜」写了但从未有节点 cg_unlock 引用
 （玩家永远拿不到），接入后日谈开篇；深度审计全数据引用（结局/CG/关键词/配方/requires_*
 无断链，requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点与
@@ -59,17 +64,20 @@ P0-2 符号兜底（91 汉字缺字已于 v3.2.4 补齐）；P2-1 关于页反�
 P2-2 首屏性能（脚本 defer + gzip）；P3 存档审计（107 键安全）。此前 v3.2.1：e2e 浏览器
 回归落地并接入 CI；v2.8.5 → v3.2.0：工程债务清偿、功能增强、剧情治理、表现升级。
 
-详细内容见 → [docs/20261024-0351-深度数据审计与CG解锁修复-Doubao.md](docs/20261024-0351-深度数据审计与CG解锁修复-Doubao.md)（进度快照 → [当前开发进度](docs/20261024-0351-当前开发进度-Doubao.md)）
+详细内容见 → [docs/20261024-0410-记忆图鉴契约与画像补全-DeepSeek.md](docs/20261024-0410-记忆图鉴契约与画像补全-DeepSeek.md)（进度快照 → [当前开发进度](docs/20261024-0410-当前开发进度-DeepSeek.md)）
 
 ## 【下一步待实现】
 
 - **学姐线形态 A 已完成**（v3.3.0）；**图鉴收集率统计已完成**（v3.3.1）；
-  **分支记忆 id 唯一性修复已完成**（v3.3.2）；**CG 解锁缺口修复已完成**（v3.3.3）。
-- 剩余可选项：真实录音 BGM（需音频素材）、AI 位图立绘/CG（需生图服务或自备图片）、
+  **CG 解锁缺口修复已完成**（v3.3.3）；**记忆/图鉴数据契约已闭环**（v3.3.4：字符串 memory
+  唯一 + 画像 8 维）。
+- 剩余可选项（需素材或拍板）：真实录音 BGM（需音频素材）、AI 位图立绘/CG（需生图服务或自备图片）、
   试玩反馈驱动的玩法同质化调整、itch.io 等外部平台分发（未确认）。
+- 待用户决定的工程 / 体验优化（无需素材，已审计定位）：打字机 aria-live、engine.js 死注释瘦身、
+  backToTitle 层清理收敛、BGM 音量滑杆、inbox 倒计时防重置、浮层焦点陷阱、跳过已读连跳等。
   完整分优先级的开发路线见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
 
-详细内容见 → [docs/20261023-0017-下一步待实现-Doubao.md](docs/20261023-0017-下一步待实现-Doubao.md)
+详细内容见 → [docs/20261024-0410-下一步待实现-DeepSeek.md](docs/20261024-0410-下一步待实现-DeepSeek.md)
 
 ## 文档索引与经验
 
@@ -93,15 +101,16 @@ js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 1
 js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
 sw.js               Service Worker：预缓存 26 项静态资源，缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套
-tests/              Node 原生测试（35 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tests/              Node 原生测试（39 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v3.3.0，下一版 v3.3.1）
+- 版本号：每次修改 +0.0.1，满十进一（当前 v3.3.4，下一版 v3.3.5）
 - 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
-  `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/ `js/engine.js`（GAME_VERSION 常量）；
+  `package-lock.json`（v3.3.4 起）/ `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/
+  `js/engine.js`（GAME_VERSION 常量）；
   `js/engine.js` 头注释手工补一行变更说明（一致性测试兜底）
 - 玩法开发：新玩法一律 `GameKit.register()` + `createShell()` / `shell.finish()`，
   经引擎的通用分发循环自动触发；样式写进 css/games.css；实现放 js/games/ 对应主题文件
