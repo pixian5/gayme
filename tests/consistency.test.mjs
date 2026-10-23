@@ -114,3 +114,16 @@ test("剧情 personality 维度均在画像白名单内（v3.3.4 契约）", () 
   const noLabel = dims.filter((d) => !new RegExp(`\\b${d}:`).test(labelsBlock));
   assert.deepEqual(noLabel, [], `PERSONALITY_LABELS 缺少维度标签：${noLabel.join("、")}`);
 });
+
+test("引擎引用的 settings 键必须都在 DEFAULT_SETTINGS 中（v3.3.5 契约）", () => {
+  // v3.3.5 修复：playSfx 判断了根本不存在的 settings.sfx（恒假、形同虚设）。
+  // 契约：engine.js 中所有 Saves.settings.<key> 引用都必须是 DEFAULT_SETTINGS 的已知键。
+  const engine = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
+  const saves = fs.readFileSync(new URL("../js/saves.js", import.meta.url), "utf8");
+  const block = saves.match(/const DEFAULT_SETTINGS = Object\.freeze\(\{([\s\S]*?)\}\)/)[1];
+  const known = new Set([...block.matchAll(/([A-Za-z_$][\w$]*)\s*:/g)].map((m) => m[1]));
+  assert.ok(known.size >= 5, `DEFAULT_SETTINGS 解析异常（${known.size}）`);
+  const used = new Set([...engine.matchAll(/Saves\.settings\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
+  const unknown = [...used].filter((k) => !known.has(k));
+  assert.deepEqual(unknown, [], `engine.js 引用了未定义的 settings 键：${unknown.join("、")}`);
+});

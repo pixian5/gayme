@@ -123,7 +123,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.4";
+  const GAME_VERSION = "3.3.5";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -291,6 +291,9 @@
     state.typeOnDone = onDone || null;
     el.clickHint.style.opacity = "0";
     el.dialogText.innerHTML = "";
+    // v3.3.5：无障碍——打字期间置 aria-busy，屏幕阅读器等打完整句再一次性朗读，
+    // 避免逐字修改 aria-live 区被逐字播报淹没
+    el.dialogText.setAttribute("aria-busy", "true");
     let i = 0;
     const speed = state.skipMode ? 5 : Math.max(5, Saves.settings.textSpeed);
     function tick() {
@@ -310,6 +313,7 @@
     clearTimeout(state.typeTimer);
     state.isTyping = false;
     el.dialogText.innerHTML = state.typingText;
+    el.dialogText.setAttribute("aria-busy", "false");
     el.clickHint.style.opacity = "1";
     const onDone = state.typeOnDone;
     state.typeOnDone = null;
@@ -514,6 +518,7 @@
     if (node.minigame) {
       setScene(node.bg);
       renderCharacters(node);
+      el.dialogBox.classList.add("hidden"); // v3.3.5：与 letter/choice 节点一致，隐藏对话框
       runMinigame(node.minigame, nodeId);
       updateDayBar(node);
       updateHeartBar();
@@ -704,6 +709,9 @@
     if (!layer) {
       layer = document.createElement("div");
       layer.id = "perspective-layer";
+      // v3.3.5：补 class（以 -layer 结尾），使 hasActiveInteractionLayer 能识别——此前
+      // 视角浮层开着时按空格/回车会误推进剧情、返回标题的通用清理也覆盖不到它
+      layer.className = "perspective-layer";
       layer.style.cssText = "position:absolute;inset:0;background:rgba(10,5,20,0.85);backdrop-filter:blur(8px);z-index:30;display:flex;align-items:center;justify-content:center;padding:40px;";
       layer.onclick = (e) => { if (e.target === layer) layer.remove(); };
       document.getElementById("game").appendChild(layer);
@@ -781,9 +789,8 @@
         el.choices.innerHTML = "";
         applyAdd(opt.add);
         applySet(opt.set);
-        if (opt.value && currentNodeId) {
-          // 信件回执存储
-        }
+        // v3.3.5：删除此处空的「信件回执存储」块（无实现的死代码，无任何读取方）；
+        // 剧情里 choice 的 value 字段暂保留，后续若要做选择回响再统一接入
         gotoNode(opt.next);
       };
       el.choices.appendChild(btn);
@@ -1240,6 +1247,11 @@
         <span id="cfg-sfxvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.sfxVolume ?? 0.6) * 100)}%</span>
       </div>
       <div class="config-row">
+        <label>背景音乐音量</label>
+        <input type="range" id="cfg-bgmvolume" min="0" max="1" step="0.1" value="${escapeHtml(String(s.bgmVolume ?? 0.4))}">
+        <span id="cfg-bgmvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.bgmVolume ?? 0.4) * 100)}%</span>
+      </div>
+      <div class="config-row">
         <label style="color:#ff8888;">清空所有存档与图鉴</label>
         <button id="cfg-clear" style="padding:8px 16px;background:rgba(255,80,80,0.4);border:1px solid rgba(255,100,100,0.6);border-radius:8px;color:#fff;cursor:pointer;font-family:inherit;">清空</button>
       </div>
@@ -1276,6 +1288,15 @@
       sfxVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("sfxVolume", v);
       if (sfxGain) sfxGain.gain.value = v;
+    };
+    // v3.3.5：背景音乐音量滑杆（此前设置面板只有音效音量，BGM 音量无 UI）
+    const bgmSlider = document.getElementById("cfg-bgmvolume");
+    const bgmVal = document.getElementById("cfg-bgmvolume-val");
+    bgmSlider.oninput = () => {
+      const v = parseFloat(bgmSlider.value);
+      bgmVal.textContent = Math.round(v * 100) + "%";
+      Saves.updateSetting("bgmVolume", v);
+      if (bgmGain) bgmGain.gain.value = v;
     };
     document.getElementById("cfg-export").onclick = () => {
       const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
@@ -3476,7 +3497,9 @@
   /* 程序化音效：kind → (时间偏移, 频率) 序列，sine 短包络 */
   function playSfx(kind) {
     ensureAudio();
-    if (!audioCtx || Saves.settings.sfx === false) return;
+    // v3.3.5：此前判断的 settings.sfx 字段根本不存在（恒假、形同虚设）；
+    // 按音效音量判定，拉到 0 即静音
+    if (!audioCtx || (Saves.settings.sfxVolume ?? 0.6) <= 0) return;
     const t = audioCtx.currentTime;
     const seq = {
       letter:  [[0, 880], [0.09, 1174.66]],

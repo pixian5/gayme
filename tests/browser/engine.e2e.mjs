@@ -120,6 +120,18 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     const open = await page.evaluate(() => !document.getElementById("overlay").classList.contains("hidden"));
     const bodyLen = await page.evaluate(() => document.getElementById("overlay-body").innerHTML.length);
     assert.ok(open && bodyLen > 50, `浮层 ${panel} 未正常渲染`);
+    if (panel === "config") {
+      // v3.3.5：设置面板必须含 BGM / 音效音量控件，且滑杆改动能实时写入设置
+      const hasVolumeControls = await page.evaluate(() =>
+        !!document.getElementById("cfg-bgmvolume") && !!document.getElementById("cfg-sfxvolume"));
+      assert.ok(hasVolumeControls, "设置面板缺少 BGM / 音效音量控件");
+      await page.evaluate(() => {
+        const slider = document.getElementById("cfg-bgmvolume");
+        slider.value = "0.2";
+        slider.dispatchEvent(new Event("input"));
+      });
+      assert.equal(await page.evaluate("Saves.settings.bgmVolume"), 0.2, "BGM 音量滑杆未写入设置");
+    }
     await page.evaluate(() => window.__game.closeOverlay());
   }
   console.log("[e2e] 5/7 浮层面板开关通过");
