@@ -834,6 +834,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .cg-card.locked { filter: grayscale(1) brightness(0.6); }
 .cg-card svg { display: block; width: 100%; height: auto; }
+.cg-card img { display: block; width: 100%; height: auto; }
 .cg-card .cg-locked-placeholder {
   width: 100%;
   aspect-ratio: 5/3;
@@ -1274,6 +1275,7 @@ button:focus-visible,
   display: flex; flex-direction: column; align-items: center; gap: 12px;
 }
 .cg-viewer-art svg { width: 100%; height: auto; max-height: 74vh; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
+.cg-viewer-art img { width: 100%; height: auto; max-height: 74vh; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.6); object-fit: contain; }
 .cg-viewer-bar { display: flex; align-items: center; gap: 16px; color: #ffd8e4; letter-spacing: 2px; }
 .cg-viewer-title { font-size: 15px; }
 .cg-view-btn, .cg-viewer-close {

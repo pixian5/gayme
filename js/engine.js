@@ -152,13 +152,15 @@
             （audio/bgm/daily|bright|sad|calm|active.ogg，Patrick de Arteaga，CC BY 4.0）；
             双 audio 元素交叉淡入淡出 1.2 秒，循环播放；自动播放被拦截时等用户手势重试；
             音频缺失/解码失败回退原程序化配乐；SW 预缓存加入 5 首曲目（离线可听）
+   v3.3.16：CG 位图支持——CGS 条目新增可选 img 字段（优先于内联 SVG），图鉴卡片与大图
+            查看器统一走 cgArt()；首张样张「走廊的初次相遇」接入 AI 位图，用于确认美术风格
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.15";
+  const GAME_VERSION = "3.3.16";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1741,6 +1743,13 @@
   }
 
   /* ============ CG 图鉴 ============ */
+  // v3.3.16：CG 支持位图（cg.img 优先），未提供时仍用内联 SVG；alt 取标题便于无障碍
+  function cgArt(cg) {
+    return cg.img
+      ? `<img src="${cg.img}" alt="${escapeHtml(cg.title)}" loading="lazy">`
+      : cg.svg;
+  }
+
   function renderCGGallery() {
     // 收集进度（v3.3.1）：已解锁 CG / 总 CG
     const unlockedCount = CGS.filter((cg) => Saves.isCGUnlocked(cg.id)).length;
@@ -1756,7 +1765,7 @@
     el.overlayBody.innerHTML = progressBar + `<div class="cg-grid">` + CGS.map((cg) => {
       const unlocked = Saves.isCGUnlocked(cg.id);
       return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}"${unlocked ? ` data-cg="${cg.id}"` : ""}>
-        ${unlocked ? cg.svg : `<div class="cg-locked-placeholder"><div>？？？</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">${cg.heroine}</div></div>`}
+        ${unlocked ? cgArt(cg) : `<div class="cg-locked-placeholder"><div>？？？</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">${cg.heroine}</div></div>`}
         <div class="cg-info">
           <div class="cg-title">${unlocked ? cg.title : "未解锁"}</div>
           <div class="cg-heroine">${cg.heroine}</div>
@@ -1796,7 +1805,7 @@
     const titleEl = layer.querySelector(".cg-viewer-title");
     const show = () => {
       const cg = unlocked[idx];
-      art.innerHTML = cg.svg;
+      art.innerHTML = cgArt(cg);
       titleEl.textContent = `${cg.title} · ${cg.heroine}（${idx + 1} / ${unlocked.length}）`;
     };
     const nav = (d) => { idx = (idx + d + unlocked.length) % unlocked.length; show(); };
