@@ -21,6 +21,10 @@ test("版本号在 VERSION / index.html / package.json 三处一致", () => {
 
   // 标题页版本展示
   assert.match(html, new RegExp(`v${version.replaceAll(".", "\\.")} · Demo`), "标题页版本号未同步");
+
+  // engine.js 头注释含当前版本行（v3.4.8 契约：文档先行时防止 VERSION 落后漂移）
+  const engineHead = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8").split("*/")[0];
+  assert.match(engineHead, new RegExp(`v${version.replaceAll(".", "\\.")}：`), "engine.js 头注释缺少当前版本行（先 bump 再写说明）");
 });
 
 test("js 目录下所有脚本都在 index.html 中加载，且 engine.js 最后加载", () => {
