@@ -1,0 +1,16 @@
+#!/bin/bash
+# 本地质量门禁（v3.3.20）：push 前自动跑测试，防止坏版本被 cron 部署上线。
+# e2e 默认不跑（耗时 ~7s 可接受时设 PREPUSH_E2E=1 启用）。
+set -e
+cd "$(git rev-parse --show-toplevel)"
+echo "[pre-push] 静态测试…"
+npm test --silent
+echo "[pre-push] 语法检查…"
+npm run test:syntax --silent
+echo "[pre-push] diff 检查…"
+git diff --check
+if [ "${PREPUSH_E2E:-0}" = "1" ]; then
+  echo "[pre-push] e2e 回归…"
+  npm run test:e2e --silent
+fi
+echo "[pre-push] 全部通过 ✓"
