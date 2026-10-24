@@ -163,10 +163,12 @@ const TRIAGE_KEY       = "sakura_letters_triage_v2";      // 后日谈回信分�
 const WALL_KEY         = "sakura_letters_wall_v2";        // 后日谈留言墙
 const PROOFREAD_KEY    = "sakura_letters_proofread_v2";   // 后日谈校刊校对
 const META_KEY        = "sakura_letters_meta_v3";
+// v3.3.10：统计元数据（累计游玩时长等），与剧情 flags 分离，避免互相覆盖
+const STATS_KEY       = "sakura_letters_stats_v2";
 const STORAGE_SCHEMA_VERSION = 3;
 
 const GAME_STORAGE_KEYS = [STORAGE_KEY, AUTOSAVE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
-  FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
+  FLAGS_KEY, STATS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
   CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
   DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY, COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
   SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY, TAROT_KEY, DREAMWEAVE_KEY,
@@ -542,6 +544,18 @@ const Saves = {
   getFlag(key, def) {
     const v = this.getFlags()[key];
     return v === undefined ? def : v;
+  },
+
+  /* ============ 统计元数据（v3.3.10） ============ */
+  getStats() {
+    return this._read(STATS_KEY, { playMs: 0 }, v => v && typeof v === "object" && !Array.isArray(v));
+  },
+  addPlayMs(ms) {
+    if (!Number.isFinite(ms) || ms <= 0) return;
+    const stats = this.getStats();
+    const previous = stats.playMs;
+    stats.playMs = (Number.isFinite(previous) ? previous : 0) + ms;
+    if (!this._write(STATS_KEY, JSON.stringify(stats))) stats.playMs = previous;
   },
 
   /* ============ 设置 ============ */

@@ -1248,3 +1248,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .dream-scene { width: 130px; height: 130px; font-size: 12px; }
   #doodle-canvas { max-width: 90vw; }
 }
+
+/* v3.3.10：键盘无障碍——可见焦点环（仅键盘导航时出现，不干扰鼠标点击） */
+:focus-visible {
+  outline: 2px solid #ffd8e4;
+  outline-offset: 2px;
+}
+.choice-btn:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #ffb8c8;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(255,184,200,0.25);
+}

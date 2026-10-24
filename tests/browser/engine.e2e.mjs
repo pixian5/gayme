@@ -125,7 +125,7 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
 
   // 4) 全部浮层面板可开关（UI 拆分后的主要安全网）
   await page.evaluate(() => window.__game.newGame());
-  for (const panel of ["save", "load", "config", "history", "gallery", "about", "keywords", "cg", "flowchart"]) {
+  for (const panel of ["save", "load", "config", "history", "gallery", "about", "keywords", "cg", "flowchart", "stats"]) {
     await page.evaluate((p) => window.__game.openOverlay(p), panel);
     const open = await page.evaluate(() => !document.getElementById("overlay").classList.contains("hidden"));
     const bodyLen = await page.evaluate(() => document.getElementById("overlay-body").innerHTML.length);
@@ -160,6 +160,16 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   });
   assert.ok(inboxPersist.first && inboxPersist.first === inboxPersist.second,
     "inbox 首次打开时间未持久化（倒计时可无限重置）");
+
+  // v3.3.10：选项键盘操作——方向键移动焦点 + Enter 确认
+  await page.evaluate(() => { window.__game.newGame(); window.__game.gotoNode("day2_choice"); });
+  await page.waitForTimeout(150);
+  const beforeChoice = await page.evaluate(() => window.__game.state.currentNode);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(150);
+  const afterChoice = await page.evaluate(() => window.__game.state.currentNode);
+  assert.notEqual(afterChoice, beforeChoice, "选项键盘操作未生效（Enter 未确认选项）");
   console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING

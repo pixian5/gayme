@@ -135,13 +135,17 @@
    v3.3.9：多周目文本再扩散——共通线 day2 与后日谈高信号节点补 loopText（d2_library_8 /
            d2_field_5 / d2_art_3 / d2_senior_easter_3 / d2_senior_easter_4 / afterword_three /
            afterword_4 / afterword_stamp / afterword_autumn / afterword_wall，共 54→64 节点）
+   v3.3.10：键盘无障碍 + 数据统计——选项/信件按钮支持方向键移动、Enter/Space 确认、数字键
+            1-9 快选，并补 role/aria-label/aria-keyshortcuts 与 :focus-visible 焦点环；
+            新增「数据统计」浮层（剧情进度/结局/CG/关键词/合成/记忆/周目/累计时长）；
+            累计时长写入独立 STATS_KEY（不碰剧情 flags）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.9";
+  const GAME_VERSION = "3.3.10";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -815,6 +819,18 @@
       };
       el.choices.appendChild(btn);
     });
+    // v3.3.10：键盘无障碍——给选项容器补语义，并把焦点落到首个可选项
+    // （方向键在选项间移动、Enter/Space 确认、数字键快选由全局 keydown 处理）
+    el.choices.setAttribute("role", "group");
+    el.choices.setAttribute("aria-label", choice.prompt || "请选择");
+    Array.from(el.choices.querySelectorAll("button")).forEach((b, i) => {
+      if (i < 9 && !b.disabled) b.setAttribute("aria-keyshortcuts", String(i + 1));
+    });
+    requestAnimationFrame(() => {
+      const first = Array.from(el.choices.querySelectorAll("button"))
+        .find((b) => !b.disabled && b.offsetParent !== null);
+      if (first) first.focus();
+    });
   }
 
   /* ============ 信件系统 ============ */
@@ -1006,6 +1022,7 @@
   function newGame() {
     state.sessionId += 1;
     removeActiveInteractionLayers();
+    playTickAt = Date.now(); // v3.3.10：开始计时本次游玩
     state.variables = createDefaultVariables();
     state.history = [];
     state.currentNode = null;
@@ -1073,11 +1090,16 @@
   /* 自动存档（v2.9.8）：静默记录最后位置，防刷新 / 关页丢失。
      节流 3 秒；读档恢复（restoring）与标题页不写；pagehide / 切后台时强制落盘。 */
   let lastAutoSaveAt = 0;
+  // v3.3.10：累计游玩时长——记录上次计时点，落盘时把增量累加到 playTimeMs 标记
+  let playTickAt = Date.now();
   function autoSave(force = false) {
     if (!state.inGame) return;
     const now = Date.now();
     if (!force && now - lastAutoSaveAt < 3000) return;
     lastAutoSaveAt = now;
+    // 累计时长（写入独立统计键，不碰剧情 flags；上限单次 1 小时，防休眠前跳变）
+    Saves.addPlayMs(Math.min(Math.max(0, now - playTickAt), 3600000));
+    playTickAt = now;
     Saves.autoSave(snapshot());
   }
 
@@ -1111,6 +1133,7 @@
     }
     state.sessionId += 1;
     removeActiveInteractionLayers();
+    playTickAt = Date.now(); // v3.3.10：读档后重新开始计时
     state.currentNode = nodeId;
     state.variables = data.variables && typeof data.variables === "object"
       ? JSON.parse(JSON.stringify(data.variables)) : createDefaultVariables();
@@ -1171,7 +1194,7 @@
     const titles = {
       save: "存档", load: "读档", config: "设置", history: "历史文本",
       gallery: "结局图鉴", about: "关于", keywords: "关键词", cg: "CG 图鉴",
-      flowchart: "流程图", inbox: "收件箱", moments: "朋友圈",
+      flowchart: "流程图", inbox: "收件箱", moments: "朋友圈", stats: "数据统计",
     };
     el.overlayTitle.textContent = titles[type] || type;
     el.overlay.classList.remove("hidden");
@@ -1186,6 +1209,7 @@
     else if (type === "flowchart") renderFlowchart();
     else if (type === "inbox") renderInbox();
     else if (type === "moments") renderMoments();
+    else if (type === "stats") renderStats();
   }
   function closeOverlay() {
     el.overlay.classList.add("hidden");
@@ -1394,6 +1418,45 @@
         <div class="h-text">${escapeHtml(h.text)}</div>
       </div>`
     ).join("");
+  }
+
+  // v3.3.10：数据统计页——汇总剧情进度 / 收集率 / 周目 / 累计时长
+  function renderStats() {
+    const totalNodes = Object.keys(SCRIPT).length;
+    const visited = Object.keys(state.visitedNodes).length;
+    const endingsGot = ENDINGS.filter((e) => Saves.isEndingUnlocked(e.id)).length;
+    const cgGot = Saves.getCGs().length;
+    const kwGot = Saves.getKeywords().length;
+    const composedGot = Saves.getComposed().length;
+    const memGot = Saves.getMemories().length;
+    const totalKw = Object.keys(KEYWORDS).length;
+    const totalRecipes = (window.COMPOSE_RECIPES || []).length;
+    const playMs = Saves.getStats().playMs + (state.inGame ? Math.max(0, Date.now() - playTickAt) : 0);
+    const fmtMs = (ms) => {
+      const min = Math.floor(ms / 60000);
+      const h = Math.floor(min / 60);
+      return h > 0 ? `${h} 时 ${min % 60} 分` : `${min} 分`;
+    };
+    const rows = [
+      ["剧情进度", `${visited} / ${totalNodes}`, totalNodes ? visited / totalNodes : null],
+      ["结局收集", `${endingsGot} / ${ENDINGS.length}`, ENDINGS.length ? endingsGot / ENDINGS.length : null],
+      ["CG 收集", `${cgGot} / ${CGS.length}`, CGS.length ? cgGot / CGS.length : null],
+      ["关键词", `${kwGot} / ${totalKw}`, totalKw ? kwGot / totalKw : null],
+      ["合成回忆", `${composedGot} / ${totalRecipes}`, totalRecipes ? composedGot / totalRecipes : null],
+      ["记忆片段", `${memGot} 条`, null],
+      ["游玩周目", `第 ${state.playCount || 1} 周目`, null],
+      ["累计时长", fmtMs(playMs), null],
+    ];
+    el.overlayBody.innerHTML = rows.map(([label, val, pct]) => `
+      <div style="margin-bottom:12px;padding:14px 18px;background:linear-gradient(135deg, rgba(80,40,100,0.22), rgba(40,30,60,0.35));border:1px solid rgba(255,200,220,0.25);border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:14px;color:#ffd8e4;letter-spacing:3px;">${label}</span>
+          <span style="font-size:14px;color:#ffb8c8;">${val}</span>
+        </div>
+        ${pct === null ? "" : `<div style="height:8px;margin-top:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(pct * 100)}%;background:linear-gradient(90deg,#ffb8c8,#c8a8e0);border-radius:4px;"></div>
+        </div>`}
+      </div>`).join("");
   }
 
   function renderGallery() {
@@ -1642,7 +1705,6 @@
         }
         showClueTip(clue, spot);
       };
-      el.clueLayer.appendChild(spot);
     });
   }
 
@@ -2728,6 +2790,7 @@
       else if (a === "keywords") openOverlay("keywords");
       else if (a === "cg") openOverlay("cg");
       else if (a === "flowchart") openOverlay("flowchart");
+      else if (a === "stats") openOverlay("stats");
       else if (a === "trueend") {
         if (!hasAllGoodEndings()) {
           flashHint("先完成三位女主的 GOOD 结局");
@@ -2781,6 +2844,35 @@
     if (e.key === "Escape") {
       backToTitle();
       return;
+    }
+    // v3.3.10：选项 / 信件按钮的键盘操作——方向键在按钮间移动、Enter/Space 确认、
+    // 数字键 1-9 快选（仅在选项层可见、且未在输入框内时生效）
+    if (!el.choices.classList.contains("hidden")) {
+      const btns = Array.from(el.choices.querySelectorAll("button"))
+        .filter((b) => !b.disabled && b.offsetParent !== null);
+      if (btns.length) {
+        const at = btns.indexOf(document.activeElement);
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          btns[(at + 1 + btns.length) % btns.length].focus();
+          return;
+        }
+        if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          btns[(at - 1 + btns.length) % btns.length].focus();
+          return;
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          (btns.includes(document.activeElement) ? document.activeElement : btns[0]).click();
+          return;
+        }
+        if (/^[1-9]$/.test(e.key)) {
+          const pick = btns[parseInt(e.key, 10) - 1];
+          if (pick) { e.preventDefault(); pick.click(); }
+          return;
+        }
+      }
     }
     if (hasActiveInteractionLayer()) return;
     if (e.key === " " || e.key === "Enter") {
