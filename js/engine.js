@@ -158,6 +158,7 @@
    v3.3.18：Pages 失同步止血——gh-pages 分支改为纯重定向页跳转唯一正式源
    v3.3.22：loopText 批次一——真结局线 15 节点补三周目文本（true_* / true_break_*，该线仅 loopCount≥3 可达，写成 [原文, 三周目版] 两段式，主题：三个春天各走一段）；77→92
    v3.3.23：loopText 批次一补齐——真结局线前 6 节点（true_end_entry~true_6）补三周目文本，批次一合计 15 节点（71→92）
+   v3.3.24：loopText 批次二——后日谈 10 节点三段式（初周/又一年/更深的平静，86→92→102）
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -171,7 +172,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.23";
+  const GAME_VERSION = "3.3.24";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
