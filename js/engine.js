@@ -132,13 +132,16 @@
    v3.3.8：多周目文本继续扩散——三条女主线高信号节点补 loopText（sy_9 / sy_13_good /
            sy_11_bad / xz_7 / xz_9 / xz_14_good / sn_6 / sn_9 / sn_13_good，共 45→54
            节点），均按「加深不反转」原则书写；引擎运行时无逻辑改动
+   v3.3.9：多周目文本再扩散——共通线 day2 与后日谈高信号节点补 loopText（d2_library_8 /
+           d2_field_5 / d2_art_3 / d2_senior_easter_3 / d2_senior_easter_4 / afterword_three /
+           afterword_4 / afterword_stamp / afterword_autumn / afterword_wall，共 54→64 节点）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.8";
+  const GAME_VERSION = "3.3.9";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
