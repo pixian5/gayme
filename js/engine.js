@@ -166,6 +166,7 @@
    v3.3.29：CG 全量转 webp（2.5MB→1.3MB，-48%；jpg 源删除，script.img 路径与契约同步）
    v3.4.0：立绘位图管线——PORTRAIT_BITMAPS 清单（webp 存在即用 <img>，缺失回退内联 SVG），engine 与 direct.js touch 立绘双接入；素材到位后在清单加 id 即上线
    v3.4.1：发行准备——tools/pack-itch.sh 一键打分发 zip（2.3MB），关于页加 gitee issues 反馈入口
+   v3.4.2：性能 B1/B2——saves/script/engine 三脚本 preload（首屏解析提速）；立绘阵容签名预合成（同阵容节点跳过重建，消除入场重放与闪动），backToTitle 清签名
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -179,7 +180,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.1";
+  const GAME_VERSION = "3.4.2";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -325,6 +326,10 @@
       if (node.char === null) chars = [];
       else chars = [{ id: node.char, pos: "center" }];
     } else return;
+    // v3.4.2 场景预合成：角色阵容与上一节点一致时跳过重建，消除重复入场动画与闪动
+    const sig = chars.map((c) => `${c.id}:${c.pos || "center"}:${!!c.dim}`).join("|");
+    if (el.charLayer.dataset.sig === sig) return;
+    el.charLayer.dataset.sig = sig;
     el.charLayer.innerHTML = "";
     chars.forEach((c, idx) => {
       if (!PORTRAITS[c.id]) return;
@@ -2707,6 +2712,7 @@
     el.choices.classList.add("hidden");
     el.topBar.classList.remove("show");
     el.charLayer.innerHTML = "";
+    el.charLayer.dataset.sig = "";
     if (el.dayBar) { el.dayBar.style.opacity = "0"; delete el.dayBar.dataset.loop; }
     if (el.heartBar) el.heartBar.style.opacity = "0";
     setScene("cherry_full");
