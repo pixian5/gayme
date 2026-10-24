@@ -162,6 +162,7 @@
    v3.3.25：loopText 批次三——女主线 bad/normal 18 节点三段式（102→120，达成 ≥120 目标）；bad 分支变体含「话一旦出口就只属于听的人」级反思，outcome-neutral 不强迫重选
    v3.3.26：双「她说」句式清零——长链 34 处双排比节点改写为多形态转述（动作比划/纸条/引语化/神态补句，每篇至多一次「她说」），外加 10 处失败安慰文案引语化；累计 44 处
    v3.3.27：选择回响落地——带 value 的选项落盘 saveLetter（echo:节点 id），历史面板改双 Tab（对话 / 回响），回响按时间倒序显示选择所在节点与内容
+   v3.3.28：结局注释 + 关键词/记忆审计——12 结局补 note（图鉴卡片显示分支点/达成条件），关键词加稀有度分层（普通/稀有/隐藏，卡片带标签），记忆图鉴按获得时间倒序
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -175,7 +176,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.27";
+  const GAME_VERSION = "3.3.28";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1652,6 +1653,7 @@
         <div class="g-type">${e.type} · ${e.heroine}</div>
         <div class="g-title">${unlocked ? e.title : "？？？？"}</div>
         <div class="g-desc">${unlocked ? e.desc : "尚未解锁"}</div>
+        ${unlocked && e.note ? `<div style="margin-top:6px;font-size:11px;line-height:1.6;color:rgba(255,216,228,0.55);">${escapeHtml(e.note)}</div>` : ""}
       </div>`;
     }).join("") + "</div>";
   }
@@ -1687,7 +1689,8 @@
   function renderKeywords() {
     const unlocked = Saves.getKeywords();
     const composed = Saves.getComposed();
-    const memoryList = Saves.getMemories();
+    const memoryList = Saves.getMemories().slice()
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0));   // v3.3.28：按获得时间倒序
     const allAvailable = unlocked.concat(composed); // 合成产物也可作为新合成原料
     const recipes = (window.COMPOSE_RECIPES || []).filter(r => allAvailable.includes(r.a) && allAvailable.includes(r.b));
 
@@ -1762,12 +1765,17 @@
 
     // 关键词列表
     html += `<div style="font-size:14px;color:#ffd8e4;letter-spacing:4px;margin-bottom:12px;">✦ 已发现关键词</div><div class="gallery-grid">`;
-    html += Object.entries(KEYWORDS).map(([kw, desc]) => {
+    const RARITY_LABEL = { normal: "", rare: "稀有", hidden: "隐藏" };
+    const RARITY_COLOR = { normal: "rgba(255,255,255,0.35)", rare: "#c8a8e0", hidden: "#ffd88a" };
+    html += Object.entries(KEYWORDS).map(([kw, def]) => {
+      const desc = typeof def === "string" ? def : def.desc;       // 兼容旧字符串格式
+      const rarity = typeof def === "string" ? "normal" : (def.rarity || "normal");
       const isUnlocked = unlocked.includes(kw);
+      const tag = RARITY_LABEL[rarity] ? `<span style="font-size:10px;color:${RARITY_COLOR[rarity]};border:1px solid ${RARITY_COLOR[rarity]};border-radius:4px;padding:1px 5px;margin-left:6px;">${RARITY_LABEL[rarity]}</span>` : "";
       return `<div class="gallery-card ${isUnlocked ? "unlocked" : "locked"}">
-        <div class="g-type">关键词</div>
+        <div class="g-type">关键词${tag}</div>
         <div class="g-title">${isUnlocked ? kw : "？？？？"}</div>
-        <div class="g-desc">${isUnlocked ? desc : "尚未发现"}</div>
+        <div class="g-desc">${isUnlocked ? escapeHtml(desc) : "尚未发现"}</div>
       </div>`;
     }).join("");
     html += "</div>";

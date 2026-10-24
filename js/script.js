@@ -467,17 +467,17 @@ const SCENE_LABELS = {
 
 /* ============ 关键词定义 ============ */
 const KEYWORDS = {
-  "林诗雨":  "第一次在走廊叫住你的班长",
-  "小说":   "林诗雨偷偷在写的东西",
-  "角色A":  "她稿纸上反复出现的角色",
-  "全国赛": "夏织备战的赛事",
-  "特招":   "夏织家庭的隐痛",
-  "紫":     "苏念画里反复出现的颜色",
-  "挣":     "苏念画作的主题",
-  "匿名信": "塞进你书包的神秘信",
-  "学姐":   "信的真正主人",
-  "樱花祭": "学园最后的春夜",
-  "回信":   "你需要给出的答案",
+  "林诗雨": { desc: "第一次在走廊叫住你的班长", rarity: "normal" },
+  "小说": { desc: "林诗雨偷偷在写的东西", rarity: "rare" },
+  "角色A": { desc: "她稿纸上反复出现的角色", rarity: "normal" },
+  "全国赛": { desc: "夏织备战的赛事", rarity: "normal" },
+  "特招": { desc: "夏织家庭的隐痛", rarity: "rare" },
+  "紫": { desc: "苏念画里反复出现的颜色", rarity: "normal" },
+  "挣": { desc: "苏念画作的主题", rarity: "rare" },
+  "匿名信": { desc: "塞进你书包的神秘信", rarity: "rare" },
+  "学姐": { desc: "信的真正主人", rarity: "rare" },
+  "樱花祭": { desc: "学园最后的春夜", rarity: "hidden" },
+  "回信": { desc: "你需要给出的答案", rarity: "hidden" },
 };
 
 /* ============ 关键词合成配方（摆脱传统收集：把收集变成创造） ============ */
@@ -542,19 +542,19 @@ const CGS = [
 
 /* ============ 全结局定义 ============ */
 const ENDINGS = [
-  { id: "shiyu_good",   heroine: "林诗雨", title: "回 头",   type: "GOOD",   desc: "她终于敢回头。" },
-  { id: "shiyu_normal", heroine: "林诗雨", title: "半 章",   type: "NORMAL", desc: "她留下了半章，也留下了自己。" },
-  { id: "shiyu_bad",    heroine: "林诗雨", title: "未 活 过", type: "BAD",    desc: "她回过头，看见的依然没走过。" },
-  { id: "xiazhi_good",  heroine: "夏织",   title: "终 点 线", type: "GOOD",   desc: "有人等在终点。" },
-  { id: "xiazhi_normal",heroine: "夏织",   title: "第三名", type: "NORMAL", desc: "她拿了第三，留了下来。" },
-  { id: "xiazhi_bad",   heroine: "夏织",   title: "一 个 人", type: "BAD",    desc: "她终于一个人了。" },
-  { id: "sunian_good",  heroine: "苏念",   title: "挣",     type: "GOOD",   desc: "她松开了手。" },
-  { id: "sunian_normal",heroine: "苏念",   title: "网 展", type: "NORMAL", desc: "她在自己的网展开了个展。" },
-  { id: "sunian_bad",   heroine: "苏念",   title: "按 住",   type: "BAD",    desc: "她按住了自己。" },
-  { id: "senior_shadow", heroine: "学姐",  title: "看 见",   type: "SIDE",   desc: "循环没有破，她也没有走；但这一次，她不再是没人看见的影子。" },
-  { id: "true_unbroken", heroine: "真结局前章", title: "未 破 环", type: "LOOP ENDING", desc: "你写下了回信，但循环仍在等待最后一步。" },
-  { id: "true_end",     heroine: "真结局", title: "樱 花 信", type: "TRUE",  desc: "你替她回了一封信，也写下自己。" },
-  { id: "afterword",    heroine: "三人",   title: "樱海以后", type: "AFTERWORD", desc: "信寄出以后，三个人各自继续往前走。" },
+  { id: "shiyu_good",   heroine: "林诗雨", title: "回 头",   type: "GOOD", note: "分支点：替她写出「活下去」的开场。她会继续写——外婆的那本，也会有下一本。", desc: "她终于敢回头。" },
+  { id: "shiyu_normal", heroine: "林诗雨", title: "半 章",   type: "NORMAL", note: "分支点：建议她先写半章。法律系与小说并行，压的方式变成了托举。", desc: "她留下了半章，也留下了自己。" },
+  { id: "shiyu_bad",    heroine: "林诗雨", title: "未 活 过", type: "BAD", note: "分支点：说出「也许她该消失一次」。一周后课桌空了——有些话第一次说就该想清楚。", desc: "她回过头，看见的依然没走过。" },
+  { id: "xiazhi_good",  heroine: "夏织",   title: "终 点 线", type: "GOOD", note: "分支点：承诺陪她跑到终点线。11.8 秒——第二名，和有人等在终点。", desc: "有人等在终点。" },
+  { id: "xiazhi_normal",heroine: "夏织",   title: "第三名", type: "NORMAL", note: "分支点：先劝她治脚。留校复读一年，明年再战，这次有人等。", desc: "她拿了第三，留了下来。" },
+  { id: "xiazhi_bad",   heroine: "夏织",   title: "一 个 人", type: "BAD", note: "分支点：说出「你自己就够了」。雨里那一跤，本可以有人在场。", desc: "她终于一个人了。" },
+  { id: "sunian_good",  heroine: "苏念",   title: "挣",     type: "GOOD", note: "分支点：看见紫里的人，说出「松手」。省展入口第一幅——《挣》。", desc: "她松开了手。" },
+  { id: "sunian_normal",heroine: "苏念",   title: "网 展", type: "NORMAL", note: "分支点：建议小范围网展。退了省展，但留言区每天都有「我也是」。", desc: "她在自己的网展开了个展。" },
+  { id: "sunian_bad",   heroine: "苏念",   title: "按 住",   type: "BAD", note: "分支点：说出「也许她不该出来」。画布翻了面，门关了三年。", desc: "她按住了自己。" },
+  { id: "senior_shadow", heroine: "学姐",  title: "看 见",   type: "SIDE", note: "达成条件：学姐线全程。她仍是影子，但第一次被看见——看见本身就是解。", desc: "循环没有破，她也没有走；但这一次，她不再是没人看见的影子。" },
+  { id: "true_unbroken", heroine: "真结局前章", title: "未 破 环", type: "LOOP ENDING", note: "达成条件：三线 GOOD 后进入真结局。差最后一步：合成「樱花信」。", desc: "你写下了回信，但循环仍在等待最后一步。" },
+  { id: "true_end",     heroine: "真结局", title: "樱 花 信", type: "TRUE", note: "达成条件：三线 GOOD + 合成樱花信。祭信 + 未寄信 = 打破循环的钥匙。", desc: "你替她回了一封信，也写下自己。" },
+  { id: "afterword",    heroine: "三人",   title: "樱海以后", type: "AFTERWORD", note: "达成条件：真结局破环。信寄出以后——回信角、校刊、第二年春天。", desc: "信寄出以后，三个人各自继续往前走。" },
 ];
 
 /* ============ v0.5.0 朋友圈动态池 ============ */
