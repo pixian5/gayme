@@ -165,6 +165,7 @@
    v3.3.28：结局注释 + 关键词/记忆审计——12 结局补 note（图鉴卡片显示分支点/达成条件），关键词加稀有度分层（普通/稀有/隐藏，卡片带标签），记忆图鉴按获得时间倒序
    v3.3.29：CG 全量转 webp（2.5MB→1.3MB，-48%；jpg 源删除，script.img 路径与契约同步）
    v3.4.0：立绘位图管线——PORTRAIT_BITMAPS 清单（webp 存在即用 <img>，缺失回退内联 SVG），engine 与 direct.js touch 立绘双接入；素材到位后在清单加 id 即上线
+   v3.4.6：「她说」密度抽检——连续节点开场句式微调（d7 三连），双「她说」保持 0；结论：抽检制替代全局改写（单「她说」为正常叙述密度）
    v3.4.1：发行准备——tools/pack-itch.sh 一键打分发 zip（2.3MB），关于页加 gitee issues 反馈入口
    v3.4.5：loopText 批次四（筛选制）——女主线 good 链 6 + 共通线关键对话 6（120→132）；序章情感节点已被其他模型覆盖（跳过）
    v3.4.2：性能 B1/B2——saves/script/engine 三脚本 preload（首屏解析提速）；立绘阵容签名预合成（同阵容节点跳过重建，消除入场重放与闪动），backToTitle 清签名
@@ -183,7 +184,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.5";
+  const GAME_VERSION = "3.4.6";
 
   /* ---------- DOM 引用 ---------- */
   const el = {

@@ -2684,7 +2684,7 @@ const SCRIPT = {
   // 萤火引路
   d7_firefly: {
     day: 7, time: "night", bg: "forest", char: null, speaker: "",
-    text: "她拉你到树林里。她说——你看，萤火虫散了。她递给你一盏小灯：把它们引回来。她不说回到哪里——但你看向她指的方向。",
+    text: "树林里，萤火虫散了。她把一盏小灯放进你手里，只说：把它们引回来。回到哪里，她不说——但你看向她指的方向。",
     next: "d7_windchime",
     firefly: {
       prompt: "按住光点拖动——引导萤火虫归队",
@@ -2716,7 +2716,7 @@ const SCRIPT = {
   // 风铃调音
   d7_windchime: {
     day: 7, time: "night", bg: "home_room", char: null, speaker: "",
-    text: "窗台上挂着一只旧风铃。她说——四个铃片错位了。她让你把它们拖回各自的高度，敲出来才合拍。她不告诉你哪个是哪个。",
+    text: "窗台的旧风铃，四个铃片错位了。她让你把它们拖回各自的高度，敲出来才合拍——哪个是哪个，她不说。",
     next: "d7_bottle",
     windchime: {
       prompt: "拖动四个铃片——对齐虚线目标高度",
@@ -2747,7 +2747,7 @@ const SCRIPT = {
   // 瓶中信
   d7_bottle: {
     day: 7, time: "night", bg: "river", char: null, speaker: "",
-    text: "她带你去河边。她从口袋里拿出一只瓶子——里面卷着一张纸条。她说——投到对岸去。她不告诉你该用多大力气。",
+    text: "河边。她从口袋里摸出一只瓶子，里面卷着一张纸条——投到对岸去。该用多大力气，她让你自己掂量。",
     next: "d7_echoloc",
     bottle: {
       prompt: "拖动滑块调整力度——把瓶子投到对岸目标线",
