@@ -229,6 +229,24 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   assert.equal(slotOps.loadedName, "我的存档", "导入后槽位名称丢失");
   console.log("[e2e] 5/7 浮层面板开关通过");
 
+  // 4.5) 选择回响：带 value 的选项落盘，历史「回响」Tab 可见
+  await page.evaluate(() => {
+    window.__game.newGame();
+    window.__game.gotoNode("d5_route_check");
+  });
+  await page.evaluate(() => {
+    // 直接触发一次带 value 的选择（模拟点击后落盘）
+    Saves.saveLetter("echo:d5_route_check", { answers: { value: "shiyu", text: "图书馆找林诗雨" } });
+    window.__game.openOverlay("history");
+  });
+  await page.evaluate(() => document.querySelector('#overlay-body button[data-tab="echo"]')?.click());
+  const echoVisible = await page.evaluate(() => {
+    const body = document.getElementById("overlay-body").textContent;
+    return body.includes("回响") && body.includes("图书馆找林诗雨");
+  });
+  assert.ok(echoVisible, "回响 Tab 未显示已落盘的选择");
+  await page.evaluate(() => window.__game.closeOverlay());
+
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING
   await page.evaluate(() => {
     const endings = JSON.parse(localStorage.getItem("sakura_letters_endings_v2") || "{}");
