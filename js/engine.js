@@ -146,13 +146,15 @@
             与设置键白名单契约
    v3.3.13：存档增强 + 新手引导——存档槽支持重命名（name 字段）/ 单槽导出 / 导入（本地 JSON）；
             新档首次进入弹出可跳过的新手引导（tutorialSeen 标记，只出现一次）
+   v3.3.14：多周目文本 Phase 2 起步——学姐线 13 个高信号节点补 loopText（senior_2/3/4a/4b/4c/
+            5/6/7/8/10/11/14/ending，64→77 节点），按「加深不反转」原则书写；纯数据改动
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.13";
+  const GAME_VERSION = "3.3.14";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
