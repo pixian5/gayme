@@ -1,7 +1,7 @@
 /* 樱时信笺 · Service Worker（v3.2.0）
    —— 预缓存全部静态资源：离线可玩 / 添加到主屏幕。
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）。 */
-const CACHE_VERSION = "sakura-v3.3.16";
+const CACHE_VERSION = "sakura-v3.3.17";
 const PRECACHE = [
   "./",
   "index.html",
@@ -32,7 +32,17 @@ const PRECACHE = [
   "audio/bgm/sad.ogg",
   "audio/bgm/calm.ogg",
   "audio/bgm/active.ogg",
-  "assets/cg/cg_meet_shiyu_sample.jpg",
+  "assets/cg/cg_meet_shiyu.jpg",
+  "assets/cg/cg_meet_xiazhi.jpg",
+  "assets/cg/cg_meet_sunian.jpg",
+  "assets/cg/cg_letter.jpg",
+  "assets/cg/cg_sportsmeet.jpg",
+  "assets/cg/cg_festival.jpg",
+  "assets/cg/cg_shiyu_good.jpg",
+  "assets/cg/cg_xiazhi_good.jpg",
+  "assets/cg/cg_sunian_good.jpg",
+  "assets/cg/cg_senior_shadow.jpg",
+  "assets/cg/cg_true.jpg",
   "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
   "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
 ];

@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.3.16**（开发测试版 · Demo）
+- 当前版本：**v3.3.17**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -34,6 +34,9 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 
 剧情主线、后日谈、92 种互动实现（89 个 GameKit 玩法 + 3 个基础小游戏）与存档/图鉴系统
 全部完成（417 节点 + 学姐线 24 节点 = 441 节点），42 项静态测试 + 浏览器 e2e 回归全过。
+**v3.3.17**：CG 位图全量接入——11 张 CG 全部换成 AI 位图（1600×960 JPEG，合计约 2.3MB，
+水彩插画风 + 暖色黄昏基调，人物外观设定统一）；样张改名 `cg_meet_shiyu.jpg` 统一命名；
+SW 预缓存补齐 11 张（离线图鉴可看），静态契约测试补资源存在性；内联 SVG 保留为兜底路径。
 **v3.3.16**：CG 位图支持 + 首张样张——CGS 新增可选 `img`（优先于内联 SVG），
 图鉴卡片与大图查看器统一走 `cgArt()`；「走廊的初次相遇」接入 AI 位图（1600×960，355KB）
 用于确认美术风格，后续批量只需产图 + 加一行 `img`，未替换的 CG 继续用 SVG。
@@ -102,22 +105,22 @@ P0-2 符号兜底（91 汉字缺字已于 v3.2.4 补齐）；P2-1 关于页反�
 P2-2 首屏性能（脚本 defer + gzip）；P3 存档审计（107 键安全）。此前 v3.2.1：e2e 浏览器
 回归落地并接入 CI；v2.8.5 → v3.2.0：工程债务清偿、功能增强、剧情治理、表现升级。
 
-详细内容见 → [docs/20261024-1540-CG位图样张-Doubao.md](docs/20261024-1540-CG位图样张-Doubao.md)（上一版 → [docs/20261024-1517-真实BGM落地-Doubao.md](docs/20261024-1517-真实BGM落地-Doubao.md)；进度快照 → [当前开发进度](docs/20261024-1517-当前开发进度-Doubao.md)）
+详细内容见 → [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)（上一版 → [docs/20261024-1540-CG位图样张-Doubao.md](docs/20261024-1540-CG位图样张-Doubao.md)；BGM → [docs/20261024-1517-真实BGM落地-Doubao.md](docs/20261024-1517-真实BGM落地-Doubao.md)；进度快照 → [当前开发进度](docs/20261024-1517-当前开发进度-Doubao.md)）
 
 ## 【下一步待实现】
 
 - **已完成**：学姐线形态 A（v3.3.0）；图鉴收集率（v3.3.1）；CG 解锁缺口（v3.3.3）；
   记忆/图鉴数据契约（v3.3.4）；交互/无障碍/设置面板（v3.3.5）；限时持久化+焦点陷阱+引擎瘦身（v3.3.6）；
   图鉴记忆标题+多周目文本（v3.3.7）；女主线多周目文本（v3.3.8）；共通线/后日谈多周目文本（v3.3.9）；
-  **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**。
+  **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
 - **详细计划（执行级，当前以此为准）**：任务拆分、loopText 目标节点批次、引擎接口设计、里程碑与版本号
   → [docs/20261024-1314-下一步开发详细计划-DeepSeek.md](docs/20261024-1314-下一步开发详细计划-DeepSeek.md)
 - **Phase 1 基本完成**（仅剩 P1-6 性能预取，评估后改为 B1/B2 两项低成本增强）；下一步进入 **Phase 2 内容纵深**。
 - **建议执行顺序**：P2-1a loopText 学姐线 → P2-1b 真结局线 → P2-2 回响落地（先定 UI）→ P2-3/P2-4 → B1/B2。
-- 需素材/拍板：AI 位图立绘/CG、itch.io 分发、英文 i18n、真实音效素材、玩法同质化调整。
-  真实 BGM 已落地（v3.3.15，CC BY 4.0，署名见「关于」页）。
+- 需素材/拍板：AI 位图立绘（5 张，需透明背景）、itch.io 分发、英文 i18n、真实音效素材、玩法同质化调整。
+  CG 位图（11 张）与真实 BGM（5 首）均已落地（v3.3.17 / v3.3.15，署名见「关于」页）。
   历史路线另见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
 
 详细内容见 → [docs/20261024-1314-下一步开发详细计划-DeepSeek.md](docs/20261024-1314-下一步开发详细计划-DeepSeek.md)
@@ -135,7 +138,7 @@ css/style.css       基础与引擎 UI 样式（顶部为自托管 @font-face）
 css/games.css       全部玩法浮层样式（94 套，v2.9.2 拆出）
 fonts/              自托管 Noto Serif SC 子集（非 Mac 平台兜底；macOS 优先用本机 Songti SC，重建见 tools/rebuild_font_subset.sh）
 audio/bgm/          5 首真实 BGM（Ogg，约 8MB；Patrick de Arteaga · CC BY 4.0，署名见游戏「关于」页）
-assets/cg/          CG 位图（当前 1 张样张；其余 CG 仍用内联 SVG，可渐进替换）
+assets/cg/          CG 位图 11 张（1600×960 JPEG，约 2.3MB；由 js/script.js 的 CGS.img 引用）
 js/saves.js         存档与图鉴数据层（localStorage，107 个键；记录型存取由 recordStore 工厂生成）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 417 节点 + 学姐线 24 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
@@ -144,7 +147,7 @@ js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生
 js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 13 / nature 13 /
                     perception 14 / mechanism 14 / imagery 12 / direct 10（直跳型）
 js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
-sw.js               Service Worker：预缓存 26 项静态资源，缓存版本 sakura-vX.Y.Z 随发版同步
+sw.js               Service Worker：预缓存 42 项静态资源（含 5 首 BGM + 11 张 CG），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套
 tests/              Node 原生测试（42 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
@@ -152,7 +155,7 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v3.3.15，下一版 v3.3.16）
+- 版本号：每次修改 +0.0.1，满十进一（当前 v3.3.17，下一版 v3.3.18）
 - 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
   `package-lock.json`（v3.3.4 起）/ `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/
   `js/engine.js`（GAME_VERSION 常量）；
@@ -165,8 +168,11 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 - 字体：新增文案若出现子集未覆盖的汉字 → `bash tools/rebuild_font_subset.sh`
 - BGM：`audio/bgm/{daily,bright,sad,calm,active}.ogg` 对应 5 个场景 mood，替换同名文件即可；
   素材为 CC BY 4.0，署名必须保留在游戏「关于」页
-- CG 位图：在 `CGS` 条目加 `img: "assets/cg/xxx.jpg"` 即替换该张内联 SVG（1600 宽、JPEG q82 为宜）；
-  无 `img` 的条目继续用 SVG，可渐进替换
+- CG 位图：11 张已全部接入（`CGS.img` → `assets/cg/<id>.jpg`，1600×960、5:3、JPEG q82，
+  单张 115–355KB）；新增/替换 CG 只需产图 + 改 `img` 路径（或加字段），并把新文件补进
+  `sw.js` 预缓存与 `tests/static.test.mjs` 资源清单；无 `img` 的条目仍用内联 SVG 兜底。
+  生图后统一后处理：裁掉底部白色 letterbox → `scale=1600:960:flags=lanczos`（详见
+  [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
 - 提交：中文 commit，完成后推送 gitee（origin）与 github（备份）；push 后服务器
   cron 每 3 分钟自动拉取部署到 oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
