@@ -170,6 +170,15 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   await page.waitForTimeout(150);
   const afterChoice = await page.evaluate(() => window.__game.state.currentNode);
   assert.notEqual(afterChoice, beforeChoice, "选项键盘操作未生效（Enter 未确认选项）");
+
+  // v3.3.11：CG 大图查看器——点击已解锁 CG 放大，Esc 关闭
+  await page.evaluate(() => { Saves.unlockCG("cg_letter"); window.__game.openOverlay("cg"); });
+  await page.evaluate(() => document.querySelector("#overlay-body [data-cg]")?.click());
+  await page.waitForTimeout(120);
+  assert.ok(await page.evaluate(() => !!document.getElementById("cg-viewer-layer")), "CG 大图查看器未打开");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  assert.ok(await page.evaluate(() => !document.getElementById("cg-viewer-layer")), "CG 大图 Esc 未关闭");
   console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING

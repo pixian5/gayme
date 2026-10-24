@@ -139,13 +139,15 @@
             1-9 快选，并补 role/aria-label/aria-keyshortcuts 与 :focus-visible 焦点环；
             新增「数据统计」浮层（剧情进度/结局/CG/关键词/合成/记忆/周目/累计时长）；
             累计时长写入独立 STATS_KEY（不碰剧情 flags）
+   v3.3.11：CG 大图查看器——图鉴中点击已解锁 CG 弹出放大视图（上一张/下一张、Esc/点击空白
+            关闭；浮层 class 以 -layer 结尾，纳入交互锁与返回标题清理）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.10";
+  const GAME_VERSION = "3.3.11";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1629,7 +1631,7 @@
     </div>`;
     el.overlayBody.innerHTML = progressBar + `<div class="cg-grid">` + CGS.map((cg) => {
       const unlocked = Saves.isCGUnlocked(cg.id);
-      return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}">
+      return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}"${unlocked ? ` data-cg="${cg.id}"` : ""}>
         ${unlocked ? cg.svg : `<div class="cg-locked-placeholder"><div>？？？</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">${cg.heroine}</div></div>`}
         <div class="cg-info">
           <div class="cg-title">${unlocked ? cg.title : "未解锁"}</div>
@@ -1637,6 +1639,55 @@
         </div>
       </div>`;
     }).join("") + "</div>";
+    // v3.3.11：点击已解锁 CG 打开大图查看器
+    el.overlayBody.querySelectorAll("[data-cg]").forEach((card) => {
+      card.style.cursor = "pointer";
+      card.onclick = () => { closeOverlay(); openCgViewer(card.dataset.cg); };
+    });
+  }
+
+  // v3.3.11：CG 大图查看器（放大已解锁 CG，方向键切换、Esc 关闭）
+  function openCgViewer(startId) {
+    const unlocked = CGS.filter((cg) => Saves.isCGUnlocked(cg.id));
+    if (!unlocked.length) return;
+    let idx = Math.max(0, unlocked.findIndex((cg) => cg.id === startId));
+    const old = document.getElementById("cg-viewer-layer");
+    if (old) old.remove();
+    const layer = document.createElement("div");
+    layer.id = "cg-viewer-layer";
+    layer.className = "cg-viewer-layer"; // 以 -layer 结尾：纳入交互锁与返回标题清理
+    layer.tabIndex = -1;
+    layer.innerHTML = `
+      <div class="cg-viewer-inner">
+        <div class="cg-viewer-art"></div>
+        <div class="cg-viewer-bar">
+          <button class="cg-view-btn" data-nav="-1" aria-label="上一张">‹ 上一张</button>
+          <span class="cg-viewer-title"></span>
+          <button class="cg-view-btn" data-nav="1" aria-label="下一张">下一张 ›</button>
+        </div>
+        <button class="cg-viewer-close" aria-label="关闭大图">✕</button>
+      </div>`;
+    document.getElementById("game").appendChild(layer);
+    const art = layer.querySelector(".cg-viewer-art");
+    const titleEl = layer.querySelector(".cg-viewer-title");
+    const show = () => {
+      const cg = unlocked[idx];
+      art.innerHTML = cg.svg;
+      titleEl.textContent = `${cg.title} · ${cg.heroine}（${idx + 1} / ${unlocked.length}）`;
+    };
+    const nav = (d) => { idx = (idx + d + unlocked.length) % unlocked.length; show(); };
+    show();
+    layer.querySelectorAll("[data-nav]").forEach((b) => {
+      b.onclick = (e) => { e.stopPropagation(); nav(parseInt(b.dataset.nav, 10)); };
+    });
+    layer.querySelector(".cg-viewer-close").onclick = (e) => { e.stopPropagation(); layer.remove(); };
+    layer.onclick = (e) => { if (e.target === layer) layer.remove(); };
+    layer.onkeydown = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); layer.remove(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); nav(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); nav(1); }
+    };
+    layer.focus();
   }
 
   /* ============ 流程图 ============ */

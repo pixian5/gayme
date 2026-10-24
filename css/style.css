@@ -1261,3 +1261,24 @@ button:focus-visible,
   outline-offset: 3px;
   box-shadow: 0 0 0 4px rgba(255,184,200,0.25);
 }
+
+/* v3.3.11：CG 大图查看器 */
+.cg-viewer-layer {
+  position: absolute; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8,4,16,0.92); backdrop-filter: blur(10px);
+  padding: 4vh 4vw;
+}
+.cg-viewer-inner {
+  position: relative; width: 92vw; max-width: 900px; max-height: 92vh;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.cg-viewer-art svg { width: 100%; height: auto; max-height: 74vh; border-radius: 12px; box-shadow: 0 12px 48px rgba(0,0,0,0.6); }
+.cg-viewer-bar { display: flex; align-items: center; gap: 16px; color: #ffd8e4; letter-spacing: 2px; }
+.cg-viewer-title { font-size: 15px; }
+.cg-view-btn, .cg-viewer-close {
+  background: rgba(60,40,80,0.7); border: 1px solid rgba(255,200,220,0.4);
+  color: #ffd8e4; border-radius: 8px; padding: 8px 16px; cursor: pointer;
+  font-family: inherit; font-size: 14px; letter-spacing: 2px;
+}
+.cg-viewer-close { position: absolute; top: 0; right: 0; padding: 8px 14px; }
