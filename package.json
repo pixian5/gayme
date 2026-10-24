@@ -1,7 +1,7 @@
 {
   "name": "sakura-letters",
   "private": true,
-  "version": "3.3.18",
+  "version": "3.3.19",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",

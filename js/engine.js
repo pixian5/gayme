@@ -156,6 +156,7 @@
             查看器统一走 cgArt()；首张样张「走廊的初次相遇」接入 AI 位图，用于确认美术风格
    v3.3.17：CG 位图全量接入——11 张 CG 全部换成 AI 位图（1600×960 JPEG），
    v3.3.18：Pages 失同步止血——gh-pages 分支改为纯重定向页跳转唯一正式源
+   v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
            oh.sbbz.tech:8080，Pages 源切换至 gh-pages；README 单源化
             样张改名 cg_meet_shiyu.jpg 统一命名；SW 预缓存补齐 11 张（离线图鉴可用）；
             内联 SVG 保留为无位图时的兜底渲染路径
@@ -165,7 +166,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.18";
+  const GAME_VERSION = "3.3.19";
 
   /* ---------- DOM 引用 ---------- */
   const el = {

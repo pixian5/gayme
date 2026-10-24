@@ -1,13 +1,13 @@
 /* 樱时信笺 · Service Worker（v3.2.0）
    —— 预缓存全部静态资源：离线可玩 / 添加到主屏幕。
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）。 */
-const CACHE_VERSION = "sakura-v3.3.18";
+const CACHE_VERSION = "sakura-v3.3.19";   // 核心层缓存（bump 工具自动同步）
+const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
 const PRECACHE = [
   "./",
   "index.html",
   "manifest.webmanifest",
   "favicon.svg",
-  "assets/og-cover.jpg",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
@@ -27,22 +27,6 @@ const PRECACHE = [
   "js/games/imagery.js",
   "js/games/direct.js",
   "js/engine.js",
-  "audio/bgm/daily.ogg",
-  "audio/bgm/bright.ogg",
-  "audio/bgm/sad.ogg",
-  "audio/bgm/calm.ogg",
-  "audio/bgm/active.ogg",
-  "assets/cg/cg_meet_shiyu.jpg",
-  "assets/cg/cg_meet_xiazhi.jpg",
-  "assets/cg/cg_meet_sunian.jpg",
-  "assets/cg/cg_letter.jpg",
-  "assets/cg/cg_sportsmeet.jpg",
-  "assets/cg/cg_festival.jpg",
-  "assets/cg/cg_shiyu_good.jpg",
-  "assets/cg/cg_xiazhi_good.jpg",
-  "assets/cg/cg_sunian_good.jpg",
-  "assets/cg/cg_senior_shadow.jpg",
-  "assets/cg/cg_true.jpg",
   "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
   "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
 ];
@@ -56,7 +40,8 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
+      // 只清核心层旧版本仓；媒体层（sakura-media）跨版本沿用，避免重下 10MB
+      Promise.all(keys.filter((k) => k.startsWith("sakura-v") && k !== CACHE_VERSION).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
@@ -79,17 +64,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 其余静态资源：缓存优先 + 后台更新（stale-while-revalidate）
+  // 媒体资源（BGM / CG 位图）：运行时缓存进 sakura-media（cache-first + 后台更新）
+  const isMedia = url.pathname.includes("/audio/") || url.pathname.includes("/assets/cg/");
+  const store = isMedia ? MEDIA_CACHE : CACHE_VERSION;
   event.respondWith(
-    caches.match(req).then((hit) => {
-      const fetching = fetch(req).then((res) => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      }).catch(() => hit);
-      return hit || fetching;
-    })
+    caches.open(store).then((cache) =>
+      cache.match(req).then((hit) => {
+        const fetching = fetch(req).then((res) => {
+          if (res && res.ok) cache.put(req, res.clone());
+          return res;
+        }).catch(() => hit);
+        return hit || fetching;
+      })
+    )
   );
 });
