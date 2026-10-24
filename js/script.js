@@ -4405,12 +4405,16 @@ const SCRIPT = {
   },
   // 普通选项路径：循环未打破
   true_6: { day: 11, time: "night", bg: "festival", char: "shen", speaker: "", text: "樱花祭之夜。我在樱花树下，写下回信。然后，我写下自己人生的第一行字。", next: "true_7", cg_unlock: "cg_true", keyword: "回信" },
-  true_7: { day: 11, time: "night", bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_8" },
-  true_8: { day: 11, time: "night", bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_9" },
-  true_9: { day: 11, time: "night", bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。", next: "true_ending" },
+  true_7: { day: 11, time: "night", bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。",
+    loopText: ["沈屿——你的信，我们替你转交了。", "沈屿——你的信，我们替你转交了。诗雨说这句话时，我看见她的稿纸边角写着新的章节名。三个春天里的三次目送，这一次终于有了回音。"], next: "true_8" },
+  true_8: { day: 11, time: "night", bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。",
+    loopText: ["学姐说她收到了。她说她终于能往前走了。", "学姐说她收到了。她说她终于能往前走了。夏织说这话时站在终点线旁——她比谁都懂「往前走」三个字要跑多远。"], next: "true_9" },
+  true_9: { day: 11, time: "night", bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。",
+    loopText: ["……你也终于写下自己了。", "……你也终于写下自己了。苏念把这句说完，转身回了画室。门开着——比上一次开得更大。"], next: "true_ending" },
   true_ending: { day: 11, time: "night",
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。",
+    loopText: ["那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。", "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。我走完了。不是这一次走完的，是每一个春天，各走了一段。"],
     ending: { id: "true_unbroken", type: "LOOP ENDING", title: "未 破 环", text: "你替她回了一封信，也写下自己；但真正的樱花信还没有合成。" }
   },
 
@@ -4418,11 +4422,14 @@ const SCRIPT = {
   true_break_loop: { day: 11, time: "night",
     bg: "cherry_full", char: "senior", speaker: "学姐",
     text: "——你做到了。你把祭信与未寄信合在了一起。这封信，我等了三年。",
+    loopText: ["——你做到了。你把祭信与未寄信合在了一起。这封信，我等了三年。", "——你做到了。你把祭信与未寄信合在了一起。这封信，我等了三年。她的声音很轻，轻得像终于放下。我记得她说「影子」时的语气——那不是告别，是托付。"],
     next: "true_break_2",
     memory: { id: "打破循环", title: "樱花信", text: "把祭信与未寄信合在一起，就是打破循环的钥匙。" }
   },
-  true_break_2: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。", next: "true_break_3" },
-  true_break_3: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。", next: "true_break_4" },
+  true_break_2: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。",
+    loopText: ["三年前我也想合成这封信，可我那时候还不知道「未寄信」也是写给自己。你比我有勇气。", "三年前她也想合成这封信，可她那时候还不知道「未寄信」也是写给自己。这句话她只在旧校舍说过一次。我替她记住了——现在，由我说给她听：你比当年的自己，有勇气。"], next: "true_break_3" },
+  true_break_3: { day: 11, time: "night", bg: "cherry_full", char: "senior", speaker: "学姐", text: "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。",
+    loopText: ["去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。", "去吧。今晚樱花祭，你替我回信，也替自己写下第一行。这一次——不会再回来了。「不会再回来」这句话，我听过很多次她说。只有这一次，她笑得像真的。"], next: "true_break_4" },
   // 真实书写信件：玩家自己打字写信
   true_break_4: { day: 11, time: "night",
     bg: "festival", char: "shen", speaker: "",
@@ -4444,13 +4451,15 @@ const SCRIPT = {
   true_break_5a: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「敢」——你写的第一个字是敢。我也想敢一次。今天起，我替自己敢。", next: "true_break_6" },
   true_break_5b: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「放」——你说得对。我也可以放下。放下这三年，放下那个没敢回信的自己。", next: "true_break_6" },
   true_break_5c: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "「想念」——你说你想念。我也想念。可想念不该是停下的理由。", next: "true_break_6" },
-  true_break_5d: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。", next: "true_break_6" },
+  true_break_5d: { day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐", text: "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。",
+    loopText: ["——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。", "——你的信，我读完了。每个字都不一样，可每个字都通向同一个地方。这一次我写信时没有打草稿。因为所有草稿，都写在这三年里了。"], next: "true_break_6" },
   true_break_6: { day: 11, time: "night", bg: "festival", chars: [{id:"shiyu", pos:"left"}, {id:"xiazhi", pos:"center"}, {id:"sunian", pos:"right"}], speaker: "林诗雨", text: "沈屿——你的信，我们替你转交了。", next: "true_break_7", cg_unlock: "cg_true" },
   true_break_7: { day: 11, time: "night", bg: "festival", char: "xiazhi", speaker: "夏织", text: "学姐说她收到了。她说她终于能往前走了。", next: "true_break_8" },
   true_break_8: { day: 11, time: "night", bg: "festival", char: "sunian", speaker: "苏念", text: "……你也终于写下自己了。这一次，是真的写下了。", next: "true_break_ending" },
   true_break_ending: { day: 11, time: "night",
     bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。",
+    loopText: ["那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。这一次，樱花不会再倒着飘了。", "那年樱花祭之夜，我替学姐回了一封信，也写下自己人生的第一行字。三条路从来不是三条。它们是同一条——只要你敢走完它。走完的人都知道：所谓打破循环，不是让时间停下——是让每一个春天，都和上一次不一样。这一次，樱花不会再倒着飘了。"],
     ending: { id: "true_end", type: "TRUE ENDING", title: "樱 花 信 · 破 环", text: "你合成了樱花信，打破了时间的循环。" }
   },
 
