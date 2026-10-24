@@ -10,7 +10,9 @@ npm run test:syntax --silent
 echo "[pre-push] diff 检查…"
 git diff --check
 if [ "${PREPUSH_E2E:-0}" = "1" ]; then
-  echo "[pre-push] e2e 回归…"
+  echo "[pre-push] e2e 回归（chromium）…"
   npm run test:e2e --silent
+  echo "[pre-push] e2e 回归（firefox）…"
+  BROWSER=firefox npm run test:e2e --silent
 fi
 echo "[pre-push] 全部通过 ✓"

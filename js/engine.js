@@ -168,6 +168,7 @@
    v3.4.1：发行准备——tools/pack-itch.sh 一键打分发 zip（2.3MB），关于页加 gitee issues 反馈入口
    v3.4.2：性能 B1/B2——saves/script/engine 三脚本 preload（首屏解析提速）；立绘阵容签名预合成（同阵容节点跳过重建，消除入场重放与闪动），backToTitle 清签名
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
+   v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -181,7 +182,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.3";
+  const GAME_VERSION = "3.4.4";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1582,7 +1583,8 @@
           const nodeId = String(l.id).slice(5);
           const node = SCRIPT[nodeId];
           const where = node ? (node.text || "").slice(0, 24) + "…" : nodeId;
-          const what = l.answers && l.answers.text ? l.answers.text : JSON.stringify(l.answers || "");
+          // v3.4.4：自由回信（answers.content）与选择回响（answers.text）都入列
+          const what = (l.answers && (l.answers.text || l.answers.content)) || JSON.stringify(l.answers || "");
           return `<div class="history-entry">
             <div class="h-speaker">你的选择 · ${escapeHtml(where)}</div>
             <div class="h-text">${escapeHtml(what)}</div>

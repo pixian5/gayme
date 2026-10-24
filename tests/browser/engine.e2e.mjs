@@ -63,7 +63,12 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   const page = await browser.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
-  page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
+  page.on("console", (m) => {
+    if (m.type() !== "error") return;
+    // Firefox 刷新时中断在途请求会记良性噪音，过滤
+    if (m.text().includes("Navigated away from page")) return;
+    errors.push("console: " + m.text());
+  });
 
   await page.goto(`http://localhost:${PORT}/`);
   // Saves 是顶层 const（全局词法绑定，不挂 window 属性），必须用 typeof 判断
