@@ -141,6 +141,17 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
         slider.dispatchEvent(new Event("input"));
       });
       assert.equal(await page.evaluate("Saves.settings.bgmVolume"), 0.2, "BGM 音量滑杆未写入设置");
+      // v3.3.12：设置面板新增「减少动效」「界面字号」并立即生效
+      assert.ok(await page.evaluate(() => !!document.getElementById("cfg-reducemotion") && !!document.getElementById("cfg-fontscale")),
+        "设置面板缺少减少动效 / 界面字号控件");
+      await page.evaluate(() => {
+        const slider = document.getElementById("cfg-fontscale");
+        slider.value = "1.2";
+        slider.dispatchEvent(new Event("input"));
+      });
+      assert.equal(await page.evaluate("Saves.settings.fontScale"), 1.2, "界面字号滑杆未写入设置");
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ui-scale").trim()),
+        "1.2", "界面字号未应用到 --ui-scale");
     }
     await page.evaluate(() => window.__game.closeOverlay());
   }

@@ -192,6 +192,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   sfxVolume: 0.6,
   particles: true,
   bgm: true,
+  // v3.3.12：界面字号缩放（0.9–1.3）与「减少动效」开关
+  fontScale: 1,
+  reduceMotion: false,
 });
 
 function createDefaultSaveData() {
@@ -211,6 +214,7 @@ const NUMERIC_SETTING_RANGES = Object.freeze({
   autoDelay: { min: 500, max: 4000, integer: true },
   bgmVolume: { min: 0, max: 1, integer: false },
   sfxVolume: { min: 0, max: 1, integer: false },
+  fontScale: { min: 0.9, max: 1.3, integer: false },
 });
 
 function normalizeSettings(value) {
@@ -223,7 +227,7 @@ function normalizeSettings(value) {
     const bounded = Math.min(range.max, Math.max(range.min, raw));
     normalized[key] = range.integer ? Math.round(bounded) : bounded;
   }
-  for (const key of ["particles", "bgm"]) {
+  for (const key of ["particles", "bgm", "reduceMotion"]) {
     if (typeof value[key] === "boolean") normalized[key] = value[key];
   }
   return normalized;

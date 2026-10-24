@@ -319,7 +319,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   box-shadow: 0 4px 12px rgba(180,80,120,0.5);
 }
 #dialog-text {
-  font-size: 21px;
+  font-size: calc(21px * var(--ui-scale, 1));
   line-height: 1.9;
   letter-spacing: 1px;
   color: #f5f0e8;
@@ -1225,7 +1225,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 @media (max-width: 768px) {
   .title-cn { font-size: 54px; letter-spacing: 14px; }
   #dialog-box { left: 3%; right: 3%; padding: 20px 20px 28px; bottom: calc(3% + env(safe-area-inset-bottom)); max-height: 46vh; }
-  #dialog-text { font-size: 17px; max-height: 30vh; overflow-y: auto; }
+  #dialog-text { font-size: calc(17px * var(--ui-scale, 1)); max-height: 30vh; overflow-y: auto; }
   .char-sprite { width: 60%; }
   #heart-bar { min-width: 160px; top: calc(58px + env(safe-area-inset-top)); right: 8px; padding: 8px 10px; }
   .heart-name { width: 30px; font-size: 11px; }
@@ -1282,3 +1282,10 @@ button:focus-visible,
   font-family: inherit; font-size: 14px; letter-spacing: 2px;
 }
 .cg-viewer-close { position: absolute; top: 0; right: 0; padding: 8px 14px; }
+
+/* v3.3.12：减少动效（设置项 / 系统偏好）——关闭动画与过渡，减轻动态刺激 */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: 0.001s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001s !important;
+}

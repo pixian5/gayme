@@ -141,13 +141,16 @@
             累计时长写入独立 STATS_KEY（不碰剧情 flags）
    v3.3.11：CG 大图查看器——图鉴中点击已解锁 CG 弹出放大视图（上一张/下一张、Esc/点击空白
             关闭；浮层 class 以 -layer 结尾，纳入交互锁与返回标题清理）
+   v3.3.12：设置扩展——新增「减少动效」开关（关粒子 + 停动画过渡，与系统 prefers-reduced-motion
+            叠加）与「界面字号」缩放（--ui-scale 应用到对白，0.9–1.3）；均纳入 DEFAULT_SETTINGS
+            与设置键白名单契约
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.11";
+  const GAME_VERSION = "3.3.12";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1300,6 +1303,14 @@
       <div class="config-row"><label>粒子特效</label>
         <select id="cfg-particles"><option value="true" ${s.particles ? "selected" : ""}>开启</option><option value="false" ${!s.particles ? "selected" : ""}>关闭</option></select>
       </div>
+      <div class="config-row"><label>减少动效</label>
+        <select id="cfg-reducemotion"><option value="true" ${s.reduceMotion ? "selected" : ""}>开启</option><option value="false" ${!s.reduceMotion ? "selected" : ""}>关闭</option></select>
+      </div>
+      <div class="config-row">
+        <label>界面字号</label>
+        <input type="range" id="cfg-fontscale" min="0.9" max="1.3" step="0.05" value="${escapeHtml(String(s.fontScale ?? 1))}">
+        <span id="cfg-fontscale-val" style="color:#ffb8c8;width:40px;">${Math.round((s.fontScale ?? 1) * 100)}%</span>
+      </div>
       <div class="config-row"><label>背景音乐</label>
         <select id="cfg-bgm"><option value="true" ${s.bgm ? "selected" : ""}>开启</option><option value="false" ${!s.bgm ? "selected" : ""}>关闭</option></select>
       </div>
@@ -1338,6 +1349,12 @@
       if (!Saves.settings.particles) stopParticles();
       else if (state.currentBg) updateParticles(state.currentBg);
     };
+    // v3.3.12：减少动效开关
+    document.getElementById("cfg-reducemotion").onchange = (e) => {
+      Saves.updateSetting("reduceMotion", e.target.value === "true");
+      applyUiSettings();
+      if (state.currentBg) updateParticles(state.currentBg);
+    };
     document.getElementById("cfg-bgm").onchange = (e) => {
       Saves.updateSetting("bgm", e.target.value === "true");
       if (Saves.settings.bgm && state.currentBg) playBgmForScene(state.currentBg);
@@ -1359,6 +1376,15 @@
       bgmVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("bgmVolume", v);
       if (bgmGain) bgmGain.gain.value = v;
+    };
+    // v3.3.12：界面字号缩放滑杆
+    const fontSlider = document.getElementById("cfg-fontscale");
+    const fontVal = document.getElementById("cfg-fontscale-val");
+    fontSlider.oninput = () => {
+      const v = parseFloat(fontSlider.value);
+      fontVal.textContent = Math.round(v * 100) + "%";
+      Saves.updateSetting("fontScale", v);
+      applyUiSettings();
     };
     document.getElementById("cfg-export").onclick = () => {
       const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
@@ -2552,7 +2578,7 @@
   resizeCanvas();
 
   function getParticleType(scene) {
-    if (!Saves.settings.particles) return "none";
+    if (!Saves.settings.particles || Saves.settings.reduceMotion) return "none";
     if (scene === "rain") return "rain";
     if (["winter", "ending_bad", "ending_normal"].includes(scene)) return "snow";
     if (["cherry_full", "school_gate", "classroom", "library", "hallway", "art_room", "home_room", "cafeteria", "festival"].includes(scene)) return "sakura";
@@ -2560,8 +2586,8 @@
   }
 
   function updateParticles(scene) {
-    // 减动效（v3.2.0）：系统开启「减弱动态效果」时不生成粒子
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { stopParticles(); return; }
+    // 减动效：系统「减弱动态效果」或设置项开启时都不生成粒子
+    if (Saves.settings.reduceMotion || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) { stopParticles(); return; }
     const newType = getParticleType(scene);
     if (newType === particleType) return;
     particleType = newType;
@@ -2944,7 +2970,15 @@
   // v2.7.9 起：向玩法框架基座注入宿主能力（剧情跳转 / 数值加成 / 心条刷新 / 顶部提示 / 转义）
   window.GameKit?.attachHost({ gotoNode, applyAdd, updateHeartBar, flashHint, escapeHtml });
 
+  // v3.3.12：把界面类设置应用到文档（字号缩放 --ui-scale、减少动效 class）
+  function applyUiSettings() {
+    const s = Saves.settings || {};
+    document.documentElement.style.setProperty("--ui-scale", String(s.fontScale ?? 1));
+    document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
+  }
+
   function init() {
+    applyUiSettings();
     setScene("cherry_full");
     updateParticles("cherry_full");
     updateTrueEndAccess();
