@@ -1289,3 +1289,28 @@ button:focus-visible,
   animation-iteration-count: 1 !important;
   transition-duration: 0.001s !important;
 }
+
+/* v3.3.13：新手引导浮层 */
+.tutorial-layer {
+  position: absolute; inset: 0; z-index: 45;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(8,4,16,0.78); backdrop-filter: blur(6px); padding: 5vh 5vw;
+}
+.tutorial-card {
+  width: min(520px, 92vw); padding: 26px 30px; border-radius: 16px;
+  background: linear-gradient(135deg, rgba(60,36,84,0.95), rgba(34,24,52,0.95));
+  border: 1px solid rgba(255,200,220,0.35); box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  color: #f5f0e8;
+}
+.tutorial-title { font-size: 22px; letter-spacing: 4px; color: #ffd8e4; margin-bottom: 16px; text-align: center; }
+.tutorial-list { list-style: none; padding: 0; margin: 0 0 20px; line-height: 2; font-size: 15px; }
+.tutorial-list li::before { content: "✦ "; color: #ffb8c8; }
+.tutorial-list kbd {
+  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,200,220,0.35);
+  border-radius: 5px; padding: 1px 7px; font-family: inherit; font-size: 13px; color: #ffd8e4;
+}
+.tutorial-ok {
+  display: block; margin: 0 auto; padding: 10px 32px; cursor: pointer; font-family: inherit;
+  font-size: 16px; letter-spacing: 3px; color: #2a1830; border: none; border-radius: 10px;
+  background: linear-gradient(90deg,#ffd8e4,#ffb8c8);
+}

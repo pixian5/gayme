@@ -438,6 +438,7 @@ const Saves = {
     const data = {
       slot,
       timestamp: Date.now(),
+      name: "",
       nodeId: snapshot.nodeId,
       variables: snapshot.variables,
       sceneLabel: snapshot.sceneLabel || "",
@@ -478,6 +479,33 @@ const Saves = {
 
   getQuickSave() { return this.data.slots[0]; },
   quickSave(snapshot) { return this.save(0, snapshot); },
+
+  /* v3.3.13：单槽增强——重命名 / 导出 / 导入（备份与跨设备迁移） */
+  renameSave(slot, name) {
+    const data = this.load(slot);
+    if (!data) return false;
+    const previous = data.name;
+    data.name = typeof name === "string" ? name.slice(0, 20) : "";
+    if (this._saveSaves()) return true;
+    data.name = previous;
+    return false;
+  },
+  exportSlot(slot) {
+    const data = this.load(slot);
+    return data ? JSON.parse(JSON.stringify(data)) : null;
+  },
+  importSlot(slot, data) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS) return false;
+    if (!data || typeof data !== "object" || Array.isArray(data) || typeof data.nodeId !== "string" || !data.nodeId) return false;
+    const previousSlot = this.data.slots[slot];
+    const previousLastSlot = this.data.lastSlot;
+    this.data.slots[slot] = Object.assign({}, data, { slot, timestamp: data.timestamp || Date.now() });
+    this.data.lastSlot = slot;
+    if (this._saveSaves()) return true;
+    this.data.slots[slot] = previousSlot;
+    this.data.lastSlot = previousLastSlot;
+    return false;
+  },
 
   /* v2.9.8 自动存档：推进节点时静默写入最后位置，刷新 / 关页后可从「继续游戏」恢复。
      payload = { savedAt, snapshot }；写入失败静默返回 false（引擎节流重试）。 */

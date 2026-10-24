@@ -144,13 +144,15 @@
    v3.3.12：设置扩展——新增「减少动效」开关（关粒子 + 停动画过渡，与系统 prefers-reduced-motion
             叠加）与「界面字号」缩放（--ui-scale 应用到对白，0.9–1.3）；均纳入 DEFAULT_SETTINGS
             与设置键白名单契约
+   v3.3.13：存档增强 + 新手引导——存档槽支持重命名（name 字段）/ 单槽导出 / 导入（本地 JSON）；
+            新档首次进入弹出可跳过的新手引导（tutorialSeen 标记，只出现一次）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.12";
+  const GAME_VERSION = "3.3.13";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1042,6 +1044,42 @@
     if (el.dayBar) el.dayBar.style.opacity = "1";
     if (el.heartBar) el.heartBar.style.opacity = "1";
     gotoNode(START_NODE);
+    // v3.3.13：新档首次进入时弹出可跳过的操作引导（只出现一次）
+    if (!Saves.getFlag("tutorialSeen", false)) {
+      Saves.setFlag("tutorialSeen", true);
+      showTutorial();
+    }
+  }
+
+  // v3.3.13：新手引导浮层（点击/空格/回车/Esc 均可关闭）
+  function showTutorial() {
+    const old = document.getElementById("tutorial-layer");
+    if (old) old.remove();
+    const layer = document.createElement("div");
+    layer.id = "tutorial-layer";
+    layer.className = "tutorial-layer"; // 以 -layer 结尾：纳入交互锁与返回标题清理
+    layer.tabIndex = -1;
+    layer.innerHTML = `
+      <div class="tutorial-card">
+        <div class="tutorial-title">欢迎来到樱时信笺</div>
+        <ul class="tutorial-list">
+          <li><b>推进剧情</b>：点击对话框，或按 <kbd>空格</kbd> / <kbd>回车</kbd></li>
+          <li><b>选择 / 回信</b>：方向键移动、<kbd>回车</kbd> 确认，或数字键 <kbd>1-9</kbd></li>
+          <li><b>推进辅助</b>：<kbd>S</kbd> 快存、<kbd>A</kbd> 自动播放、快进可跳过已读</li>
+          <li><b>随时回看</b>：顶栏可打开 设置 / 存档 / 图鉴 / 统计</li>
+        </ul>
+        <button class="tutorial-ok">开始故事</button>
+      </div>`;
+    document.getElementById("game").appendChild(layer);
+    const layerClose = () => layer.remove();
+    layer.querySelector(".tutorial-ok").onclick = (e) => { e.stopPropagation(); layerClose(); };
+    layer.onclick = (e) => { if (e.target === layer) layerClose(); };
+    layer.onkeydown = (e) => {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+        e.stopPropagation(); e.preventDefault(); layerClose();
+      }
+    };
+    layer.focus();
   }
 
   function startAfterword() {
@@ -1248,11 +1286,13 @@
         html += `<div class="save-slot" data-slot="${i}">
           <div class="slot-no">${i + 1}</div>
           <div class="slot-info">
-            <div class="slot-title">${escapeHtml(data.sceneLabel || "未知场景")}${isQuick ? " · 快存" : ""}</div>
+            <div class="slot-title">${escapeHtml(data.name || data.sceneLabel || "未知场景")}${isQuick ? " · 快存" : ""}</div>
             <div class="slot-meta">${Saves.formatTime(data.timestamp)} · ${escapeHtml(data.dialogPreview || "")}</div>
           </div>
           <div class="slot-actions">
             ${mode === "save" ? `<button data-act="save" data-slot="${i}">覆盖</button>` : `<button data-act="load" data-slot="${i}">读取</button>`}
+            <button data-act="rename" data-slot="${i}">命名</button>
+            <button data-act="export" data-slot="${i}">导出</button>
             <button data-act="del" data-slot="${i}">删除</button>
           </div>
         </div>`;
@@ -1263,7 +1303,7 @@
             <div class="slot-title">${isQuick ? "快存槽" : "空槽位"}</div>
             <div class="slot-meta slot-empty">— 空 —</div>
           </div>
-          <div class="slot-actions">${mode === "save" ? `<button data-act="save" data-slot="${i}">存档</button>` : ""}</div>
+          <div class="slot-actions">${mode === "save" ? `<button data-act="save" data-slot="${i}">存档</button>` : ""}<button data-act="import" data-slot="${i}">导入</button></div>
         </div>`;
       }
     }
@@ -1275,6 +1315,24 @@
         const act = btn.dataset.act;
         if (act === "save") saveToSlot(slot);
         else if (act === "load") loadFromSlot(slot);
+        else if (act === "rename") {
+          const data = Saves.load(slot);
+          const name = window.prompt("为该存档命名（留空则清除）", data?.name || "");
+          if (name !== null && Saves.renameSave(slot, name)) { renderSaveSlots(mode); flashHint("已命名"); }
+        }
+        else if (act === "export") {
+          const slotData = Saves.exportSlot(slot);
+          if (!slotData) { flashHint("该槽位没有存档"); return; }
+          const blob = new Blob([JSON.stringify(slotData, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `sakura-save-slot${slot + 1}.json`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          flashHint(`已导出槽位 ${slot + 1}`);
+        }
+        else if (act === "import") importSlotFromFile(slot, mode);
         else if (act === "del") {
           if (Saves.deleteSave(slot)) {
             renderSaveSlots(mode);
@@ -1285,6 +1343,33 @@
         }
       };
     });
+  }
+
+  // v3.3.13：从本地 JSON 文件导入到指定槽位
+  function importSlotFromFile(slot, mode) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const obj = JSON.parse(reader.result);
+          if (Saves.importSlot(slot, obj)) {
+            renderSaveSlots(mode);
+            flashHint(`已导入到槽位 ${slot + 1}`);
+          } else {
+            flashHint("导入失败：文件不是有效的存档");
+          }
+        } catch (err) {
+          flashHint("导入失败：无法解析 JSON");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   }
 
   function renderConfig() {
