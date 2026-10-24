@@ -164,6 +164,7 @@
    v3.3.27：选择回响落地——带 value 的选项落盘 saveLetter（echo:节点 id），历史面板改双 Tab（对话 / 回响），回响按时间倒序显示选择所在节点与内容
    v3.3.28：结局注释 + 关键词/记忆审计——12 结局补 note（图鉴卡片显示分支点/达成条件），关键词加稀有度分层（普通/稀有/隐藏，卡片带标签），记忆图鉴按获得时间倒序
    v3.3.29：CG 全量转 webp（2.5MB→1.3MB，-48%；jpg 源删除，script.img 路径与契约同步）
+   v3.4.0：立绘位图管线——PORTRAIT_BITMAPS 清单（webp 存在即用 <img>，缺失回退内联 SVG），engine 与 direct.js touch 立绘双接入；素材到位后在清单加 id 即上线
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -177,7 +178,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.29";
+  const GAME_VERSION = "3.4.0";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -329,7 +330,12 @@
       const div = document.createElement("div");
       div.className = `char-sprite pos-${c.pos || "center"}`;
       if (c.dim) div.classList.add("dim");
-      div.innerHTML = PORTRAITS[c.id];
+      // v3.4.0 位图优先：assets/portraits/<id>.webp 存在则用 <img>，缺失回退内联 SVG
+      if (PORTRAIT_BITMAPS.has(c.id)) {
+        div.innerHTML = `<img src="assets/portraits/${c.id}.webp" alt="" class="portrait-img" draggable="false">`;
+      } else {
+        div.innerHTML = PORTRAITS[c.id];
+      }
       el.charLayer.appendChild(div);
       requestAnimationFrame(() => {
         setTimeout(() => div.classList.add("show"), idx * 80);
@@ -2842,6 +2848,10 @@
 
   const midiFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
+  /* v3.4.0 立绘位图清单：assets/portraits/<id>.webp 存在于此即启用位图渲染；
+     文件缺失时自动回退内联 SVG（管线为「可插拔」，素材到位即替换上线） */
+  const PORTRAIT_BITMAPS = new Set([]);
+
   /* 每个 mood：4 小节和弦进行（MIDI 三和弦）、旋律音阶（MIDI）、
      旋律密度（每八分音符发声概率）、音色与三层音量配比 */
   const BGM_MOODS = {
@@ -3275,4 +3285,5 @@
 
   // 暴露调试接口
   window.__game = { state, gotoNode, newGame, backToTitle, openOverlay, closeOverlay };
+  window.__PORTRAIT_BITMAPS = PORTRAIT_BITMAPS;   // v3.4.0 立绘位图清单（games/direct.js touch 立绘用）
 })();

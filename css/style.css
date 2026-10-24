@@ -22,6 +22,8 @@
 }
 
 /* ============ 基础 ============ */
+/* 立绘位图（v3.4.0）：位图模式下铺满 char-sprite，保持底部对齐 */
+.char-sprite img.portrait-img { width: 100%; height: 100%; object-fit: contain; object-position: bottom; user-select: none; -webkit-user-drag: none; }
 /* 移动端触控（v3.0.0）：manipulation 禁双击缩放，快速点击不误触放大 */
 #game, #game button, .choice-btn { touch-action: manipulation; }
 /* 减动效（v3.2.0）：系统开启「减弱动态效果」时关闭动画与过渡 */

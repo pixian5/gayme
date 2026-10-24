@@ -797,7 +797,9 @@
     const portraitBox = document.createElement("div");
     portraitBox.className = "touch-portrait";
     // 用 svg 占位（如果立绘层已渲染就不重复渲染）
-    portraitBox.innerHTML = PORTRAITS[touch.char] || `<div class="touch-portrait-empty">（无立绘）</div>`;
+    portraitBox.innerHTML = (window.__PORTRAIT_BITMAPS && window.__PORTRAIT_BITMAPS.has(touch.char))
+      ? `<img src="assets/portraits/${touch.char}.webp" alt="" style="width:100%;display:block;" draggable="false">`
+      : (PORTRAITS[touch.char] || `<div class="touch-portrait-empty">（无立绘）</div>`);
     stage.appendChild(portraitBox);
 
     // 在立绘上叠加可点击热区（按百分比定位）
