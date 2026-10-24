@@ -166,6 +166,7 @@
    v3.3.29：CG 全量转 webp（2.5MB→1.3MB，-48%；jpg 源删除，script.img 路径与契约同步）
    v3.4.0：立绘位图管线——PORTRAIT_BITMAPS 清单（webp 存在即用 <img>，缺失回退内联 SVG），engine 与 direct.js touch 立绘双接入；素材到位后在清单加 id 即上线
    v3.4.1：发行准备——tools/pack-itch.sh 一键打分发 zip（2.3MB），关于页加 gitee issues 反馈入口
+   v3.4.5：loopText 批次四（筛选制）——女主线 good 链 6 + 共通线关键对话 6（120→132）；序章情感节点已被其他模型覆盖（跳过）
    v3.4.2：性能 B1/B2——saves/script/engine 三脚本 preload（首屏解析提速）；立绘阵容签名预合成（同阵容节点跳过重建，消除入场重放与闪动），backToTitle 清签名
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
@@ -182,7 +183,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.4";
+  const GAME_VERSION = "3.4.5";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
