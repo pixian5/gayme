@@ -112,17 +112,53 @@
            深度审计全数据引用（结局/CG/关键词/配方/requires_* 无断链，
            requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点契约与
            requires_memory 契约（共 38 项）
-   v3.3.4：真实 BGM 落地——5 个场景 mood 接入自托管免版权 Ogg 曲目
-           （audio/bgm/daily|bright|sad|calm|active.ogg，Patrick de Arteaga，CC BY 4.0）；
-           双 audio 元素交叉淡入淡出 1.2 秒，循环播放；自动播放被拦截时等用户手势重试；
-           音频缺失/解码失败回退原程序化配乐；SW 预缓存加入 5 首曲目（离线可听）
+   v3.3.4：记忆/图鉴数据契约再修复——inbox 免费回信记忆取 id 错误（字符串取 .id 得
+           undefined 回退成匹配键，写入 "brave" 等英文 id）；inbox 2 组分支互斥记忆
+           （诗雨·凌晨 / 夏织·教练）共用 id → 拆分独立；性格画像补齐 8 维度中文映射与
+           默认结构（careful/patient/calm/creative 原以英文键名显示）；consistency 唯一性
+           契约升级为对象 + 字符串全覆盖，新增 personality 白名单契约（共 39 项）
+   v3.3.5：交互 / 无障碍 / 设置面板修复——打字机对白区改用 aria-busy（避免屏幕阅读器逐字
+           播报）；修复 settings.sfx 不存在导致音效总开关恒假，改为按音效音量判定；设置面板
+           新增「背景音乐音量」滑杆；perspective-layer 补 class（视角浮层不再逃过交互锁/清理）；
+           minigame 节点隐藏对话框；删除选项空回执死代码；新增 settings 键白名单契约（共 40 项）
+   v3.3.6：inbox 限时消息倒计时持久化（首次打开时间戳，反复开关不再无限重置）；浮层焦点
+           陷阱（Tab 不再逃逸到背后顶栏/标题）；快进模式「跳过已读」自动连跳；localhost 也注册
+           Service Worker（e2e 可覆盖）；删除 engine.js 中与 js/games 重复的 66 块 node schema
+           注释（-904 行，纯体积）；e2e 补 SW/焦点/倒计时断言
+   v3.3.7：图鉴记忆标题补全 + 多周目文本扩展——inbox / 自由回信 / 视角三处字符串 memory
+           写入补传 title（15 个 memoryTitle），图鉴卡片不再显示 id；d4_night_family×2、
+           d10_senior_slip×2、afterword_entry 补 loopText（40→45 节点）；consistency 新增
+           memoryTitle 覆盖与 loopText 结构契约（共 42 项）
+   v3.3.8：多周目文本继续扩散——三条女主线高信号节点补 loopText（sy_9 / sy_13_good /
+           sy_11_bad / xz_7 / xz_9 / xz_14_good / sn_6 / sn_9 / sn_13_good，共 45→54
+           节点），均按「加深不反转」原则书写；引擎运行时无逻辑改动
+   v3.3.9：多周目文本再扩散——共通线 day2 与后日谈高信号节点补 loopText（d2_library_8 /
+           d2_field_5 / d2_art_3 / d2_senior_easter_3 / d2_senior_easter_4 / afterword_three /
+           afterword_4 / afterword_stamp / afterword_autumn / afterword_wall，共 54→64 节点）
+   v3.3.10：键盘无障碍 + 数据统计——选项/信件按钮支持方向键移动、Enter/Space 确认、数字键
+            1-9 快选，并补 role/aria-label/aria-keyshortcuts 与 :focus-visible 焦点环；
+            新增「数据统计」浮层（剧情进度/结局/CG/关键词/合成/记忆/周目/累计时长）；
+            累计时长写入独立 STATS_KEY（不碰剧情 flags）
+   v3.3.11：CG 大图查看器——图鉴中点击已解锁 CG 弹出放大视图（上一张/下一张、Esc/点击空白
+            关闭；浮层 class 以 -layer 结尾，纳入交互锁与返回标题清理）
+   v3.3.12：设置扩展——新增「减少动效」开关（关粒子 + 停动画过渡，与系统 prefers-reduced-motion
+            叠加）与「界面字号」缩放（--ui-scale 应用到对白，0.9–1.3）；均纳入 DEFAULT_SETTINGS
+            与设置键白名单契约
+   v3.3.13：存档增强 + 新手引导——存档槽支持重命名（name 字段）/ 单槽导出 / 导入（本地 JSON）；
+            新档首次进入弹出可跳过的新手引导（tutorialSeen 标记，只出现一次）
+   v3.3.14：多周目文本 Phase 2 起步——学姐线 13 个高信号节点补 loopText（senior_2/3/4a/4b/4c/
+            5/6/7/8/10/11/14/ending，64→77 节点），按「加深不反转」原则书写；纯数据改动
+   v3.3.15：真实 BGM 落地——5 个场景 mood 接入自托管免版权 Ogg 曲目
+            （audio/bgm/daily|bright|sad|calm|active.ogg，Patrick de Arteaga，CC BY 4.0）；
+            双 audio 元素交叉淡入淡出 1.2 秒，循环播放；自动播放被拦截时等用户手势重试；
+            音频缺失/解码失败回退原程序化配乐；SW 预缓存加入 5 首曲目（离线可听）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.4";
+  const GAME_VERSION = "3.3.15";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -290,6 +326,9 @@
     state.typeOnDone = onDone || null;
     el.clickHint.style.opacity = "0";
     el.dialogText.innerHTML = "";
+    // v3.3.5：无障碍——打字期间置 aria-busy，屏幕阅读器等打完整句再一次性朗读，
+    // 避免逐字修改 aria-live 区被逐字播报淹没
+    el.dialogText.setAttribute("aria-busy", "true");
     let i = 0;
     const speed = state.skipMode ? 5 : Math.max(5, Saves.settings.textSpeed);
     function tick() {
@@ -309,6 +348,7 @@
     clearTimeout(state.typeTimer);
     state.isTyping = false;
     el.dialogText.innerHTML = state.typingText;
+    el.dialogText.setAttribute("aria-busy", "false");
     el.clickHint.style.opacity = "1";
     const onDone = state.typeOnDone;
     state.typeOnDone = null;
@@ -374,6 +414,22 @@
         if (state.inGame && state.sessionId === sessionId && SCRIPT[state.currentNode] === node) showEnding(node.ending);
       }, 1000);
       return;
+    }
+    // v3.3.6：快进模式下的「跳过已读」自动连跳——仅对读过（visited>1）且无互动的纯文本节点，
+    // 播完即自动推进；遇到未读节点或选项/信件/小游戏等互动节点会自动停下
+    if (state.skipMode) {
+      const nodeId = state.currentNode;
+      const isPlain = !node.choice && !node.letter && !node.minigame && !node.echo
+        && !node.perspective && !node.dream && !node.scentRecall;
+      if (isPlain && (state.visitedNodes[nodeId] || 0) > 1 && node.next) {
+        clearTimeout(state.autoTimer);
+        state.autoTimer = setTimeout(() => {
+          if (!state.skipMode) return;
+          if (state.pendingInteraction || hasActiveInteractionLayer()) return;
+          if (state.currentNode === nodeId && SCRIPT[nodeId] === node) advance();
+        }, 80);
+        return;
+      }
     }
     if (state.autoMode) {
       clearTimeout(state.autoTimer);
@@ -513,6 +569,7 @@
     if (node.minigame) {
       setScene(node.bg);
       renderCharacters(node);
+      el.dialogBox.classList.add("hidden"); // v3.3.5：与 letter/choice 节点一致，隐藏对话框
       runMinigame(node.minigame, nodeId);
       updateDayBar(node);
       updateHeartBar();
@@ -529,8 +586,6 @@
       return;
     }
 
-
-
     // v0.7.0 气味闪回触发节点
     if (node.scentRecall) {
       setScene(node.bg);
@@ -540,18 +595,6 @@
       updateHeartBar();
       return;
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -703,6 +746,9 @@
     if (!layer) {
       layer = document.createElement("div");
       layer.id = "perspective-layer";
+      // v3.3.5：补 class（以 -layer 结尾），使 hasActiveInteractionLayer 能识别——此前
+      // 视角浮层开着时按空格/回车会误推进剧情、返回标题的通用清理也覆盖不到它
+      layer.className = "perspective-layer";
       layer.style.cssText = "position:absolute;inset:0;background:rgba(10,5,20,0.85);backdrop-filter:blur(8px);z-index:30;display:flex;align-items:center;justify-content:center;padding:40px;";
       layer.onclick = (e) => { if (e.target === layer) layer.remove(); };
       document.getElementById("game").appendChild(layer);
@@ -726,7 +772,7 @@
     card.appendChild(tag); card.appendChild(who); card.appendChild(text); card.appendChild(close);
     layer.appendChild(card);
     if (p.memory && !Saves.isMemoryUnlocked(p.memory)) {
-      Saves.saveMemory(p.memory, p.text);
+      Saves.saveMemory(p.memory, p.text, p.memoryTitle);
       flashHint(`✦ 解锁视角记忆`);
     }
   }
@@ -780,12 +826,23 @@
         el.choices.innerHTML = "";
         applyAdd(opt.add);
         applySet(opt.set);
-        if (opt.value && currentNodeId) {
-          // 信件回执存储
-        }
+        // v3.3.5：删除此处空的「信件回执存储」块（无实现的死代码，无任何读取方）；
+        // 剧情里 choice 的 value 字段暂保留，后续若要做选择回响再统一接入
         gotoNode(opt.next);
       };
       el.choices.appendChild(btn);
+    });
+    // v3.3.10：键盘无障碍——给选项容器补语义，并把焦点落到首个可选项
+    // （方向键在选项间移动、Enter/Space 确认、数字键快选由全局 keydown 处理）
+    el.choices.setAttribute("role", "group");
+    el.choices.setAttribute("aria-label", choice.prompt || "请选择");
+    Array.from(el.choices.querySelectorAll("button")).forEach((b, i) => {
+      if (i < 9 && !b.disabled) b.setAttribute("aria-keyshortcuts", String(i + 1));
+    });
+    requestAnimationFrame(() => {
+      const first = Array.from(el.choices.querySelectorAll("button"))
+        .find((b) => !b.disabled && b.offsetParent !== null);
+      if (first) first.focus();
     });
   }
 
@@ -837,7 +894,7 @@
         // 解锁记忆（如果配对中包含）：memory 规范为字符串 id，兼容旧数据对象格式
         if (reply.memory) {
           const memId = typeof reply.memory === "string" ? reply.memory : reply.memory.id;
-          if (!Saves.isMemoryUnlocked(memId)) Saves.saveMemory(memId, content);
+          if (!Saves.isMemoryUnlocked(memId)) Saves.saveMemory(memId, content, reply.memoryTitle);
         }
         gotoNode(reply.next);
       };
@@ -978,6 +1035,7 @@
   function newGame() {
     state.sessionId += 1;
     removeActiveInteractionLayers();
+    playTickAt = Date.now(); // v3.3.10：开始计时本次游玩
     state.variables = createDefaultVariables();
     state.history = [];
     state.currentNode = null;
@@ -992,6 +1050,42 @@
     if (el.dayBar) el.dayBar.style.opacity = "1";
     if (el.heartBar) el.heartBar.style.opacity = "1";
     gotoNode(START_NODE);
+    // v3.3.13：新档首次进入时弹出可跳过的操作引导（只出现一次）
+    if (!Saves.getFlag("tutorialSeen", false)) {
+      Saves.setFlag("tutorialSeen", true);
+      showTutorial();
+    }
+  }
+
+  // v3.3.13：新手引导浮层（点击/空格/回车/Esc 均可关闭）
+  function showTutorial() {
+    const old = document.getElementById("tutorial-layer");
+    if (old) old.remove();
+    const layer = document.createElement("div");
+    layer.id = "tutorial-layer";
+    layer.className = "tutorial-layer"; // 以 -layer 结尾：纳入交互锁与返回标题清理
+    layer.tabIndex = -1;
+    layer.innerHTML = `
+      <div class="tutorial-card">
+        <div class="tutorial-title">欢迎来到樱时信笺</div>
+        <ul class="tutorial-list">
+          <li><b>推进剧情</b>：点击对话框，或按 <kbd>空格</kbd> / <kbd>回车</kbd></li>
+          <li><b>选择 / 回信</b>：方向键移动、<kbd>回车</kbd> 确认，或数字键 <kbd>1-9</kbd></li>
+          <li><b>推进辅助</b>：<kbd>S</kbd> 快存、<kbd>A</kbd> 自动播放、快进可跳过已读</li>
+          <li><b>随时回看</b>：顶栏可打开 设置 / 存档 / 图鉴 / 统计</li>
+        </ul>
+        <button class="tutorial-ok">开始故事</button>
+      </div>`;
+    document.getElementById("game").appendChild(layer);
+    const layerClose = () => layer.remove();
+    layer.querySelector(".tutorial-ok").onclick = (e) => { e.stopPropagation(); layerClose(); };
+    layer.onclick = (e) => { if (e.target === layer) layerClose(); };
+    layer.onkeydown = (e) => {
+      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
+        e.stopPropagation(); e.preventDefault(); layerClose();
+      }
+    };
+    layer.focus();
   }
 
   function startAfterword() {
@@ -1045,11 +1139,16 @@
   /* 自动存档（v2.9.8）：静默记录最后位置，防刷新 / 关页丢失。
      节流 3 秒；读档恢复（restoring）与标题页不写；pagehide / 切后台时强制落盘。 */
   let lastAutoSaveAt = 0;
+  // v3.3.10：累计游玩时长——记录上次计时点，落盘时把增量累加到 playTimeMs 标记
+  let playTickAt = Date.now();
   function autoSave(force = false) {
     if (!state.inGame) return;
     const now = Date.now();
     if (!force && now - lastAutoSaveAt < 3000) return;
     lastAutoSaveAt = now;
+    // 累计时长（写入独立统计键，不碰剧情 flags；上限单次 1 小时，防休眠前跳变）
+    Saves.addPlayMs(Math.min(Math.max(0, now - playTickAt), 3600000));
+    playTickAt = now;
     Saves.autoSave(snapshot());
   }
 
@@ -1083,6 +1182,7 @@
     }
     state.sessionId += 1;
     removeActiveInteractionLayers();
+    playTickAt = Date.now(); // v3.3.10：读档后重新开始计时
     state.currentNode = nodeId;
     state.variables = data.variables && typeof data.variables === "object"
       ? JSON.parse(JSON.stringify(data.variables)) : createDefaultVariables();
@@ -1143,7 +1243,7 @@
     const titles = {
       save: "存档", load: "读档", config: "设置", history: "历史文本",
       gallery: "结局图鉴", about: "关于", keywords: "关键词", cg: "CG 图鉴",
-      flowchart: "流程图", inbox: "收件箱", moments: "朋友圈",
+      flowchart: "流程图", inbox: "收件箱", moments: "朋友圈", stats: "数据统计",
     };
     el.overlayTitle.textContent = titles[type] || type;
     el.overlay.classList.remove("hidden");
@@ -1158,6 +1258,7 @@
     else if (type === "flowchart") renderFlowchart();
     else if (type === "inbox") renderInbox();
     else if (type === "moments") renderMoments();
+    else if (type === "stats") renderStats();
   }
   function closeOverlay() {
     el.overlay.classList.add("hidden");
@@ -1165,6 +1266,22 @@
     const active = document.activeElement;
     if (active && active.closest?.("#overlay")) el.topBar.querySelector("button")?.focus();
   }
+  // v3.3.6：浮层焦点陷阱——Tab / Shift+Tab 在浮层内循环，焦点不再逃逸到背后的顶栏与标题按钮
+  el.overlay.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const focusables = Array.from(
+      el.overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+    ).filter((node) => !node.disabled && node.offsetParent !== null);
+    if (!focusables.length) { e.preventDefault(); el.overlayBody.focus(); return; }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey) {
+      if (active === first || !el.overlay.contains(active)) { e.preventDefault(); last.focus(); }
+    } else if (active === last || !el.overlay.contains(active)) {
+      e.preventDefault(); first.focus();
+    }
+  });
 
   function renderSaveSlots(mode) {
     let html = "";
@@ -1175,11 +1292,13 @@
         html += `<div class="save-slot" data-slot="${i}">
           <div class="slot-no">${i + 1}</div>
           <div class="slot-info">
-            <div class="slot-title">${escapeHtml(data.sceneLabel || "未知场景")}${isQuick ? " · 快存" : ""}</div>
+            <div class="slot-title">${escapeHtml(data.name || data.sceneLabel || "未知场景")}${isQuick ? " · 快存" : ""}</div>
             <div class="slot-meta">${Saves.formatTime(data.timestamp)} · ${escapeHtml(data.dialogPreview || "")}</div>
           </div>
           <div class="slot-actions">
             ${mode === "save" ? `<button data-act="save" data-slot="${i}">覆盖</button>` : `<button data-act="load" data-slot="${i}">读取</button>`}
+            <button data-act="rename" data-slot="${i}">命名</button>
+            <button data-act="export" data-slot="${i}">导出</button>
             <button data-act="del" data-slot="${i}">删除</button>
           </div>
         </div>`;
@@ -1190,7 +1309,7 @@
             <div class="slot-title">${isQuick ? "快存槽" : "空槽位"}</div>
             <div class="slot-meta slot-empty">— 空 —</div>
           </div>
-          <div class="slot-actions">${mode === "save" ? `<button data-act="save" data-slot="${i}">存档</button>` : ""}</div>
+          <div class="slot-actions">${mode === "save" ? `<button data-act="save" data-slot="${i}">存档</button>` : ""}<button data-act="import" data-slot="${i}">导入</button></div>
         </div>`;
       }
     }
@@ -1202,6 +1321,24 @@
         const act = btn.dataset.act;
         if (act === "save") saveToSlot(slot);
         else if (act === "load") loadFromSlot(slot);
+        else if (act === "rename") {
+          const data = Saves.load(slot);
+          const name = window.prompt("为该存档命名（留空则清除）", data?.name || "");
+          if (name !== null && Saves.renameSave(slot, name)) { renderSaveSlots(mode); flashHint("已命名"); }
+        }
+        else if (act === "export") {
+          const slotData = Saves.exportSlot(slot);
+          if (!slotData) { flashHint("该槽位没有存档"); return; }
+          const blob = new Blob([JSON.stringify(slotData, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `sakura-save-slot${slot + 1}.json`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          flashHint(`已导出槽位 ${slot + 1}`);
+        }
+        else if (act === "import") importSlotFromFile(slot, mode);
         else if (act === "del") {
           if (Saves.deleteSave(slot)) {
             renderSaveSlots(mode);
@@ -1212,6 +1349,33 @@
         }
       };
     });
+  }
+
+  // v3.3.13：从本地 JSON 文件导入到指定槽位
+  function importSlotFromFile(slot, mode) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json,.json";
+    input.onchange = () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const obj = JSON.parse(reader.result);
+          if (Saves.importSlot(slot, obj)) {
+            renderSaveSlots(mode);
+            flashHint(`已导入到槽位 ${slot + 1}`);
+          } else {
+            flashHint("导入失败：文件不是有效的存档");
+          }
+        } catch (err) {
+          flashHint("导入失败：无法解析 JSON");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   }
 
   function renderConfig() {
@@ -1230,6 +1394,14 @@
       <div class="config-row"><label>粒子特效</label>
         <select id="cfg-particles"><option value="true" ${s.particles ? "selected" : ""}>开启</option><option value="false" ${!s.particles ? "selected" : ""}>关闭</option></select>
       </div>
+      <div class="config-row"><label>减少动效</label>
+        <select id="cfg-reducemotion"><option value="true" ${s.reduceMotion ? "selected" : ""}>开启</option><option value="false" ${!s.reduceMotion ? "selected" : ""}>关闭</option></select>
+      </div>
+      <div class="config-row">
+        <label>界面字号</label>
+        <input type="range" id="cfg-fontscale" min="0.9" max="1.3" step="0.05" value="${escapeHtml(String(s.fontScale ?? 1))}">
+        <span id="cfg-fontscale-val" style="color:#ffb8c8;width:40px;">${Math.round((s.fontScale ?? 1) * 100)}%</span>
+      </div>
       <div class="config-row"><label>背景音乐</label>
         <select id="cfg-bgm"><option value="true" ${s.bgm ? "selected" : ""}>开启</option><option value="false" ${!s.bgm ? "selected" : ""}>关闭</option></select>
       </div>
@@ -1237,6 +1409,11 @@
         <label>音效音量</label>
         <input type="range" id="cfg-sfxvolume" min="0" max="1" step="0.1" value="${escapeHtml(String(s.sfxVolume ?? 0.6))}">
         <span id="cfg-sfxvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.sfxVolume ?? 0.6) * 100)}%</span>
+      </div>
+      <div class="config-row">
+        <label>背景音乐音量</label>
+        <input type="range" id="cfg-bgmvolume" min="0" max="1" step="0.1" value="${escapeHtml(String(s.bgmVolume ?? 0.4))}">
+        <span id="cfg-bgmvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.bgmVolume ?? 0.4) * 100)}%</span>
       </div>
       <div class="config-row">
         <label style="color:#ff8888;">清空所有存档与图鉴</label>
@@ -1263,6 +1440,12 @@
       if (!Saves.settings.particles) stopParticles();
       else if (state.currentBg) updateParticles(state.currentBg);
     };
+    // v3.3.12：减少动效开关
+    document.getElementById("cfg-reducemotion").onchange = (e) => {
+      Saves.updateSetting("reduceMotion", e.target.value === "true");
+      applyUiSettings();
+      if (state.currentBg) updateParticles(state.currentBg);
+    };
     document.getElementById("cfg-bgm").onchange = (e) => {
       Saves.updateSetting("bgm", e.target.value === "true");
       if (Saves.settings.bgm && state.currentBg) playBgmForScene(state.currentBg);
@@ -1275,6 +1458,26 @@
       sfxVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("sfxVolume", v);
       if (sfxGain) sfxGain.gain.value = v;
+    };
+    // v3.3.5：背景音乐音量滑杆（此前设置面板只有音效音量，BGM 音量无 UI）
+    const bgmSlider = document.getElementById("cfg-bgmvolume");
+    const bgmVal = document.getElementById("cfg-bgmvolume-val");
+    bgmSlider.oninput = () => {
+      const v = parseFloat(bgmSlider.value);
+      bgmVal.textContent = Math.round(v * 100) + "%";
+      Saves.updateSetting("bgmVolume", v);
+      if (bgmGain) bgmGain.gain.value = v;
+      // v3.3.15：真实 BGM 直接改音量（淡入过程中目标值也由 fadeBgm 每帧重读）
+      if (bgmAudioEl) bgmAudioEl.volume = v;
+    };
+    // v3.3.12：界面字号缩放滑杆
+    const fontSlider = document.getElementById("cfg-fontscale");
+    const fontVal = document.getElementById("cfg-fontscale-val");
+    fontSlider.oninput = () => {
+      const v = parseFloat(fontSlider.value);
+      fontVal.textContent = Math.round(v * 100) + "%";
+      Saves.updateSetting("fontScale", v);
+      applyUiSettings();
     };
     document.getElementById("cfg-export").onclick = () => {
       const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
@@ -1336,6 +1539,45 @@
         <div class="h-text">${escapeHtml(h.text)}</div>
       </div>`
     ).join("");
+  }
+
+  // v3.3.10：数据统计页——汇总剧情进度 / 收集率 / 周目 / 累计时长
+  function renderStats() {
+    const totalNodes = Object.keys(SCRIPT).length;
+    const visited = Object.keys(state.visitedNodes).length;
+    const endingsGot = ENDINGS.filter((e) => Saves.isEndingUnlocked(e.id)).length;
+    const cgGot = Saves.getCGs().length;
+    const kwGot = Saves.getKeywords().length;
+    const composedGot = Saves.getComposed().length;
+    const memGot = Saves.getMemories().length;
+    const totalKw = Object.keys(KEYWORDS).length;
+    const totalRecipes = (window.COMPOSE_RECIPES || []).length;
+    const playMs = Saves.getStats().playMs + (state.inGame ? Math.max(0, Date.now() - playTickAt) : 0);
+    const fmtMs = (ms) => {
+      const min = Math.floor(ms / 60000);
+      const h = Math.floor(min / 60);
+      return h > 0 ? `${h} 时 ${min % 60} 分` : `${min} 分`;
+    };
+    const rows = [
+      ["剧情进度", `${visited} / ${totalNodes}`, totalNodes ? visited / totalNodes : null],
+      ["结局收集", `${endingsGot} / ${ENDINGS.length}`, ENDINGS.length ? endingsGot / ENDINGS.length : null],
+      ["CG 收集", `${cgGot} / ${CGS.length}`, CGS.length ? cgGot / CGS.length : null],
+      ["关键词", `${kwGot} / ${totalKw}`, totalKw ? kwGot / totalKw : null],
+      ["合成回忆", `${composedGot} / ${totalRecipes}`, totalRecipes ? composedGot / totalRecipes : null],
+      ["记忆片段", `${memGot} 条`, null],
+      ["游玩周目", `第 ${state.playCount || 1} 周目`, null],
+      ["累计时长", fmtMs(playMs), null],
+    ];
+    el.overlayBody.innerHTML = rows.map(([label, val, pct]) => `
+      <div style="margin-bottom:12px;padding:14px 18px;background:linear-gradient(135deg, rgba(80,40,100,0.22), rgba(40,30,60,0.35));border:1px solid rgba(255,200,220,0.25);border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <span style="font-size:14px;color:#ffd8e4;letter-spacing:3px;">${label}</span>
+          <span style="font-size:14px;color:#ffb8c8;">${val}</span>
+        </div>
+        ${pct === null ? "" : `<div style="height:8px;margin-top:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${Math.round(pct * 100)}%;background:linear-gradient(90deg,#ffb8c8,#c8a8e0);border-radius:4px;"></div>
+        </div>`}
+      </div>`).join("");
   }
 
   function renderGallery() {
@@ -1513,7 +1755,7 @@
     </div>`;
     el.overlayBody.innerHTML = progressBar + `<div class="cg-grid">` + CGS.map((cg) => {
       const unlocked = Saves.isCGUnlocked(cg.id);
-      return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}">
+      return `<div class="cg-card ${unlocked ? "unlocked" : "locked"}"${unlocked ? ` data-cg="${cg.id}"` : ""}>
         ${unlocked ? cg.svg : `<div class="cg-locked-placeholder"><div>？？？</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;">${cg.heroine}</div></div>`}
         <div class="cg-info">
           <div class="cg-title">${unlocked ? cg.title : "未解锁"}</div>
@@ -1521,6 +1763,55 @@
         </div>
       </div>`;
     }).join("") + "</div>";
+    // v3.3.11：点击已解锁 CG 打开大图查看器
+    el.overlayBody.querySelectorAll("[data-cg]").forEach((card) => {
+      card.style.cursor = "pointer";
+      card.onclick = () => { closeOverlay(); openCgViewer(card.dataset.cg); };
+    });
+  }
+
+  // v3.3.11：CG 大图查看器（放大已解锁 CG，方向键切换、Esc 关闭）
+  function openCgViewer(startId) {
+    const unlocked = CGS.filter((cg) => Saves.isCGUnlocked(cg.id));
+    if (!unlocked.length) return;
+    let idx = Math.max(0, unlocked.findIndex((cg) => cg.id === startId));
+    const old = document.getElementById("cg-viewer-layer");
+    if (old) old.remove();
+    const layer = document.createElement("div");
+    layer.id = "cg-viewer-layer";
+    layer.className = "cg-viewer-layer"; // 以 -layer 结尾：纳入交互锁与返回标题清理
+    layer.tabIndex = -1;
+    layer.innerHTML = `
+      <div class="cg-viewer-inner">
+        <div class="cg-viewer-art"></div>
+        <div class="cg-viewer-bar">
+          <button class="cg-view-btn" data-nav="-1" aria-label="上一张">‹ 上一张</button>
+          <span class="cg-viewer-title"></span>
+          <button class="cg-view-btn" data-nav="1" aria-label="下一张">下一张 ›</button>
+        </div>
+        <button class="cg-viewer-close" aria-label="关闭大图">✕</button>
+      </div>`;
+    document.getElementById("game").appendChild(layer);
+    const art = layer.querySelector(".cg-viewer-art");
+    const titleEl = layer.querySelector(".cg-viewer-title");
+    const show = () => {
+      const cg = unlocked[idx];
+      art.innerHTML = cg.svg;
+      titleEl.textContent = `${cg.title} · ${cg.heroine}（${idx + 1} / ${unlocked.length}）`;
+    };
+    const nav = (d) => { idx = (idx + d + unlocked.length) % unlocked.length; show(); };
+    show();
+    layer.querySelectorAll("[data-nav]").forEach((b) => {
+      b.onclick = (e) => { e.stopPropagation(); nav(parseInt(b.dataset.nav, 10)); };
+    });
+    layer.querySelector(".cg-viewer-close").onclick = (e) => { e.stopPropagation(); layer.remove(); };
+    layer.onclick = (e) => { if (e.target === layer) layer.remove(); };
+    layer.onkeydown = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); layer.remove(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); nav(-1); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); nav(1); }
+    };
+    layer.focus();
   }
 
   /* ============ 流程图 ============ */
@@ -1589,7 +1880,6 @@
         }
         showClueTip(clue, spot);
       };
-      el.clueLayer.appendChild(spot);
     });
   }
 
@@ -1694,6 +1984,14 @@
     `;
     layer.appendChild(card);
 
+    // v3.3.6：限时消息倒计时持久化——首次打开记录时间戳；若离线期间已超时，
+    // 打开即判定过期（此前每次打开都从满值倒计时，反复开关可无限续命）
+    if (msg.replied === null && !msg.expired && msg.deadline) {
+      const openedAt = Saves.markInboxOpened(msg.id);
+      if (openedAt && Date.now() - openedAt >= msg.deadline) Saves.markInboxExpired(msg.id);
+      msg = Saves.getInbox().find((x) => x.id === msg.id) || msg;
+    }
+
     const isExpired = msg.expired && msg.replied === null;
     const isReplied = msg.replied !== null;
 
@@ -1720,8 +2018,8 @@
       close.onclick = () => layer.remove();
       card.appendChild(close);
     } else {
-      // 限时倒计时
-      let remaining = msg.deadline || 0;
+      // 限时倒计时（v3.3.6：按首次打开时间推算剩余，反复开关不再重置）
+      let remaining = Math.max(0, (msg.deadline || 0) - (Date.now() - (msg.openedAt || Date.now())));
       const countdown = document.createElement("div");
       countdown.className = "inbox-countdown";
       card.appendChild(countdown);
@@ -1771,7 +2069,12 @@
           if (matched.length > 0 && matched[0].personality) {
             for (const dim in matched[0].personality) Saves.addPersonality(dim, matched[0].personality[dim]);
           }
-          if (matched.length > 0 && matched[0].memory) Saves.saveMemory(matched[0].memory.id || matched[0].id, v);
+          // v3.3.4：inbox 记忆规范为字符串 id（与 free letter 一致）；兼容旧对象格式 { id, text }
+          // 修复前错误地取 memory.id（字符串取不到 id → 回退 matched[0].id），导致 "brave" 等英文 id 混入图鉴
+          if (matched.length > 0 && matched[0].memory) {
+            const memId = typeof matched[0].memory === "string" ? matched[0].memory : matched[0].memory.id;
+            if (memId) Saves.saveMemory(memId, v, matched[0].memoryTitle);
+          }
           flashHint(matched.length > 0 ? `✦ 回复触发：${matched[0].id}` : "已寄出");
           layer.remove();
           updateHeartBar();
@@ -1954,29 +2257,7 @@
     layer.appendChild(exit);
   }
 
-  /* ============================================================
-     v0.6.0 拼贴诗系统 runCollage
-     —— 把已解锁关键词拖到画布，按意象密度判定走向
-     node.collage = {
-       prompt, minWords, maxWords,
-       words (可选: 自定义词表；不填则用已解锁关键词+合成词),
-       tag (评分维度阈值，{good:5,bad:2}),
-       scoreBonus: { good:{...}, normal:{...}, bad:{...} },
-       scoreJump:  { good:"nodeId", normal:"nodeId", bad:"nodeId" }
-     }
 
-  /* ============================================================
-     v0.6.0 回声系统 triggerEcho
-     —— 玩家说过的重要台词在关键节点复现，可选择承认/否认
-     node.echo = {
-       id (回声 ID), text (复现的台词), ctx (出处),
-       choices: [
-         { text:"承认", value:"admit", add:{...}, personality:{...}, next:"nodeId", memory:{...} },
-         { text:"否认", value:"deny",  add:{...}, personality:{...}, next:"nodeId", memory:{...} },
-         { text:"沉默", value:"silent", add:{...}, personality:{...}, next:"nodeId", memory:{...} }
-       ]
-     }
-     ============================================================ */
   function triggerEcho(echo, currentNodeId) {
     const layer = document.createElement("div");
     layer.className = "echo-layer";
@@ -2038,53 +2319,7 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v0.6.0 摄影构图系统 runPhoto
-     —— 场景内拖动取景框，按构图规则评分
-     node.photo = {
-       prompt, scene (可选: 自定义场景图，不填用当前 bg),
-       rules: ["thirds","center","diagonal"], // 评分规则
-       targets: [{x,y,w,h, label}],           // 取景目标（可点击的高价值区）
-       scoreBonus: { high:{...}, mid:{...}, low:{...} },
-       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
-     }
 
-  /* ============================================================
-     v0.6.0 节奏敲击系统 runRhythm
-     —— 对话中按节奏点击，模拟心跳/呼吸同步
-     node.rhythm = {
-       prompt,
-       bpm (节拍速度，60-180),
-       beats (总节拍数，8-32),
-       pattern (可选：自定义强弱拍 [1,0,1,0,...])
-       scoreBonus: { high:{...}, mid:{...}, low:{...} },
-       scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
-     }
-
-  /* ============================================================
-     v0.7.0 气味收集系统 runScent
-     node.scent = {
-       prompt: "图书馆里有几种气味——细闻哪一个？",
-       items: [
-         { id, name, desc, scene?, tag? }
-       ],
-       min: 1,                  // 至少细闻几个
-       next: "nodeId"            // 可选，覆盖默认 next
-     }
-
-  /* ============================================================
-     v0.7.0 气味闪回触发 triggerScentRecall
-     node.scentRecall = {
-       scentId: "old_book",         // 要触发的气味 id（必须先收集过）
-       recallId: "recall_d3_old_book", // 闪回唯一 id，避免重复触发
-       text: "——我又闻到了那个味道。",
-       flashback: "「纸的味道会变。」她那时候这么说。",
-       choices: [
-         { text, value, add?, personality?, memory?, next }
-       ]
-     }
-     未收集过该气味时，跳过闪回，进入 node.next
-     ============================================================ */
   function triggerScentRecall(recall, currentNodeId) {
     const node = SCRIPT[currentNodeId];
     const hasScent = Saves.isScentCollected(recall.scentId);
@@ -2144,121 +2379,9 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v0.7.0 沉默选择 runSilenceChoice
-     node.silenceChoice = {
-       prompt: "她问：你为什么不说话？",
-       duration: 10,            // 倒计时秒数
-       options: [{ text, value, add?, personality?, memory?, next }],
-       silent: {                // 超时进入的沉默分支
-         text, add?, personality?, memory?, next
-       }
-     }
 
-  /* ============================================================
-     v0.7.0 触觉关怀 runTouch
-     node.touch = {
-       prompt: "她看上去很难过——",
-       char: "shiyu",            // 立绘角色（仅用于定位，渲染由 node.char 决定）
-       parts: [
-         { id, label, x, y, w, h, dialogue, add?, personality?, memory? }
-       ],
-       exitText: "（你收回手。）",
-       next: "nodeId"           // 可选
-     }
 
-  /* ============================================================
-     v0.7.0 温度感知 runTemperature
-     node.temperature = {
-       prompt: "她问：现在是什么感觉？",
-       scoreBonus: {
-         warm:    { affection: { ... }, personality: { ... } },
-         neutral: { ... },
-         cool:    { ... }
-       },
-       scoreJump: { warm: "...", neutral: "...", cool: "..." },
-       next: "..."  // 默认跳转
-     }
-     温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
 
-  /* ============================================================
-     v0.8.0 笔迹选择 runHandwriting
-     node.handwriting = {
-       prompt: "你拿笔开始写——选一种笔迹",
-       letter: "letter_2",
-       styles: [
-         { id, label, desc, add?, personality?, memory?, next }
-       ]
-     }
-
-  /* ============================================================
-     v0.8.0 情绪光谱 runSpectrum
-     node.spectrum = {
-       prompt: "此刻你的心，在哪？",
-       // x: -100(不悦) ~ +100(愉悦)；y: -100(平静) ~ +100(激活)
-       quadrants: {
-         // 象限 tag：右上愉悦激活/右下愉悦平静/左上不悦激活/左下不悦平静
-         q_tr: { tag: "joy_active",   label: "愉悦·激昂", add?, personality?, memory?, next },
-         q_br: { tag: "joy_calm",     label: "愉悦·平静", add?, personality?, memory?, next },
-         q_tl: { tag: "sad_active",   label: "不悦·激昂", add?, personality?, memory?, next },
-         q_bl: { tag: "sad_calm",     label: "不悦·平静", add?, personality?, memory?, next }
-       },
-       fallback: { tag: "center", next }
-     }
-
-  /* ============================================================
-     v0.9.0 星座连线 runConstellation
-     node.constellation = {
-       prompt: "夜空散布星点——按你的直觉连线",
-       stars: [ { id, x, y, name } ],   // x,y 为 0~100 百分比坐标
-       constellations: [
-         { stars: ["a","b","c"], tag: "trio", label, text, add?, personality?, memory?, next }
-       ],
-       min: 2,   // 至少连几颗
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 心声听诊 runStethoscope
-     node.stethoscope = {
-       prompt: "把听诊器贴在胸口——跟随心跳",
-       bpm: 72,
-       beats: 12,         // 总节拍数
-       window: 0.3,       // 命中窗口（秒，前后各一半）
-       thresholds: [
-         { min: 0.8, tag: "sync", label, text, add?, memory?, next },
-         { min: 0.5, tag: "half", label, text, next }
-       ],
-       fallback: { tag: "miss", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 信物拼图 runPuzzle
-     node.puzzle = {
-       prompt: "把碎片按你的记忆拼起来——",
-       pieces: [ { id, label, desc } ],
-       interpretations: [
-         { order: ["a","b","c","d"], tag, label, text, add?, memory?, next }
-       ],
-       min: 2,
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
-
-  /* ============================================================
-     v0.9.0 气味调香 runPerfume
-     node.perfume = {
-       prompt: "用三种香调调一瓶香水——",
-       notes: ["前调", "中调", "后调"],
-       ingredients: [ { id, label, desc, note } ],  // note = "前调"/"中调"/"后调"
-       recipes: [
-         { ids: ["a","b","c"], tag, label, text, add?, memory?, next }
-       ],
-       fallback: { tag: "default", next }
-     }
-     ============================================================ */
 
   // 在指定节点触发时光胶囊投递（读取未投递的胶囊）
   function deliverTimecapsules(nodeId) {
@@ -2285,800 +2408,81 @@
     document.getElementById("game").appendChild(layer);
   }
 
-  /* ============================================================
-     v1.2.0 茶席品茗 runTea
-     node.tea = {
-       prompt: "泡一壶茶——",
-       target: { temp: 0.6, amount: 0.4, time: 0.5 }, // 0~1 目标值
-       tolerance: 0.15,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 星象观测 runAstronomy
-     node.astronomy = {
-       prompt: "旋转星图盘——对齐今夜的星座",
-       constellations: ["aries","taurus","gemini",...],  // 盘上星座
-       target: "libra",   // 目标星座
-       clue: "天秤座的星辰今夜最亮",
-       thresholds: [
-         { isTarget: true, tag, label, text, add?, memory?, next },
-         { isTarget: false, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 颜料调配 runPalette
-     node.palette = {
-       prompt: "调出她裙摆的颜色——",
-       target: { r: 216, g: 112, b: 144 },   // 0~255
-       tolerance: 30,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.2.0 琴键演奏 runPiano
-     node.piano = {
-       prompt: "弹奏她哼过的旋律——",
-       keys: 8,                    // 琴键数
-       sequence: [0,2,4,2,0],      // 目标序列（琴键索引）
-       showSequence: true,         // 是否先展示序列
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.55, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 占星骰子 runDice
-     node.dice = {
-       prompt: "掷三个骰子——解读命运",
-       rolls: 3,                    // 掷几次（保留最后一次或求和）
-       thresholds: [
-         { min: 15, tag, label, text, add?, memory?, next },   // sum >= 15
-         { min: 8,  tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 风向感知 runWind
-     node.wind = {
-       prompt: "调整帆角度——借风前进",
-       target: 80,            // 目标进度（0~100）
-       maxAttempts: 6,        // 最多调整次数
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5,  tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 梦境解码 runDecode
-     node.decode = {
-       prompt: "把梦境碎片重排成一句完整的话——",
-       scrambled: ["雨","在","窗","外","停","了"],   // 乱序字符
-       answer: "雨在窗外停了",                       // 正确答案
-       thresholds: [
-         { min: 1.0, tag, label, text, add?, memory?, next },   // 完全正确
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.3.0 雨滴节奏 runRain
-     node.rain = {
-       prompt: "听雨滴节奏——按节奏点击窗台",
-       drops: 8,                  // 雨滴数
-       interval: 1200,           // 雨滴间隔（ms）
-       tolerance: 0.25,          // 容差（占一拍比例）
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 拓印 runRubbing
-     node.rubbing = {
-       prompt: "用铅笔拓印——",
-       pattern: "leaf",   // 纹理类型（leaf/stone/wood/fabric）
-       min: 0.7,          // 最小覆盖率
-       thresholds: [
-         { min: 0.8, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 集字 runCollect
-     node.collect = {
-       prompt: "在飘落的字符中收集目标字——",
-       target: "雨",      // 目标字
-       total: 5,          // 目标字总数
-       duration: 15000,   // 持续时间 ms
-       thresholds: [
-         { min: 0.8, tag, label, text, add?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 光影对焦 runFocus
-     node.focus = {
-       prompt: "调整焦距——让画面变清晰",
-       target: 0.5,      // 目标焦距 0~1
-       tolerance: 0.1,
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.4.0 气味记忆 runScentmem
-     node.scentmem = {
-       prompt: "辨认之前闻过的气味——",
-       samples: [
-         { id, name, desc, isTarget: true },   // 之前闻过的
-         { id, name, desc, isTarget: false }
-       ],
-       thresholds: [
-         { min: 0.85, tag, label, text, add?, memory?, next },
-         { min: 0.5, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 茶渍占卜 runTealeaf
-     node.tealeaf = {
-       prompt: "拖动茶杯——让茶渍在杯底流转",
-       shapes: [
-         { id: "heart", name: "心形", areas: [0,1,5], label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       min: 0.4,    // 最少茶渍覆盖率才能确认
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 影子对齐 runShadow
-     node.shadow = {
-       prompt: "拖动物体——让影子与目标轮廓重合",
-       lightAngle: 45,   // 光源角度（度）
-       target: [{x,y}, ...],  // 目标影子轮廓（归一化 0-1 坐标）
-       min: 0.6,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 烛火守护 runCandle
-     node.candle = {
-       prompt: "旋转挡风板——守护烛火不被风吹灭",
-       winds: 6,       // 风的阵数
-       duration: 2500, // 每阵风持续毫秒
-       gap: 800,       // 风之间间隔
-       thresholds: [
-         { min: 0.7, tag, label, text, add?, personality?, memory?, next },
-         { min: 0.4, tag, label, text, next }
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.5.0 电话拨号 runDial
-     node.dial = {
-       prompt: "拨出你记得的号码",
-       target: "1206437",   // 目标号码
-       preview: 4000,       // 预览毫秒（0=一直显示）
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 雾窗描绘 runFoggy
-     node.foggy = {
-       prompt: "在起雾的玻璃上拖动手指——描绘那个形状",
-       shape: "star",   // 目标形状 star/heart/moon/tree（用作 hint 与评分参考）
-       hintPath: [{x,y}, ...],  // 归一化 0-1 的目标路径
-       min: 0.4,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 糖块拼图 runSugar
-     node.sugar = {
-       prompt: "把糖块拖到对应位置——拼出图案",
-       pieces: [
-         { id: "a", shape: [[1,1],[1,0]], color: "#ff8a8a", x: 0.1, y: 0.1, target: {gx:0, gy:0} },
-         ...
-       ],
-       grid: { cols: 4, rows: 3, cell: 60 },
-       min: 0.6,
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 钟调共振 runChime
-     node.chime = {
-       prompt: "调整钟摆角度——让它的音与目标共振",
-       target: 35,       // 目标角度（度）
-       tolerance: 5,     // 容差
-       thresholds: [...],
-       fallback: {...}
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.6.0 沙漏计时 runHourglass
-     node.hourglass = {
-       prompt: "在沙漏完前翻转——让它在指定时刻落完",
-       target: 5000,   // 目标毫秒（沙应在此刻恰好落完）
-       duration: 8000, // 沙的总时长
-       tolerance: 600,
-       thresholds: [
-         { max: 400, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 风筝引线 runKite
-     node.kite = {
-       prompt: "牵引风筝穿过云阵，到达指定高度——",
-       target: 80,        // 目标高度（百分比 0-100）
-       duration: 12000,   // 总时长
-       obstacles: 6,      // 障碍数量（云/鸟）
-       thresholds: [
-         { max: 5, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 密码锁 runLock
-     node.lock = {
-       prompt: "根据线索拨出四位密码——",
-       target: "3-7-2-9",       // 目标密码（用-分隔）
-       preview: 4000,          // 预览毫秒（可选，0 表示不预览）
-       hints: ["三月", "七月", "二日", "九时"],
-       thresholds: [
-         { correct: 4, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 折纸造型 runOrigami
-     node.origami = {
-       prompt: "按步骤折叠纸张——",
-       steps: [ { id, label, desc } ],
-       targets: [
-         { steps: ["a","b","c","d"], tag, label, text, add?, personality?, memory?, next }
-       ],
-       min: 3,
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.7.0 星轨追踪 runOrbit
-     node.orbit = {
-       prompt: "追踪星轨——点击移动光标，跟随星点轨迹",
-       duration: 10000,
-       tolerance: 30,    // 像素容差
-       samples: 6,       // 采样点数量
-       thresholds: [
-         { max: 50, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 萤火引路 runFirefly
-     node.firefly = {
-       prompt: "拖动光点引导萤火虫归队——",
-       total: 8,            // 萤火虫总数
-       duration: 15000,
-       tolerance: 40,       // 拖动到萤火虫附近的吸引半径
-       thresholds: [
-         { max: 2, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 风铃调音 runWindchime
-     node.windchime = {
-       prompt: "拖动风铃片到对应高度——和目标音阶对齐",
-       target: [0.2, 0.35, 0.5, 0.65],   // 目标高度比例（按顺序对应 4 个铃）
-       tolerance: 0.05,
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 瓶中信 runBottle
-     node.bottle = {
-       prompt: "调整力度把瓶子投到对岸——",
-       target: 0.7,         // 目标距离比例（0-1）
-       tolerance: 0.08,
-       power: 1.0,          // 力度上限
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.8.0 回声定位 runEcholoc
-     node.echoloc = {
-       prompt: "听回声估算距离——按「发出」按钮，再点你估计的位置",
-       actual: 0.6,        // 实际距离比例（0-1）
-       duration: 8000,     // 等待玩家估算的时间
-       tolerance: 0.08,
-       thresholds: [
-         { max: 0.1, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 罗盘导航 runCompass
-     node.compass = {
-       prompt: "拖动罗盘——让指针对准她说的方向",
-       target: 135,        // 目标角度（0-360，0=北）
-       tolerance: 8,       // 容差（度）
-       thresholds: [
-         { max: 8, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 密码电报 runTelegraph
-     node.telegraph = {
-       prompt: "听完电报——选出对应的字母",
-       code: "SOS",        // 目标字符
-       options: ["SOS","OK","HI","NO"],  // 选项
-       rhythm: [100,300,100,300,100,500], // 摩斯节奏：嘀(短)/嗒(长)/间隔(ms)
-       tolerance: 1,        // 容错数（错选容差）
-       thresholds: [
-         { max: 0, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 天平称重 runBalance
-     node.balance = {
-       prompt: "把物品放到天平两端——让它平衡",
-       items: [3, 5, 7, 2, 4],  // 可放置物品的重量
-       target: "balance",       // "balance"=平衡 或 数字=目标左-右差值
-       tolerance: 0.5,
-       thresholds: [
-         { max: 0.5, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 节拍器同步 runMetronome
-     node.metronome = {
-       prompt: "跟着节拍点击——节拍器每响一下，点一次「同步」",
-       bpm: 80,             // 节拍速度
-       total: 12,            // 总节拍数
-       tolerance: 0.12,     // 误差容忍（占周期比例）
-       thresholds: [
-         { min, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 星图连线 runStarchart
-     node.starchart = {
-       prompt: "按亮度顺序连接星星——画出她想要的星图",
-       stars: [ { id, x, y, brightness, label? } ],
-       expectedOrder: ["s1","s2","s3"],
-       tolerance: 1,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 透镜聚焦 runLens
-     node.lens = {
-       prompt: "调节透镜焦距——让光线汇聚到目标点",
-       target: 0.6,
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.0.0 弦音调音 runTuning
-     node.tuning = {
-       prompt: "调节琴弦张力——让它接近目标音高",
-       strings: [ { id, target, label } ],
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 日蚀对位 runEclipse
-     node.eclipse = {
-       prompt: "拖动月亮，让它的影子遮住那颗星",
-       target: 0.65,        // 目标位置（0-1）
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 印章对齐 runStamp
-     node.stamp = {
-       prompt: "旋转印章，让图案对齐目标角度",
-       target: 135,          // 目标角度（0-359）
-       tolerance: 5,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 星盘仪 runAstrolabe
-     node.astrolabe = {
-       prompt: "调整三层星盘，对齐目标刻度",
-       targets: [45, 120, 210],  // 三层目标角度
-       tolerance: 6,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.1.0 沙画凝形 runSandpaint
-     node.sandpaint = {
-       prompt: "在沙盘上点选格子，还原星图",
-       pattern: 5x5 (0/1),     // 目标图案
-       tolerance: 4,            // 允许偏差数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 万花筒 runKaleido
-     node.kaleido = {
-       prompt: "旋转万花筒，让图案对齐目标角度",
-       target: 90,
-       tolerance: 5,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 算盘珠 runAbacus
-     node.abacus = {
-       prompt: "拨算珠，让每档数量等于目标",
-       targets: [3, 5, 2],     // 每档目标数量
-       maxPerRod: 7,            // 每档最大珠数
-       tolerance: 0,            // 单档允许偏差
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 齿轮咬合 runGear
-     node.gear = {
-       prompt: "旋转三个齿轮，让标记齿对齐顶部",
-       teeth: [12, 10, 8],     // 每齿轮齿数
-       tolerance: 6,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.2.0 等高线 runTopo
-     node.topo = {
-       prompt: "在地图上点选海拔相同的点",
-       points: [ { x, y, h } ],  // 所有点（含海拔）
-       targetH: 0.6,              // 目标海拔
-       tolerance: 0.05,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 日晷对时 runSundial
-     node.sundial = {
-       prompt: "旋转日晷指针，对齐目标时间刻度",
-       target: 135,            // 目标角度
-       tolerance: 8,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 染缸调色 runDye
-     node.dye = {
-       prompt: "调节三色染缸，调出目标颜色",
-       target: { r: 200, g: 100, b: 80 },
-       tolerance: 30,            // 单通道容差
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 风车叶片 runWindmill
-     node.windmill = {
-       prompt: "旋转每个叶片，让风车正对风向",
-       blades: 4,               // 叶片数
-       target: 90,              // 目标角度（风向）
-       tolerance: 8,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.3.0 经纬编织 runWeave
-     node.weave = {
-       prompt: "交替点选经纬线，编织目标图案",
-       pattern: [ [0,1,0,1], [1,0,1,0], [0,1,0,1], [1,0,1,0] ], // 目标图案，1=经，0=纬
-       tolerance: 2,            // 允许错误格数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 镜面对称 runMirror
-     node.mirror = {
-       prompt: "点选格子让左半镜像右半",
-       pattern: [ [1,0,0,1], [0,1,1,0], [1,0,0,1], [0,1,1,0] ],  // 目标对称图案
-       tolerance: 1,            // 允许错误格数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 灯笼排列 runLantern
-     node.lantern = {
-       prompt: "按顺序点亮灯笼，还原目标序列",
-       target: [2, 0, 3, 1],     // 目标索引序列
-       count: 4,                  // 灯笼总数
-       tolerance: 0,              // 允许错位数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 水波纹 runRipple
-     node.ripple = {
-       prompt: "点击水面，让波纹覆盖所有目标点",
-       targets: [ {x:0.3,y:0.4}, {x:0.7,y:0.5}, {x:0.5,y:0.7} ],   // 目标位置
-       tolerance: 0.08,
-       duration: 8000,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.4.0 马赛克拼图 runMosaic
-     node.mosaic = {
-       prompt: "点选小方块，拼出目标图案",
-       pattern: [ [0,1,1,0], [1,1,1,1], [1,1,1,1], [0,1,1,0] ],  // 1=填，0=空
-       tolerance: 2,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 碑帖拼合 runStele
-     node.stele = {
-       prompt: "拖动碎片到正确位置，拼合碑文",
-       target: [2, 0, 3, 1],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
-       tolerance: 0,           // 允许错位数
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 星轨推演 runCelestial
-     node.celestial = {
-       prompt: "滑动行星到目标角度",
-       planets: [ { target: 90, color: "#ff8060" }, { target: 270, color: "#80a0ff" } ],  // 目标角度 0-360
-       tolerance: 8,     // 允许误差度
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 节拍鼓点 runDrum
-     node.drum = {
-       prompt: "按节拍敲击鼓面，复现目标节奏",
-       sequence: [800, 400, 800, 400, 400],   // 每次敲击间隔（毫秒）
-       tolerance: 150,    // 允许时间误差毫秒
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.5.0 风向标 runVane
-     node.vane = {
-       prompt: "旋转风向标对齐目标方位",
-       target: 135,       // 目标角度 0-360
-       tolerance: 8,     // 允许误差度
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 漏刻计时 runClepsydra
-     node.clepsydra = {
-       prompt: "在目标时刻停止水流",
-       target: 5000,      // 目标毫秒
-       tolerance: 200,     // 允许误差毫秒
-       duration: 10000,   // 漏完总时长
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 拼图归位 runJigsaw
-     node.jigsaw = {
-       prompt: "点击碎片归位，拼出完整图案",
-       target: [1, 2, 0, 3],   // 目标位置序列（碎片 i 应放到 target[i] 位置）
-       tolerance: 0,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 棋局推演 runChess
-     node.chess = {
-       prompt: "移动棋子到目标位置",
-       size: 4,
-       start: { x: 0, y: 0 },
-       target: { x: 3, y: 3 },
-       obstacles: [ { x: 1, y: 1 } ],
-       maxMoves: 8,
-       tolerance: 2,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v2.6.0 旗阵辨识 runFlag
-     node.flag = {
-       prompt: "按描述选择正确的旗帜",
-       description: "红底白圆居中",
-       options: [ { id: 0, label: "红底白圆居中" }, ... ],
-       target: 0,
-       thresholds: [ { max, tag, label, text, add?, personality?, memory?, next } ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
-  /* ============================================================
-     v1.9.0 钟摆节奏 runPendulum
-     node.pendulum = {
-       prompt: "钟摆摆到目标位置时——点「停」",
-       target: 0.85,       // 目标位置（0-1，0=左极点，0.5=中，1=右极点）
-       tolerance: 0.06,
-       duration: 12000,    // 总时长
-       thresholds: [
-         { max: 0.06, tag, label, text, add?, personality?, memory?, next },
-         ...
-       ],
-       fallback: { tag, next }
-     }
-     ============================================================ */
 
   /* ============ 性格画像浮层（在关于页展示） ============ */
   function renderPersonalityCard() {
     const prof = Saves.getPersonalityProfile();
     const p = prof.dims;
-    const dimName = { brave: "敢/慎", kind: "温/冷", active: "行/思", honest: "真/藏" };
+    // v3.3.4：维度中文名统一取自 Saves.personalityLabels（覆盖全部 8 维），
+    // 此前仅 4 维映射，careful/patient/calm/creative 会直接显示英文键名
+    const labels = Saves.personalityLabels();
     let bars = "";
     for (const dim in p) {
       const v = p[dim];
+      const label = labels[dim] ? `${labels[dim][0]}/${labels[dim][1]}` : dim;
       const pct = Math.min(50, Math.abs(v) * 10);
       const left = v >= 0 ? 50 : 50 - pct;
       bars += `<div class="p-bar">
-        <span style="width:48px;">${dimName[dim] || dim}</span>
+        <span style="width:48px;">${label}</span>
         <div class="p-bar-track"><div class="p-bar-fill" style="left:${left}%;width:${pct}%;"></div></div>
         <span style="width:30px;text-align:right;">${v > 0 ? "+" : ""}${v}</span>
       </div>`;
@@ -3272,7 +2676,7 @@
   resizeCanvas();
 
   function getParticleType(scene) {
-    if (!Saves.settings.particles) return "none";
+    if (!Saves.settings.particles || Saves.settings.reduceMotion) return "none";
     if (scene === "rain") return "rain";
     if (["winter", "ending_bad", "ending_normal"].includes(scene)) return "snow";
     if (["cherry_full", "school_gate", "classroom", "library", "hallway", "art_room", "home_room", "cafeteria", "festival"].includes(scene)) return "sakura";
@@ -3280,8 +2684,8 @@
   }
 
   function updateParticles(scene) {
-    // 减动效（v3.2.0）：系统开启「减弱动态效果」时不生成粒子
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) { stopParticles(); return; }
+    // 减动效：系统「减弱动态效果」或设置项开启时都不生成粒子
+    if (Saves.settings.reduceMotion || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches)) { stopParticles(); return; }
     const newType = getParticleType(scene);
     if (newType === particleType) return;
     particleType = newType;
@@ -3464,18 +2868,20 @@
         else if (track.onerror) track.onerror();
       });
     }
-    fadeBgm(prev, track, bgmVolume());
+    fadeBgm(prev, track);
     return true;
   }
 
-  /* 双曲交叉淡入淡出：新曲 0→目标音量，旧曲目标→0 后暂停 */
-  function fadeBgm(prev, next, target) {
+  /* 双曲交叉淡入淡出：新曲 0→目标音量，旧曲目标→0 后暂停
+     目标音量每帧从设置读取，滑杆拖动时无需重启动画也能跟上 */
+  function fadeBgm(prev, next) {
     if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
     const startVol = prev ? prev.volume : 0;
     const start = performance.now();
     const tick = (now) => {
       // rAF 时间戳可能早于 performance.now()，k 需夹在 [0,1]，否则音量会变成负值
       const k = Math.max(0, Math.min(1, (now - start) / BGM_FADE_MS));
+      const target = bgmVolume();
       next.volume = target * k;
       if (prev && prev !== next) prev.volume = startVol * (1 - k);
       if (k < 1) { bgmFadeRaf = requestAnimationFrame(tick); return; }
@@ -3588,7 +2994,9 @@
   /* 程序化音效：kind → (时间偏移, 频率) 序列，sine 短包络 */
   function playSfx(kind) {
     ensureAudio();
-    if (!audioCtx || Saves.settings.sfx === false) return;
+    // v3.3.5：此前判断的 settings.sfx 字段根本不存在（恒假、形同虚设）；
+    // 按音效音量判定，拉到 0 即静音
+    if (!audioCtx || (Saves.settings.sfxVolume ?? 0.6) <= 0) return;
     const t = audioCtx.currentTime;
     const seq = {
       letter:  [[0, 880], [0.09, 1174.66]],
@@ -3675,6 +3083,7 @@
       else if (a === "keywords") openOverlay("keywords");
       else if (a === "cg") openOverlay("cg");
       else if (a === "flowchart") openOverlay("flowchart");
+      else if (a === "stats") openOverlay("stats");
       else if (a === "trueend") {
         if (!hasAllGoodEndings()) {
           flashHint("先完成三位女主的 GOOD 结局");
@@ -3729,6 +3138,35 @@
       backToTitle();
       return;
     }
+    // v3.3.10：选项 / 信件按钮的键盘操作——方向键在按钮间移动、Enter/Space 确认、
+    // 数字键 1-9 快选（仅在选项层可见、且未在输入框内时生效）
+    if (!el.choices.classList.contains("hidden")) {
+      const btns = Array.from(el.choices.querySelectorAll("button"))
+        .filter((b) => !b.disabled && b.offsetParent !== null);
+      if (btns.length) {
+        const at = btns.indexOf(document.activeElement);
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          btns[(at + 1 + btns.length) % btns.length].focus();
+          return;
+        }
+        if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          btns[(at - 1 + btns.length) % btns.length].focus();
+          return;
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          (btns.includes(document.activeElement) ? document.activeElement : btns[0]).click();
+          return;
+        }
+        if (/^[1-9]$/.test(e.key)) {
+          const pick = btns[parseInt(e.key, 10) - 1];
+          if (pick) { e.preventDefault(); pick.click(); }
+          return;
+        }
+      }
+    }
     if (hasActiveInteractionLayer()) return;
     if (e.key === " " || e.key === "Enter") {
       e.preventDefault();
@@ -3748,7 +3186,15 @@
   // v2.7.9 起：向玩法框架基座注入宿主能力（剧情跳转 / 数值加成 / 心条刷新 / 顶部提示 / 转义）
   window.GameKit?.attachHost({ gotoNode, applyAdd, updateHeartBar, flashHint, escapeHtml });
 
+  // v3.3.12：把界面类设置应用到文档（字号缩放 --ui-scale、减少动效 class）
+  function applyUiSettings() {
+    const s = Saves.settings || {};
+    document.documentElement.style.setProperty("--ui-scale", String(s.fontScale ?? 1));
+    document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
+  }
+
   function init() {
+    applyUiSettings();
     setScene("cherry_full");
     updateParticles("cherry_full");
     updateTrueEndAccess();

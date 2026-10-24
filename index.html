@@ -16,8 +16,8 @@
 <meta property="og:description" content="以「写信 / 回信」为核心交互的视觉小说：校园群像 + 时间循环 + 多结局。在樱花开落的季节，写下属于你的回信。">
 <meta property="og:image" content="assets/og-cover.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="stylesheet" href="css/style.css?v=3.3.4">
-<link rel="stylesheet" href="css/games.css?v=3.3.4">
+<link rel="stylesheet" href="css/style.css?v=3.3.15">
+<link rel="stylesheet" href="css/games.css?v=3.3.15">
 </head>
 <body>
 <div id="game" role="application" aria-label="樱时信笺视觉小说">
@@ -43,6 +43,7 @@
     <button data-menu="keywords" title="关键词" aria-label="关键词">🔑</button>
     <button data-menu="cg" title="CG图鉴" aria-label="CG图鉴">🖼️</button>
     <button data-menu="flowchart" title="流程图" aria-label="流程图">🗺️</button>
+    <button data-menu="stats" title="数据统计" aria-label="数据统计">📊</button>
     <button data-menu="title" title="返回标题" aria-label="返回标题">🏠</button>
     <button id="btn-auto" title="自动" aria-label="自动模式">▶▶</button>
     <button id="btn-skip" title="快进" aria-label="快进模式">⏩</button>
@@ -83,11 +84,12 @@
       <button data-action="cg">CG 图鉴</button>
       <button data-action="keywords">关键词收集</button>
       <button data-action="flowchart">流程图</button>
+      <button data-action="stats">数据统计</button>
       <button data-action="trueend" class="hidden">★ 真结局 ★</button>
       <button data-action="afterword" class="hidden">樱海后日谈</button>
       <button data-action="about">关于</button>
     </div>
-    <div class="title-version">v3.3.4 · Demo</div>
+    <div class="title-version">v3.3.15 · Demo</div>
   </div>
 
   <!-- 通用菜单浮层（存档/读档/设置/历史/图鉴/CG/关键词/流程图） -->
@@ -116,24 +118,28 @@
 
 </div>
 
-<script defer src="js/saves.js?v=3.3.4"></script>
-<script defer src="js/script.js?v=3.3.4"></script>
-<script defer src="js/lifecycle.js?v=3.3.4"></script>
-<script defer src="js/minigames.js?v=3.3.4"></script>
+<script defer src="js/saves.js?v=3.3.15"></script>
+<script defer src="js/script.js?v=3.3.15"></script>
+<script defer src="js/lifecycle.js?v=3.3.15"></script>
+<script defer src="js/minigames.js?v=3.3.15"></script>
 <!-- 玩法框架基座与已迁移玩法：必须在 engine.js 之前加载 -->
-<script defer src="js/gamekit.js?v=3.3.4"></script>
-<script defer src="js/games/afterword.js?v=3.3.4"></script>
-<script defer src="js/games/senses.js?v=3.3.4"></script>
-<script defer src="js/games/craft.js?v=3.3.4"></script>
-<script defer src="js/games/nature.js?v=3.3.4"></script>
-<script defer src="js/games/perception.js?v=3.3.4"></script>
-<script defer src="js/games/mechanism.js?v=3.3.4"></script>
-<script defer src="js/games/imagery.js?v=3.3.4"></script>
-<script defer src="js/games/direct.js?v=3.3.4"></script>
-<script defer src="js/engine.js?v=3.3.4"></script>
+<script defer src="js/gamekit.js?v=3.3.15"></script>
+<script defer src="js/games/afterword.js?v=3.3.15"></script>
+<script defer src="js/games/senses.js?v=3.3.15"></script>
+<script defer src="js/games/craft.js?v=3.3.15"></script>
+<script defer src="js/games/nature.js?v=3.3.15"></script>
+<script defer src="js/games/perception.js?v=3.3.15"></script>
+<script defer src="js/games/mechanism.js?v=3.3.15"></script>
+<script defer src="js/games/imagery.js?v=3.3.15"></script>
+<script defer src="js/games/direct.js?v=3.3.15"></script>
+<script defer src="js/engine.js?v=3.3.15"></script>
 <script>
-// PWA：注册 Service Worker（仅 https / localhost 安全上下文）
-if ("serviceWorker" in navigator && location.protocol === "https:") {
+// PWA：注册 Service Worker（仅安全上下文：https 或 localhost）
+// v3.3.6：补 localhost / 127.0.0.1 / ::1——此前只判 https，导致 e2e（http://localhost）
+// 从未覆盖 SW，注释与实际也不一致
+const __swSecure = location.protocol === "https:"
+  || ["localhost", "127.0.0.1", "[::1]", "::1"].includes(location.hostname);
+if ("serviceWorker" in navigator && __swSecure) {
   addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
 </script>

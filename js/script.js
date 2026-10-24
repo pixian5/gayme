@@ -668,6 +668,7 @@ const SCRIPT = {
       who: "林诗雨",
       text: "——又是一个不敢抬头的转学生。我递出地图的时候手指在抖，他没看见。我也不想让他看见。其实那张地图我画了三遍。第一遍太潦草，第二遍太用力，第三遍——刚刚好。可我画了三遍这件事，谁也不知道。",
       memory: "诗雨·走廊",
+      memoryTitle: "走廊的另一面",
       requiresMemory: false // 序章直接可看，不需要先解锁记忆
     },
     // v0.5.0 环境线索：走廊里有可探索的细节
@@ -810,8 +811,12 @@ const SCRIPT = {
   /* —— 二周目彩蛋：学姐的旧校舍 —— */
   d2_senior_easter: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "???", text: "——你来啦。我就知道，第二个春天你会再回来一次。", next: "d2_senior_easter_2", keyword: "学姐" },
   d2_senior_easter_2: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "三年前我也站在你这个位置。三条路我都走了一半。告诉你一些我没告诉过自己的话：", next: "d2_senior_easter_3" },
-  d2_senior_easter_3: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "诗雨的小说，写下去比写完重要。夏织的脚，停下来比跑出去重要。苏念的紫，松手比画完重要。", next: "d2_senior_easter_4" },
-  d2_senior_easter_4: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "你不必替她们走完。你只要在她们卡住的时候，递一句话。这封信——也替我递给自己。", next: "d2_senior_easter_5", cg_unlock: "cg_letter" },
+  d2_senior_easter_3: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "诗雨的小说，写下去比写完重要。夏织的脚，停下来比跑出去重要。苏念的紫，松手比画完重要。", loopText: ["诗雨的小说，写下去比写完重要。夏织的脚，停下来比跑出去重要。苏念的紫，松手比画完重要。",
+"三句话，上一轮我当成攻略；这一轮我听出它们是同一句——「写下去 / 停下来 / 松手」，才是她们各自缺的那一下。",
+"「写下去、停下来、松手。」这一轮我记住的不再是答案，而是她说话时看着远处的样子：这三句，也是她三年前没能对自己说的。"], next: "d2_senior_easter_4" },
+  d2_senior_easter_4: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "你不必替她们走完。你只要在她们卡住的时候，递一句话。这封信——也替我递给自己。", loopText: ["你不必替她们走完。你只要在她们卡住的时候，递一句话。这封信——也替我递给自己。",
+"「不必替她们走完，只要在卡住时递一句话。」上一轮我急着替她们做决定；这一轮我才听懂——递，不是替。",
+"「这封信，也替我递给自己。」这一轮我在心里应了一声：原来她要的从不是解谜，是有人肯把话原样交还。"], next: "d2_senior_easter_5", cg_unlock: "cg_letter" },
   d2_senior_easter_5: { day: 2, time: "morning", bg: "hallway", char: "senior", speaker: "学姐", text: "去吧。下午食堂见。", next: "d2_noon" },
   d2_library_1: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "", text: "图书馆二楼靠窗的位置，林诗雨正埋头抄写着什么。听到脚步声，她飞快把本子塞进抽屉。", next: "d2_library_2" },
   d2_library_2: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……你来干嘛？", next: "d2_library_3" },
@@ -820,7 +825,9 @@ const SCRIPT = {
   d2_library_5: { day: 2, time: "morning", bg: "library", speaker: "沈屿", text: "只看到「角色 A 推开门」。继续写下去吧，我不打扰你。", next: "d2_library_6" },
   d2_library_6: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……没人知道我在写。家里希望我考法律系。如果让他们知道——", next: "d2_library_7" },
   d2_library_7: { day: 2, time: "morning", bg: "library", speaker: "沈屿", text: "那你为什么还在写？", next: "d2_library_8" },
-  d2_library_8: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。", next: "d2_library_doodle", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true } },
+  d2_library_8: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。", loopText: ["因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。",
+"「不写的话，我会忘掉自己是谁。」上一轮我听见的是害怕；这一轮我听见她在说——她已经在忘，所以更要写。",
+"这本小说是写给外婆的。这一轮我才懂：她写的不是外婆，是外婆留给她、她又要留给自己的那支笔。"], next: "d2_library_doodle", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true } },
   d2_library_doodle: {
     day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨",
     text: "……你既然看到了，能不能帮我画一句开场？我画不出角色 A 推开门的样子。你随便涂一下，让我看见她。",
@@ -850,12 +857,16 @@ const SCRIPT = {
   d2_field_2: { day: 2, time: "morning", bg: "field", speaker: "沈屿", text: "吃了。你不用训练吗？", next: "d2_field_3" },
   d2_field_3: { day: 2, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "我？我备战全国赛。教练说再不拿名次，特招名额就没了。", next: "d2_field_4" },
   d2_field_4: { day: 2, time: "morning", bg: "field", speaker: "沈屿", text: "特招？", next: "d2_field_5" },
-  d2_field_5: { day: 2, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……嗯。家里那边，挺复杂的。我妈再婚了。只有跑出去，我才能——算了，不说了。陪我跑一组？", next: "d2_field_6", set: { flag_xiazhi_family: true } },
+  d2_field_5: { day: 2, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……嗯。家里那边，挺复杂的。我妈再婚了。只有跑出去，我才能——算了，不说了。陪我跑一组？", loopText: ["……嗯。家里那边，挺复杂的。我妈再婚了。只有跑出去，我才能——算了，不说了。陪我跑一组？",
+"她说「只有跑出去，我才能——」然后停住了。上一轮我以为是跑成绩；这一轮我想，她要跑出的也许是那个家。",
+"「算了，不说了。」这一轮我记住：她每次把话咽回去，都会多跑一组——把没说完的，跑成一圈圈的喘。"], next: "d2_field_6", set: { flag_xiazhi_family: true } },
   d2_field_6: { day: 2, time: "morning", bg: "field", speaker: "", text: "她的笑容在阳光底下很亮，可我总觉得那下面压着什么。跑完后她塞给我一瓶水。", next: "d2_noon" },
 
   d2_art_1: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "", text: "美术室里只有苏念一人。画布上还是那片紫，但角落多了几道焦黑的划痕。", next: "d2_art_2" },
   d2_art_2: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "昨天那幅……还没画完？", next: "d2_art_3" },
-  d2_art_3: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "画不完。它不让我画完。紫色是我哥哥最喜欢的颜色。他三年前走了。", next: "d2_art_4", set: { flag_sunian_block: true, flag_sunian_brother: true } },
+  d2_art_3: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "画不完。它不让我画完。紫色是我哥哥最喜欢的颜色。他三年前走了。", loopText: ["画不完。它不让我画完。紫色是我哥哥最喜欢的颜色。他三年前走了。",
+"「画不完。它不让我画完。」上一轮我听成托词；这一轮我懂了——不是画布不让，是她不肯让紫色的那一笔结束。",
+"紫色、哥哥、三年前。这一轮我明白：她守着的不是一幅画，是一个再也不会回来的人留下的唯一颜色。"], next: "d2_art_4", set: { flag_sunian_block: true, flag_sunian_brother: true } },
   d2_art_4: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "……什么叫——它不让你画完？", next: "d2_art_5" },
   d2_art_5: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "从去年省展拿了金奖之后，我就再没完成过一幅。他们说我是天才。可天才不该卡在草稿里三年。", next: "d2_art_6" },
   d2_art_6: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "也许你不是画不完，是不敢画完。画完了，就得证明下一幅还能更好。", next: "d2_art_7" },
@@ -881,8 +892,8 @@ const SCRIPT = {
       type: "free",
       hint: "写下你的建议…",
       matchings: [
-        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: "诗雨·敢" },
-        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·停" },
+        { id: "brave", keywords: ["敢", "勇气", "试试", "走", "推"], add: { affection: { shiyu: 2 } }, personality: { brave: 2 }, memory: "诗雨·敢", memoryTitle: "回信·推开门" },
+        { id: "calm",  keywords: ["停", "等", "慢慢", "别急"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·停", memoryTitle: "回信·等一等" },
       ]
     },
     // v0.5.0 朋友圈：夏织发布动态
@@ -1649,11 +1660,17 @@ const SCRIPT = {
   d4_night_family: {
     day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
     text: "睡前，我点开和父母的对话框。上一次说话是住校第一晚，之后它就安静到了现在。我打了一段话——想说这里的樱花开了，想说食堂的糖醋排骨不如家里做的好吃，想说其实我有一点想家——写到一半，又全部删掉。",
+    loopText: ["睡前，我点开和父母的对话框。上一次说话是住校第一晚，之后它就安静到了现在。我打了一段话——想说这里的樱花开了，想说食堂的糖醋排骨不如家里做的好吃，想说其实我有一点想家——写到一半，又全部删掉。",
+"睡前，对话框又亮了。上一轮我把那些话删得干干净净；这一轮，我写到「想家」两个字时停了一下——原来这两个字每写一次，都比上一次轻一点，也真一点。",
+"睡前，我几乎是下意识点开了对话框。那些删过的话像旧识一样回来。这一轮我明白：删掉不是忘记，是还没准备好让它们被听见。"],
     next: "d4_night_family_2"
   },
   d4_night_family_2: {
     day: 4, time: "evening", bg: "home_room", speaker: "沈屿",
     text: "最后输入框里只剩下三个字：「都挺好」。我盯着它看了很久，没有按发送。有些话要等到更会说话的时候——也可能，要等一个他们真正需要听见的时候。",
+    loopText: ["最后输入框里只剩下三个字：「都挺好」。我盯着它看了很久，没有按发送。有些话要等到更会说话的时候——也可能，要等一个他们真正需要听见的时候。",
+"输入框里又只剩下「都挺好」。上一轮我没按发送；这一轮我多看了那三个字一眼——它们不是谎话，是还没长熟的真心。",
+"「都挺好」——我甚至能背出自己打这三个字时的犹豫。这一轮我终于懂了：留着不发的，不是话，是一个还没敢回家的我。"],
     next: "d4_breath",
     memory: { id: "沈屿·未寄的话", title: "未寄的话", text: "有一句「都挺好」，你写好了，却留在了输入框里。" }
   },
@@ -2491,11 +2508,17 @@ const SCRIPT = {
   d10_senior_slip: {
     day: 10, time: "morning", bg: "rooftop", char: "senior", speaker: "学姐",
     text: "第 10 日早上，她在天台看云。她说：「这些天带你做的事，三年前我都做过一遍。只是那时候——」她停住了。后半句在风里打了个转，被她自己咽了回去，改口说：「算了。今天的云挺好。」",
+    loopText: ["第 10 日早上，她在天台看云。她说：「这些天带你做的事，三年前我都做过一遍。只是那时候——」她停住了。后半句在风里打了个转，被她自己咽了回去，改口说：「算了。今天的云挺好。」",
+"第 10 日早上，天台，云。她又说到「三年前我都做过一遍」。上一轮我没听出那半句的重量；这一轮，那个破折号像一扇没推开的门，在风里轻轻晃。",
+"同样的天台，同样咽回去的半句。这一轮我留意到另一件事：她说「那时候」三个字时，手一直扶着栏杆——像怕一松手，就掉回三年前。"],
     next: "d10_senior_slip_2"
   },
   d10_senior_slip_2: {
     day: 10, time: "morning", bg: "rooftop", speaker: "沈屿",
     text: "我没有追问。她说的「那时候」，大概就是三条路只走到一半的时候。风把云推得很快，像有什么事正在赶时间。",
+    loopText: ["我没有追问。她说的「那时候」，大概就是三条路只走到一半的时候。风把云推得很快，像有什么事正在赶时间。",
+"我依然没有追问。上一轮我以为「那时候」是遗憾；这一轮我读出另一层——她不是走不完，是舍不得走完。风还在推云。",
+"云被推得很快。这一轮，那半句的轮廓在我心里比记忆里更清楚：她说「三条路只走到一半」时，用的是「我」，不是「我们」。"],
     next: "d10_eclipse",
     memory: { id: "学姐·咽回去的半句", title: "咽回去的半句", text: "她说「三年前我都做过一遍，只是那时候——」，然后改口去说云。" }
   },
@@ -4082,15 +4105,17 @@ const SCRIPT = {
       type: "free",
       hint: "回她一句…",
       matchings: [
-        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨" },
-        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨" },
+        { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨·写下去", memoryTitle: "回信·写下去" },
+        { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨·歇一歇", memoryTitle: "回信·歇一歇" },
       ]
     }
   },
   sy_6: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "她爱你，只是用错了方式。", next: "sy_7" },
   sy_7: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我知道。可那方式压了我十七年。小说写的是个优等生毕业前消失了。所有人都觉得她去了好大学，只有她自己知道，她去了很远的地方。", next: "sy_8", keyword: "小说" },
   sy_8: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "你想给她一个结局吗？", next: "sy_9" },
-  sy_9: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」", next: "sy_minigame" },
+  sy_9: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」", loopText: ["我想。但我写不出。每次写到她消失那一刻，我的手就停了。最末一行：「她回过头，看见了自己从未活过的人生。」",
+"我想。可我还是写不出。这一轮我听见了另一层意思：她不是在写一个消失的人，是在写一个不敢活的人——所以才一次次停笔。",
+"「我想。但我写不出。」这一轮我才发现，她说这句话时，手一直按在那行字上——那行「从未活过的人生」，是她替自己写的判词。"], next: "sy_minigame" },
   sy_minigame: {
     day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨",
     text: "……你愿不愿意替我写一句试试？就一句。写到这句之后，我就接着写。",
@@ -4114,7 +4139,9 @@ const SCRIPT = {
   sy_10_good: { day: 6, time: "evening", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……活下去？原来可以这么写啊。让她回头，然后活下去。", next: "sy_11_good" },
   sy_11_good: { day: 7, time: "evening", bg: "library", char: "shiyu", speaker: "", text: "她连夜写完了。第二天清晨把稿子推给我，眼睛红着。", next: "sy_12_good" },
   sy_12_good: { day: 8, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我投了校刊。用笔名。", next: "sy_13_good" },
-  sy_13_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "", text: "一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。", next: "sy_14_good", cg_unlock: "cg_shiyu_good" },
+  sy_13_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "", text: "一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。", loopText: ["一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。",
+"一个月后，校刊印出来了。上一轮我只看见她终于被印在封面上；这一轮我看见她递书时指尖在发抖——像把自己交出去一样。",
+"校刊、封面、她的笔名。这一轮我读懂了：这不是一本杂志，是她第一次允许自己被看见。"], next: "sy_14_good", cg_unlock: "cg_shiyu_good" },
   sy_14_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "林诗雨", text: "我妈看了。她哭了很久，然后说——再写一本。", next: "sy_15_good" },
   sy_15_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "林诗雨", text: "扉页我写了：「献给外婆，也献给那个让我回头的人。」", next: "sy_ending_good" },
   sy_ending_good: {
@@ -4137,7 +4164,9 @@ const SCRIPT = {
 
   /* —— BAD —— */
   sy_10_bad: { day: 6, time: "evening", bg: "library", char: "shiyu", speaker: "林诗雨", text: "……消失一次。也对。也许她真的该消失一次。", next: "sy_11_bad" },
-  sy_11_bad: { day: 13, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", next: "sy_12_bad" },
+  sy_11_bad: { day: 13, time: "morning", bg: "rain", char: null, speaker: "", text: "一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」", loopText: ["一周后的雨天，林诗雨没有来上学。课桌上只留了一张便条：「转学了。谢谢你来图书馆。」",
+"一周后的雨天，她没来。上一轮我盯着那张便条发愣；这一轮我在想：写下「谢谢你来图书馆」时，她是不是也盼着有人来追。",
+"同样的雨天，同样的便条。这一轮我明白——这不是告别，是一扇虚掩的门，等我推开却没来得及。"], next: "sy_12_bad" },
   sy_12_bad: { day: 13, time: "morning", bg: "library", char: null, speaker: "", text: "抽屉里那一叠稿纸，最末一行永远停在那里：「她回过头，看见了自己从未活过的人生。」", next: "sy_ending_bad" },
   sy_ending_bad: {
     day: 13, time: "morning", bg: "ending_bad", char: null, speaker: "",
@@ -4172,16 +4201,20 @@ const SCRIPT = {
       type: "free",
       hint: "老实告诉她…",
       matchings: [
-        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练" },
-        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练" },
+        { id: "yes_run",  keywords: ["能", "跑", "练", "可以", "有"], add: { affection: { xiazhi: 2 } }, personality: { brave: 2, honest: 1 }, memory: "夏织·教练·陪练", memoryTitle: "回信·陪她跑" },
+        { id: "rest_first", keywords: ["停", "歇", "伤", "治", "休息"], add: { affection: { xiazhi: 1 } }, personality: { kind: 2 }, memory: "夏织·教练·歇养", memoryTitle: "回信·先歇伤" },
       ]
     },
     // v0.5.0 朋友圈：夏织深夜动态
     moment: "m_d2_xiazhi"
   },
-  xz_7: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", next: "xz_8" },
+  xz_7: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", loopText: ["我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。",
+"我爸每月打钱，附一句「最近怎么样」。上一轮我觉得她答得敷衍；这一轮我听出——「挺好的」三个字，也是他打钱时想要的答案。",
+"「最近怎么样」「挺好的」。这一轮我记住了：她每次打完这三个字，都会在跑道上多跑一圈，把回复时咽下的东西跑掉。"], next: "xz_8" },
   xz_8: { day: 5, time: "afternoon", bg: "field", speaker: "", text: "她说着笑起来，眼睛却红了一圈。", next: "xz_9" },
-  xz_9: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", next: "xz_minigame" },
+  xz_9: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", loopText: ["全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？",
+"全国赛下个月，她自己报的名。上一轮我当它是邀请；这一轮我才懂，那是她第一次向人伸手——伸手对她，比起跑还要难。",
+"「你愿意陪我练到那天吗？」这一轮我听清了她为什么停顿：她怕的不是我不答应，是又要一个人跑完。"], next: "xz_minigame" },
   xz_minigame: {
     day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织",
     text: "先陪我冲一组，看看我的节奏还在不在。",
@@ -4206,7 +4239,9 @@ const SCRIPT = {
   xz_11_good: { day: 6, time: "evening", bg: "summer", char: "xiazhi", speaker: "", text: "接下来整整一个月，我们清晨练起跑，黄昏练冲刺。她左脚的旧伤我每天帮她敷冰。成绩一点点回来。", next: "xz_12_good" },
   xz_12_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "夏织", text: "一个月后，今天跑进了 11.8。沈屿——我没跑过这么快。", next: "xz_13_good" },
   xz_13_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "夏织", text: "全国赛那天，你来当我的场外。我不需要教练，我需要你站在终点等我。", next: "xz_14_good" },
-  xz_14_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "", text: "发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。", next: "xz_15_good", cg_unlock: "cg_xiazhi_good" },
+  xz_14_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "", text: "发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。", loopText: ["发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。",
+"发令枪响，她第一个冲出去。上一轮我替她数着名次；这一轮我只看见她撞线时回头找我的那一眼——先找的不是成绩。",
+"一百米，十一个对手，第二名。这一轮我明白：她赢的不是名次，是终于有人站在终点等她。"], next: "xz_15_good", cg_unlock: "cg_xiazhi_good" },
   xz_15_good: { day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "夏织", text: "——第二名。沈屿，第二名！", next: "xz_ending_good" },
   xz_ending_good: {
     day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "",
@@ -4271,10 +4306,14 @@ const SCRIPT = {
   },
   sn_5b_release: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么用力的一笔。原来「我」可以是这种颜色。", next: "sn_6", memory: { id: "苏念·一笔·用力", title: "她是谁", text: "你画的那一笔很用力。她第一次看见自己可以是这种颜色。" } },
   sn_5b_calm: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "……这么安静的一笔。原来「我」也可以是这种姿势。", next: "sn_6", memory: { id: "苏念·一笔·安静", title: "她是谁", text: "你画的那一笔很安静。她第一次看见自己也可以是这种姿势。" } },
-  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", next: "sn_7" },
+  sn_6: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。", loopText: ["这就是问题。紫色是我哥哥最喜欢的颜色。我画它，是想留住他。画了三年，我把自己也画了进去。",
+"紫色是我哥最喜欢的颜色。上一轮我听见的是「留住他」；这一轮我听见后半句——「把自己也画了进去」，原来她也被留在了里面。",
+"画了三年，她把自己也画了进去。这一轮我看清了：她不是画不出新作，是一松手，怕连哥哥的颜色也一起弄丢。"], next: "sn_7" },
   sn_7: { day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念", text: "你看这幅——", next: "sn_8" },
   sn_8: { day: 5, time: "afternoon", bg: "art_room", speaker: "", text: "她把那张未完成的紫推到我面前。我第一次看清：那片紫里，藏着一只翅膀，半张脸，一只手。", next: "sn_9" },
-  sn_9: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。", next: "sn_minigame", keyword: "挣" },
+  sn_9: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。", loopText: ["这不是一片紫。这是一个人想从紫里挣出来，但被你按住了。",
+"「一个人想从紫里挣出来，却被她自己按住了。」上一轮我说出口；这一轮我迟疑了——那句话，说的是画里的她，还是画外的她？",
+"这一轮我盯着那片紫看了很久：挣出来的人，差一点就是她自己。我说的每一句，其实也在说给她听。"], next: "sn_minigame", keyword: "挣" },
   sn_minigame: {
     day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念",
     text: "……你既然看见了，那你帮我调一次色。紫色不止一种，找到对的那一种，她才肯出来。",
@@ -4299,7 +4338,9 @@ const SCRIPT = {
   sn_10_good: { day: 6, time: "evening", bg: "art_room", char: "sunian", speaker: "苏念", text: "松手……好。我试试。", next: "sn_11_good" },
   sn_11_good: { day: 6, time: "evening", bg: "autumn", char: "sunian", speaker: "", text: "接下来一个月，她每天画到深夜。我不打扰她，只在她画画时坐在角落看书。", next: "sn_12_good" },
   sn_12_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "苏念", text: "一个月后，省展要交的那幅新作画完了。", next: "sn_13_good" },
-  sn_13_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "", text: "画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。", next: "sn_14_good", cg_unlock: "cg_sunian_good" },
+  sn_13_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "", text: "画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。", loopText: ["画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。",
+"画布上的人挣出来了，眼神是亮的。上一轮我只看结果；这一轮我看见画名旁落款的位置空着——她还在犹豫要不要署名。",
+"《挣》——同一个题目，这一轮我看见的却是一个人从紫里稳稳站起，脚踩着边。她终于肯把自己签在旁边了。"], next: "sn_14_good", cg_unlock: "cg_sunian_good" },
   sn_14_good: { day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "苏念", text: "省展那天，它被放在入口第一幅。沈屿——是你让它出来的。", next: "sn_ending_good" },
   sn_ending_good: {
     day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "",
@@ -4392,11 +4433,11 @@ const SCRIPT = {
       prompt: "✦ 替学姐回信，也写给自己",
       hint: "写下你想对三年前的学姐，或者三年后的自己说的话…",
       matchings: [
-        { id: "勇敢", keywords: ["敢", "勇气", "走", "回头", "写下"], next: "true_break_5a", memory: "写信-勇敢" },
-        { id: "放手", keywords: ["放", "松", "不用", "算了", "没关系"], next: "true_break_5b", memory: "写信-放手" },
-        { id: "想念", keywords: ["想", "念", "记得", "樱花", "春"], next: "true_break_5c", memory: "写信-想念" },
+        { id: "勇敢", keywords: ["敢", "勇气", "走", "回头", "写下"], next: "true_break_5a", memory: "写信-勇敢", memoryTitle: "写给学姐·勇敢" },
+        { id: "放手", keywords: ["放", "松", "不用", "算了", "没关系"], next: "true_break_5b", memory: "写信-放手", memoryTitle: "写给学姐·放手" },
+        { id: "想念", keywords: ["想", "念", "记得", "樱花", "春"], next: "true_break_5c", memory: "写信-想念", memoryTitle: "写给学姐·想念" },
       ],
-      defaultReply: { next: "true_break_5d", memory: "写信-默认" }
+      defaultReply: { next: "true_break_5d", memory: "写信-默认", memoryTitle: "写给学姐·留白" }
     },
     next: "true_break_5d"
   },
@@ -4423,11 +4464,17 @@ const SCRIPT = {
   senior_2: {
     day: 5, time: "afternoon", bg: "hallway", char: "senior", speaker: "沈屿",
     text: "「我想看看，你一直站着的这个地方。」",
+    loopText: ["「我想看看，你一直站着的这个地方。」",
+"「我想看看，你一直站着的这个地方。」——上一轮我也这么说过；这一轮我留意到，她听完，指尖在栏杆上敲了一下，像在数我到底站了多久。",
+"「你一直站着的这个地方。」这一轮我说出口时忽然明白：我不是来看她站着，是来确认——一个人可以在这里站多久，而不被忘记。"],
     next: "senior_3"
   },
   senior_3: {
     day: 5, time: "afternoon", bg: "hallway", char: "senior", speaker: "学姐",
     text: "她侧过身，让出半条走廊。「三年前，我停在这里。你是来替我走完，还是来陪我停一会儿？」",
+    loopText: ["她侧过身，让出半条走廊。「三年前，我停在这里。你是来替我走完，还是来陪我停一会儿？」",
+"她侧身让出半条走廊。上一轮我只听见「替我走完」；这一轮我听出她真正在问的是后半句——「陪我停一会儿」里，藏着她三年前的孤单。",
+"「三年前，我停在这里。」这一轮我数了数：从走廊尽头到我站的地方，只有七步。她却走了三年没走完——不是走不动，是没人陪她停过。"],
     choice: {
       prompt: "你为什么来旧校舍？",
       options: [
@@ -4440,37 +4487,58 @@ const SCRIPT = {
   senior_4a: {
     day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
     text: "「替不了。」她摇头，声音很轻，「三年前我也以为，只要有人替我走完，我就能走。后来才明白，路要自己走，信要自己回。」",
+    loopText: ["「替不了。」她摇头，声音很轻，「三年前我也以为，只要有人替我走完，我就能走。后来才明白，路要自己走，信要自己回。」",
+"「替不了。」上一轮我当它是拒绝；这一轮我懂了——她不是不领情，是太清楚：被人替着走的每一步，日后都要还回去。",
+"「路要自己走，信要自己回。」这一轮我记住她说完低头看鞋尖的样子：她不是不肯让人帮，是怕帮完，只剩她一个人站在原地。"],
     next: "senior_5"
   },
   senior_4b: {
     day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
     text: "「……那就坐一会儿。」她在窗台上坐下，拍了拍旁边的位置，「这里很久没有人坐过了。」",
+    loopText: ["「……那就坐一会儿。」她在窗台上坐下，拍了拍旁边的位置，「这里很久没有人坐过了。」",
+"「那就坐一会儿。」上一轮我坐下了；这一轮我听见后半句——「很久没有人坐过」不是陈述，是她轻轻递出来的一句邀请。",
+"她拍窗台的动作，这一轮我看得很清楚：拍了两下，又收回一点，像怕位置不够，又怕我嫌窄。她把「想留人」写成了「这里很久没人坐过」。"],
     next: "senior_5"
   },
   senior_4c: {
     day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
     text: "「看我？」她笑了一下，「一个停在半路的人，有什么好看的。」我说：「半路也是路。」她没再说话。",
+    loopText: ["「看我？」她笑了一下，「一个停在半路的人，有什么好看的。」我说：「半路也是路。」她没再说话。",
+"「半路也是路。」上一轮我说得理直气壮；这一轮我说完才明白，她不需要被说服，只需要有人肯把「半路」也当成一条正经的路。",
+"她笑了一下，这一轮我听出那笑里的自嘲比上一轮薄了半分——像是试着相信「半路也是路」，又不敢全信。"],
     next: "senior_5"
   },
   senior_5: {
     day: 5, time: "evening", bg: "hallway", char: "senior", speaker: "学姐",
     text: "「三年前，我也收到过一封写给自己的信。我没回。不是不会写，是不敢写。你有没有过这种时候——明明知道该回，却把信压在抽屉最底下？」",
+    loopText: ["「三年前，我也收到过一封写给自己的信。我没回。不是不会写，是不敢写。你有没有过这种时候——明明知道该回，却把信压在抽屉最底下？」",
+"「不是不会写，是不敢写。」上一轮我把它当成她的往事；这一轮我听见她其实在问我——你有没有过，把该回的话压在抽屉最底下。",
+"「压在抽屉最底下。」这一轮我留意到她说完这句，看了一眼自己的口袋：那封信大概不在抽屉里，她一直带在身上，只是从没打开。"],
     memory: { id: "学姐·抽屉里的信", title: "抽屉最底下", text: "三年前她收到一封写给自己的信，没敢回，压在抽屉最底下。" },
     next: "senior_6"
   },
   senior_6: {
     day: 6, time: "morning", bg: "library", char: "senior", speaker: "学姐",
     text: "「今天陪我做三件没做完的事。」她把一本借了三年的书放在桌上，「第一件，把它还回去。」",
+    loopText: ["「今天陪我做三件没做完的事。」她把一本借了三年的书放在桌上，「第一件，把它还回去。」",
+"「三件没做完的事。」上一轮我只是跟着做；这一轮我问自己：她为什么挑这三件？——因为它们都停在「还差最后一步」。",
+"借了三年的书放在桌上，这一轮我看见书脊上有一道磨白的印子：她不是忘还，是每次走到门口，都没舍得把这一步走完。"],
     next: "senior_7"
   },
   senior_7: {
     day: 7, time: "morning", bg: "rooftop", char: "senior", speaker: "学姐",
     text: "「第二件，把这圈跑完。」她站在天台边，风把校服吹得很响，「三年前我跑到这里，就停了。」",
+    loopText: ["「第二件，把这圈跑完。」她站在天台边，风把校服吹得很响，「三年前我跑到这里，就停了。」",
+"「三年前我跑到这里，就停了。」上一轮我当它是讲述；这一轮我听见后半句没说出口的——「这次，有人陪我跑完吗」。",
+"风把校服吹得很响，这一轮我听出她在借风声盖住一句话：她说「就停了」时，脚尖还朝着跑道的方向，像随时准备再迈一步。"],
     next: "senior_8"
   },
   senior_8: {
     day: 8, time: "afternoon", bg: "art_room", char: "senior", speaker: "学姐",
     text: "「第三件，把这张画补完。」画架上只有一片没有边界的蓝，「可我忘了，当年想画什么。」",
+    loopText: ["「第三件，把这张画补完。」画架上只有一片没有边界的蓝，「可我忘了，当年想画什么。」",
+"「可我忘了，当年想画什么。」上一轮我急着替她想；这一轮我懂了——她不是忘，是不敢承认当年想画的，就是她自己。",
+"那片没有边界的蓝，这一轮我看得更久：它是她三年前停笔的地方，也是她没敢给自己收边的证据。她要的不是补完，是有人肯站在画前不催。"],
     choice: {
       prompt: "在这张画上补什么？",
       options: [
@@ -4498,12 +4566,18 @@ const SCRIPT = {
   senior_10: {
     day: 9, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
     text: "「三天。你把我想做又没做的事，陪我做完了。」她看着窗外，「可你还是没问我，为什么我走不了。」我说：「你不想说，我就不问。」她低声说：「……你这个人，真让人没办法。」",
+    loopText: ["「三天。你把我想做又没做的事，陪我做完了。」她看着窗外，「可你还是没问我，为什么我走不了。」我说：「你不想说，我就不问。」她低声说：「……你这个人，真让人没办法。」",
+"「你还是没问我，为什么我走不了。」上一轮我以为她在抱怨；这一轮我听见她其实是在试探——不追问，是不是也算一种认真的在意。",
+"「真让人没办法。」这一轮我读懂了这句话的重量：她习惯被追问、被要求，唯独没被人这样安静地放过一次。"],
     memory: { id: "学姐·没问出口", title: "没问出口", text: "她没有说她为什么走不了；我也没有问。有些答案，不该由追问换来。" },
     next: "senior_11"
   },
   senior_11: {
     day: 10, time: "night", bg: "hallway", char: "senior", speaker: "学姐",
     text: "樱花祭前夜。她把一叠信纸放在窗台上。「明天就是樱花祭。三年前，我就是在这一夜停下的。你可以现在回头，去合成那封信。那才是能让我走的东西。」",
+    loopText: ["樱花祭前夜。她把一叠信纸放在窗台上。「明天就是樱花祭。三年前，我就是在这一夜停下的。你可以现在回头，去合成那封信。那才是能让我走的东西。」",
+"「那才是能让我走的东西。」上一轮我只听见指引；这一轮我听见她把它说成了邀请——而且是那种「你可以走」的、放我自由的邀请。",
+"樱花祭前夜，信纸放在窗台。这一轮我注意到她把信纸摆得很整齐，像是早就准备好：无论我选哪一条，她都能立刻陪我接着往下写。"],
     choice: {
       prompt: "最后一夜，你怎么选？",
       options: [
@@ -4532,11 +4606,11 @@ const SCRIPT = {
       prompt: "✦ 给学姐写一封信",
       hint: "她不缺一封能让她离开的信。她缺一封写给她的信。",
       matchings: [
-        { id: "留下", keywords: ["留", "陪", "一起", "不走", "停"], next: "senior_13_stay", memory: "学姐·留下" },
-        { id: "自由", keywords: ["走", "自由", "离开", "飞", "春天"], next: "senior_13_go", memory: "学姐·自由" },
-        { id: "看见", keywords: ["看见", "名字", "记得", "影子", "你"], next: "senior_13_see", memory: "学姐·看见" },
+        { id: "留下", keywords: ["留", "陪", "一起", "不走", "停"], next: "senior_13_stay", memory: "学姐·留下", memoryTitle: "回信·留下" },
+        { id: "自由", keywords: ["走", "自由", "离开", "飞", "春天"], next: "senior_13_go", memory: "学姐·自由", memoryTitle: "回信·自由" },
+        { id: "看见", keywords: ["看见", "名字", "记得", "影子", "你"], next: "senior_13_see", memory: "学姐·看见", memoryTitle: "回信·看见" },
       ],
-      defaultReply: { next: "senior_13_default", memory: "学姐·回信" }
+      defaultReply: { next: "senior_13_default", memory: "学姐·回信", memoryTitle: "回信·致学姐" }
     },
     next: "senior_13_default"
   },
@@ -4563,12 +4637,18 @@ const SCRIPT = {
   senior_14: {
     day: 11, time: "night", bg: "festival", char: "senior", speaker: "学姐",
     text: "樱花祭开始了。主会场的灯一盏盏亮起来，旧校舍这边只听得见风。她问：「你不去吗？」我说：「我在这儿。」她看着樱花，第一次没有说「回去吧」。",
+    loopText: ["樱花祭开始了。主会场的灯一盏盏亮起来，旧校舍这边只听得见风。她问：「你不去吗？」我说：「我在这儿。」她看着樱花，第一次没有说「回去吧」。",
+"「你不去吗？」上一轮我犹豫要不要答；这一轮我懂：她其实在给我退路，而我说「我在这儿」时，她是先松了一口气，才去看樱花的。",
+"主会场的灯一盏盏亮起来，这一轮我听见她沉默里另有一种声音——不是挽留，是终于有人替她把这晚的灯，留在了旧校舍这一边。"],
     cg_unlock: "cg_senior_shadow",
     next: "senior_ending"
   },
   senior_ending: {
     day: 11, time: "night", bg: "ending_true", char: null, speaker: "",
     text: "那年樱花祭，我没有合成那封信。循环没有破，学姐也没有离开。但从那天起，旧校舍的灯会在每晚亮一会儿——不是等谁来救她，只是有人会来，陪她把没写完的那一页写完。她说，她第一次觉得，自己不是一个被留在信里的影子。",
+    loopText: ["那年樱花祭，我没有合成那封信。循环没有破，学姐也没有离开。但从那天起，旧校舍的灯会在每晚亮一会儿——不是等谁来救她，只是有人会来，陪她把没写完的那一页写完。她说，她第一次觉得，自己不是一个被留在信里的影子。",
+"那年樱花祭，我没有合成那封信。上一轮我以为这是「没走成的结局」；这一轮我懂了——有些人不必被救走，只需要有人肯一遍遍地来，把没写完的那一页写完。",
+"旧校舍的灯每晚亮一会儿。这一轮我明白：那不是等谁，是一句没有署名的「我还在」。她终于不再是被留在信里的影子，而是自己按亮灯的那个人。"],
     ending: { id: "senior_shadow", type: "SIDE ENDING", title: "看 见", text: "循环没有破，她也没有走；但这一次，她不再是没人看见的影子。" }
   },
 
@@ -4576,6 +4656,9 @@ const SCRIPT = {
   afterword_entry: { day: 14, time: "night",
     bg: "festival", char: null, speaker: "",
     text: "樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
+    loopText: ["樱花祭后的第三天，学园把彩灯和摊位都收起来了。信寄出以后，日子没有立刻变得圆满——只是每个人都开始做一件具体的事。我也给父母各发了一条近况：父亲回了工作安排，母亲问我什么时候回家。家没有立刻恢复原样，但冷战终于有了第一道缝。",
+"樱花祭后的第三天，摊子收起来了，日子没有立刻圆满。上一轮我发那条近况时手还有些抖；这一轮我懂了——缝是慢慢开的，不是一夜缝上的。",
+"又是樱花祭后的第三天。这一轮我记得：母亲问「什么时候回家」，不是催，是等。我给父亲的「工作安排」回了两个字——「收到」，比上一轮多了一个字。"],
     next: "afterword_three",
     cg_unlock: "cg_festival" /* v3.3.3：学园祭之夜 CG 此前无任何解锁点（内容缺口），接入后日谈开篇 */
   },
@@ -4583,6 +4666,9 @@ const SCRIPT = {
     bg: "cafeteria", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "林诗雨",
     text: "我把下一章交给校刊了。夏织开始做康复训练，苏念把画室的门打开了一半。我们没有替谁走完路，只是约好每周见一次。",
+    loopText: ["我把下一章交给校刊了。夏织开始做康复训练，苏念把画室的门打开了一半。我们没有替谁走完路，只是约好每周见一次。",
+"「我们没有替谁走完路。」上一轮我听着像总结；这一轮我听见里面的分寸——她们各自还在走，只是约好别走散。",
+"下一章、康复、半开的门。这一轮我明白：这不是大团圆，是三个人都开始做「一件具体的事」——比什么都实在。"],
     next: "afterword_postcard"
   },
   afterword_postcard: { day: 14, time: "night",
@@ -4611,12 +4697,18 @@ const SCRIPT = {
   afterword_stamp: { day: 14, time: "night",
     bg: "school_gate", char: "shiyu", speaker: "林诗雨",
     text: "邮筒吞下明信片时，林诗雨问：「这次不会再回来了吗？」我说：「会回来，但不是回到原点。」她把这句话写进了下一章。",
+    loopText: ["邮筒吞下明信片时，林诗雨问：「这次不会再回来了吗？」我说：「会回来，但不是回到原点。」她把这句话写进了下一章。",
+"「会回来，但不是回到原点。」上一轮我说这句话时心里没底；这一轮我知道它是真的——她们回来的是往前走过的路。",
+"邮筒、下一章。这一轮我记住：她把我的答案写进了小说，而小说这一次终于有了往回走的尽头。"],
     next: "afterword_4"
   },
   afterword_4: { day: 14, time: "night",
     bg: "cherry_full", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "风从海那边吹过来。夏织先迈开步子，诗雨把稿纸夹好，苏念把门再推开一点。她们都没有回头叫我。因为这一次，我已经在她们身边。",
+    loopText: ["风从海那边吹过来。夏织先迈开步子，诗雨把稿纸夹好，苏念把门再推开一点。她们都没有回头叫我。因为这一次，我已经在她们身边。",
+"风、步子、稿纸、门。上一轮我数着她们各自的动作；这一轮我留意到「没有回头叫我」——不是不要我，是不用再找我了。",
+"「因为这一次，我已经在她们身边。」这一轮我读懂了这句话的重量：身边不是位置，是终于不必证明自己在场。"],
     next: "afterword_signature"
   },
   afterword_signature: { day: 14, time: "night",
@@ -4737,6 +4829,9 @@ const SCRIPT = {
     bg: "school_gate", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "半年后，樱海学园换上了薄薄的秋色。我们把旧公告栏改成了「回信角」，并把规则写在旁边：愿意公开的纸条写上署名和日期；不愿署名的，也可以明确选择匿名。我们不再把任何人的困惑交给一封没有来处的信。",
+    loopText: ["半年后，樱海学园换上了薄薄的秋色。我们把旧公告栏改成了「回信角」，并把规则写在旁边：愿意公开的纸条写上署名和日期；不愿署名的，也可以明确选择匿名。我们不再把任何人的困惑交给一封没有来处的信。",
+"「回信角」、规则、署名。上一轮我把它当成一个场景；这一轮我听见了它的来处——我们做过一次「没有来处的信」的受害者，才学会要先问清楚。",
+"半年、秋色、写在旁边的规则。这一轮我明白：把规则写出来，不是不信任，是替每一个可能被看见的人，先把选择权留下。"],
     next: "afterword_mailbox"
   },
   afterword_mailbox: { day: 181, time: "night",
@@ -4851,6 +4946,9 @@ const SCRIPT = {
     bg: "classroom", chars: [{ id: "shiyu", pos: "left" }, { id: "xiazhi", pos: "center" }, { id: "sunian", pos: "right" }],
     speaker: "沈屿",
     text: "又过半年，春末的开放日快结束了。回信角前留下四张纸条：有人明确说可以公开，有人只想把话交还自己，还有人替朋友写了一半。我们先确认每句话能不能被看见，再决定它该去哪里。",
+    loopText: ["又过半年，春末的开放日快结束了。回信角前留下四张纸条：有人明确说可以公开，有人只想把话交还自己，还有人替朋友写了一半。我们先确认每句话能不能被看见，再决定它该去哪里。",
+"四张纸条，三种意愿。上一轮我按着规则分；这一轮我先问自己：分之前，我有没有真的听清每一句想被怎么对待。",
+"公开、交还、写了一半。这一轮我记住：这一步不是整理，是练习——练习尊重一个人还没说完的部分。"],
     next: "afterword_wall_reflection",
     wall: {
       prompt: "把每张留言放到合适的位置",

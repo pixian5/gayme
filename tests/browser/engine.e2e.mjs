@@ -72,6 +72,16 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     Saves.updateSetting("bgm", false);
     Saves.updateSetting("sfxVolume", 0);
   });
+  // v3.3.6：localhost 也应注册 Service Worker（此前只判 https，e2e 从未覆盖 SW）
+  const swRegistered = await page.evaluate(async () => {
+    if (!("serviceWorker" in navigator)) return false;
+    for (let i = 0; i < 30; i++) {
+      if (await navigator.serviceWorker.getRegistration()) return true;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return false;
+  });
+  assert.ok(swRegistered, "localhost 未注册 Service Worker");
   console.log("[e2e] 1/7 页面加载完成");
 
   // 1.5) 真实 BGM 资源可加载（MIME / 解码 / 时长），防止路径或编码坏掉
@@ -83,6 +93,9 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     setTimeout(() => resolve({ duration: 0, error: "timeout" }), 10000);
   }));
   assert.ok(bgmInfo.duration > 60, `BGM 无法解码：${JSON.stringify(bgmInfo)}`);
+
+  // v3.3.13：先标记引导已看，避免它干扰后续推进链（专门用例在下方重置后再测）
+  await page.evaluate(() => Saves.setFlag("tutorialSeen", true));
 
   // 1) 新游戏 + 连续推进
   await page.evaluate(() => window.__game.newGame());
@@ -126,13 +139,94 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
 
   // 4) 全部浮层面板可开关（UI 拆分后的主要安全网）
   await page.evaluate(() => window.__game.newGame());
-  for (const panel of ["save", "load", "config", "history", "gallery", "about", "keywords", "cg", "flowchart"]) {
+  for (const panel of ["save", "load", "config", "history", "gallery", "about", "keywords", "cg", "flowchart", "stats"]) {
     await page.evaluate((p) => window.__game.openOverlay(p), panel);
     const open = await page.evaluate(() => !document.getElementById("overlay").classList.contains("hidden"));
     const bodyLen = await page.evaluate(() => document.getElementById("overlay-body").innerHTML.length);
     assert.ok(open && bodyLen > 50, `浮层 ${panel} 未正常渲染`);
+    if (panel === "config") {
+      // v3.3.5：设置面板必须含 BGM / 音效音量控件，且滑杆改动能实时写入设置
+      const hasVolumeControls = await page.evaluate(() =>
+        !!document.getElementById("cfg-bgmvolume") && !!document.getElementById("cfg-sfxvolume"));
+      assert.ok(hasVolumeControls, "设置面板缺少 BGM / 音效音量控件");
+      await page.evaluate(() => {
+        const slider = document.getElementById("cfg-bgmvolume");
+        slider.value = "0.2";
+        slider.dispatchEvent(new Event("input"));
+      });
+      assert.equal(await page.evaluate("Saves.settings.bgmVolume"), 0.2, "BGM 音量滑杆未写入设置");
+      // v3.3.12：设置面板新增「减少动效」「界面字号」并立即生效
+      assert.ok(await page.evaluate(() => !!document.getElementById("cfg-reducemotion") && !!document.getElementById("cfg-fontscale")),
+        "设置面板缺少减少动效 / 界面字号控件");
+      await page.evaluate(() => {
+        const slider = document.getElementById("cfg-fontscale");
+        slider.value = "1.2";
+        slider.dispatchEvent(new Event("input"));
+      });
+      assert.equal(await page.evaluate("Saves.settings.fontScale"), 1.2, "界面字号滑杆未写入设置");
+      assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--ui-scale").trim()),
+        "1.2", "界面字号未应用到 --ui-scale");
+    }
     await page.evaluate(() => window.__game.closeOverlay());
   }
+  // v3.3.6：浮层焦点陷阱——连续 Tab 不逃逸到浮层之外
+  await page.evaluate(() => window.__game.openOverlay("config"));
+  for (let i = 0; i < 12; i++) await page.keyboard.press("Tab");
+  const focusInside = await page.evaluate(() => !!(document.activeElement && document.activeElement.closest?.("#overlay")));
+  assert.ok(focusInside, "浮层焦点陷阱失效：Tab 逃逸到浮层之外");
+  await page.evaluate(() => window.__game.closeOverlay());
+
+  // v3.3.6：inbox 限时消息倒计时持久化——首次打开时间只记一次
+  const inboxPersist = await page.evaluate(() => {
+    Saves.saveInbox({ id: "e2e_msg", from: "测试", deadline: 30000 });
+    const first = Saves.markInboxOpened("e2e_msg");
+    const second = Saves.markInboxOpened("e2e_msg");
+    return { first, second };
+  });
+  assert.ok(inboxPersist.first && inboxPersist.first === inboxPersist.second,
+    "inbox 首次打开时间未持久化（倒计时可无限重置）");
+
+  // v3.3.10：选项键盘操作——方向键移动焦点 + Enter 确认
+  await page.evaluate(() => { window.__game.newGame(); window.__game.gotoNode("day2_choice"); });
+  await page.waitForTimeout(150);
+  const beforeChoice = await page.evaluate(() => window.__game.state.currentNode);
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(150);
+  const afterChoice = await page.evaluate(() => window.__game.state.currentNode);
+  assert.notEqual(afterChoice, beforeChoice, "选项键盘操作未生效（Enter 未确认选项）");
+
+  // v3.3.11：CG 大图查看器——点击已解锁 CG 放大，Esc 关闭
+  await page.evaluate(() => { Saves.unlockCG("cg_letter"); window.__game.openOverlay("cg"); });
+  await page.evaluate(() => document.querySelector("#overlay-body [data-cg]")?.click());
+  await page.waitForTimeout(120);
+  assert.ok(await page.evaluate(() => !!document.getElementById("cg-viewer-layer")), "CG 大图查看器未打开");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  assert.ok(await page.evaluate(() => !document.getElementById("cg-viewer-layer")), "CG 大图 Esc 未关闭");
+
+  // v3.3.13：新手引导——首次新档出现，可关闭
+  await page.evaluate(() => { Saves.setFlag("tutorialSeen", false); window.__game.newGame(); });
+  await page.waitForTimeout(120);
+  assert.ok(await page.evaluate(() => !!document.getElementById("tutorial-layer")), "新手引导未出现");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(100);
+  assert.ok(await page.evaluate(() => !document.getElementById("tutorial-layer")), "新手引导未关闭");
+
+  // v3.3.13：存档槽重命名 / 单槽导出 / 导入
+  const slotOps = await page.evaluate(() => {
+    const snap = { nodeId: "d4_puzzle", sceneLabel: "测试场景", dialogPreview: "preview", variables: {}, history: [], visitedNodes: {} };
+    Saves.save(3, snap);
+    const renamed = Saves.renameSave(3, "我的存档");
+    const exported = Saves.exportSlot(3);
+    Saves.deleteSave(3);
+    const imported = Saves.importSlot(4, exported);
+    const loaded = Saves.load(4);
+    return { renamed, imported, exportedName: exported && exported.name, loadedName: loaded && loaded.name };
+  });
+  assert.ok(slotOps.renamed && slotOps.imported, "存档重命名 / 导入失败");
+  assert.equal(slotOps.exportedName, "我的存档", "导出未包含槽位名称");
+  assert.equal(slotOps.loadedName, "我的存档", "导入后槽位名称丢失");
   console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING

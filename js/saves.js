@@ -24,6 +24,14 @@ const MOMENT_LIKES_KEY = "sakura_letters_moment_likes_v2";
 const MOMENT_COMMENTS_KEY = "sakura_letters_moment_comments_v2";
 const DREAM_KEY        = "sakura_letters_dream_v2";       // 梦境碎片
 const PERSONALITY_KEY  = "sakura_letters_personality_v2"; // 性格画像
+// v3.3.3：性格画像完整维度集合（剧情/玩法实际会写入的 8 个维度；
+// 此前默认结构仅 4 维，导致 careful/patient/calm/creative 在图鉴显示英文）
+const PERSONALITY_DIMS = ["brave", "kind", "active", "honest", "careful", "patient", "calm", "creative"];
+// v3.3.3：各维度正/负向中文标签 [正向, 负向]，供画像面板与性格标签统一取值
+const PERSONALITY_LABELS = {
+  brave: ["敢", "慎"], kind: ["温", "冷"], active: ["行", "思"], honest: ["真", "藏"],
+  careful: ["细", "粗"], patient: ["耐", "急"], calm: ["静", "躁"], creative: ["新", "守"],
+};
 const DOODLE_KEY       = "sakura_letters_doodle_v2";     // 涂鸦记录
 /* v0.6.0 新玩法存储 */
 const COLLAGE_KEY      = "sakura_letters_collage_v2";    // 拼贴诗
@@ -155,10 +163,12 @@ const TRIAGE_KEY       = "sakura_letters_triage_v2";      // 后日谈回信分�
 const WALL_KEY         = "sakura_letters_wall_v2";        // 后日谈留言墙
 const PROOFREAD_KEY    = "sakura_letters_proofread_v2";   // 后日谈校刊校对
 const META_KEY        = "sakura_letters_meta_v3";
+// v3.3.10：统计元数据（累计游玩时长等），与剧情 flags 分离，避免互相覆盖
+const STATS_KEY       = "sakura_letters_stats_v2";
 const STORAGE_SCHEMA_VERSION = 3;
 
 const GAME_STORAGE_KEYS = [STORAGE_KEY, AUTOSAVE_KEY, ENDINGS_KEY, KEYWORDS_KEY, CG_KEY, LETTERS_KEY,
-  FLAGS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
+  FLAGS_KEY, STATS_KEY, SETTINGS_KEY, COMPOSED_KEY, MEMORIES_KEY,
   CLUES_KEY, INBOX_KEY, MOMENTS_KEY, MOMENT_LIKES_KEY, MOMENT_COMMENTS_KEY,
   DREAM_KEY, PERSONALITY_KEY, DOODLE_KEY, COLLAGE_KEY, ECHO_KEY, PHOTO_KEY, RHYTHM_KEY,
   SCENT_KEY, SILENCE_KEY, TOUCH_KEY, TEMPERATURE_KEY, TAROT_KEY, DREAMWEAVE_KEY,
@@ -182,6 +192,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   sfxVolume: 0.6,
   particles: true,
   bgm: true,
+  // v3.3.12：界面字号缩放（0.9–1.3）与「减少动效」开关
+  fontScale: 1,
+  reduceMotion: false,
 });
 
 function createDefaultSaveData() {
@@ -201,6 +214,7 @@ const NUMERIC_SETTING_RANGES = Object.freeze({
   autoDelay: { min: 500, max: 4000, integer: true },
   bgmVolume: { min: 0, max: 1, integer: false },
   sfxVolume: { min: 0, max: 1, integer: false },
+  fontScale: { min: 0.9, max: 1.3, integer: false },
 });
 
 function normalizeSettings(value) {
@@ -213,7 +227,7 @@ function normalizeSettings(value) {
     const bounded = Math.min(range.max, Math.max(range.min, raw));
     normalized[key] = range.integer ? Math.round(bounded) : bounded;
   }
-  for (const key of ["particles", "bgm"]) {
+  for (const key of ["particles", "bgm", "reduceMotion"]) {
     if (typeof value[key] === "boolean") normalized[key] = value[key];
   }
   return normalized;
@@ -424,6 +438,7 @@ const Saves = {
     const data = {
       slot,
       timestamp: Date.now(),
+      name: "",
       nodeId: snapshot.nodeId,
       variables: snapshot.variables,
       sceneLabel: snapshot.sceneLabel || "",
@@ -464,6 +479,33 @@ const Saves = {
 
   getQuickSave() { return this.data.slots[0]; },
   quickSave(snapshot) { return this.save(0, snapshot); },
+
+  /* v3.3.13：单槽增强——重命名 / 导出 / 导入（备份与跨设备迁移） */
+  renameSave(slot, name) {
+    const data = this.load(slot);
+    if (!data) return false;
+    const previous = data.name;
+    data.name = typeof name === "string" ? name.slice(0, 20) : "";
+    if (this._saveSaves()) return true;
+    data.name = previous;
+    return false;
+  },
+  exportSlot(slot) {
+    const data = this.load(slot);
+    return data ? JSON.parse(JSON.stringify(data)) : null;
+  },
+  importSlot(slot, data) {
+    if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS) return false;
+    if (!data || typeof data !== "object" || Array.isArray(data) || typeof data.nodeId !== "string" || !data.nodeId) return false;
+    const previousSlot = this.data.slots[slot];
+    const previousLastSlot = this.data.lastSlot;
+    this.data.slots[slot] = Object.assign({}, data, { slot, timestamp: data.timestamp || Date.now() });
+    this.data.lastSlot = slot;
+    if (this._saveSaves()) return true;
+    this.data.slots[slot] = previousSlot;
+    this.data.lastSlot = previousLastSlot;
+    return false;
+  },
 
   /* v2.9.8 自动存档：推进节点时静默写入最后位置，刷新 / 关页后可从「继续游戏」恢复。
      payload = { savedAt, snapshot }；写入失败静默返回 false（引擎节流重试）。 */
@@ -534,6 +576,18 @@ const Saves = {
   getFlag(key, def) {
     const v = this.getFlags()[key];
     return v === undefined ? def : v;
+  },
+
+  /* ============ 统计元数据（v3.3.10） ============ */
+  getStats() {
+    return this._read(STATS_KEY, { playMs: 0 }, v => v && typeof v === "object" && !Array.isArray(v));
+  },
+  addPlayMs(ms) {
+    if (!Number.isFinite(ms) || ms <= 0) return;
+    const stats = this.getStats();
+    const previous = stats.playMs;
+    stats.playMs = (Number.isFinite(previous) ? previous : 0) + ms;
+    if (!this._write(STATS_KEY, JSON.stringify(stats))) stats.playMs = previous;
   },
 
   /* ============ 设置 ============ */
@@ -608,10 +662,22 @@ const Saves = {
   saveInbox(msg) {
     const list = this.getInbox();
     if (!list.find(m => m.id === msg.id)) {
-      list.push(Object.assign({ ts: Date.now(), read: false, replied: null, expired: false }, msg));
+      // v3.3.6：新增 openedAt（限时消息首次打开时间戳，用于倒计时持久化防重置）
+      list.push(Object.assign({ ts: Date.now(), read: false, replied: null, expired: false, openedAt: null }, msg));
       return this._write(INBOX_KEY, JSON.stringify(list));
     }
     return false;
+  },
+  // v3.3.6：记录限时消息首次打开时间（只记一次），返回该时间戳；消息不存在返回 null
+  markInboxOpened(id) {
+    const list = this.getInbox();
+    const m = list.find(x => x.id === id);
+    if (!m) return null;
+    if (!m.openedAt) {
+      m.openedAt = Date.now();
+      if (!this._write(INBOX_KEY, JSON.stringify(list))) m.openedAt = Date.now(); // 写失败也返回本次时间，退回旧行为
+    }
+    return m.openedAt;
   },
   markInboxRead(id) {
     const list = this.getInbox();
@@ -702,8 +768,11 @@ const Saves = {
 
   /* ============ 性格画像 ============ */
   getPersonality() {
-    return this._read(PERSONALITY_KEY, { brave: 0, kind: 0, active: 0, honest: 0 },
+    // v3.3.3：统一补全 8 维度（旧存档可能缺键、玩法只写入部分维度）
+    const p = this._read(PERSONALITY_KEY, {},
       v => v && typeof v === "object" && !Array.isArray(v));
+    for (const dim of PERSONALITY_DIMS) if (typeof p[dim] !== "number") p[dim] = 0;
+    return p;
   },
   addPersonality(dim, delta) {
     const p = this.getPersonality();
@@ -715,13 +784,15 @@ const Saves = {
   },
   getPersonalityProfile() {
     const p = this.getPersonality();
-    const tags = [];
-    tags.push(p.brave >= 0 ? "敢" : "慎");
-    tags.push(p.kind >= 0 ? "温" : "冷");
-    tags.push(p.active >= 0 ? "行" : "思");
-    tags.push(p.honest >= 0 ? "真" : "藏");
+    // v3.3.3：性格标签覆盖全部 8 维度（与画像条形一致）；此前仅 4 维，
+    // careful/patient/calm/creative 在图鉴以英文键名显示且不进标签
+    const tags = PERSONALITY_DIMS.map((dim) => {
+      const [hi, lo] = PERSONALITY_LABELS[dim];
+      return (p[dim] || 0) >= 0 ? hi : lo;
+    });
     return { tags, dims: p };
   },
+  personalityLabels() { return PERSONALITY_LABELS; },
 
   /* ============ 涂鸦记录 ============ */
   ...recordStore(DOODLE_KEY, "Doodle", ["mood", "stats"],

@@ -50,12 +50,16 @@ test("free letter 回信分支的 memory 必须为字符串 id（v3.3.0 契约�
     "letter matchings 中出现对象格式 memory（应改为字符串 id）"
   );
 });
-test("SCRIPT 内 memory id 全局唯一（v3.3.2 契约）", () => {
+test("SCRIPT 内 memory id 全局唯一（v3.3.4 契约：对象 + 字符串全覆盖）", () => {
   // v3.3.2 修复：7 组分支互斥记忆共用 id，saveMemory 按 id 去重导致后解锁分支的记忆
   // 被吞（图鉴永远缺分支记忆）。契约：同一 memory id 只能出现一次。
+  // v3.3.4 补强：此前只匹配对象格式 memory，漏掉 inbox / perspective / letter 的字符串
+  // memory；实测又发现 2 组 inbox 分支互斥记忆（诗雨·凌晨 / 夏织·教练）共用 id，同类问题。
   const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
-  const ids = [...script.matchAll(/memory: \{[^}]*?id: "([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(ids.length >= 100, `memory 字段数量异常（${ids.length}）`);
+  const objectIds = [...script.matchAll(/memory: \{[^}]*?id: "([^"]+)"/g)].map((m) => m[1]);
+  const stringIds = [...script.matchAll(/(?<![_\w])memory: "([^"]+)"/g)].map((m) => m[1]);
+  const ids = [...objectIds, ...stringIds];
+  assert.ok(ids.length >= 130, `memory 字段数量异常（${ids.length}）`);
   const seen = new Set();
   const dups = new Set();
   for (const id of ids) {
@@ -80,13 +84,76 @@ test("每张 CG 至少有一个解锁点（v3.3.3 契约）", () => {
   assert.deepEqual(missing, [], `存在无解锁点的 CG（玩家永远拿不到）：${missing.join("、")}`);
 });
 
-test("requires_memory 引用的记忆 id 必须存在于数据源（v3.3.3 契约）", () => {
+test("requires_memory 引用的记忆 id 必须存在于数据源（v3.3.4 契约）", () => {
   // 静态 memory 对象 id ∪ 字符串 memory（perspective / 回信）必须覆盖全部 requires_memory。
+  // v3.3.4 修正：字符串 memory 的正则若不加左界，会把 `requires_memory: "..."` 本身也匹配进来，
+  // 导致本契约恒真（自证）。用 (?<![_\w]) 排除前缀词，断言才有效。
   const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
   const objIds = new Set([...script.matchAll(/memory: \{ [^}]*?id: "([^"]+)"/g)].map((m) => m[1]));
-  const strIds = new Set([...script.matchAll(/memory: "([^"]+)"/g)].map((m) => m[1]));
+  const strIds = new Set([...script.matchAll(/(?<![_\w])memory: "([^"]+)"/g)].map((m) => m[1]));
   const all = new Set([...objIds, ...strIds]);
   const reqs = new Set([...script.matchAll(/requires_memory: "([^"]+)"/g)].map((m) => m[1]));
   const missing = [...reqs].filter((id) => !all.has(id));
   assert.deepEqual(missing, [], `requires_memory 引用不存在的记忆：${missing.join("、")}`);
+});
+
+test("剧情 personality 维度均在画像白名单内（v3.3.4 契约）", () => {
+  // saves.js 的 PERSONALITY_DIMS / PERSONALITY_LABELS 定义画像完整 8 维度；
+  // 剧情只能写这些维度，否则画像面板会出现游离维度、以英文键名显示（v3.3.4 已补齐映射）。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const saves = fs.readFileSync(new URL("../js/saves.js", import.meta.url), "utf8");
+  const dims = JSON.parse(saves.match(/const PERSONALITY_DIMS = (\[[^\]]+\])/)[1]);
+  const used = new Set();
+  for (const m of script.matchAll(/personality: \{([^}]*)\}/g)) {
+    for (const k of m[1].matchAll(/([a-z]+):/g)) used.add(k[1]);
+  }
+  const unknown = [...used].filter((d) => !dims.includes(d));
+  assert.deepEqual(unknown, [], `personality 出现白名单外维度：${unknown.join("、")}`);
+  // 每个白名单维度都要有中文标签，否则画像条形会显示英文
+  const labelsBlock = saves.match(/const PERSONALITY_LABELS = \{([\s\S]*?)\};/)[1];
+  const noLabel = dims.filter((d) => !new RegExp(`\\b${d}:`).test(labelsBlock));
+  assert.deepEqual(noLabel, [], `PERSONALITY_LABELS 缺少维度标签：${noLabel.join("、")}`);
+});
+
+test("引擎引用的 settings 键必须都在 DEFAULT_SETTINGS 中（v3.3.5 契约）", () => {
+  // v3.3.5 修复：playSfx 判断了根本不存在的 settings.sfx（恒假、形同虚设）。
+  // 契约：engine.js 中所有 Saves.settings.<key> 引用都必须是 DEFAULT_SETTINGS 的已知键。
+  const engine = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
+  const saves = fs.readFileSync(new URL("../js/saves.js", import.meta.url), "utf8");
+  const block = saves.match(/const DEFAULT_SETTINGS = Object\.freeze\(\{([\s\S]*?)\}\)/)[1];
+  const known = new Set([...block.matchAll(/([A-Za-z_$][\w$]*)\s*:/g)].map((m) => m[1]));
+  assert.ok(known.size >= 5, `DEFAULT_SETTINGS 解析异常（${known.size}）`);
+  const used = new Set([...engine.matchAll(/Saves\.settings\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]));
+  const unknown = [...used].filter((k) => !known.has(k));
+  assert.deepEqual(unknown, [], `engine.js 引用了未定义的 settings 键：${unknown.join("、")}`);
+});
+
+test("每个字符串 memory 都配有 memoryTitle（v3.3.7 契约）", () => {
+  // v3.3.7：inbox / letter / perspective 的字符串 memory 此前无 title，图鉴卡片显示 id。
+  // 契约：script.js 中每个字符串 memory（排除 requires_memory）都要有对应 memoryTitle，
+  // 由引擎在 saveMemory 时传入，保证图鉴显示友好标题。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const memories = [...script.matchAll(/(?<![_\w])memory: "([^"]+)"/g)].map((m) => m[1]);
+  const titles = [...script.matchAll(/memoryTitle: "([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(memories.length >= 15, `字符串 memory 数量异常（${memories.length}）`);
+  assert.equal(memories.length, titles.length,
+    `字符串 memory 数(${memories.length}) 与 memoryTitle 数(${titles.length}) 不一致——有记忆缺图鉴标题`);
+  const seen = new Set();
+  const dups = titles.filter((t) => (seen.has(t) ? true : (seen.add(t), false)));
+  assert.deepEqual(dups, [], `memoryTitle 重复：${dups.join("、")}`);
+});
+
+test("loopText 数组结构规范（v3.3.7 契约）", () => {
+  // 多周目文本 loopText 至少 2 段（初周 + 至少一个既视感变体），字符串成对不成孤；
+  // 引擎按 idx = min(loopCount, len-1) 取文本，段数不足会退化成始终显示原句。
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const arrays = [...script.matchAll(/loopText: \[([\s\S]*?)\]/g)].map((m) => m[1]);
+  assert.ok(arrays.length >= 45, `loopText 节点数量异常（${arrays.length}）`);
+  const bad = [];
+  for (const body of arrays) {
+    const quotes = (body.match(/"/g) || []).length;
+    if (quotes % 2 !== 0) bad.push("引号不成对");
+    else if (quotes / 2 < 2) bad.push(`仅 ${quotes / 2} 段`);
+  }
+  assert.deepEqual(bad, [], `loopText 结构异常：${bad.join("、")}`);
 });
