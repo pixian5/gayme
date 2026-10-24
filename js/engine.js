@@ -165,6 +165,7 @@
    v3.3.28：结局注释 + 关键词/记忆审计——12 结局补 note（图鉴卡片显示分支点/达成条件），关键词加稀有度分层（普通/稀有/隐藏，卡片带标签），记忆图鉴按获得时间倒序
    v3.3.29：CG 全量转 webp（2.5MB→1.3MB，-48%；jpg 源删除，script.img 路径与契约同步）
    v3.4.0：立绘位图管线——PORTRAIT_BITMAPS 清单（webp 存在即用 <img>，缺失回退内联 SVG），engine 与 direct.js touch 立绘双接入；素材到位后在清单加 id 即上线
+   v3.4.1：发行准备——tools/pack-itch.sh 一键打分发 zip（2.3MB），关于页加 gitee issues 反馈入口
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
    v3.3.20：本地质量门禁——.githooks/pre-push（push 前自动 npm test/syntax/diff，PREPUSH_E2E=1 加 e2e）+ tools/setup-hooks.sh 一键启用；bump 工具校验头注释行
    v3.3.21：服务器部署 v2——staging 预检 → symlink 原子切换 → 健康检查失败自动回滚
@@ -178,7 +179,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.0";
+  const GAME_VERSION = "3.4.1";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1682,7 +1683,7 @@
         </p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
         ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
-        <p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
+        <p style="color:rgba(255,200,220,0.55);margin-top:16px;font-size:12px;">反馈与问题：<a href="https://gitee.com/ibjxk/gayme/issues" target="_blank" rel="noopener" style="color:#f0a8b8;">gitee issues</a>（附标题页右下角的版本号）</p><p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
           BGM：Patrick de Arteaga ·
           <a href="https://patrickdearteaga.com" target="_blank" rel="noopener" style="color:#ffb8c8;">patrickdearteaga.com</a>
           （CC BY 4.0）<br>字体：Noto Serif SC（SIL OFL 1.1）
