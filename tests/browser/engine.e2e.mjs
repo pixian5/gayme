@@ -20,6 +20,7 @@ const MIME = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2",
   ".png": "image/png", ".jpg": "image/jpeg", ".webmanifest": "application/manifest+json",
+  ".ogg": "audio/ogg",
 };
 
 const server = createServer(async (req, res) => {
@@ -72,6 +73,16 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     Saves.updateSetting("sfxVolume", 0);
   });
   console.log("[e2e] 1/7 页面加载完成");
+
+  // 1.5) 真实 BGM 资源可加载（MIME / 解码 / 时长），防止路径或编码坏掉
+  const bgmInfo = await page.evaluate(() => new Promise((resolve) => {
+    const a = new Audio("audio/bgm/daily.ogg");
+    a.preload = "metadata";
+    a.onloadedmetadata = () => resolve({ duration: a.duration, error: null });
+    a.onerror = () => resolve({ duration: 0, error: a.error?.code ?? -1 });
+    setTimeout(() => resolve({ duration: 0, error: "timeout" }), 10000);
+  }));
+  assert.ok(bgmInfo.duration > 60, `BGM 无法解码：${JSON.stringify(bgmInfo)}`);
 
   // 1) 新游戏 + 连续推进
   await page.evaluate(() => window.__game.newGame());

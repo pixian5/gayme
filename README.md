@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.3.3**（开发测试版 · Demo）
+- 当前版本：**v3.3.4**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -34,6 +34,10 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 
 剧情主线、后日谈、92 种互动实现（89 个 GameKit 玩法 + 3 个基础小游戏）与存档/图鉴系统
 全部完成（417 节点 + 学姐线 24 节点 = 441 节点），38 项静态测试 + 浏览器 e2e 回归全过。
+**v3.3.4**：真实 BGM 落地——5 个场景 mood 接入自托管免版权 Ogg 曲目
+（daily / bright / sad / calm / active，Patrick de Arteaga，CC BY 4.0，合计约 8MB），
+双曲交叉淡入淡出 1.2 秒、循环播放、自动播放被拦截时等用户手势重试；音频缺失时回退原程序化配乐；
+SW 预缓存加入曲目（离线可听），「关于」页补音乐与字体署名；e2e 新增 BGM 解码断言。
 **v3.3.3**：CG 解锁缺口修复——cg_festival「学园祭之夜」写了但从未有节点 cg_unlock 引用
 （玩家永远拿不到），接入后日谈开篇；深度审计全数据引用（结局/CG/关键词/配方/requires_*
 无断链，requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点与
@@ -59,13 +63,14 @@ P0-2 符号兜底（91 汉字缺字已于 v3.2.4 补齐）；P2-1 关于页反�
 P2-2 首屏性能（脚本 defer + gzip）；P3 存档审计（107 键安全）。此前 v3.2.1：e2e 浏览器
 回归落地并接入 CI；v2.8.5 → v3.2.0：工程债务清偿、功能增强、剧情治理、表现升级。
 
-详细内容见 → [docs/20261024-0351-深度数据审计与CG解锁修复-Doubao.md](docs/20261024-0351-深度数据审计与CG解锁修复-Doubao.md)（进度快照 → [当前开发进度](docs/20261024-0351-当前开发进度-Doubao.md)）
+详细内容见 → [docs/20261024-1517-真实BGM落地-Doubao.md](docs/20261024-1517-真实BGM落地-Doubao.md)（上一版 → [v3.3.3 审计与 CG 修复](docs/20261024-0351-深度数据审计与CG解锁修复-Doubao.md)）；进度快照 → [当前开发进度](docs/20261024-1517-当前开发进度-Doubao.md)
 
 ## 【下一步待实现】
 
 - **学姐线形态 A 已完成**（v3.3.0）；**图鉴收集率统计已完成**（v3.3.1）；
-  **分支记忆 id 唯一性修复已完成**（v3.3.2）；**CG 解锁缺口修复已完成**（v3.3.3）。
-- 剩余可选项：真实录音 BGM（需音频素材）、AI 位图立绘/CG（需生图服务或自备图片）、
+  **分支记忆 id 唯一性修复已完成**（v3.3.2）；**CG 解锁缺口修复已完成**（v3.3.3）；
+  **真实 BGM 已完成**（v3.3.4）。
+- 剩余可选项：AI 位图立绘/CG（下一步，先出样张定风格）、真实音效素材、
   试玩反馈驱动的玩法同质化调整、itch.io 等外部平台分发（未确认）。
   完整分优先级的开发路线见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
 
@@ -83,6 +88,7 @@ index.html          入口（样式 style.css + games.css；脚本 14 个按序�
 css/style.css       基础与引擎 UI 样式（顶部为自托管 @font-face）
 css/games.css       全部玩法浮层样式（94 套，v2.9.2 拆出）
 fonts/              自托管 Noto Serif SC 子集（非 Mac 平台兜底；macOS 优先用本机 Songti SC，重建见 tools/rebuild_font_subset.sh）
+audio/bgm/          5 首真实 BGM（Ogg，约 8MB；Patrick de Arteaga · CC BY 4.0，署名见游戏「关于」页）
 js/saves.js         存档与图鉴数据层（localStorage，107 个键；记录型存取由 recordStore 工厂生成）
 js/script.js        剧情数据（CHARACTERS / PORTRAITS / KEYWORDS / CGS / SCRIPT 417 节点 + 学姐线 24 节点）
 js/lifecycle.js     浮层异步生命周期（读档/返回标题时安全取消）
@@ -109,6 +115,8 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 - games 文件内**禁止引用引擎内部符号**（applyAdd / gotoNode / state 等）——用 GameKit 宿主桥，
   tools/equivalence_check.py 会扫描
 - 字体：新增文案若出现子集未覆盖的汉字 → `bash tools/rebuild_font_subset.sh`
+- BGM：`audio/bgm/{daily,bright,sad,calm,active}.ogg` 对应 5 个场景 mood，替换同名文件即可；
+  素材为 CC BY 4.0，署名必须保留在「关于」页
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
 - 提交：中文 commit，完成后推送 gitee（origin）与 github（备份）；push 后服务器
   cron 每 3 分钟自动拉取部署到 oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）

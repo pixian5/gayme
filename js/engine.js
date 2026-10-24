@@ -112,13 +112,17 @@
            深度审计全数据引用（结局/CG/关键词/配方/requires_* 无断链，
            requires_memory 修正口径后全部有效）；consistency 新增 CG 解锁点契约与
            requires_memory 契约（共 38 项）
+   v3.3.4：真实 BGM 落地——5 个场景 mood 接入自托管免版权 Ogg 曲目
+           （audio/bgm/daily|bright|sad|calm|active.ogg，Patrick de Arteaga，CC BY 4.0）；
+           双 audio 元素交叉淡入淡出 1.2 秒，循环播放；自动播放被拦截时等用户手势重试；
+           音频缺失/解码失败回退原程序化配乐；SW 预缓存加入 5 首曲目（离线可听）
    ======================================== */
 
 (function () {
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.3.3";
+  const GAME_VERSION = "3.3.4";
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -1373,6 +1377,11 @@
         </p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
         ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
+        <p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
+          BGM：Patrick de Arteaga ·
+          <a href="https://patrickdearteaga.com" target="_blank" rel="noopener" style="color:#ffb8c8;">patrickdearteaga.com</a>
+          （CC BY 4.0）<br>字体：Noto Serif SC（SIL OFL 1.1）
+        </p>
       </div>
       ${renderPersonalityCard()}
     `;
@@ -3324,14 +3333,32 @@
     if (particleType !== "none") particleAnim = requestAnimationFrame(animateParticles);
   }
 
-  /* ============ BGM 与音效（Web Audio 程序生成 v2.9.7）============
-     三层程序化配乐：和弦垫（triangle 长音）+ 低音（正弦根音）
-     + 五声音阶随机游走旋律（级进为主，偶发跳进与长音）。
-     look-ahead 调度器按 AudioContext 时钟精确排程，场景切换即停旧谱、新谱从下拍起。
+  /* ============ BGM 与音效（v3.3.4 真实配乐 + 程序化兜底）============
+     场景 mood → audio/bgm/*.ogg（免版权曲目，作者 Patrick de Arteaga，见「关于」）。
+     切场景时两个 HTMLAudioElement 交叉淡入淡出（1.2 秒），循环播放。
+     自动播放被浏览器拦截时挂起，等下一次用户手势重试；
+     本地音频缺失/解码失败时回退到 v2.9.7 的三层程序化配乐
+     （和弦垫 + 低音 + 五声音阶随机游走旋律）。
      另提供 5 种程序化音效（信件 / 关键词 / 记忆 / 成功 / 失败），经 window.GameSfx 暴露。 */
   let audioCtx = null;
   let bgmGain = null;
   let sfxGain = null;
+  // 真实配乐
+  const BGM_TRACKS = {
+    default: "audio/bgm/daily.ogg",
+    bright: "audio/bgm/bright.ogg",
+    sad: "audio/bgm/sad.ogg",
+    calm: "audio/bgm/calm.ogg",
+    active: "audio/bgm/active.ogg",
+  };
+  const BGM_FADE_MS = 1200;
+  let bgmTracks = null;           // mood → HTMLAudioElement
+  let bgmAudioEl = null;          // 当前曲目
+  let bgmMood = null;             // 当前 mood
+  let bgmFadeRaf = null;          // 交叉淡入淡出动画帧
+  let bgmRealUnavailable = false; // 真实音频整体不可用 → 全部走程序化
+  let bgmUnlockBound = false;     // 是否已挂起「等用户手势重试」
+  // 程序化兜底
   let currentBgm = null;
   let bgmSchedulerTimer = null;
   let bgmStep = 0;
@@ -3376,6 +3403,25 @@
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
   }
 
+  function bgmVolume() {
+    return Math.max(0, Math.min(1, Saves.settings.bgmVolume ?? 0.4));
+  }
+
+  /* 真实配乐：首次使用时创建并缓存 5 个 audio 元素 */
+  function ensureBgmTracks() {
+    if (bgmTracks) return bgmTracks;
+    bgmTracks = {};
+    Object.entries(BGM_TRACKS).forEach(([mood, src]) => {
+      const audio = new Audio();
+      audio.src = src;
+      audio.loop = true;
+      audio.preload = "none";
+      audio.volume = 0;
+      bgmTracks[mood] = audio;
+    });
+    return bgmTracks;
+  }
+
   function playBgmForScene(scene) {
     if (!Saves.settings.bgm) { stopBgm(); return; }
     let mood = "default";
@@ -3383,19 +3429,98 @@
     else if (["ending_bad", "rain", "winter"].includes(scene)) mood = "sad";
     else if (["art_room", "library", "home_room", "night"].includes(scene)) mood = "calm";
     else if (["field", "sportsmeet", "summer"].includes(scene)) mood = "active";
-    if (currentBgm === mood) return;
+    if (bgmMood === mood && (bgmAudioEl ? !bgmAudioEl.paused : !!currentBgm)) return;
+    stopProgramBgm();
+    bgmMood = mood;
+    if (startRealBgm(mood)) return;
+    // 兜底：先停掉可能仍在播的旧真实曲目，再启用程序化配乐
+    if (bgmAudioEl) { bgmAudioEl.pause(); bgmAudioEl.currentTime = 0; bgmAudioEl.volume = 0; bgmAudioEl = null; }
     playMelody(mood);
   }
 
+  /* 启动真实曲目；返回 false 表示该 mood 不可用，调用方回退程序化配乐 */
+  function startRealBgm(mood) {
+    if (bgmRealUnavailable) return false;
+    const track = ensureBgmTracks()[mood];
+    if (!track) return false;
+    const prev = bgmAudioEl;
+    bgmAudioEl = track;
+    track.currentTime = 0;
+    track.volume = 0;
+    track.onerror = () => {
+      // 音频缺失或解码失败：切换全局兜底
+      bgmRealUnavailable = true;
+      if (bgmMood === mood) {
+        stopBgm();
+        bgmMood = mood;
+        playMelody(mood);
+      }
+    };
+    const played = track.play();
+    if (played && played.catch) {
+      played.catch((err) => {
+        // 自动播放策略拦截：等下一次用户手势再重试
+        if (err && err.name === "NotAllowedError") bindBgmUnlock();
+        else if (track.onerror) track.onerror();
+      });
+    }
+    fadeBgm(prev, track, bgmVolume());
+    return true;
+  }
+
+  /* 双曲交叉淡入淡出：新曲 0→目标音量，旧曲目标→0 后暂停 */
+  function fadeBgm(prev, next, target) {
+    if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
+    const startVol = prev ? prev.volume : 0;
+    const start = performance.now();
+    const tick = (now) => {
+      // rAF 时间戳可能早于 performance.now()，k 需夹在 [0,1]，否则音量会变成负值
+      const k = Math.max(0, Math.min(1, (now - start) / BGM_FADE_MS));
+      next.volume = target * k;
+      if (prev && prev !== next) prev.volume = startVol * (1 - k);
+      if (k < 1) { bgmFadeRaf = requestAnimationFrame(tick); return; }
+      bgmFadeRaf = null;
+      if (prev && prev !== next) { prev.pause(); prev.currentTime = 0; prev.volume = 0; }
+    };
+    bgmFadeRaf = requestAnimationFrame(tick);
+  }
+
+  function bindBgmUnlock() {
+    if (bgmUnlockBound) return;
+    bgmUnlockBound = true;
+    const retry = () => {
+      bgmUnlockBound = false;
+      document.removeEventListener("pointerdown", retry);
+      document.removeEventListener("keydown", retry);
+      if (Saves.settings.bgm && state.currentBg) playBgmForScene(state.currentBg);
+    };
+    document.addEventListener("pointerdown", retry);
+    document.addEventListener("keydown", retry);
+  }
+
   function stopBgm() {
+    if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
+    if (bgmAudioEl) {
+      bgmAudioEl.pause();
+      bgmAudioEl.currentTime = 0;
+      bgmAudioEl.volume = 0;
+      bgmAudioEl = null;
+    }
+    bgmMood = null;
+    stopProgramBgm();
+  }
+
+  function stopProgramBgm() {
     if (bgmSchedulerTimer) { clearInterval(bgmSchedulerTimer); bgmSchedulerTimer = null; }
     currentBgm = null;
     bgmConfig = null;
   }
 
+  /* 程序化兜底配乐（真实音频不可用时使用） */
   function playMelody(mood) {
+    ensureAudio();
     if (!audioCtx) return;
-    stopBgm();
+    stopProgramBgm();
     currentBgm = mood;
     bgmConfig = BGM_MOODS[mood] || BGM_MOODS.default;
     bgmStep = 0;
