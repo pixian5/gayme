@@ -75,7 +75,8 @@
        kind,      // 浮层类名：<kind>-layer
        prefix,    // 结果面板类名前缀，默认与 kind 相同（历史玩法用 br / tc / fd 等缩写）
        nodeId,
-       onCancel   // 读档 / 返回标题时的额外清理（取消 rAF、移除窗口监听等）
+       onCancel,  // 读档 / 返回标题时的额外清理（取消 rAF、移除窗口监听等）
+       help       // v3.4.16：本局玩法说明 { how, goal, tip? } —— 统一渲染可折叠说明栏
      } */
   function createShell(options) {
     const kind = options.kind;
@@ -95,6 +96,18 @@
     if (window.GameLifecycle?.register) {
       lifecycle = window.GameLifecycle.register(layer, () => { cleanup(); });
     }
+
+    /* v3.4.16 统一说明栏 + 跳过：所有玩法自动获得
+       —— 「怎么看懂」：折叠式操作/目标说明（js/game-help.js 按 kind 取，可被 options.help 覆盖）
+       —— 「怎么脱身」：跳过按钮 → 中性收尾（不写记录、不加成，直达 next） */
+    /* 注意：玩法普遍在 createShell 后执行 layer.innerHTML = ...，会覆盖 layer 内部节点，
+       因此说明栏挂到 #game 下作为兄弟节点（随 cleanup 一并移除），不放进 layer 内。 */
+    const helpData = options.help || window.GAME_HELP?.[kind] || window.GAME_HELP?.[nodeId];
+    const helpBar = attachHelpBar(kind, helpData, () => {
+      if (cleaned) return;
+      cleanup();
+      jumpNext(nodeId, undefined);
+    });
 
     /* v3.4.13 已读快通：快进中且已读的玩法，300ms 后自动中性收尾（无加成/不写记录，
        直接走节点 next）。点击提示条可取消、保留这次玩法——想重温的玩家不被剥夺。 */
@@ -118,6 +131,7 @@
       if (cleaned) return;
       cleaned = true;
       fastCancel?.();   // v3.4.13：任何清理路径都先撤快通定时器
+      helpBar?.remove(); // v3.4.16：说明栏与浮层同生共死
       layer.remove();
       try {
         options.onCancel?.();
@@ -157,6 +171,61 @@
     return { layer, kind, prefix, nodeId, cleanup, finish, signal: lifecycle?.signal };
   }
 
+  /* v3.4.16 统一说明栏（操作 + 目标）+ 跳过按钮
+     help = { how: "怎么操作", goal: "目标是什么", tip: "可选补充" }
+     说明栏默认展开「首次遇到该玩法」，之后折叠（localStorage 记 kind 集合） */
+  const HELP_SEEN_KEY = "sakura_help_seen_v1";
+  function helpSeenSet() {
+    try { return new Set(JSON.parse(localStorage.getItem(HELP_SEEN_KEY) || "[]")); }
+    catch { return new Set(); }
+  }
+  function markHelpSeen(kindName) {
+    try {
+      const set = helpSeenSet(); set.add(kindName);
+      localStorage.setItem(HELP_SEEN_KEY, JSON.stringify([...set]));
+    } catch {}
+  }
+  function attachHelpBar(kindName, help, onSkip) {
+    // 单例：任何时刻只允许一个说明栏（跳转/重进玩法时清掉残留）
+    document.querySelectorAll(".game-help-bar").forEach((b) => b.remove());
+    if (!help || (!help.how && !help.goal)) return null;
+    const seen = helpSeenSet().has(kindName);
+
+    const bar = document.createElement("div");
+    bar.className = "game-help-bar" + (seen ? " collapsed" : "");
+    bar.innerHTML = `
+      <div class="gh-head">
+        <span class="gh-icon">?</span>
+        <span class="gh-title">怎么玩</span>
+        <button class="gh-toggle" type="button">${seen ? "展开" : "收起"}</button>
+      </div>
+      <div class="gh-body">
+        ${help.how ? `<div class="gh-row"><b>操作</b>${escapeHtml(help.how)}</div>` : ""}
+        ${help.goal ? `<div class="gh-row"><b>目标</b>${escapeHtml(help.goal)}</div>` : ""}
+        ${help.tip ? `<div class="gh-row gh-tip"><b>提示</b>${escapeHtml(help.tip)}</div>` : ""}
+      </div>
+      <button class="gh-skip" type="button">跳过这个玩法</button>
+    `;
+    const body = bar.querySelector(".gh-body");
+    const toggle = bar.querySelector(".gh-toggle");
+    const syncBody = () => { body.style.display = bar.classList.contains("collapsed") ? "none" : ""; };
+    syncBody();
+    toggle.addEventListener("click", () => {
+      const collapsed = bar.classList.toggle("collapsed");
+      toggle.textContent = collapsed ? "展开" : "收起";
+      syncBody();
+      if (collapsed) markHelpSeen(kindName);
+    });
+    if (!seen) markHelpSeen(kindName);
+
+    bar.querySelector(".gh-skip").addEventListener("click", (e) => {
+      e.stopPropagation();
+      onSkip();
+    });
+    (document.getElementById("game") || document.body).appendChild(bar);
+    return bar;
+  }
+
   /* 关闭浮层后的统一跳转：优先使用结果指定的 next，否则走节点默认 next */
   function jumpNext(nodeId, override) {
     const node = typeof SCRIPT !== "undefined" ? SCRIPT[nodeId] : null;
@@ -183,5 +252,5 @@
     return `${verb || "已处理"} ${count} / ${total}`;
   }
 
-  window.GameKit = { attachHost, register, has, types, run, createShell, showReading, formatProgress, escapeHtml, flashHint, host };
+  window.GameKit = { attachHost, register, has, types, run, createShell, showReading, formatProgress, escapeHtml, flashHint, attachHelpBar, host };
 })();

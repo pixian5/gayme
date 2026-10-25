@@ -167,3 +167,18 @@ test("loopText 数组结构规范（v3.3.7 契约）", () => {
   }
   assert.deepEqual(bad, [], `loopText 结构异常：${bad.join("、")}`);
 });
+
+test("每个玩法都有 GAME_HELP 说明（v3.4.16 契约）", () => {
+  const help = fs.readFileSync(new URL("../js/game-help.js", import.meta.url), "utf8");
+  const gamesDir = new URL("../js/games/", import.meta.url);
+  const registered = new Set();
+  for (const f of fs.readdirSync(gamesDir)) {
+    if (!f.endsWith(".js")) continue;
+    for (const m of fs.readFileSync(new URL(f, gamesDir), "utf8").matchAll(/register\("([\w-]+)"/g)) {
+      registered.add(m[1]);
+    }
+  }
+  const missing = [...registered].filter((t) => !new RegExp(`\\b${t}:\\s*\\{\\s*how:`).test(help));
+  assert.deepEqual(missing, [], `以下玩法缺少说明（how/goal）：${missing.join("、")}`);
+  assert.ok(registered.size >= 85, `注册玩法数异常（${registered.size}）`);
+});

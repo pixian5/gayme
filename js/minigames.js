@@ -148,7 +148,7 @@
 
     const skip = document.createElement("button");
     skip.className = "mg-skip";
-    skip.textContent = "跳过 ⏎";
+    skip.textContent = "跳过这个玩法 ⏎";
     skip.type = "button";
     overlay.appendChild(skip);
 
@@ -253,7 +253,7 @@
       let resolved = false;
       const { body, timer, scoreLine, cleanup } = createOverlay(
         "写作 · 诗意",
-        "在输入框中打出诗句 · 15 秒内打对越多分越高",
+        "操作：在下方输入框打出屏幕显示的诗句 · 目标：15 秒内打对越多分越高 · 提示：不用等整句显示完，边看边打更快",
         () => finish(50)
       );
 
@@ -336,7 +336,7 @@
       let resolved = false;
       const { body, timer, scoreLine, cleanup } = createOverlay(
         "跑步 · 节奏",
-        "按下屏幕显示的方向键 ← / → · 错一次中断 combo",
+        "操作：按屏幕提示的方向键 ← 或 →（也可用键盘方向键） · 目标：跟着节奏按对，连击不断 · 提示：错一次 combo 清零，稳住比抢快更重要",
         () => finish(50)
       );
 
@@ -415,7 +415,7 @@
       let resolved = false;
       const { body, timer, scoreLine, cleanup } = createOverlay(
         "涂色 · 匹配",
-        "先点下方色块，再点上方目标框 · 颜色一致即匹配",
+        "操作：先点下方色块选中，再点上方目标框填入 · 目标：把每个目标框都填成与它一致的颜色 · 提示：先凑最像的那几个，剩下的颜色会自己排除",
         () => finish(50)
       );
 
