@@ -171,6 +171,7 @@
    v3.4.2：性能 B1/B2——saves/script/engine 三脚本 preload（首屏解析提速）；立绘阵容签名预合成（同阵容节点跳过重建，消除入场重放与闪动），backToTitle 清签名
    v3.4.7：引擎 UI 拆分——14 个浮层渲染器迁至 js/ui/panels.js（工厂 + ctx 注入），engine.js 3,208→2,414 行；交互层（选项/信件/回声/视角）与状态机耦合深保留引擎
    v3.4.8：reduce-motion 三组合验证（系统/设置双通道独立生效无冲突）；版本号补同步（上轮提交遗漏 bump，一致性测试未覆盖 docs 先行的情况）
+   v3.4.9：e2e 全图运行时走查——tests/browser/graph.e2e.mjs（441 节点逐一执行，chromium 28.1s / firefox 28.5s 双绿，坏节点 0）；走查发现并修复真缺陷：迷你游戏浮层挂 body 逃出引擎清理/减动效作用域 → 改挂 #game
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -186,7 +187,7 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.8";
+  const GAME_VERSION = "3.4.9";
 
   /* ---------- DOM 引用 ---------- */
   const el = {

@@ -177,7 +177,8 @@
     scoreLine.className = "mg-score";
     stage.appendChild(scoreLine);
 
-    document.body.appendChild(overlay);
+    // v3.4.9：挂载进 #game（此前挂 body，逃出引擎清理/减动效/全图走查的作用域）
+    (document.getElementById("game") || document.body).appendChild(overlay);
 
     let cleaned = false;
     let lifecycle = null;
