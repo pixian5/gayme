@@ -172,6 +172,7 @@
    v3.4.7：引擎 UI 拆分——14 个浮层渲染器迁至 js/ui/panels.js（工厂 + ctx 注入），engine.js 3,208→2,414 行；交互层（选项/信件/回声/视角）与状态机耦合深保留引擎
    v3.4.8：reduce-motion 三组合验证（系统/设置双通道独立生效无冲突）；版本号补同步（上轮提交遗漏 bump，一致性测试未覆盖 docs 先行的情况）
    v3.4.9：e2e 全图运行时走查——tests/browser/graph.e2e.mjs（441 节点逐一执行，chromium 28.1s / firefox 28.5s 双绿，坏节点 0）；走查发现并修复真缺陷：迷你游戏浮层挂 body 逃出引擎清理/减动效作用域 → 改挂 #game
+   v3.4.10：SW 每 5 分钟探新版本、controllerchange 时 flashHint 提示刷新（PWA 更新通道）；关于页折叠「版本更新」（GAME_CHANGELOG，首条=当前版本由契约锁定）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -187,7 +188,17 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.9";
+  const GAME_VERSION = "3.4.10";
+  /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
+     bump 版本后在此追加一行 */
+  const GAME_CHANGELOG = [
+    { ver: "3.4.10", note: "新版本可用提示 + 关于页更新日志" },
+    { ver: "3.4.9", note: "全图运行时走查安全网（441 节点双内核零错误）" },
+    { ver: "3.4.7", note: "引擎 UI 拆分（panels.js）；历史「回响」Tab 查看你的选择" },
+    { ver: "3.4.5", note: "多周目文本扩充（关键剧情二/三周目不同视角）" },
+    { ver: "3.4.2", note: "加载提速：关键脚本预载、同场景立绘不再重播入场" },
+    { ver: "3.4.0", note: "离线可玩（PWA）：添加到主屏幕，断网继续" },
+  ];
 
   /* ---------- DOM 引用 ---------- */
   const el = {
@@ -2390,6 +2401,7 @@
     hasAllGoodEndings,
     isTrueEndUnlocked,
     GAME_VERSION,
+    GAME_CHANGELOG,
     updateInboxBadge,
     applyUiSettings,
     playBgmForScene,
@@ -2437,5 +2449,6 @@
 
   // 暴露调试接口
   window.__game = { state, gotoNode, newGame, backToTitle, openOverlay, closeOverlay };
+  window.flashHint = flashHint;   // v3.4.10：SW 更新提示等页内调用
   window.__PORTRAIT_BITMAPS = PORTRAIT_BITMAPS;   // v3.4.0 立绘位图清单（games/direct.js touch 立绘用）
 })();

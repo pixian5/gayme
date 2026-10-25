@@ -8,7 +8,7 @@
 window.SakuraPanels = function (C) {
   "use strict";
   let historyTab = "dialog";   // 历史面板当前 Tab（工厂局部状态）
-  const { el, state, Saves, SCRIPT, applyUiSettings, CGS, ENDINGS, KEYWORDS,
+  const { el, state, Saves, SCRIPT, applyUiSettings, GAME_CHANGELOG, CGS, ENDINGS, KEYWORDS,
     applyAdd, applySet, updateHeartBar, cgArt, openCgViewer, showChoices, showLetter,
     triggerEcho, importSlotFromFile, fadeBgm, createDefaultVariables, COMPOSE_RECIPES, MOMENTS, escapeHtml, flashHint, playSfx, gotoNode, backToTitle, newGame, closeOverlay, openOverlay, snapshot, quickSave, saveToSlot, loadFromSlot, removeActiveInteractionLayers, startAfterword, hasAllGoodEndings, isTrueEndUnlocked, GAME_VERSION, updateInboxBadge, playBgmForScene, stopBgm, sfxGain, stopParticles, bgmAudioEl, bgmGain, bgmVolume, particles, playTickAt, updateParticles } = C;
   const get = (k) => C[k];
@@ -345,6 +345,12 @@ window.SakuraPanels = function (C) {
         <h2 style="font-size:36px;letter-spacing:8px;background:linear-gradient(180deg,#ffe8f0,#ffb8c8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:10px;">樱时信笺</h2>
         <p style="color:rgba(255,200,220,0.6);letter-spacing:4px;margin-bottom:20px;">Sakura · Letters</p>
         <p style="color:#e8e0d0;">v${GAME_VERSION} · Demo</p>
+        <details style="margin-top:10px;text-align:left;max-width:420px;margin-left:auto;margin-right:auto;">
+          <summary style="cursor:pointer;color:rgba(255,200,220,0.6);font-size:12px;letter-spacing:2px;">版本更新</summary>
+          <div style="margin-top:8px;font-size:11.5px;line-height:1.9;color:rgba(255,240,244,0.75);">
+            ${(GAME_CHANGELOG || []).map((c) => `<div><span style="color:#ffd88a;">v${c.ver}</span> — ${escapeHtml(c.note)}</div>`).join("")}
+          </div>
+        </details>
         <p style="color:rgba(255,255,255,0.6);margin-top:20px;">在樱花开落的季节，写下属于你的回信。</p>
         <p style="color:rgba(255,255,255,0.4);margin-top:30px;font-size:13px;">视觉小说 / 校园青春<br>3 位女主 + 学姐线 · 12 个结局 + 1 篇后日谈<br>多种互动玩法 · CG 图鉴 · 关键词收集<br>★ 时间循环 · 关键词合成 · 真实书写信件 · 视角切换<br>★ 环境线索探索 · 收件箱 · 朋友圈动态 · 梦境碎片 · 涂鸦系统 · 性格画像<br>多周目彩蛋 · 流程图 · BGM<br>建议在桌面浏览器全屏体验</p>
         <p style="margin-top:26px;">
