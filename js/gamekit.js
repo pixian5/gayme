@@ -22,6 +22,7 @@
     applyAdd: null,          // 应用数值加成
     updateHeartBar: null,    // 刷新好感度心条
     flashHint: null,         // 顶部提示（记忆解锁等）
+    isFastReplay: null,      // v3.4.13：该节点当前是否应「已读快通」（快进中且已读）
     escapeHtml: (value) => String(value == null ? "" : value),
   };
 
@@ -95,10 +96,28 @@
       lifecycle = window.GameLifecycle.register(layer, () => { cleanup(); });
     }
 
+    /* v3.4.13 已读快通：快进中且已读的玩法，300ms 后自动中性收尾（无加成/不写记录，
+       直接走节点 next）。点击提示条可取消、保留这次玩法——想重温的玩家不被剥夺。 */
+    let fastCancel = null;
+    if (host.isFastReplay?.(nodeId)) {
+      const bar = document.createElement("div");
+      bar.className = "fast-replay-bar";
+      bar.textContent = "⟲ 已读 · 快通中…（点击保留这次玩法）";
+      layer.appendChild(bar);
+      let fastTimer = setTimeout(() => {
+        if (cleaned || !layer.isConnected) return;
+        cleanup();
+        jumpNext(nodeId, undefined);
+      }, 300);
+      fastCancel = () => { clearTimeout(fastTimer); bar.remove(); };
+      bar.addEventListener("click", fastCancel, { once: true });
+    }
+
     /* 幂等清理：移除浮层 → 执行取消钩子 → 注销生命周期 */
     function cleanup() {
       if (cleaned) return;
       cleaned = true;
+      fastCancel?.();   // v3.4.13：任何清理路径都先撤快通定时器
       layer.remove();
       try {
         options.onCancel?.();

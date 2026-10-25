@@ -252,6 +252,27 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   assert.ok(echoVisible, "回响 Tab 未显示已落盘的选择");
   await page.evaluate(() => window.__game.closeOverlay());
 
+  // 4.7) 已读快通（v3.4.13）：快进中已读玩法自动中性收尾
+  await page.evaluate(() => {
+    window.__game.newGame();
+    window.__game.state.skipMode = true;
+    // 选未在本测试中访问过的节点，避免「下一个节点也已读」造成链式快进的断言漂移
+    window.__game.state.visitedNodes["d7_firefly"] = 2;
+    window.__game.gotoNode("d7_firefly");
+  });
+  await page.waitForTimeout(700);
+  const kiteAfter = await page.evaluate("window.__game.state.currentNode");
+  assert.equal(kiteAfter, "d7_windchime", `已读快通未生效：仍停在 ${kiteAfter}`);
+  // 基础 minigame 同样处理
+  await page.evaluate(() => {
+    window.__game.state.visitedNodes["d3_xiazhi_minigame"] = 2;
+    window.__game.gotoNode("d3_xiazhi_minigame");
+  });
+  await page.waitForTimeout(300);
+  const mgAfter = await page.evaluate("window.__game.state.currentNode");
+  assert.equal(mgAfter, "d3_noon", `minigame 快通未生效：仍停在 ${mgAfter}`);
+  await page.evaluate(() => { window.__game.state.skipMode = false; });
+
   // 5) 真结局破环链：伪造三线 GOOD + 合成樱花信 → 第 4 选项 → TRUE ENDING
   await page.evaluate(() => {
     const endings = JSON.parse(localStorage.getItem("sakura_letters_endings_v2") || "{}");

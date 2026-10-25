@@ -175,6 +175,7 @@
    v3.4.10：SW 每 5 分钟探新版本、controllerchange 时 flashHint 提示刷新（PWA 更新通道）；关于页折叠「版本更新」（GAME_CHANGELOG，首条=当前版本由契约锁定）
    v3.4.11：loopText 终批——afterword 全部 21 + 路线入口 4 + 序章情感 5（132→162），loopText 计划完结：剩余缺口（d 链玩法 prompt 195 / 转场短句）明确不做，理由入档
    v3.4.12：学姐线叙事级通读报告（24+11 节点全文走查：入口门槛/时间线/影子设定/知识顺序/分支流全部自洽，无修复项；两处设计观察留档）——纯文档版本
+   v3.4.13：已读快通——快进中已读玩法 300ms 自动中性收尾（无加成不写记录直达 next，点提示条可保留重玩），GameKit 统一层 88 玩法受益 + 3 基础小游戏按 50 分收尾；二周目重玩 40 分钟→约 10 分钟（选项/信件仍必停）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -190,10 +191,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.12";
+  const GAME_VERSION = "3.4.13";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.13", note: "已读快通：二周目快进自动跳过已读玩法" },
     { ver: "3.4.12", note: "学姐线叙事通读：全部自洽，无需修复" },
     { ver: "3.4.11", note: "多周目文本完结（162 个剧情节点有二/三周目视角）" },
     { ver: "3.4.10", note: "新版本可用提示 + 关于页更新日志" },
@@ -979,6 +981,18 @@
       console.warn("Minigames 模块未加载，跳过");
       const node = SCRIPT[currentNodeId];
       if (node && node.next) gotoNode(node.next);
+      return;
+    }
+    // v3.4.13 已读快通：快进中已读的基础小游戏直接按中性分收尾（不挂浮层）
+    if (state.skipMode && (state.visitedNodes[currentNodeId] || 0) > 1) {
+      state.variables.lastMinigameScore = 50;
+      const skipNode = SCRIPT[currentNodeId];
+      if (skipNode && skipNode.scoreJump) {
+        for (const jump of skipNode.scoreJump) {
+          if (50 >= jump.min) { gotoNode(jump.next); return; }
+        }
+      }
+      if (skipNode && skipNode.next) gotoNode(skipNode.next);
       return;
     }
     let score = 50;
@@ -2432,7 +2446,9 @@
 
   /* ============ 启动 ============ */
   // v2.7.9 起：向玩法框架基座注入宿主能力（剧情跳转 / 数值加成 / 心条刷新 / 顶部提示 / 转义）
-  window.GameKit?.attachHost({ gotoNode, applyAdd, updateHeartBar, flashHint, escapeHtml });
+  // v3.4.13 已读快通：快进中且已读（visited>1）时，GameKit 浮层自动中性收尾（详见 gamekit.createShell）
+  window.GameKit?.attachHost({ gotoNode, applyAdd, updateHeartBar, flashHint, escapeHtml,
+    isFastReplay: (nodeId) => !!state.skipMode && (state.visitedNodes[nodeId] || 0) > 1 });
 
   // v3.3.12：把界面类设置应用到文档（字号缩放 --ui-scale、减少动效 class）
   function applyUiSettings() {
