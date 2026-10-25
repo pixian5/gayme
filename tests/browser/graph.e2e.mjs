@@ -2,6 +2,7 @@
    抓「数据侧 OK 但运行时崩」类回归（v2.9.0 教训）。
    用法：npm run test:graph            （chromium，约 40-60s）
         BROWSER=firefox npm run test:graph
+        VIEWPORT=390x844 npm run test:graph   （移动端视口走查，v3.4.14）
    不进 pre-push 默认集（耗时）；大版本/内容改动后必跑。PREPUSH_GRAPH=1 可并入。 */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -40,7 +41,9 @@ test.after(() => { server.close(); server.closeAllConnections?.(); });   // 失�
 
 test(`全图运行时走查（${engineName}，441 节点）`, { timeout: 300_000 }, async () => {
   const browser = await engine.launch();
-  const page = await browser.newPage();
+  const vpEnv = process.env.VIEWPORT;   // 例：390x844（移动端）
+  const ctxOpts = vpEnv ? { viewport: { width: +vpEnv.split("x")[0], height: +vpEnv.split("x")[1] } } : {};
+  const page = await browser.newPage(ctxOpts);
   const errors = [];
   page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
   page.on("console", (m) => {

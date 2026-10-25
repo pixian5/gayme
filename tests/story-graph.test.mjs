@@ -93,6 +93,29 @@ test("星座解读都会经过父母冲突收束", () => {
   assert.equal(constellation.fallback.next, "d1_night_home");
 });
 
+test("全部结局节点都可达（v3.4.14 契约：ENDINGS 全量 BFS）", () => {
+  // 真结局/后日谈入口是运行时门控（标题按钮，通关解锁），无数据边——按既有测试惯例特设为 BFS 根
+  const roots = [START_NODE, "true_end_entry", "afterword_entry"];
+  const reachable = new Set(roots);
+  const queue = roots.slice();
+  while (queue.length) {
+    const current = queue.shift();
+    for (const [from, target] of refs) {
+      if (from === current && SCRIPT[target] && !reachable.has(target)) {
+        reachable.add(target);
+        queue.push(target);
+      }
+    }
+  }
+  // 图鉴 id 是结局对象 id（如 shiyu_good），非节点 id（sy_ending_good）——经可达节点的 ending.id 比对
+  const reachableEndingIds = new Set(
+    [...reachable].map((id) => SCRIPT[id]).filter((n) => n && n.ending).map((n) => n.ending.id)
+  );
+  const unreachable = ENDINGS.filter((e) => !reachableEndingIds.has(e.id)).map((e) => e.id);
+  // ENDINGS 来自 vm 跨 realm，filter 结果原型不同——spread 归一化到主 realm 再比较
+  assert.deepEqual([...unreachable], [], `以下结局从入口不可达（引用完整≠可达）：${unreachable.join("、")}`);
+});
+
 test("真结局后日谈和明信片分支可达", () => {
   const roots = ["afterword_entry"];
   const reachable = new Set(roots);

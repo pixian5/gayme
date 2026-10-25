@@ -176,6 +176,7 @@
    v3.4.11：loopText 终批——afterword 全部 21 + 路线入口 4 + 序章情感 5（132→162），loopText 计划完结：剩余缺口（d 链玩法 prompt 195 / 转场短句）明确不做，理由入档
    v3.4.12：学姐线叙事级通读报告（24+11 节点全文走查：入口门槛/时间线/影子设定/知识顺序/分支流全部自洽，无修复项；两处设计观察留档）——纯文档版本
    v3.4.13：已读快通——快进中已读玩法 300ms 自动中性收尾（无加成不写记录直达 next，点提示条可保留重玩），GameKit 统一层 88 玩法受益 + 3 基础小游戏按 50 分收尾；二周目重玩 40 分钟→约 10 分钟（选项/信件仍必停）
+   v3.4.14：全结局可达性契约（13 结局 BFS 全绿，运行时门控入口特设根）+ 移动视口走查（VIEWPORT=390x844，441 节点 0 坏）+ BGM calm 组补漏（学姐夜戏 8 场景不再配日常曲）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -191,10 +192,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.13";
+  const GAME_VERSION = "3.4.14";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.14", note: "全结局可达契约；移动端全图走查；学姐夜戏配乐修正" },
     { ver: "3.4.13", note: "已读快通：二周目快进自动跳过已读玩法" },
     { ver: "3.4.12", note: "学姐线叙事通读：全部自洽，无需修复" },
     { ver: "3.4.11", note: "多周目文本完结（162 个剧情节点有二/三周目视角）" },
@@ -2040,7 +2042,8 @@
     let mood = "default";
     if (["ending_good", "cherry_full", "festival"].includes(scene)) mood = "bright";
     else if (["ending_bad", "rain", "winter"].includes(scene)) mood = "sad";
-    else if (["art_room", "library", "home_room", "night"].includes(scene)) mood = "calm";
+    // v3.4.14：calm 组补漏——学姐夜戏（rooftop/river/forest/tunnel/sea）与观星/音乐等安静场景原先落日常曲
+    else if (["art_room", "library", "home_room", "night", "rooftop", "river", "forest", "tunnel", "sea", "music_room", "observatory", "pond", "clock_room"].includes(scene)) mood = "calm";
     else if (["field", "sportsmeet", "summer"].includes(scene)) mood = "active";
     if (bgmMood === mood && (bgmAudioEl ? !bgmAudioEl.paused : !!currentBgm)) return;
     stopProgramBgm();
