@@ -116,7 +116,9 @@
       const bar = document.createElement("div");
       bar.className = "fast-replay-bar";
       bar.textContent = "⟲ 已读 · 快通中…（点击保留这次玩法）";
-      layer.appendChild(bar);
+      /* 与说明栏同理：玩法 handler 会在 createShell 后执行 layer.innerHTML = ...，
+         挂 layer 内会被覆盖——挂 #game 作兄弟节点，cleanup 时一并移除 */
+      (document.getElementById("game") || document.body).appendChild(bar);
       let fastTimer = setTimeout(() => {
         if (cleaned || !layer.isConnected) return;
         cleanup();

@@ -18,7 +18,7 @@
   }
 
   /* ============ 涂鸦 ============ */  register("doodle", function (doodle, nodeId) {
-    const shell = createShell({ kind: "doodle" });
+    const shell = createShell({ kind: "doodle", nodeId });
     const layer = shell.layer;
     const prompt = document.createElement("div");
     prompt.className = "doodle-prompt";
@@ -172,7 +172,7 @@
        scoreJump:  { good:"nodeId", normal:"nodeId", bad:"nodeId" }
      }
      ============================================================ */  register("collage", function (collage, nodeId) {
-    const shell = createShell({ kind: "collage", keepDialog: true });
+    const shell = createShell({ kind: "collage", nodeId, keepDialog: true });
     const layer = shell.layer;
 
     const prompt = document.createElement("div");
@@ -302,7 +302,7 @@
        scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
      }
      ============================================================ */  register("photo", function (photo, nodeId) {
-    const shell = createShell({ kind: "photo", keepDialog: true, onCancel: () => {
+    const shell = createShell({ kind: "photo", nodeId, keepDialog: true, onCancel: () => {
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
       } });
@@ -446,7 +446,7 @@
        scoreJump:  { high:"nodeId", mid:"nodeId", low:"nodeId" }
      }
      ============================================================ */  register("rhythm", function (rhythm, nodeId) {
-    const shell = createShell({ kind: "rhythm", keepDialog: true, onCancel: () => {
+    const shell = createShell({ kind: "rhythm", nodeId, keepDialog: true, onCancel: () => {
         clearTimeout(timer);
         document.removeEventListener("keydown", rhythmKeyHandler);
       } });
@@ -589,7 +589,7 @@
      }
      ============================================================ */  register("scent", function (scent, nodeId) {
 
-    const shell = createShell({ kind: "scent" });
+    const shell = createShell({ kind: "scent", nodeId });
     const layer = shell.layer;
     layer.innerHTML = `
       <div class="scent-prompt">${scent.prompt || "细闻——"}</div>
@@ -672,7 +672,7 @@
        }
      }
      ============================================================ */  register("silenceChoice", function (silence, nodeId) {
-    const shell = createShell({ kind: "silenceChoice", onCancel: () => {
+    const shell = createShell({ kind: "silenceChoice", nodeId, onCancel: () => {
         clearInterval(timer);
         settled = true;
       } });
@@ -776,7 +776,7 @@
        next: "nodeId"           // 可选
      }
      ============================================================ */  register("touch", function (touch, nodeId) {
-    const shell = createShell({ kind: "touch" });
+    const shell = createShell({ kind: "touch", nodeId });
     const layer = shell.layer;
     layer.innerHTML = `
       <div class="touch-prompt">${touch.prompt || ""}</div>
@@ -862,7 +862,7 @@
      温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
      ============================================================ */  register("temperature", function (temp, nodeId) {
 
-    const shell = createShell({ kind: "temperature" });
+    const shell = createShell({ kind: "temperature", nodeId });
     const layer = shell.layer;
     const bgOverlay = document.getElementById("bg-overlay");
     layer.innerHTML = `
@@ -943,7 +943,7 @@
        ]
      }
      ============================================================ */  register("handwriting", function (hw, nodeId) {
-    const shell = createShell({ kind: "handwriting" });
+    const shell = createShell({ kind: "handwriting", nodeId });
     const layer = shell.layer;
     layer.innerHTML = `
       <div class="hw-prompt">${hw.prompt || "选一种笔迹——"}</div>
@@ -1002,7 +1002,7 @@
        fallback: { tag: "center", next }
      }
      ============================================================ */  register("spectrum", function (spec, nodeId) {
-    const shell = createShell({ kind: "spectrum", onCancel: () => {
+    const shell = createShell({ kind: "spectrum", nodeId, onCancel: () => {
         cleanupDocumentListeners();
       } });
     const layer = shell.layer;

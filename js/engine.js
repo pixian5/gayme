@@ -179,6 +179,7 @@
    v3.4.14：全结局可达性契约（13 结局 BFS 全绿，运行时门控入口特设根）+ 移动视口走查（VIEWPORT=390x844，441 节点 0 坏）+ BGM calm 组补漏（学姐夜戏 8 场景不再配日常曲）
    v3.4.15：d 链 loopText 轻量层——15 锚点（循环仪式 2 + 旧物/节奏/归位章关键道具 13），2 段式一句既视感（162→177）；配合 v3.4.13 快通，重玩路径的「这一轮我又来了」氛围闭环
    v3.4.16：玩法可读性——89 个玩法统一说明栏（操作/目标/提示三行，首次展开可折叠，js/game-help.js 数据驱动）+ 全部玩法「跳过这个玩法」按钮（中性收尾不写记录）；3 个基础小游戏提示补全；新增「每个玩法必有三行说明」契约
+   v3.4.17：试玩发现修复——①快通条被玩法 innerHTML 覆盖（改挂 #game 兄弟节点，v3.4.16 修说明栏时同坑漏改）；②direct.js 10 个玩法 createShell 漏传 nodeId（快通/跳转收尾失效）；③同节点重复 gotoNode 叠浮层（记录，引擎防重入设计）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -194,10 +195,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.16";
+  const GAME_VERSION = "3.4.17";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.17", note: "试玩修复：快通条被覆盖、直跳型玩法快通失效" },
     { ver: "3.4.16", note: "每个玩法都有「怎么玩」说明与跳过按钮" },
     { ver: "3.4.15", note: "第 6~15 日关键节点二周目既视感文本（15 处）" },
     { ver: "3.4.14", note: "全结局可达契约；移动端全图走查；学姐夜戏配乐修正" },
