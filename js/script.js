@@ -847,7 +847,10 @@ const SCRIPT = {
   d2_library_7: { day: 2, time: "morning", bg: "library", speaker: "沈屿", text: "那你为什么还在写？", next: "d2_library_8" },
   d2_library_8: { day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨", text: "因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。", loopText: ["因为……不写的话，我会忘掉自己是谁。这本小说，是写给我外婆的。她去年走了，是个作家。",
 "「不写的话，我会忘掉自己是谁。」上一轮我听见的是害怕；这一轮我听见她在说——她已经在忘，所以更要写。",
-"这本小说是写给外婆的。这一轮我才懂：她写的不是外婆，是外婆留给她、她又要留给自己的那支笔。"], next: "d2_library_doodle", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true } },
+"这本小说是写给外婆的。这一轮我才懂：她写的不是外婆，是外婆留给她、她又要留给自己的那支笔。"], next: "d2_library_doodle", set: { flag_shiyu_secret: true, flag_shiyu_grandma: true },
+    // v3.4.20 视角切换：解锁「序章·诗雨」记忆后可看林诗雨的内心
+    perspective: { who: "林诗雨", text: "——说出口了。「写给我外婆的」这五个字，我练了很久。外婆走后，家里没人再提「写」这个字。妈妈说法律系稳。可她没问过我：不写的话，我还是谁。",
+      requiresMemoryId: "序章·诗雨", gateTitle: "抽屉里的另一面" },},
   d2_library_doodle: {
     day: 2, time: "morning", bg: "library", char: "shiyu", speaker: "林诗雨",
     text: "……你既然看到了，能不能帮我画一句开场？我画不出角色 A 推开门的样子。你随便涂一下，让我看见她。",
@@ -886,7 +889,10 @@ const SCRIPT = {
   d2_art_2: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "昨天那幅……还没画完？", next: "d2_art_3" },
   d2_art_3: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "画不完。它不让我画完。紫色是我哥哥最喜欢的颜色。他三年前走了。", loopText: ["画不完。它不让我画完。紫色是我哥哥最喜欢的颜色。他三年前走了。",
 "「画不完。它不让我画完。」上一轮我听成托词；这一轮我懂了——不是画布不让，是她不肯让紫色的那一笔结束。",
-"紫色、哥哥、三年前。这一轮我明白：她守着的不是一幅画，是一个再也不会回来的人留下的唯一颜色。"], next: "d2_art_4", set: { flag_sunian_block: true, flag_sunian_brother: true } },
+"紫色、哥哥、三年前。这一轮我明白：她守着的不是一幅画，是一个再也不会回来的人留下的唯一颜色。"], next: "d2_art_4", set: { flag_sunian_block: true, flag_sunian_brother: true },
+    // v3.4.20 视角切换：解锁「挣紫」记忆后可看苏念的内心
+    perspective: { who: "苏念", text: "「它不让我画完」——这话我没说全。完整的话是：哥哥走了之后，每一幅画到最后一笔，我都会想：这是他看不到的又一笔。画完一幅，就离他远一步。所以我停在三笔之前。",
+      requiresMemoryId: "序章·诗雨", gateTitle: "停在最后一笔" },},
   d2_art_4: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "……什么叫——它不让你画完？", next: "d2_art_5" },
   d2_art_5: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "从去年省展拿了金奖之后，我就再没完成过一幅。他们说我是天才。可天才不该卡在草稿里三年。", next: "d2_art_6" },
   d2_art_6: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "也许你不是画不完，是不敢画完。画完了，就得证明下一幅还能更好。", next: "d2_art_7" },
@@ -1282,7 +1288,10 @@ const SCRIPT = {
   d3_xiazhi_2: { day: 3, time: "morning", bg: "field", speaker: "", text: "她起跑的瞬间，左脚踝微微一滞。但她咬着牙冲完了全程。11.92。", next: "d3_xiazhi_3" },
   d3_xiazhi_3: { day: 3, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "……还差一点。再来一组。", next: "d3_xiazhi_4" },
   d3_xiazhi_4: { day: 3, time: "morning", bg: "field", speaker: "沈屿", text: "你左脚——", next: "d3_xiazhi_5" },
-  d3_xiazhi_5: { day: 3, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "没事！旧伤，习惯了。别告诉教练。", next: "d3_xiazhi_6", set: { flag_xiazhi_injury: true } },
+  d3_xiazhi_5: { day: 3, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "没事！旧伤，习惯了。别告诉教练。", next: "d3_xiazhi_6", set: { flag_xiazhi_injury: true },
+    // v3.4.20 视角切换：解锁「夏织·教练」记忆后可看夏织的内心
+    perspective: { who: "夏织", text: "——别告诉教练。这话我说得太熟练了，熟练到自己都烦。告诉了，就没有特招；没有特招，我爸打来的钱就没了意义。左脚踝的膏药是我自己贴的，贴了两年，比谁贴得都准。",
+      requiresMemoryId: "夏织·教练·陪练", gateTitle: "自己贴的膏药" },},
   d3_xiazhi_6: { day: 3, time: "morning", bg: "field", char: "xiazhi", speaker: "夏织", text: "来嘛，陪我冲一组！我喊你掐表，你顺便帮我看下节奏。", next: "d3_xiazhi_minigame" },
   d3_xiazhi_minigame: {
     day: 3, time: "morning", bg: "field", char: "xiazhi", speaker: "",
@@ -1541,7 +1550,10 @@ const SCRIPT = {
   d4_noon_3: { day: 4, time: "noon", bg: "cafeteria", char: "shiyu", speaker: "林诗雨", text: "……可以。",
     loopText: ["……可以。",
     "……可以。她的「可以」只用了 0.5 秒——上一次我没注意这个速度。答应自己想做的事时，人是不会犹豫的。",
-    "……可以。三个人的「可以」叠在一起——这是我听过最整齐的一次和声。"], next: "d4_noon_4" },
+    "……可以。三个人的「可以」叠在一起——这是我听过最整齐的一次和声。"], next: "d4_noon_4" ,
+    // v3.4.20 视角切换：解锁「序章·诗雨」记忆后可看林诗雨的内心
+    perspective: { who: "林诗雨", text: "「可以」说出口只用半秒，下决心用了三天。三个人一起出节目——这是外婆走后，我第一次答应「一起」。夏织问的时候，我在心里数了三个数，就怕自己反悔。",
+      requiresMemoryId: "序章·诗雨", gateTitle: "数到三才敢答应" },},
   d4_noon_4: { day: 4, time: "noon", bg: "cafeteria", char: "sunian", speaker: "苏念", text: "海报……我画。",
     loopText: ["海报……我画。",
     "海报……我画。苏念的句子里没有主语——她把自己藏在动词后面。这一次我开始学会替她把主语找回来。",
@@ -2519,7 +2531,10 @@ const SCRIPT = {
         text: "你完全没卡上。沙落完了，没翻转。她说：没卡上也是真的——有些事错过了，就是错过了。你看着空了的沙漏。",
         next: "d6_chapter_open" }
     }
-  },
+ , 
+    // v3.4.20 视角切换：解锁「合成配方」记忆后可看学姐的内心
+    perspective: { who: "学姐", text: "——沙漏递出去的那一刻，我在数他的呼吸。三年了，第一次有人不问「你为什么还在」。他不问。他只是接过沙漏，翻过来，让沙重新开始走。像我等的那个春天，终于来了第二遍。",
+      requiresMemoryId: "学姐·看见", gateTitle: "数他的呼吸" },},
 
   /* ============ v2.8.2 长链分章呼吸点与学姐中段线索 ============ */
   // 第一章「旧物」开场（第 6 日）
@@ -2557,7 +2572,10 @@ const SCRIPT = {
 "云被推得很快。这一轮，那半句的轮廓在我心里比记忆里更清楚：她说「三条路只走到一半」时，用的是「我」，不是「我们」。"],
     next: "d10_eclipse",
     memory: { id: "学姐·咽回去的半句", title: "咽回去的半句", text: "她说「三年前我都做过一遍，只是那时候——」，然后改口去说云。" }
-  },
+,  
+    // v3.4.20 视角切换：解锁「咽回去的半句」记忆后可看学姐的内心
+    perspective: { who: "学姐", text: "——「那时候」三个字到了嘴边，被我咽了回去。说什么呢？说我休学那年在新城市哭着写信？说我留下的每一封都是给三年前的自己？他没追问。他的不追问，比谁的追问都让我想说完。",
+      requiresMemoryId: "学姐·看见", gateTitle: "咽回去的那三年" },},
   // 第三章「归位」开场（第 12 日）
   d12_chapter_open: {
     day: 12, time: "morning", bg: "hallway", speaker: "沈屿",
@@ -4162,8 +4180,11 @@ const SCRIPT = {
         { id: "write_on",  keywords: ["写", "继续", "下去", "别停"], add: { affection: { shiyu: 2 } }, personality: { brave: 2, honest: 1 }, memory: "诗雨·凌晨·写下去", memoryTitle: "回信·写下去" },
         { id: "take_break", keywords: ["停", "歇", "陪", "睡", "休息"], add: { affection: { shiyu: 1 } }, personality: { kind: 2 }, memory: "诗雨·凌晨·歇一歇", memoryTitle: "回信·歇一歇" },
       ]
-    }
-  },
+    },
+  
+    // v3.4.20 视角切换：解锁「诗雨·敢」记忆后可看林诗雨的内心
+    perspective: { who: "林诗雨", text: "书包被翻开的那一刻，我第一反应不是害怕，是庆幸——幸好稿纸上的字她看不懂我的笔迹……可她全看懂了。她做了一桌菜。那桌菜比骂我更重：她什么都知道，却什么都没说。",
+      requiresMemoryId: "诗雨·敢", gateTitle: "那桌菜" },},
   sy_6: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "她爱你，只是用错了方式。", next: "sy_7" },
   sy_7: { day: 5, time: "afternoon", bg: "library", char: "shiyu", speaker: "林诗雨", text: "我知道。可那方式压了我十七年。小说写的是个优等生毕业前消失了。所有人都觉得她去了好大学，只有她自己知道，她去了很远的地方。", next: "sy_8", keyword: "小说" },
   sy_8: { day: 5, time: "afternoon", bg: "library", speaker: "沈屿", text: "你想给她一个结局吗？", next: "sy_9" },
@@ -4201,7 +4222,10 @@ const SCRIPT = {
     "校刊、笔名。第二次她投得毫不犹豫。有些名字，就是为了有一天能被喊出来。"], next: "sy_13_good" },
   sy_13_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "", text: "一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。", loopText: ["一个月后，校刊印出来了。封面上印着她的笔名。她把样书塞进我手里。",
 "一个月后，校刊印出来了。上一轮我只看见她终于被印在封面上；这一轮我看见她递书时指尖在发抖——像把自己交出去一样。",
-"校刊、封面、她的笔名。这一轮我读懂了：这不是一本杂志，是她第一次允许自己被看见。"], next: "sy_14_good", cg_unlock: "cg_shiyu_good" },
+"校刊、封面、她的笔名。这一轮我读懂了：这不是一本杂志，是她第一次允许自己被看见。"], next: "sy_14_good", cg_unlock: "cg_shiyu_good" 
+,    // v3.4.20 视角切换：解锁「诗雨·凌晨」记忆后可看林诗雨的内心
+    perspective: { who: "林诗雨", text: "样书塞进他手里的瞬间，我在看我妈的方向。她翻到扉页的时候别过头去——但我看见了，她的嘴唇跟着「献给外婆」四个字动了一下。她读完了整本。她只是不当着我哭。",
+      requiresMemoryId: "诗雨·凌晨·写下去", gateTitle: "她读完了整本" },},
   sy_14_good: { day: 35, time: "evening", bg: "cherry_full", char: "shiyu", speaker: "林诗雨", text: "我妈看了。她哭了很久，然后说——再写一本。",
     loopText: ["我妈看了。她哭了很久，然后说——再写一本。",
     "她妈看了，哭了很久，然后说——再写一本。上一次听到这句话时，我还不知道「方式」这个词会这么快变暖。",
@@ -4295,7 +4319,10 @@ const SCRIPT = {
   },
   xz_7: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。", loopText: ["我爸每月打钱过来，附带一句「最近怎么样」。我每次都回「挺好的」。",
 "我爸每月打钱，附一句「最近怎么样」。上一轮我觉得她答得敷衍；这一轮我听出——「挺好的」三个字，也是他打钱时想要的答案。",
-"「最近怎么样」「挺好的」。这一轮我记住了：她每次打完这三个字，都会在跑道上多跑一圈，把回复时咽下的东西跑掉。"], next: "xz_8" },
+"「最近怎么样」「挺好的」。这一轮我记住了：她每次打完这三个字，都会在跑道上多跑一圈，把回复时咽下的东西跑掉。"], next: "xz_8" 
+,    // v3.4.20 视角切换：解锁「夏织·教练」记忆后可看夏织的内心
+    perspective: { who: "夏织", text: "「挺好的」三个字，我打了删、删了打，最后还是发了这三个字。其实我想打的是：你什么时候来看我跑一次。可那句话在输入框里躺了十分钟，我看着它，按了删除。",
+      requiresMemoryId: "夏织·教练·陪练", gateTitle: "删掉的那句话" },},
   xz_8: { day: 5, time: "afternoon", bg: "field", speaker: "", text: "她说着笑起来，眼睛却红了一圈。", next: "xz_9" },
   xz_9: { day: 5, time: "afternoon", bg: "field", char: "xiazhi", speaker: "夏织", text: "全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？", loopText: ["全国赛下个月。我自己报名的，没教练。你愿意——陪我练到那天吗？",
 "全国赛下个月，她自己报的名。上一轮我当它是邀请；这一轮我才懂，那是她第一次向人伸手——伸手对她，比起跑还要难。",
@@ -4332,7 +4359,10 @@ const SCRIPT = {
     "场外、终点、冰袋。她说不需要教练——因为教练教跑，我教的是回来。"], next: "xz_14_good" },
   xz_14_good: { day: 35, time: "morning", bg: "summer", char: "xiazhi", speaker: "", text: "发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。", loopText: ["发令枪响那一刻，她第一个冲出去。一百米，十一个对手，最后她以第二名撞线。",
 "发令枪响，她第一个冲出去。上一轮我替她数着名次；这一轮我只看见她撞线时回头找我的那一眼——先找的不是成绩。",
-"一百米，十一个对手，第二名。这一轮我明白：她赢的不是名次，是终于有人站在终点等她。"], next: "xz_15_good", cg_unlock: "cg_xiazhi_good" },
+"一百米，十一个对手，第二名。这一轮我明白：她赢的不是名次，是终于有人站在终点等她。"], next: "xz_15_good", cg_unlock: "cg_xiazhi_good" 
+,    // v3.4.20 视角切换：解锁「夏织·教练」记忆后可看夏织的内心
+    perspective: { who: "夏织", text: "撞线的时候我听见他在喊，声音都劈了。第二名——我扑进他怀里才反应过来：原来被人等着撞线，是这种感觉。终点线一直是同一条。变的是，这次我终于不用一个人跨过去。",
+      requiresMemoryId: "夏织·教练·陪练", gateTitle: "不用一个人跨过去" },},
   xz_15_good: { day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "夏织", text: "——第二名。沈屿，第二名！", next: "xz_ending_good" },
   xz_ending_good: {
     day: 35, time: "morning", bg: "ending_good", char: "xiazhi", speaker: "",
@@ -4396,7 +4426,10 @@ const SCRIPT = {
     loopText: ["省展邀请函上个月寄来。让我交一幅新作。我答应了，然后撕了四十七张草稿。每一张都差一点。差那一点，就不是我。",
 "省展邀请函，四十七张草稿。上一轮我记住的是数字；这一轮我记住的是她说『差那一点，就不是我』时，画布上那一片被压平的紫。",
 "她说她撕了四十七张草稿。我知道还有第四十八张，正藏在画板后面——上一轮她没给我看。这一轮，我想先给她看一句她可以落笔的开场。"], next: "sn_5" },
-  sn_5: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_5b" },
+  sn_5: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_5b" 
+,    // v3.4.20 视角切换：解锁「挣紫」记忆后可看苏念的内心
+    perspective: { who: "苏念", text: "他问「什么是你」的时候，我脑子里第一反应是哥哥的房间——紫色窗帘，紫色床单，连闹钟都是紫的。我用他的颜色画了三年。他若看见，会说：念念，你的颜色呢？我答不上来。",
+      requiresMemoryId: "序章·诗雨", gateTitle: "他的颜色" },},
   // v0.5.0 涂鸦：让苏念画一笔自己
   sn_5b: {
     day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念",
@@ -4456,7 +4489,10 @@ const SCRIPT = {
     "新作画完了。第二年她开始教别人怎么「不催自己」——被按住过的人，最会松手。"], next: "sn_13_good" },
   sn_13_good: { day: 35, time: "morning", bg: "autumn", char: "sunian", speaker: "", text: "画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。", loopText: ["画布上，一个人正从一片紫里挣出来，半身，眼神是亮的。她给它取名《挣》。这是省展的新作，和学园祭已经完成的那幅不是同一张。",
 "画布上的人挣出来了，眼神是亮的。上一轮我只看结果；这一轮我看见画名旁落款的位置空着——她还在犹豫要不要署名。",
-"《挣》——同一个题目，这一轮我看见的却是一个人从紫里稳稳站起，脚踩着边。她终于肯把自己签在旁边了。"], next: "sn_14_good", cg_unlock: "cg_sunian_good" },
+"《挣》——同一个题目，这一轮我看见的却是一个人从紫里稳稳站起，脚踩着边。她终于肯把自己签在旁边了。"], next: "sn_14_good", cg_unlock: "cg_sunian_good" 
+,    // v3.4.20 视角切换：解锁「她是谁」记忆后可看苏念的内心
+    perspective: { who: "苏念", text: "画完最后一笔，我退后三步，第一次没有想撕。画里那个人从紫里挣出半个身子——我看着她，忽然明白：我按住的不是画，是我自己。松手的那个人，也是我。",
+      requiresMemoryId: "诗雨·走廊", gateTitle: "退后三步" },},
   sn_14_good: { day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "苏念", text: "省展那天，它被放在入口第一幅。沈屿——是你让它出来的。",
     loopText: ["省展那天，它被放在入口第一幅。沈屿——是你让它出来的。",
     "省展入口第一幅。她在画旁站了很久，这次没有背对我——被看见之后，她也学会了看。",

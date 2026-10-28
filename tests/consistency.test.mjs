@@ -194,3 +194,17 @@ test("每个玩法都有 GAME_HELP 说明（v3.4.16 契约）", () => {
   }
   assert.deepEqual([...new Set(noLast)], [], `以下带确认按钮的玩法说明缺 last 收尾行：${[...new Set(noLast)].join("、")}`);
 });
+
+test("视角切换的门槛记忆都存在（v3.4.20 契约）", () => {
+  // perspective.requiresMemoryId 必须指向一个真实定义的记忆 id，否则 👁 按钮永不出现
+  const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
+  const defs = new Set([...script.matchAll(/memory: "([^"]+)"/g)].map((m) => m[1]));
+  for (const m of script.matchAll(/memory: \{[^}]*?id: "([^"]+)"/g)) defs.add(m[1]);
+  const nodeIds = [...script.matchAll(/^  (\w+): \{/gm)].map((m) => m[1]);
+  const bad = [];
+  for (const m of script.matchAll(/requiresMemoryId: "([^"]+)"/g)) {
+    if (!defs.has(m[1])) bad.push(m[1]);
+  }
+  assert.deepEqual([...new Set(bad)], [], `视角门槛记忆不存在：${bad.join("、")}`);
+  assert.ok(nodeIds.length >= 440, `节点数异常（${nodeIds.length}）`);
+});
