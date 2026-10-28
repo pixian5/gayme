@@ -293,6 +293,28 @@ test("剧情时间跨度和关键文本相互一致", () => {
   assert.equal(SCRIPT.d5_route_check.if, undefined);
 });
 
+test("day2 学姐线入口门槛：真结局一次或普通结局两次即可进入", () => {
+  // 背景：day2 的「★ 旧校舍后面（？）★」原门槛为 playCount >= 1，而 playCount 只在真结局 +1，
+  // 连续走普通结局的玩家 loopCount 一直涨、playCount 永远是 0 —— 这条线对其永久锁死。
+  // v3.4.25 起放宽为 playCount >= 1 || loopCount >= 2，本契约锁死这四种组合的预期。
+  const entry = SCRIPT.day2_choice.choice.options.find((opt) => opt.next === "d2_senior_easter");
+  assert.ok(entry, "day2_choice 缺少学姐线入口");
+  assert.equal(typeof entry.requires, "function", "学姐线入口必须带 requires 门槛");
+
+  const probe = (playCount, loopCount) => {
+    context.window.__game = { state: { playCount, loopCount } };
+    return !!entry.requires();
+  };
+  try {
+    assert.equal(probe(0, 0), false, "首周目不应出现入口");
+    assert.equal(probe(0, 1), false, "仅一次普通结局仍不应出现入口（保留多周目奖励意味）");
+    assert.equal(probe(1, 0), true, "真结局一次应出现入口");
+    assert.equal(probe(0, 2), true, "两次普通结局应出现入口（普通结局玩家不再永久锁死）");
+  } finally {
+    delete context.window.__game;
+  }
+});
+
 test("学姐线入口、结局与回信分支元数据正确", () => {
   const loopChoice = SCRIPT.d5_route_check.choice.loopChoice;
   assert.equal(loopChoice.length, 1);

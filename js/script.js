@@ -794,7 +794,12 @@ const SCRIPT = {
         {
           text: "★ 旧校舍后面（？） ★",
           next: "d2_senior_easter",
-          requires: () => window.__game && window.__game.state && window.__game.state.playCount >= 1,
+          // 门槛 v3.4.25（方案 B）：真结局一次，或任意普通结局累计两次即可进入。
+          // 原为 playCount >= 1，而 playCount 只在真结局 +1 —— 走普通结局的玩家会永久锁死这条线。
+          requires: () =>
+            window.__game &&
+            window.__game.state &&
+            (window.__game.state.playCount >= 1 || window.__game.state.loopCount >= 2),
           add: { affection: { shen: 2 } }
         },
       ],
