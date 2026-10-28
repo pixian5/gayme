@@ -184,6 +184,7 @@
    v3.4.19：玩法说明补「收尾」行——71 个带确认按钮的玩法 last 字段（按钮文案从代码实测提取，如「成型解读」「敲击试音」「就这色」；rhythm/collect 等自动收尾型注明无需点按钮）+ 绿色收尾行渲染 + 契约
    v3.4.20：视角切换名副其实——补 12 个高信号视角节点（诗雨 4/夏织 3/苏念 3/学姐 2，合计 13 个，此前全剧本仅序章 1 个）；门槛字段改名 requiresMemoryId/gateTitle（与记忆定义语义分离）；新增「门槛记忆必存在」契约
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
+   v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -199,10 +200,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.21";
+  const GAME_VERSION = "3.4.22";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.22", note: "快进不再被视角节点卡住（视角仍可点 👁 查看）" },
     { ver: "3.4.21", note: "灰掉的确认按钮会说明「还差什么才能点」" },
     { ver: "3.4.20", note: "视角切换到 13 个节点：诗雨/夏织/苏念/学姐的内心独白" },
     { ver: "3.4.19", note: "每个玩法说明新增「收尾」行：完成后点什么按钮" },
@@ -490,8 +492,10 @@
     // 播完即自动推进；遇到未读节点或选项/信件/小游戏等互动节点会自动停下
     if (state.skipMode) {
       const nodeId = state.currentNode;
+      // v3.4.22：perspective（视角）是「可选补充内容」，不该阻断快进——
+      // 玩家想看可以点 👁（按钮常驻到离开节点），不想看就连跳过去
       const isPlain = !node.choice && !node.letter && !node.minigame && !node.echo
-        && !node.perspective && !node.dream && !node.scentRecall;
+        && !node.dream && !node.scentRecall;
       if (isPlain && (state.visitedNodes[nodeId] || 0) > 1 && node.next) {
         clearTimeout(state.autoTimer);
         state.autoTimer = setTimeout(() => {
