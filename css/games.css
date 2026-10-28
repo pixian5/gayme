@@ -1,3 +1,6 @@
+/* v3.4.21 未满足条件的确认按钮：虚线边框提示「还不能点」 */
+button.confirm-locked { border-style: dashed !important; cursor: not-allowed; opacity: 0.55; }
+
 /* v3.4.16 统一玩法说明栏：左上角可折叠（操作/目标/提示）+ 跳过按钮 */
 .game-help-bar {
   position: absolute; top: 10px; left: 10px; z-index: 55;

@@ -170,6 +170,36 @@
       });
     }
 
+    /* v3.4.21 确认按钮提示：按钮灰置（disabled）时补 title/aria-disabled 说明，
+       让玩家知道「还要做什么才能点」。观察 layer 内的按钮状态变化，动态同步文案。 */
+    const CONFIRM_SEL = 'button[class*="-confirm"], button[class*="-submit"], button[class*="-finish"]';
+    function syncConfirmHints() {
+      layer.querySelectorAll(CONFIRM_SEL).forEach((btn) => {
+        const label = (btn.textContent || "").trim().slice(0, 8) || "确认";
+        if (btn.disabled) {
+          if (!btn.dataset.hintApplied) {
+            btn.dataset.hintApplied = "1";
+            btn.title = `还没完成交互——${label} 目前不可用`;
+            btn.setAttribute("aria-disabled", "true");
+            btn.classList.add("confirm-locked");
+          }
+        } else if (btn.dataset.hintApplied) {
+          delete btn.dataset.hintApplied;
+          btn.title = "";
+          btn.removeAttribute("aria-disabled");
+          btn.classList.remove("confirm-locked");
+        }
+      });
+    }
+    if (typeof MutationObserver === "function") {
+      const mo = new MutationObserver(() => syncConfirmHints());
+      mo.observe(layer, { subtree: true, childList: true, attributes: true, attributeFilter: ["disabled"] });
+      syncConfirmHints();
+      // 随 cleanup 断开，避免泄漏
+      const prevCancel = options.onCancel;
+      options.onCancel = () => { try { mo.disconnect(); } catch {} ; prevCancel?.(); };
+    }
+
     return { layer, kind, prefix, nodeId, cleanup, finish, signal: lifecycle?.signal };
   }
 
