@@ -30,3 +30,7 @@ htmlcov/
 
 # Trae 分享包临时产物，不入库
 .trae-html-share-packages/
+
+# 试玩诊断脚本（本地工作工具，不入库）
+.playtest.mjs
+.probe*.mjs
