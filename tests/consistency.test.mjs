@@ -181,4 +181,16 @@ test("每个玩法都有 GAME_HELP 说明（v3.4.16 契约）", () => {
   const missing = [...registered].filter((t) => !new RegExp(`\\b${t}:\\s*\\{\\s*how:`).test(help));
   assert.deepEqual(missing, [], `以下玩法缺少说明（how/goal）：${missing.join("、")}`);
   assert.ok(registered.size >= 85, `注册玩法数异常（${registered.size}）`);
+  // v3.4.19：带确认按钮（*-confirm / *-submit 类）的玩法，说明必须含 last 收尾行
+  const helpSrc = help;
+  const noLast = [];
+  for (const f of fs.readdirSync(gamesDir)) {
+    if (!f.endsWith(".js")) continue;
+    const gsrc = fs.readFileSync(new URL(f, gamesDir), "utf8");
+    for (const m of gsrc.matchAll(/register\("([\w-]+)"[\s\S]{0,6000}?class="[\w-]*-confirm/g)) {
+      const hm = helpSrc.match(new RegExp(m[1] + ": \\{[^}]*\\}"));
+      if (hm && !hm[0].includes("last:")) noLast.push(m[1]);
+    }
+  }
+  assert.deepEqual([...new Set(noLast)], [], `以下带确认按钮的玩法说明缺 last 收尾行：${[...new Set(noLast)].join("、")}`);
 });

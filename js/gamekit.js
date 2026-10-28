@@ -205,6 +205,7 @@
         ${help.how ? `<div class="gh-row"><b>操作</b>${escapeHtml(help.how)}</div>` : ""}
         ${help.goal ? `<div class="gh-row"><b>目标</b>${escapeHtml(help.goal)}</div>` : ""}
         ${help.tip ? `<div class="gh-row gh-tip"><b>提示</b>${escapeHtml(help.tip)}</div>` : ""}
+        ${help.last ? `<div class="gh-row gh-last"><b>收尾</b>${escapeHtml(help.last)}</div>` : ""}
       </div>
       <button class="gh-skip" type="button">跳过这个玩法</button>
     `;

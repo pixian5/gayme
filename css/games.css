@@ -22,6 +22,7 @@
 .gh-row { margin-top: 5px; color: rgba(240,236,248,0.9); }
 .gh-row b { color: #ffd88a; font-weight: normal; margin-right: 6px; }
 .gh-tip { color: rgba(200,216,240,0.75); }
+.gh-last b { color: #a8e0b8 !important; }   /* 收尾行绿色，引导最终动作 */
 .gh-skip {
   margin-top: 8px; width: 100%; padding: 5px 0;
   background: rgba(255,255,255,0.06); border: 1px solid rgba(200,168,224,0.3);
