@@ -892,7 +892,7 @@ const SCRIPT = {
 "紫色、哥哥、三年前。这一轮我明白：她守着的不是一幅画，是一个再也不会回来的人留下的唯一颜色。"], next: "d2_art_4", set: { flag_sunian_block: true, flag_sunian_brother: true },
     // v3.4.20 视角切换：解锁「挣紫」记忆后可看苏念的内心
     perspective: { who: "苏念", text: "「它不让我画完」——这话我没说全。完整的话是：哥哥走了之后，每一幅画到最后一笔，我都会想：这是他看不到的又一笔。画完一幅，就离他远一步。所以我停在三笔之前。",
-      requiresMemoryId: "序章·诗雨", gateTitle: "停在最后一笔" },},
+      requiresMemoryId: ["苏念·海报·取景", "苏念·一笔·用力", "苏念·一笔·安静"], gateTitle: "停在最后一笔" },},
   d2_art_4: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "……什么叫——它不让你画完？", next: "d2_art_5" },
   d2_art_5: { day: 2, time: "morning", bg: "art_room", char: "sunian", speaker: "苏念", text: "从去年省展拿了金奖之后，我就再没完成过一幅。他们说我是天才。可天才不该卡在草稿里三年。", next: "d2_art_6" },
   d2_art_6: { day: 2, time: "morning", bg: "art_room", speaker: "沈屿", text: "也许你不是画不完，是不敢画完。画完了，就得证明下一幅还能更好。", next: "d2_art_7" },
@@ -4429,7 +4429,7 @@ const SCRIPT = {
   sn_5: { day: 5, time: "afternoon", bg: "art_room", speaker: "沈屿", text: "什么是「你」？", next: "sn_5b" 
 ,    // v3.4.20 视角切换：解锁「挣紫」记忆后可看苏念的内心
     perspective: { who: "苏念", text: "他问「什么是你」的时候，我脑子里第一反应是哥哥的房间——紫色窗帘，紫色床单，连闹钟都是紫的。我用他的颜色画了三年。他若看见，会说：念念，你的颜色呢？我答不上来。",
-      requiresMemoryId: "序章·诗雨", gateTitle: "他的颜色" },},
+      requiresMemoryId: ["苏念·海报·取景", "苏念·一笔·用力", "苏念·一笔·安静"], gateTitle: "他的颜色" },},
   // v0.5.0 涂鸦：让苏念画一笔自己
   sn_5b: {
     day: 5, time: "afternoon", bg: "art_room", char: "sunian", speaker: "苏念",
@@ -4492,7 +4492,7 @@ const SCRIPT = {
 "《挣》——同一个题目，这一轮我看见的却是一个人从紫里稳稳站起，脚踩着边。她终于肯把自己签在旁边了。"], next: "sn_14_good", cg_unlock: "cg_sunian_good" 
 ,    // v3.4.20 视角切换：解锁「她是谁」记忆后可看苏念的内心
     perspective: { who: "苏念", text: "画完最后一笔，我退后三步，第一次没有想撕。画里那个人从紫里挣出半个身子——我看着她，忽然明白：我按住的不是画，是我自己。松手的那个人，也是我。",
-      requiresMemoryId: "诗雨·走廊", gateTitle: "退后三步" },},
+      requiresMemoryId: ["苏念·海报·取景", "苏念·一笔·用力", "苏念·一笔·安静"], gateTitle: "退后三步" },},
   sn_14_good: { day: 35, time: "morning", bg: "ending_good", char: "sunian", speaker: "苏念", text: "省展那天，它被放在入口第一幅。沈屿——是你让它出来的。",
     loopText: ["省展那天，它被放在入口第一幅。沈屿——是你让它出来的。",
     "省展入口第一幅。她在画旁站了很久，这次没有背对我——被看见之后，她也学会了看。",

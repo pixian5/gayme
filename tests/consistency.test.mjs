@@ -202,8 +202,11 @@ test("视角切换的门槛记忆都存在（v3.4.20 契约）", () => {
   for (const m of script.matchAll(/memory: \{[^}]*?id: "([^"]+)"/g)) defs.add(m[1]);
   const nodeIds = [...script.matchAll(/^  (\w+): \{/gm)].map((m) => m[1]);
   const bad = [];
-  for (const m of script.matchAll(/requiresMemoryId: "([^"]+)"/g)) {
-    if (!defs.has(m[1])) bad.push(m[1]);
+  // 支持单值字符串与数组两种写法（v3.4.23：互斥分支记忆任一解锁即可）
+  for (const m of script.matchAll(/requiresMemoryId: (\[[^\]]*\]|"[^"]+")/g)) {
+    const raw = m[1];
+    const ids = raw.startsWith("[") ? [...raw.matchAll(/"([^"]+)"/g)].map((x) => x[1]) : [raw.replace(/"/g, "")];
+    for (const id of ids) if (!defs.has(id)) bad.push(id);
   }
   assert.deepEqual([...new Set(bad)], [], `视角门槛记忆不存在：${bad.join("、")}`);
   assert.ok(nodeIds.length >= 440, `节点数异常（${nodeIds.length}）`);

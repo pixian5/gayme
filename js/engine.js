@@ -185,6 +185,7 @@
    v3.4.20：视角切换名副其实——补 12 个高信号视角节点（诗雨 4/夏织 3/苏念 3/学姐 2，合计 13 个，此前全剧本仅序章 1 个）；门槛字段改名 requiresMemoryId/gateTitle（与记忆定义语义分离）；新增「门槛记忆必存在」契约
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
+   v3.4.23：视角门槛支持互斥记忆数组——苏念三个视角原借用林诗雨记忆作门槛（逻辑错配），改为 [苏念·海报·取景, 苏念·一笔·用力, 苏念·一笔·安静] 任一解锁即可；契约同步支持数组写法
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -200,10 +201,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.22";
+  const GAME_VERSION = "3.4.23";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.23", note: "苏念视角门槛修正为她的专属记忆（互斥分支任一解锁即可）" },
     { ver: "3.4.22", note: "快进不再被视角节点卡住（视角仍可点 👁 查看）" },
     { ver: "3.4.21", note: "灰掉的确认按钮会说明「还差什么才能点」" },
     { ver: "3.4.20", note: "视角切换到 13 个节点：诗雨/夏织/苏念/学姐的内心独白" },
@@ -797,8 +799,11 @@
     if (!node.perspective) return;
     // v3.4.20：解锁条件字段改名 requiresMemoryId（此前叫 memory，与"定义记忆"语义混淆，
     // 且会被 memory 唯一性契约误报）；requiresMemory: false 仍表示无条件可看
+    // v3.4.23：门槛支持数组——互斥分支记忆（如苏念「用力/安静」二选一）任一解锁即可
     const gate = node.perspective.requiresMemoryId || node.perspective.memory;
-    if (gate && !Saves.isMemoryUnlocked(gate) && node.perspective.requiresMemory !== false) return;
+    const gates = Array.isArray(gate) ? gate : gate ? [gate] : [];
+    const gateOpen = gates.length === 0 || gates.some((g) => Saves.isMemoryUnlocked(g));
+    if (!gateOpen && node.perspective.requiresMemory !== false) return;
     perspectiveBtn = document.createElement("button");
     perspectiveBtn.id = "perspective-btn";
     perspectiveBtn.innerHTML = "👁";
