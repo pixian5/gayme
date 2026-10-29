@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.25**（开发测试版 · Demo）
+- 当前版本：**v3.4.26**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -23,7 +23,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（46 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（47 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 ```
@@ -53,7 +53,7 @@ npm ci                              # 只装 playwright 包（不含浏览器内
 npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
 npx playwright install chromium-headless-shell  # e2e 用 headless shell，部分版本不随 chromium 安装
 npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
-npm test && npm run test:syntax     # 静态门槛（46 项 + 语法）
+npm test && npm run test:syntax     # 静态门槛（47 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
 npm run test:graph                  # 441 节点全图走查 ~28s
 npm run test:play                   # 五画像真人试玩 ~190s（云端实测 ~330s）
@@ -84,17 +84,22 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 ## 【当前开发进度】
 
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
-46 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
-**云环境接管（2026-10-30，不改版本号）**：Remote 沙箱（Linux / Node v24.1.0）实测五套全过——
-`npm test` 46/46（3.7s）、`test:syntax`、`test:e2e` 11.6s、`test:graph` 29.0s、
+47 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+**云环境接管（2026-10-30，v3.4.26）**：Remote 沙箱（Linux / Node v24.1.0）实测六套全过——
+`npm test` 47/47、`test:syntax`、`test:e2e` 11.4s、`test:graph` 29.1s、
 `test:play` 五画像 332s（全部到达结局、0 错误）。内部预览＝沙箱静态服务（800 端口 + 内置浏览器），
-Trae 预览代理只转发 IDE 注册端口，不转发 Agent 起的服务。**新发现**：SW 预缓存用裸路径、
-页面用 `?v=` → 首访同一批 JS/CSS 下载两次（实测 2,341KB，去重后约 1.3MB），列为 v3.4.26 首修项。
+Trae 预览代理只转发 IDE 注册端口，不转发 Agent 起的服务。**v3.4.26 首访去重**：SW 预缓存改用与
+页面一致的 `?v=` 地址（顺带修掉 3 条裸 preload 与 panels.js 漏缓存），请求 25→19，
+本地未压缩流量 2,341KB→1,750KB（-25%），二次访问仍 0KB。
 详见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
 `test:graph`（441 节点）+ `test:play`（五画像）全过；README 新增「远程仓库与云端测试」
 章节（克隆命令、Node ≥ 22、首次需 `npx playwright install chromium` 约 150MB）。
+**v3.4.26**：**首访去重**（SW 的 `PRECACHE` 的 js/css 条目改为与 `index.html` 相同的 `?v=<VERSION>`，
+不再按裸路径重复下载；顺带把 3 条裸 `preload` 版本化、补上漏掉的 `js/ui/panels.js`）；
+新增「预缓存与页面版本化资源一一对应」契约 + e2e 裸路径断言（契约 46→47）。
+实测：首访请求 25→19、本地未压缩 2,341KB→1,750KB，二次访问 0KB；DCL 242ms。
 **v3.4.25**：**学姐线入口门槛放宽**（方案 B：`playCount>=1 || loopCount>=2`——普通结局玩家不再
 永久锁死这条线，新增门槛契约四项断言）；**五画像真人试玩器入库** `npm run test:play`
 （tests/browser/playtest.e2e.mjs，懒人/认真/探索/快通/二周目全部到达结局，0 错误）。
@@ -210,13 +215,13 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.25）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩**全部完成——
+- **当前状态（v3.4.26）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重**全部完成——
   快通 / loopText 177 / 44 处句式清零 / 回响 Tab / UI 拆分 / CG webp / 立绘位图管线 / itch 打包 /
   CF 加速 / 全图走查零错误 / SW 更新提示 / 学姐线通读验收 / 玩家画像试玩验收 /
-  学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）。
-  **代码侧可自主开发项已清零**。
-- **下一步建议（2026-10-30）**：按 v3.4.26 SW 版本化预缓存（首访去重 2,341KB → 约 1.3MB）
-  → v3.4.27 Firefox 双内核回归 → v3.4.28 移动端触控回归 连续推进；立绘 ×5 / SFX / itch 物料待拍板。
+  学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）。
+  **代码侧可自主开发项仅剩 Firefox 双内核与移动端触控两张回归网。**
+- **下一步建议（2026-10-30）**：v3.4.27 Firefox 双内核回归 → v3.4.28 移动端触控回归；
+  立绘 ×5 / SFX / itch 物料待拍板。
   完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 - **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）。
   下一批候选：firefox 内核双跑验证（本机下载未完成，待换网络）；试玩器加 `reader` 纯读者画像；
@@ -224,9 +229,11 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   与 v3.2.3「移除部署 CI」不冲突，但需你确认是否要这条通道）。
 - **已完成（运行基线）**：GitHub 补齐至 v3.4.25 + 干净克隆五套测试实测全过
   （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）。
-- **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需 `npx playwright install chromium`
-  （约 150MB）；云端提交后要把 `main` 同步到 gitee，服务器才会部署。
-- **已完成（分发）**：Hugging Face static Space 上线（v3.4.25 镜像，11/11 CG + BGM + SW 实测通过）
+- **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需
+  `npx playwright install chromium`（约 150MB）+ `npx playwright install chromium-headless-shell`
+  + `npx playwright install-deps chromium`（精简镜像缺 libatk 等系统库）；云端提交后要把 `main` 同步到 gitee，服务器才会部署。
+- **已完成（分发）**：Hugging Face static Space 上线（v3.4.25 镜像，11/11 CG + BGM + SW 实测通过）；
+  **2026-10-30 起暂停使用**（按你的要求不再往 HF 推，站点未删）
   → https://xbzsb-sakura-letters.static.hf.space/index.html ；更新用 `HF_TOKEN=... bash tools/deploy_hf.sh`
   （详见 [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)）。
 - **剩余（全部为外部依赖）**：① 位图立绘 ×5（生图后 webp 入 `assets/portraits/` + `PORTRAIT_BITMAPS` 登记）；
@@ -267,7 +274,7 @@ js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ 
 sw.js               Service Worker：预缓存 26 项核心资源（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
-tests/              Node 原生测试（46 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tests/              Node 原生测试（47 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 

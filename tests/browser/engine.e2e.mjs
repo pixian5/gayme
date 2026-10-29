@@ -87,6 +87,15 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
     return false;
   });
   assert.ok(swRegistered, "localhost 未注册 Service Worker");
+  // v3.4.26：SW 预缓存必须使用与页面相同的 ?v= 地址，首访不得再按裸路径重复下载
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.waitForTimeout(1500);
+  const unwrappedPrecache = await page.evaluate(() =>
+    performance.getEntriesByType("resource")
+      .map((r) => new URL(r.name).pathname + new URL(r.name).search)
+      .filter((u) => /^\/js\//.test(u) && !u.includes("?v="))
+  );
+  assert.deepEqual(unwrappedPrecache, [], `存在未版本化的预缓存请求：${unwrappedPrecache.join(", ")}`);
   console.log("[e2e] 1/7 页面加载完成");
 
   // 1.5) 真实 BGM 资源可加载（MIME / 解码 / 时长），防止路径或编码坏掉

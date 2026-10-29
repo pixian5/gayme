@@ -19,6 +19,23 @@ test("版本和静态资源一致", () => {
   }
 });
 
+test("Service Worker 预缓存与页面版本化资源一一对应", () => {
+  // 页面用 ?v= 做缓存击穿，SW 预缓存也必须用完全相同的地址；
+  // 否则 install 阶段会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。
+  const sw = fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8");
+  const block = sw.split("const PRECACHE = [")[1].split("];")[0];
+  const entries = [...block.matchAll(/"([^"]+)"/g)].map(match => match[1]);
+  const pageAssets = [...html.matchAll(/(?:src|href)="((?:js|css)\/[^"]+?)\?v=[\d.]+"/g)].map(match => match[1]);
+  assert.ok(pageAssets.length >= 16, `页面版本化资源数量异常：${pageAssets.length}`);
+  for (const asset of pageAssets) {
+    assert.ok(entries.includes(`${asset}?v=${version}`), `PRECACHE 缺少与页面完全一致的地址：${asset}?v=${version}`);
+  }
+  const appEntries = entries.filter(entry => /^(?:js|css)\//.test(entry));
+  const versionSuffix = new RegExp("\\?v=" + version.replaceAll(".", "\\.") + "$");
+  for (const entry of appEntries) assert.match(entry, versionSuffix, entry);
+  assert.equal(new Set(appEntries.map(entry => entry.replace(/\?v=[\d.]+/, ""))).size, appEntries.length, "PRECACHE 出现重复应用代码路径");
+});
+
 test("声明的中文字体有本地 @font-face 支撑", () => {
   // style.css 使用 "Noto Serif SC" 时，必须存在自托管字体，否则会静默回退到系统字体
   assert.match(css, /font-family:\s*"Noto Serif SC"/);

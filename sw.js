@@ -1,7 +1,9 @@
 /* 樱时信笺 · Service Worker（v3.2.0）
    —— 预缓存全部静态资源：离线可玩 / 添加到主屏幕。
-   缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）。 */
-const CACHE_VERSION = "sakura-v3.4.25";   // 核心层缓存（bump 工具自动同步）
+   缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）；
+   应用代码（js/、css/）条目必须带与 index.html 相同的 ?v=<VERSION>，
+   否则 SW 安装会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。 */
+const CACHE_VERSION = "sakura-v3.4.26";   // 核心层缓存（bump 工具自动同步）
 const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
 const PRECACHE = [
   "./",
@@ -11,23 +13,24 @@ const PRECACHE = [
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
-  "css/style.css",
-  "css/games.css",
-  "js/saves.js",
-  "js/script.js",
-  "js/lifecycle.js",
-  "js/minigames.js",
-  "js/game-help.js",
-  "js/gamekit.js",
-  "js/games/afterword.js",
-  "js/games/senses.js",
-  "js/games/craft.js",
-  "js/games/nature.js",
-  "js/games/perception.js",
-  "js/games/mechanism.js",
-  "js/games/imagery.js",
-  "js/games/direct.js",
-  "js/engine.js",
+  "css/style.css?v=3.4.26",
+  "css/games.css?v=3.4.26",
+  "js/saves.js?v=3.4.26",
+  "js/script.js?v=3.4.26",
+  "js/lifecycle.js?v=3.4.26",
+  "js/minigames.js?v=3.4.26",
+  "js/game-help.js?v=3.4.26",
+  "js/gamekit.js?v=3.4.26",
+  "js/games/afterword.js?v=3.4.26",
+  "js/games/senses.js?v=3.4.26",
+  "js/games/craft.js?v=3.4.26",
+  "js/games/nature.js?v=3.4.26",
+  "js/games/perception.js?v=3.4.26",
+  "js/games/mechanism.js?v=3.4.26",
+  "js/games/imagery.js?v=3.4.26",
+  "js/games/direct.js?v=3.4.26",
+  "js/ui/panels.js?v=3.4.26",
+  "js/engine.js?v=3.4.26",
   // v3.4.0：立绘位图上线时在下方追加 assets/portraits/*.webp
   "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
   "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",

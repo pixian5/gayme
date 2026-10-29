@@ -52,6 +52,12 @@ def main():
     # sw.js 缓存版本（PWA 预缓存随版本换仓，保证更新可达）
     sw = open("sw.js", encoding="utf-8").read()
     sw, n3 = re.subn(r"sakura-v[\d.]+", f"sakura-v{ver}", sw)
+    # sw.js 预缓存里的应用代码条目（js/ 与 css/）必须与 index.html 的 ?v= 同步；
+    # 字体条目维持 ?v=3.2.4（@font-face 引用的 URL 不变），不参与替换。
+    def _bump_app_entry(match):
+        return f'"{match.group(1)}?v={ver}"'
+
+    sw, n3b = re.subn(r'"(js/[^"]+|css/[^"]+)\?v=[\d.]+"', _bump_app_entry, sw)
     with open("sw.js", "w", encoding="utf-8") as f:
         f.write(sw)
 
@@ -66,7 +72,7 @@ def main():
     if f"v{ver}" not in eng.split("*/")[0]:
         print(f"⚠️ js/engine.js 头注释缺少 v{ver} 行——请手工补一行变更说明")
 
-    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处；engine.js 常量 {n4} 处；package-lock.json 已同步）")
+    print(f"版本号已同步为 v{ver}（index.html: {n1} 处 ?v=，{n2} 处标题页；sw.js 缓存 {n3} 处、预缓存条目 {n3b} 处；engine.js 常量 {n4} 处；package-lock.json 已同步）")
 
 
 if __name__ == "__main__":
