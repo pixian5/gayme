@@ -34,12 +34,14 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 
 | 远程名 | 地址 | 作用 |
 | --- | --- | --- |
-| `origin` | gitee.com/ibjxk/gayme | 服务器部署主源（cron 每 3 分钟拉取到 oh.sbbz.tech） |
-| `github` | github.com/pixian5/gayme（公开） | **云端克隆 / 云端测试主源**（Trae 云端沙箱从这里拉代码） |
+| `origin` | github.com/pixian5/gayme（公开） | **云端克隆 / 云端测试主源**；Trae「关联 GitHub 仓库」只认 `origin` 且域名为 github.com |
+| `gitee` | gitee.com/ibjxk/gayme | 服务器部署主源（cron 每 3 分钟拉取到 oh.sbbz.tech） |
 | `gitcode` | gitcode.com/laotongtian/gayme | 第三备份（并行开发线） |
 
 GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，旧 Pages 链接 301 到正式源）。
-三远程 `main` 均指向同一提交；本地 `main` 跟踪 gitee，`git pull` / `git push github main` 按需选择。
+三远程 `main` 均指向同一提交；本地 `main` 跟踪 `origin/main`（GitHub），
+所以 `git pull` / `git push` 默认走 GitHub，部署时另推 `git push gitee main`。
+（2026-10-29 前 `origin` 曾指向 gitee，为让 Trae 识别 GitHub 已改为上述命名。）
 
 云端（干净克隆）跑测试，一条链路可复现：
 
@@ -259,11 +261,11 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   生图后统一后处理：裁掉底部白色 letterbox → `scale=1600:960:flags=lanczos`（详见
   [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
-- 提交：中文 commit，完成后推送三远程（`git push origin main` + `git push github main` +
+- 提交：中文 commit，完成后推送三远程（`git push origin main`（GitHub）+ `git push gitee main` +
   `git push gitcode main`）；push 后服务器 cron 每 3 分钟从 gitee 自动拉取部署到
   oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
-- 云端测试：GitHub 为干净克隆源（公开仓库，含全部素材），流程见上文「远程仓库与云端测试」；
-  云端提交后记得把 `main` 同步回 gitee，否则服务器不会部署到最新
+- 云端测试：`origin` = GitHub（Trae 关联仓库依赖该命名与域名），流程见上文「远程仓库与云端测试」；
+  云端提交后记得把 `main` 同步到 `gitee`，否则服务器不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
   服务器自动部署脚本 /usr/local/bin/sakura-deploy.sh（gitee 主源→github 备源）
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
