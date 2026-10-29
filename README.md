@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.15**（开发测试版 · Demo）
+- 当前版本：**v3.4.25**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -30,10 +30,45 @@ npm run test:e2e            # 真实浏览器运行时回归（chromium；首次
 `git diff --check` + 浏览器回归。本地测试是**唯一门槛**——push 三远程后
 服务器每 3 分钟自动拉取部署（gitee 主源→github 备源，gitcode 第三备份），不再依赖任何 CI。
 
+## 远程仓库与云端测试
+
+| 远程名 | 地址 | 作用 |
+| --- | --- | --- |
+| `origin` | gitee.com/ibjxk/gayme | 服务器部署主源（cron 每 3 分钟拉取到 oh.sbbz.tech） |
+| `github` | github.com/pixian5/gayme（公开） | **云端克隆 / 云端测试主源**（Trae 云端沙箱从这里拉代码） |
+| `gitcode` | gitcode.com/laotongtian/gayme | 第三备份（并行开发线） |
+
+GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，旧 Pages 链接 301 到正式源）。
+三远程 `main` 均指向同一提交；本地 `main` 跟踪 gitee，`git pull` / `git push github main` 按需选择。
+
+云端（干净克隆）跑测试，一条链路可复现：
+
+```bash
+git clone https://github.com/pixian5/gayme.git && cd gayme
+npm ci                              # 只装 playwright 包（不含浏览器内核）
+npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
+npm test && npm run test:syntax     # 静态门槛（46 项 + 语法）
+npm run test:e2e                    # 运行时回归 ~8s
+npm run test:graph                  # 441 节点全图走查 ~28s
+npm run test:play                   # 五画像真人试玩 ~190s
+```
+
+- 环境要求：Node ≥ 22（本机基线 v24.21）、npm ≥ 10；纯前端零构建，不需要 Python / 虚拟环境
+- pre-push 钩子（`.githooks/pre-push`，已装到 `.git/hooks`）只跑 `npm test` + `test:syntax` +
+  `git diff --check`，**不下载浏览器**，云端可直接 push；需要 e2e 时设 `PREPUSH_E2E=1`
+- 本地资源（5 首 Ogg、11 张 CG、字体子集）全部入库（226 个跟踪文件、仓库约 15MB），
+  云端克隆即完整可跑，不依赖任何外部下载
+- 2026-10-29 已用 GitHub 干净克隆实测：静态 46/46、e2e / graph / play 全过
+  （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）
+
 ## 【当前开发进度】
 
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
 46 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+**云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
+三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
+`test:graph`（441 节点）+ `test:play`（五画像）全过；README 新增「远程仓库与云端测试」
+章节（克隆命令、Node ≥ 22、首次需 `npx playwright install chromium` 约 150MB）。
 **v3.4.25**：**学姐线入口门槛放宽**（方案 B：`playCount>=1 || loopCount>=2`——普通结局玩家不再
 永久锁死这条线，新增门槛契约四项断言）；**五画像真人试玩器入库** `npm run test:play`
 （tests/browser/playtest.e2e.mjs，懒人/认真/探索/快通/二周目全部到达结局，0 错误）。
@@ -155,7 +190,13 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）。
   **代码侧可自主开发项已清零**。
 - **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）。
-  下一批候选：firefox 内核双跑验证（本机下载未完成，待换网络）；试玩器加 `reader` 纯读者画像。
+  下一批候选：firefox 内核双跑验证（本机下载未完成，待换网络）；试玩器加 `reader` 纯读者画像；
+  **是否加 GitHub Actions 测试 workflow**（只跑测试、不参与部署，push 即云端自动回归；
+  与 v3.2.3「移除部署 CI」不冲突，但需你确认是否要这条通道）。
+- **已完成（运行基线）**：GitHub 补齐至 v3.4.25 + 干净克隆五套测试实测全过
+  （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）。
+- **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需 `npx playwright install chromium`
+  （约 150MB）；云端提交后要把 `main` 同步到 gitee，服务器才会部署。
 - **剩余（全部为外部依赖）**：① 位图立绘 ×5（生图后 webp 入 `assets/portraits/` + `PORTRAIT_BITMAPS` 登记）；
   ② 真实音效 SFX（CC0 素材）；③ i18n / 云存档 / 玩法同质化调整（需拍板 / 试玩反馈）
   → [docs/20261025-0444-下一步开发方向Phase3-GLM.md](docs/20261025-0444-下一步开发方向Phase3-GLM.md)
@@ -218,8 +259,11 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   生图后统一后处理：裁掉底部白色 letterbox → `scale=1600:960:flags=lanczos`（详见
   [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
-- 提交：中文 commit，完成后推送 gitee（origin）与 github（备份）；push 后服务器
-  cron 每 3 分钟自动拉取部署到 oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
+- 提交：中文 commit，完成后推送三远程（`git push origin main` + `git push github main` +
+  `git push gitcode main`）；push 后服务器 cron 每 3 分钟从 gitee 自动拉取部署到
+  oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
+- 云端测试：GitHub 为干净克隆源（公开仓库，含全部素材），流程见上文「远程仓库与云端测试」；
+  云端提交后记得把 `main` 同步回 gitee，否则服务器不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
   服务器自动部署脚本 /usr/local/bin/sakura-deploy.sh（gitee 主源→github 备源）
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
