@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.27**（开发测试版 · Demo）
+- 当前版本：**v3.4.28**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -23,7 +23,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（47 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（48 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
@@ -55,7 +55,7 @@ npm ci                              # 只装 playwright 包（不含浏览器内
 npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
 npx playwright install chromium-headless-shell  # e2e 用 headless shell，部分版本不随 chromium 安装
 npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
-npm test && npm run test:syntax     # 静态门槛（47 项 + 语法）
+npm test && npm run test:syntax     # 静态门槛（48 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
 BROWSER=firefox npm run test:e2e    # Firefox 内核回归（需 npx playwright install firefox）
 npm run test:mobile                 # 移动端触控回归 ~5s
@@ -88,7 +88,7 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 ## 【当前开发进度】
 
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
-47 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+48 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
 **云环境接管（2026-10-30，v3.4.26）**：Remote 沙箱（Linux / Node v24.1.0）实测六套全过——
 `npm test` 47/47、`test:syntax`、`test:e2e` 11.4s、`test:graph` 29.1s、
 `test:play` 五画像 332s（全部到达结局、0 错误）。内部预览＝沙箱静态服务（800 端口 + 内置浏览器），
@@ -99,6 +99,10 @@ Trae 预览代理只转发 IDE 注册端口，不转发 Agent 起的服务。**v
 新增 `tests/browser/mobile.e2e.mjs`（390×844 真触控：标题触控开始、8 个代表玩法挂载/说明栏折叠/
 跳过收尾、存档浮层开关与边界、零横向溢出、零控制台错误，4.7s 全过）；Firefox 双内核实测全过
 （e2e 14.1s、441 节点全图走查 32.2s，无引擎改动）——云端回归从六套扩到八套。
+**v3.4.28**：**自动存档失败不再静默**——`Saves.autoSave` 写入失败（配额满 / 隐私模式 /
+WebView 存储压力）此前只 `console.error`，玩家会误以为进度已存、刷新后回到旧位置；
+现连续 2 次失败提示一次「自动存档不可用：请在设置 → 数据备份 导出 JSON」（同会话不重复），
+新增静态契约（48 项）。
 详见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
@@ -223,14 +227,14 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.27）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
-  **双内核/移动触控两张回归网**全部完成——
+- **当前状态（v3.4.28）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
+  **双内核/移动触控两张回归网** + **自动存档失败提示**全部完成——
   快通 / loopText 177 / 44 处句式清零 / 回响 Tab / UI 拆分 / CG webp / 立绘位图管线 / itch 打包 /
   CF 加速 / 全图走查零错误 / SW 更新提示 / 学姐线通读验收 / 玩家画像试玩验收 /
   学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）
-  / Firefox 双内核 + 移动端触控回归（`npm run test:mobile`）。
+  / Firefox 双内核 + 移动端触控回归（`npm run test:mobile`）/ 自动存档失败提示（契约 47→48）。
   **代码侧可自主的回归项已全部清空，剩余为素材（立绘/SFX）与分发动作。**
-- **下一步建议（2026-10-30）**：v3.4.28 立绘 ×5（先 1 张样张定风格）→ v3.4.29 真实 SFX；
+- **下一步建议（2026-10-30）**：v3.4.29 立绘 ×5（先 1 张样张定风格）→ v3.4.30 真实 SFX；
   itch 物料同步准备（封面/截图/文案）。
   完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 - **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）；
@@ -284,7 +288,7 @@ js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ 
 sw.js               Service Worker：预缓存 26 项核心资源（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
-tests/              Node 原生测试（47 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tests/              Node 原生测试（48 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 

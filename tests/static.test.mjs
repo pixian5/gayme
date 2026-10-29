@@ -80,3 +80,11 @@ test("延迟互动层出现前不会跳过剧情", () => {
   assert.match(engine, /state\.pendingInteraction = true;[\s\S]*?GameKit\?\.run\("proofread", node\.proofread, nodeId\)/);
   assert.match(engine, /state\.pendingInteraction = false;[\s\S]*?showLetter\(node\.letter, nodeId\)/);
 });
+
+test("自动存档连续失败会提示并引导导出备份", () => {
+  // v3.4.28：配额满 / 隐私模式下 autoSave 静默失败会让玩家误以为进度已存，
+  // 刷新后回到旧位置；连续 2 次失败必须提示一次（同会话不重复刷屏）。
+  assert.match(engine, /if \(Saves\.autoSave\(snapshot\(\)\)\) \{\s+autoSaveFailStreak = 0;/);
+  assert.match(engine, /autoSaveFailStreak >= 2 && !autoSaveWarned/);
+  assert.match(engine, /flashHint\("自动存档不可用：请在设置 → 数据备份 导出 JSON"\)/);
+});
