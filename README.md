@@ -8,6 +8,8 @@
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
 - 在线试玩：https://oh.sbbz.tech:8080/ （push 后服务器每 3 分钟自动拉取部署；`bash tools/deploy.sh` 手动备用）
+- Hugging Face 镜像：https://xbzsb-sakura-letters.static.hf.space/index.html
+  （[Space 页面](https://huggingface.co/spaces/xbzsb/sakura-letters)；`HF_TOKEN=... bash tools/deploy_hf.sh` 手动同步）
 - 旧 Pages 链接已 301 重定向到唯一正式源（gh-pages 分支只放跳转页，v3.3.18）
 
 ## 运行方式
@@ -62,6 +64,20 @@ npm run test:play                   # 五画像真人试玩 ~190s
   云端克隆即完整可跑，不依赖任何外部下载
 - 2026-10-29 已用 GitHub 干净克隆实测：静态 46/46、e2e / graph / play 全过
   （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）
+
+## Hugging Face 演示站
+
+- Space：https://huggingface.co/spaces/xbzsb/sakura-letters （static SDK）
+- 直连游玩：https://xbzsb-sakura-letters.static.hf.space/index.html
+- 同步：`HF_TOKEN=hf_xxx bash tools/deploy_hf.sh`（token 走环境变量，**不要写进仓库**）；
+  脚本只同步运行文件（HTML / css / js / fonts / audio / assets / icons），
+  Space 的 README 用 `tools/hf-space-readme.md`（带 `sdk: static` frontmatter）
+- 坑：HF 拒绝裸二进制推送，webp / ogg / woff2 / png 必须走 Git LFS（落到 HF 的 Xet 存储），
+  脚本会自动补 `.gitattributes` 规则；写死在首个提交里再改规则的话要 `git commit --amend`
+  重写，否则旧 blob 仍在推送范围内被拒
+- 直连域名是 `<user>-<space>.static.hf.space`（注意多一层 `.static`，
+  `author-name.hf.space` 会 404）
+- 详细记录 → [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)
 
 ## 【当前开发进度】
 
@@ -199,6 +215,9 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）。
 - **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需 `npx playwright install chromium`
   （约 150MB）；云端提交后要把 `main` 同步到 gitee，服务器才会部署。
+- **已完成（分发）**：Hugging Face static Space 上线（v3.4.25 镜像，11/11 CG + BGM + SW 实测通过）
+  → https://xbzsb-sakura-letters.static.hf.space/index.html ；更新用 `HF_TOKEN=... bash tools/deploy_hf.sh`
+  （详见 [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)）。
 - **剩余（全部为外部依赖）**：① 位图立绘 ×5（生图后 webp 入 `assets/portraits/` + `PORTRAIT_BITMAPS` 登记）；
   ② 真实音效 SFX（CC0 素材）；③ i18n / 云存档 / 玩法同质化调整（需拍板 / 试玩反馈）
   → [docs/20261025-0444-下一步开发方向Phase3-GLM.md](docs/20261025-0444-下一步开发方向Phase3-GLM.md)
@@ -235,8 +254,9 @@ js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 1
                     perception 14 / mechanism 14 / imagery 12 / direct 10（直跳型）
 js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
 sw.js               Service Worker：预缓存 42 项静态资源（含 5 首 BGM + 11 张 CG），缓存版本 sakura-vX.Y.Z 随发版同步
-tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套
-tests/              Node 原生测试（42 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
+                    deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
+tests/              Node 原生测试（46 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 
@@ -268,4 +288,6 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   云端提交后记得把 `main` 同步到 `gitee`，否则服务器不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
   服务器自动部署脚本 /usr/local/bin/sakura-deploy.sh（gitee 主源→github 备源）
+- 部署到 Hugging Face：`HF_TOKEN=hf_xxx bash tools/deploy_hf.sh`（static Space，只同步运行文件，
+  二进制走 Git LFS；Space README 源文件是 `tools/hf-space-readme.md`）；发版后手动跑一次即可
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
