@@ -23,7 +23,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（42 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（46 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 ```
@@ -51,10 +51,12 @@ GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，�
 git clone https://github.com/pixian5/gayme.git && cd gayme
 npm ci                              # 只装 playwright 包（不含浏览器内核）
 npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
+npx playwright install chromium-headless-shell  # e2e 用 headless shell，部分版本不随 chromium 安装
+npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
 npm test && npm run test:syntax     # 静态门槛（46 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
 npm run test:graph                  # 441 节点全图走查 ~28s
-npm run test:play                   # 五画像真人试玩 ~190s
+npm run test:play                   # 五画像真人试玩 ~190s（云端实测 ~330s）
 ```
 
 - 环境要求：Node ≥ 22（本机基线 v24.21）、npm ≥ 10；纯前端零构建，不需要 Python / 虚拟环境
@@ -83,6 +85,12 @@ npm run test:play                   # 五画像真人试玩 ~190s
 
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
 46 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+**云环境接管（2026-10-30，不改版本号）**：Remote 沙箱（Linux / Node v24.1.0）实测五套全过——
+`npm test` 46/46（3.7s）、`test:syntax`、`test:e2e` 11.6s、`test:graph` 29.0s、
+`test:play` 五画像 332s（全部到达结局、0 错误）。内部预览＝沙箱静态服务（800 端口 + 内置浏览器），
+Trae 预览代理只转发 IDE 注册端口，不转发 Agent 起的服务。**新发现**：SW 预缓存用裸路径、
+页面用 `?v=` → 首访同一批 JS/CSS 下载两次（实测 2,341KB，去重后约 1.3MB），列为 v3.4.26 首修项。
+详见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
 `test:graph`（441 节点）+ `test:play`（五画像）全过；README 新增「远程仓库与云端测试」
@@ -207,6 +215,9 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   CF 加速 / 全图走查零错误 / SW 更新提示 / 学姐线通读验收 / 玩家画像试玩验收 /
   学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）。
   **代码侧可自主开发项已清零**。
+- **下一步建议（2026-10-30）**：按 v3.4.26 SW 版本化预缓存（首访去重 2,341KB → 约 1.3MB）
+  → v3.4.27 Firefox 双内核回归 → v3.4.28 移动端触控回归 连续推进；立绘 ×5 / SFX / itch 物料待拍板。
+  完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 - **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）。
   下一批候选：firefox 内核双跑验证（本机下载未完成，待换网络）；试玩器加 `reader` 纯读者画像；
   **是否加 GitHub Actions 测试 workflow**（只跑测试、不参与部署，push 即云端自动回归；
@@ -253,7 +264,7 @@ js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生
 js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 13 / nature 13 /
                     perception 14 / mechanism 14 / imagery 12 / direct 10（直跳型）
 js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
-sw.js               Service Worker：预缓存 42 项静态资源（含 5 首 BGM + 11 张 CG），缓存版本 sakura-vX.Y.Z 随发版同步
+sw.js               Service Worker：预缓存 26 项核心资源（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
 tests/              Node 原生测试（46 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
