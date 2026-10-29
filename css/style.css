@@ -46,6 +46,7 @@ body {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;   /* v3.4.27：移动端浏览器工具栏伸缩时用动态视口高度，避免底部被裁 */
   overflow: hidden;
   background: #000;
 }

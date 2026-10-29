@@ -1,13 +1,16 @@
 {
   "name": "sakura-letters",
   "private": true,
-  "version": "3.4.26",
+  "version": "3.4.27",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "test:syntax": "node tests/syntax.test.mjs",
     "test:e2e": "node tests/browser/engine.e2e.mjs",
+    "test:e2e:firefox": "BROWSER=firefox node tests/browser/engine.e2e.mjs",
     "test:graph": "node tests/browser/graph.e2e.mjs",
+    "test:graph:firefox": "BROWSER=firefox node tests/browser/graph.e2e.mjs",
+    "test:mobile": "node tests/browser/mobile.e2e.mjs",
     "test:play": "node tests/browser/playtest.e2e.mjs"
   },
   "devDependencies": {

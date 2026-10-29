@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.26**（开发测试版 · Demo）
+- 当前版本：**v3.4.27**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -26,6 +26,8 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（47 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
+npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
+npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwright install firefox + install-deps firefox）
 ```
 
 改动完成门槛：`npm test` 全过 + `npm run test:syntax` + `npm run test:e2e` +
@@ -55,6 +57,8 @@ npx playwright install chromium-headless-shell  # e2e 用 headless shell，部�
 npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
 npm test && npm run test:syntax     # 静态门槛（47 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
+BROWSER=firefox npm run test:e2e    # Firefox 内核回归（需 npx playwright install firefox）
+npm run test:mobile                 # 移动端触控回归 ~5s
 npm run test:graph                  # 441 节点全图走查 ~28s
 npm run test:play                   # 五画像真人试玩 ~190s（云端实测 ~330s）
 ```
@@ -91,6 +95,10 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 Trae 预览代理只转发 IDE 注册端口，不转发 Agent 起的服务。**v3.4.26 首访去重**：SW 预缓存改用与
 页面一致的 `?v=` 地址（顺带修掉 3 条裸 preload 与 panels.js 漏缓存），请求 25→19，
 本地未压缩流量 2,341KB→1,750KB（-25%），二次访问仍 0KB。
+**v3.4.27**：**移动端触控回归 + 动态视口**——`#game` 改用 `100dvh`（手机浏览器工具栏伸缩不再裁掉底部）；
+新增 `tests/browser/mobile.e2e.mjs`（390×844 真触控：标题触控开始、8 个代表玩法挂载/说明栏折叠/
+跳过收尾、存档浮层开关与边界、零横向溢出、零控制台错误，4.7s 全过）；Firefox 双内核实测全过
+（e2e 14.1s、441 节点全图走查 32.2s，无引擎改动）——云端回归从六套扩到八套。
 详见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
@@ -215,18 +223,20 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.26）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重**全部完成——
+- **当前状态（v3.4.27）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
+  **双内核/移动触控两张回归网**全部完成——
   快通 / loopText 177 / 44 处句式清零 / 回响 Tab / UI 拆分 / CG webp / 立绘位图管线 / itch 打包 /
   CF 加速 / 全图走查零错误 / SW 更新提示 / 学姐线通读验收 / 玩家画像试玩验收 /
-  学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）。
-  **代码侧可自主开发项仅剩 Firefox 双内核与移动端触控两张回归网。**
-- **下一步建议（2026-10-30）**：v3.4.27 Firefox 双内核回归 → v3.4.28 移动端触控回归；
-  立绘 ×5 / SFX / itch 物料待拍板。
+  学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）
+  / Firefox 双内核 + 移动端触控回归（`npm run test:mobile`）。
+  **代码侧可自主的回归项已全部清空，剩余为素材（立绘/SFX）与分发动作。**
+- **下一步建议（2026-10-30）**：v3.4.28 立绘 ×5（先 1 张样张定风格）→ v3.4.29 真实 SFX；
+  itch 物料同步准备（封面/截图/文案）。
   完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
-- **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）。
-  下一批候选：firefox 内核双跑验证（本机下载未完成，待换网络）；试玩器加 `reader` 纯读者画像；
-  **是否加 GitHub Actions 测试 workflow**（只跑测试、不参与部署，push 即云端自动回归；
-  与 v3.2.3「移除部署 CI」不冲突，但需你确认是否要这条通道）。
+- **待你拍板**：~~学姐线入口门槛~~（v3.4.25 已按方案 B 落地：`playCount >= 1 || loopCount >= 2`）；
+  ~~Firefox 内核双跑~~（v3.4.27 已实测全过）。
+  下一批候选：立绘风格确认（生图样张）、是否加 GitHub Actions 测试 workflow
+  （只跑测试、不参与部署，push 即云端自动回归；与 v3.2.3「移除部署 CI」不冲突，但需你确认是否要这条通道）。
 - **已完成（运行基线）**：GitHub 补齐至 v3.4.25 + 干净克隆五套测试实测全过
   （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）。
 - **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需

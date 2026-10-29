@@ -189,6 +189,7 @@
    v3.4.24：PWA 注册健壮性 + 真人试玩工具——index.html 的 SW 注册补 reg 判空（register 返回 undefined 时原代码 reg.update() 抛 TypeError，连带跳过 controllerchange 监听）；新增 .playtest.mjs 三画像真人模拟器（懒人全跳过/认真操作/探索），发现剧情浮层被误判为玩法、玩法确认按钮定位错误等测试侧问题
    v3.4.23：视角门槛支持互斥记忆数组——苏念三个视角原借用林诗雨记忆作门槛（逻辑错配），改为 [苏念·海报·取景, 苏念·一笔·用力, 苏念·一笔·安静] 任一解锁即可；契约同步支持数组写法
    v3.4.26：SW 首装去重——PRECACHE 的 js/css 条目改为与 index.html 相同的 ?v=<VERSION>（原先裸路径导致首访同批代码下载两次，实测 2,341KB→约 1.3MB）；bump 工具同步预缓存条目；新增「预缓存与页面版本化资源一一对应」契约 + e2e 裸路径断言
+   v3.4.27：移动端触控与动态视口——#game 改用 100dvh（移动浏览器工具栏伸缩时不再裁掉底部）；新增 tests/browser/mobile.e2e.mjs（390×844 真触控：8 个代表玩法挂载/说明栏折叠/跳过收尾、存档浮层开关与边界、零横向溢出、零控制台错误）；Firefox 双内核 e2e 与 441 节点全图走查实测通过（无引擎改动）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -204,10 +205,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.26";
+  const GAME_VERSION = "3.4.27";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.27", note: "移动端：动态视口高度 + 390×844 触控回归；补 Firefox 双内核验证" },
     { ver: "3.4.26", note: "首访提速：预缓存改用与页面一致的版本化地址，不再重复下载同一批代码" },
     { ver: "3.4.25", note: "学姐线入口更易遇到：真结局一次，或任意结局通两次即可" },
     { ver: "3.4.24", note: "PWA 注册补判空，修掉 reg.update 报错" },
