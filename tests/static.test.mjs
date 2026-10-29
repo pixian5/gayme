@@ -88,3 +88,23 @@ test("自动存档连续失败会提示并引导导出备份", () => {
   assert.match(engine, /autoSaveFailStreak >= 2 && !autoSaveWarned/);
   assert.match(engine, /flashHint\("自动存档不可用：请在设置 → 数据备份 导出 JSON"\)/);
 });
+
+test("立绘位图清单与素材文件一一对应", () => {
+  // v3.4.29：PORTRAIT_BITMAPS 里每个 id 都必须有对应的透明 webp，
+  // 且该 id 在 SVG 兜底名单 PORTRAITS 中存在，否则换机会静默不显示立绘。
+  const block = engine.match(/const PORTRAIT_BITMAPS = new Set\(\[([^\]]*)\]\);/) || [];
+  const ids = [...(block[1] || "").matchAll(/"([\w-]+)"/g)].map(match => match[1]);
+  assert.ok(ids.length >= 5, `PORTRAIT_BITMAPS 数量异常：${ids.length}`);
+  for (const id of ids) {
+    assert.equal(fs.existsSync(new URL(`../assets/portraits/${id}.webp`, import.meta.url)), true, `缺少立绘 ${id}.webp`);
+    assert.match(script, new RegExp(`\\n  ${id}: \`<svg`), `PORTRAITS 缺少 ${id} 的 SVG 兜底`);
+  }
+});
+
+test("立绘走 Service Worker 媒体缓存", () => {
+  // 立绘约 100KB/张，走 sakura-media 运行时缓存可跨版本复用，不必每次发版重下；
+  // 若误走核心层，bump 版本就会让老玩家把整组立绘重新下载一遍。
+  const sw = fs.readFileSync(new URL("../sw.js", import.meta.url), "utf8");
+  assert.match(sw, /url\.pathname\.includes\("\/assets\/portraits\/"\)/);
+  assert.match(sw, /const MEDIA_CACHE = /);
+});

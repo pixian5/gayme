@@ -3,7 +3,7 @@
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）；
    应用代码（js/、css/）条目必须带与 index.html 相同的 ?v=<VERSION>，
    否则 SW 安装会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。 */
-const CACHE_VERSION = "sakura-v3.4.28";   // 核心层缓存（bump 工具自动同步）
+const CACHE_VERSION = "sakura-v3.4.29";   // 核心层缓存（bump 工具自动同步）
 const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
 const PRECACHE = [
   "./",
@@ -13,25 +13,25 @@ const PRECACHE = [
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
-  "css/style.css?v=3.4.28",
-  "css/games.css?v=3.4.28",
-  "js/saves.js?v=3.4.28",
-  "js/script.js?v=3.4.28",
-  "js/lifecycle.js?v=3.4.28",
-  "js/minigames.js?v=3.4.28",
-  "js/game-help.js?v=3.4.28",
-  "js/gamekit.js?v=3.4.28",
-  "js/games/afterword.js?v=3.4.28",
-  "js/games/senses.js?v=3.4.28",
-  "js/games/craft.js?v=3.4.28",
-  "js/games/nature.js?v=3.4.28",
-  "js/games/perception.js?v=3.4.28",
-  "js/games/mechanism.js?v=3.4.28",
-  "js/games/imagery.js?v=3.4.28",
-  "js/games/direct.js?v=3.4.28",
-  "js/ui/panels.js?v=3.4.28",
-  "js/engine.js?v=3.4.28",
-  // v3.4.0：立绘位图上线时在下方追加 assets/portraits/*.webp
+  "css/style.css?v=3.4.29",
+  "css/games.css?v=3.4.29",
+  "js/saves.js?v=3.4.29",
+  "js/script.js?v=3.4.29",
+  "js/lifecycle.js?v=3.4.29",
+  "js/minigames.js?v=3.4.29",
+  "js/game-help.js?v=3.4.29",
+  "js/gamekit.js?v=3.4.29",
+  "js/games/afterword.js?v=3.4.29",
+  "js/games/senses.js?v=3.4.29",
+  "js/games/craft.js?v=3.4.29",
+  "js/games/nature.js?v=3.4.29",
+  "js/games/perception.js?v=3.4.29",
+  "js/games/mechanism.js?v=3.4.29",
+  "js/games/imagery.js?v=3.4.29",
+  "js/games/direct.js?v=3.4.29",
+  "js/ui/panels.js?v=3.4.29",
+  "js/engine.js?v=3.4.29",
+  // v3.4.0：立绘位图走媒体层运行时缓存（/assets/portraits/），跨版本沿用
   "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
   "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
 ];
@@ -69,8 +69,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 媒体资源（BGM / CG 位图）：运行时缓存进 sakura-media（cache-first + 后台更新）
-  const isMedia = url.pathname.includes("/audio/") || url.pathname.includes("/assets/cg/");
+  // 媒体资源（BGM / CG / 立绘位图）：运行时缓存进 sakura-media（cache-first + 后台更新）
+  const isMedia = url.pathname.includes("/audio/") || url.pathname.includes("/assets/cg/") || url.pathname.includes("/assets/portraits/");
   const store = isMedia ? MEDIA_CACHE : CACHE_VERSION;
   event.respondWith(
     caches.open(store).then((cache) =>
