@@ -1668,6 +1668,8 @@
      ============================================================ */
   register("windchime", function (wc, nodeId) {
     // 原实现无清理钩子（窗口监听仅正常完成时移除，读档/返回标题会泄漏）——迁移时经 onCancel 修复
+    // v3.4.31：进入玩法先响一声风铃采样（采样不可用时静默）
+    window.GameSfx?.play("windchime");
     const shell = createShell({ kind: "windchime", prefix: "wc", nodeId,
       onCancel: () => {
         window.removeEventListener("mousemove", onMove);

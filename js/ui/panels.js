@@ -365,7 +365,14 @@ window.SakuraPanels = function (C) {
         <p style="color:rgba(255,200,220,0.55);margin-top:16px;font-size:12px;">反馈与问题：<a href="https://gitee.com/ibjxk/gayme/issues" target="_blank" rel="noopener" style="color:#f0a8b8;">gitee issues</a>（附标题页右下角的版本号）</p><p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
           BGM：Patrick de Arteaga ·
           <a href="https://patrickdearteaga.com" target="_blank" rel="noopener" style="color:#ffb8c8;">patrickdearteaga.com</a>
-          （CC BY 4.0）<br>字体：Noto Serif SC（SIL OFL 1.1）
+          （CC BY 4.0）<br>
+          音效：Kenney Interface Sounds（CC0）· OpenGameArt 作者
+          <a href="https://opengameart.org/users/voltiment555" target="_blank" rel="noopener" style="color:#ffb8c8;">Voltiment555</a> /
+          <a href="https://opengameart.org/users/luckius" target="_blank" rel="noopener" style="color:#ffb8c8;">Luckius</a> /
+          <a href="https://opengameart.org/users/pwl" target="_blank" rel="noopener" style="color:#ffb8c8;">PWL</a> /
+          <a href="https://opengameart.org/users/kresiek-the-furry" target="_blank" rel="noopener" style="color:#ffb8c8;">Kresiek The Furry</a> /
+          <a href="https://opengameart.org/users/syncopika" target="_blank" rel="noopener" style="color:#ffb8c8;">syncopika</a>
+          （CC0）<br>字体：Noto Serif SC（SIL OFL 1.1）
         </p>
       </div>
       ${renderPersonalityCard()}

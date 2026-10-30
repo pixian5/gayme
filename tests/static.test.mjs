@@ -124,3 +124,35 @@ test("分享卡片使用绝对图片地址与站点地址", () => {
   assert.match(html, /<meta property="og:image:height" content="630">/);
   assert.equal(fs.existsSync(new URL("../assets/og-cover.jpg", import.meta.url)), true, "缺少分享封面 assets/og-cover.jpg");
 });
+
+test("音效采样清单与 audio/sfx 文件一一对应", () => {
+  // v3.4.31：SFX_SAMPLES 里每个 kind 都必须有对应的 Ogg 采样，
+  // 且环境音场景映射只引用清单内的 kind，否则场景切换会静默无声。
+  const block = engine.match(/const SFX_SAMPLES = \{([\s\S]*?)\};/) || [];
+  const entries = [...(block[1] || "").matchAll(/(\w+):\s*"audio\/sfx\/([\w.-]+)"/g)];
+  assert.equal(entries.length, 8, `SFX_SAMPLES 应有 8 个采样：${entries.length}`);
+  for (const [, kind, file] of entries) {
+    const path = new URL(`../audio/sfx/${file}`, import.meta.url);
+    assert.equal(fs.existsSync(path), true, `缺少音效 audio/sfx/${file}`);
+    const buf = fs.readFileSync(path);
+    assert.equal(buf.subarray(0, 4).toString("ascii"), "OggS", `${file} 不是 Ogg 文件`);
+    assert.ok(buf.length < 200 * 1024, `${file} 体积异常：${buf.length} 字节`);
+  }
+  const ambient = engine.match(/const AMBIENT_SCENES = \{([^}]*)\}/) || [];
+  const kinds = new Set(entries.map(([, kind]) => kind));
+  for (const [, kind] of [...(ambient[1] || "").matchAll(/: "(\w+)"/g)]) {
+    assert.ok(kinds.has(kind), `环境音场景引用了未定义的采样：${kind}`);
+  }
+});
+
+test("音效采样优先，解码失败回落程序化并保留署名", () => {
+  // 采样缺失 / 解码失败时必须回落 v2.9.7 的合成音效，不能无声；
+  // 音效素材为 CC0，但 Kenney 与 OpenGameArt 作者署名仍须保留在「关于」页。
+  assert.match(engine, /function playSfx\(kind\)[\s\S]*?if \(playSfxSample\(kind\)\) return;[\s\S]*?const seq = \{/);
+  assert.match(engine, /\.catch\(\(\) => \{ sfxCache\[kind\] = null; \}\);/, "采样加载/解码失败必须回落程序化");
+  assert.match(engine, /Object\.keys\(SFX_SAMPLES\)\.forEach\(loadSfxSample\)/, "缺少采样预加载");
+  const panels = fs.readFileSync(new URL("../js/ui/panels.js", import.meta.url), "utf8");
+  assert.match(panels, /音效：Kenney Interface Sounds（CC0）/, "关于页缺少 Kenney 音效署名");
+  assert.match(panels, /Kresiek The Furry/, "关于页缺少雨声作者署名");
+  assert.match(panels, /syncopika/, "关于页缺少蝉声作者署名");
+});

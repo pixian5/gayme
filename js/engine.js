@@ -193,6 +193,9 @@
    v3.4.28：自动存档失败不再静默——连续 2 次写入失败（配额满/隐私模式/WebView 存储压力）提示一次「自动存档不可用：请在设置 → 数据备份 导出 JSON」，同会话不重复；新增静态契约（契约 47→48）
    v3.4.29：立绘位图全量上线——5 名角色 AI 立绘（纯白底生成 → 泛洪抠图 → 透明 webp，高 1536），PORTRAIT_BITMAPS 清单五项启用；SW 媒体层新增 /assets/portraits/ 路由（跨版本复用）；新增立绘清单与文件一致性契约（契约 48→50）
    v3.4.30：发行物料与分享卡片——生成 itch 封面 630×500 与 5 张 1280×720 截图、copy.md 文案（tools/make-itch-assets.mjs 可复现）；og:image 改绝对地址并补 og:url/og:site_name/twitter:image，社媒分享不再丢图；新增分享卡片契约（契约 50→51）
+   v3.4.31：真实音效落地——8 个 CC0 录制采样（点击 / 翻页 / 信纸 / 成功 / 失败 / 风铃 / 环境雨蝉，
+           约 187KB）进 audio/sfx；playSfx 采样优先、解码失败回落程序化合成；雨/蝉随场景切换播放，
+           风铃接入 windchime 玩法；关于页补 Kenney 与 OpenGameArt 作者署名；新增两条静态契约（契约 51→53）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -208,10 +211,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.30";
+  const GAME_VERSION = "3.4.31";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.31", note: "点击、翻页、信纸、成功失败、风铃与雨蝉都换成真实音效，听感更贴场景" },
     { ver: "3.4.30", note: "分享卡片换上绝对地址与大图预览，转发链接不再丢封面" },
     { ver: "3.4.29", note: "五位角色换上正式立绘：透明位图替代占位剪影，表情与动作都清晰起来" },
     { ver: "3.4.28", note: "自动存档存不住时会提示你导出备份（不再静默丢进度）" },
@@ -374,6 +378,7 @@
     setTimeout(() => el.bgLayer.classList.remove("fade-transition"), 700);
     updateParticles(bg);
     playBgmForScene(bg);
+    playAmbientForScene(bg);
   }
 
   /* ============ 立绘 ============ */
@@ -910,6 +915,7 @@
         btn.textContent = opt.text;
       }
       btn.onclick = () => {
+        playSfx("click");
         el.choices.classList.add("hidden");
         el.choices.innerHTML = "";
         applyAdd(opt.add);
@@ -1351,6 +1357,7 @@
   let overlayMode = null;
   function openOverlay(type) {
     overlayMode = type;
+    playSfx("page");
     const titles = {
       save: "存档", load: "读档", config: "设置", history: "历史文本",
       gallery: "结局图鉴", about: "关于", keywords: "关键词", cg: "CG 图鉴",
@@ -2002,7 +2009,8 @@
      自动播放被浏览器拦截时挂起，等下一次用户手势重试；
      本地音频缺失/解码失败时回退到 v2.9.7 的三层程序化配乐
      （和弦垫 + 低音 + 五声音阶随机游走旋律）。
-     另提供 5 种程序化音效（信件 / 关键词 / 记忆 / 成功 / 失败），经 window.GameSfx 暴露。 */
+     另提供 8 种音效（点击 / 翻页 / 信纸 / 关键词 / 成功 / 失败 / 风铃 / 环境雨蝉），
+     v3.4.31 起优先播放 CC0 录制采样，缺失时回落程序化合成；经 window.GameSfx 暴露。 */
   let audioCtx = null;
   let bgmGain = null;
   let sfxGain = null;
@@ -2030,6 +2038,76 @@
   let bgmMelIdx = 2;
 
   const midiFreq = (n) => 440 * Math.pow(2, (n - 69) / 12);
+
+  /* v3.4.31 真实音效采样：优先播放 CC0 录制音效，未就绪 / 解码失败时回落程序化合成。
+     8 个采样见 audio/sfx/（Kenney Interface Sounds / OpenGameArt，署名见「关于」）；
+     rain / cicada 是短环境音，随场景切换播放并在下一次切换时打断。 */
+  const SFX_SAMPLES = {
+    click: "audio/sfx/click.ogg",
+    page: "audio/sfx/page.ogg",
+    letter: "audio/sfx/letter.ogg",
+    success: "audio/sfx/success.ogg",
+    fail: "audio/sfx/fail.ogg",
+    windchime: "audio/sfx/windchime.ogg",
+    rain: "audio/sfx/rain.ogg",
+    cicada: "audio/sfx/cicada.ogg",
+  };
+  // 各类音效的基准音量（环境音更轻，避免盖过配乐与对白）
+  const SFX_GAINS = { click: 0.5, page: 0.45, letter: 0.55, success: 0.6, fail: 0.6, windchime: 0.55, rain: 0.22, cicada: 0.18 };
+  // 场景 → 环境音；未列出的场景保持安静
+  const AMBIENT_SCENES = { rain: "rain", summer: "cicada", field: "cicada" };
+  const sfxCache = {};        // kind → AudioBuffer | null（null＝加载/解码失败，永久走程序化）
+  let ambientVoice = null;    // 正在播放的环境音 { src }
+
+  function loadSfxSample(kind) {
+    if (kind in sfxCache) return;
+    const src = SFX_SAMPLES[kind];
+    if (!src || !audioCtx) return;
+    sfxCache[kind] = null;    // 先占位，避免并发重复请求；解码成功后再覆盖
+    fetch(src)
+      .then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.arrayBuffer(); })
+      .then((buf) => new Promise((resolve, reject) => audioCtx.decodeAudioData(buf, resolve, reject)))
+      .then((buffer) => { sfxCache[kind] = buffer; })
+      .catch(() => { sfxCache[kind] = null; });
+  }
+
+  function preloadSfxSamples() {
+    Object.keys(SFX_SAMPLES).forEach(loadSfxSample);
+  }
+
+  /* 播放采样；返回 AudioBufferSourceNode，null 表示没有可用采样（调用方回落程序化） */
+  function playSfxSample(kind, gainScale = 1) {
+    const buffer = sfxCache[kind];
+    if (!buffer || !audioCtx || !sfxGain) return null;
+    const gain = (SFX_GAINS[kind] ?? 0.6) * gainScale;
+    const src = audioCtx.createBufferSource();
+    const env = audioCtx.createGain();
+    src.buffer = buffer;
+    env.gain.value = gain;
+    src.connect(env); env.connect(sfxGain);
+    src.start();
+    return src;
+  }
+
+  function stopAmbient() {
+    if (!ambientVoice) return;
+    try { ambientVoice.src.stop(); } catch (e) { /* 已自然结束 */ }
+    ambientVoice = null;
+  }
+
+  function playAmbientForScene(scene) {
+    stopAmbient();
+    if (!Saves.settings || (Saves.settings.sfxVolume ?? 0.6) <= 0) return;
+    const kind = AMBIENT_SCENES[scene];
+    if (!kind) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    if (!(kind in sfxCache)) loadSfxSample(kind);
+    const src = playSfxSample(kind);
+    if (!src) return;
+    ambientVoice = { src };
+    src.onended = () => { if (ambientVoice && ambientVoice.src === src) ambientVoice = null; };
+  }
 
   /* v3.4.0 立绘位图清单：assets/portraits/<id>.webp 存在于此即启用位图渲染；
      文件缺失时自动回退内联 SVG（管线为「可插拔」，素材到位即替换上线） */
@@ -2068,6 +2146,8 @@
       } catch (e) { console.warn("AudioContext 不可用", e); }
     }
     if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+    // v3.4.31：音频上下文就绪后预取 8 个音效采样（约 190KB），后续播放零等待
+    if (audioCtx) preloadSfxSamples();
   }
 
   function bgmVolume() {
@@ -2170,6 +2250,7 @@
 
   function stopBgm() {
     if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
+    stopAmbient();
     if (bgmAudioEl) {
       bgmAudioEl.pause();
       bgmAudioEl.currentTime = 0;
@@ -2255,14 +2336,19 @@
     }
   }
 
-  /* 程序化音效：kind → (时间偏移, 频率) 序列，sine 短包络 */
+  /* 音效：v3.4.31 起采样优先（audio/sfx/*.ogg，CC0），
+     采样未就绪或解码失败时回落 v2.9.7 的程序化合成 */
   function playSfx(kind) {
     ensureAudio();
     // v3.3.5：此前判断的 settings.sfx 字段根本不存在（恒假、形同虚设）；
     // 按音效音量判定，拉到 0 即静音
     if (!audioCtx || (Saves.settings.sfxVolume ?? 0.6) <= 0) return;
+    if (!(kind in sfxCache)) loadSfxSample(kind);
+    if (playSfxSample(kind)) return;
     const t = audioCtx.currentTime;
     const seq = {
+      click:   [[0, 720]],
+      page:    [[0, 520], [0.08, 392]],
       letter:  [[0, 880], [0.09, 1174.66]],
       keyword: [[0, 987.77], [0.08, 1318.51]],
       memory:  [[0, 1318.51], [0.07, 1567.98], [0.14, 2093.0]],
