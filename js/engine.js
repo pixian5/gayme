@@ -192,6 +192,7 @@
    v3.4.27：移动端触控与动态视口——#game 改用 100dvh（移动浏览器工具栏伸缩时不再裁掉底部）；新增 tests/browser/mobile.e2e.mjs（390×844 真触控：8 个代表玩法挂载/说明栏折叠/跳过收尾、存档浮层开关与边界、零横向溢出、零控制台错误）；Firefox 双内核 e2e 与 441 节点全图走查实测通过（无引擎改动）
    v3.4.28：自动存档失败不再静默——连续 2 次写入失败（配额满/隐私模式/WebView 存储压力）提示一次「自动存档不可用：请在设置 → 数据备份 导出 JSON」，同会话不重复；新增静态契约（契约 47→48）
    v3.4.29：立绘位图全量上线——5 名角色 AI 立绘（纯白底生成 → 泛洪抠图 → 透明 webp，高 1536），PORTRAIT_BITMAPS 清单五项启用；SW 媒体层新增 /assets/portraits/ 路由（跨版本复用）；新增立绘清单与文件一致性契约（契约 48→50）
+   v3.4.30：发行物料与分享卡片——生成 itch 封面 630×500 与 5 张 1280×720 截图、copy.md 文案（tools/make-itch-assets.mjs 可复现）；og:image 改绝对地址并补 og:url/og:site_name/twitter:image，社媒分享不再丢图；新增分享卡片契约（契约 50→51）
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -207,10 +208,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.29";
+  const GAME_VERSION = "3.4.30";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.30", note: "分享卡片换上绝对地址与大图预览，转发链接不再丢封面" },
     { ver: "3.4.29", note: "五位角色换上正式立绘：透明位图替代占位剪影，表情与动作都清晰起来" },
     { ver: "3.4.28", note: "自动存档存不住时会提示你导出备份（不再静默丢进度）" },
     { ver: "3.4.27", note: "移动端：动态视口高度 + 390×844 触控回归；补 Firefox 双内核验证" },

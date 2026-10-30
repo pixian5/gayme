@@ -14,4 +14,4 @@ zip -r -q "$ZIP" \
   -x "*.DS_Store"
 echo "打包完成: $ZIP ($(du -h "$ZIP" | cut -f1))"
 echo "itch.io 上传建议：HTML5 嵌入模式，viewport 1280x800，勾选 mobile friendly；"
-echo "页面文案：见 docs/20261025-0745-发行准备-GLM.md 附段。"
+echo "页面文案与封面/截图：见 dist/itch/copy.md（图片由 tools/make-itch-assets.mjs 生成）。"

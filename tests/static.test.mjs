@@ -108,3 +108,19 @@ test("立绘走 Service Worker 媒体缓存", () => {
   assert.match(sw, /url\.pathname\.includes\("\/assets\/portraits\/"\)/);
   assert.match(sw, /const MEDIA_CACHE = /);
 });
+
+test("分享卡片使用绝对图片地址与站点地址", () => {
+  // v3.4.30：相对路径的 og:image 会被社媒抓取器按抓取页地址补全，
+  // 换域名 / 镜像站分享时容易丢图；分享卡片必须指向唯一正式源的绝对地址。
+  const origin = "https://oh.sbbz.tech:8080/";
+  const pick = (re) => (html.match(re) || [])[1];
+  const image = pick(/<meta property="og:image" content="([^"]+)">/);
+  const url = pick(/<meta property="og:url" content="([^"]+)">/);
+  const twitter = pick(/<meta name="twitter:image" content="([^"]+)">/);
+  assert.ok(image && image.startsWith(origin), `og:image 必须是绝对地址：${image}`);
+  assert.ok(url && url.startsWith(origin), `og:url 必须是绝对地址：${url}`);
+  assert.equal(twitter, image, "twitter:image 应与 og:image 一致");
+  assert.match(html, /<meta property="og:image:width" content="1200">/);
+  assert.match(html, /<meta property="og:image:height" content="630">/);
+  assert.equal(fs.existsSync(new URL("../assets/og-cover.jpg", import.meta.url)), true, "缺少分享封面 assets/og-cover.jpg");
+});

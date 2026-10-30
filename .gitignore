@@ -7,7 +7,11 @@ __pycache__/
 venv/
 .DS_Store
 build/
-dist/
+# dist 为构建/发行产物目录；仅 itch 上架物料（封面/截图/文案）入库，zip 与临时包不入库
+dist/*
+!dist/itch/
+!dist/itch/**
+dist/*.zip
 .env
 .env.*
 .playwright-mcp/

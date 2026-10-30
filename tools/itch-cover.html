@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>樱时信笺 · itch 封面</title>
+<style>
+  @font-face { font-family: "Noto Serif SC"; src: url("../fonts/NotoSerifSC-Bold.woff2") format("woff2"); font-weight: 700; }
+  @font-face { font-family: "Noto Serif SC"; src: url("../fonts/NotoSerifSC-Regular.woff2") format("woff2"); font-weight: 400; }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 630px; height: 500px; overflow: hidden; }
+  .cover {
+    position: relative; width: 630px; height: 500px;
+    background:
+      radial-gradient(120% 90% at 78% 12%, rgba(255, 214, 190, 0.34), transparent 62%),
+      radial-gradient(80% 60% at 12% 88%, rgba(255, 170, 190, 0.20), transparent 70%),
+      linear-gradient(160deg, #2b1c31 0%, #5a3049 46%, #8d4f54 78%, #c98679 100%);
+    font-family: "Noto Serif SC", serif;
+  }
+  /* 樱花瓣 */
+  .petal { position: absolute; width: 14px; height: 10px; border-radius: 60% 40% 55% 45%; background: rgba(255, 205, 214, 0.85); transform: rotate(var(--r)); filter: blur(0.4px); }
+  .p1 { left: 46px; top: 60px; --r: 24deg; width: 18px; height: 12px; opacity: .9; }
+  .p2 { left: 120px; top: 168px; --r: 68deg; opacity: .55; }
+  .p3 { left: 84px; top: 372px; --r: -30deg; width: 20px; height: 13px; opacity: .65; }
+  .p4 { left: 300px; top: 40px; --r: 12deg; opacity: .5; }
+  .p5 { left: 360px; top: 300px; --r: 46deg; opacity: .35; }
+  .p6 { right: 28px; bottom: 40px; --r: -18deg; opacity: .45; }
+
+  .portrait {
+    position: absolute; right: 6px; bottom: 0; height: 468px; opacity: .96;
+    filter: drop-shadow(0 18px 26px rgba(20, 8, 24, 0.42));
+  }
+  .veil {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(34, 18, 38, 0.72) 0%, rgba(34, 18, 38, 0.45) 38%, rgba(34, 18, 38, 0.10) 62%, rgba(34, 18, 38, 0.22) 100%);
+  }
+  .copy { position: absolute; left: 46px; top: 84px; color: #fdf3f0; }
+  .kicker { font-size: 12px; letter-spacing: 5px; color: #f5c9c2; opacity: .85; margin-bottom: 14px; }
+  h1 { font-size: 62px; font-weight: 700; letter-spacing: 8px; line-height: 1.14; text-shadow: 0 3px 18px rgba(60, 20, 40, 0.45); }
+  .en { margin-top: 12px; font-size: 13px; letter-spacing: 3.4px; color: #f3c8c0; opacity: .92; }
+  .tagline { margin-top: 26px; font-size: 16px; line-height: 1.9; color: #fbe6df; letter-spacing: 1.4px; opacity: .95; }
+  .tagline b { font-weight: 700; color: #ffd9cf; }
+  .rule { width: 46px; height: 2px; background: linear-gradient(90deg, #ffd4c8, rgba(255, 212, 200, 0)); margin: 22px 0 0; }
+  .foot { position: absolute; left: 46px; bottom: 38px; font-size: 12px; letter-spacing: 2.2px; color: #f2c4ba; opacity: .8; }
+</style>
+</head>
+<body>
+  <div class="cover">
+    <span class="petal p1"></span><span class="petal p2"></span><span class="petal p3"></span>
+    <span class="petal p4"></span><span class="petal p5"></span><span class="petal p6"></span>
+    <img class="portrait" src="../assets/portraits/shiyu.webp" alt="">
+    <div class="veil"></div>
+    <div class="copy">
+      <div class="kicker">S A K U R A · L E T T E R S</div>
+      <h1>樱时<br>信笺</h1>
+      <div class="en">Sakura Letters in Cherry Time</div>
+      <div class="tagline">在樱花开的季节，<br>写一封<b>会改变时间</b>的回信。</div>
+      <div class="rule"></div>
+    </div>
+    <div class="foot">视觉小说 · 校园群像 · 时间循环 · 多结局</div>
+  </div>
+</body>
+</html>
