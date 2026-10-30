@@ -112,6 +112,7 @@ window.SakuraPanels = function (C) {
         <label>音效音量</label>
         <input type="range" id="cfg-sfxvolume" min="0" max="1" step="0.1" value="${escapeHtml(String(s.sfxVolume ?? 0.6))}">
         <span id="cfg-sfxvolume-val" style="color:#ffb8c8;width:40px;">${Math.round((s.sfxVolume ?? 0.6) * 100)}%</span>
+        <button id="cfg-sfx-test" type="button" class="config-sfx-test" aria-label="试听音效">▶ 试听</button>
       </div>
       <div class="config-row">
         <label>背景音乐音量</label>
@@ -161,6 +162,12 @@ window.SakuraPanels = function (C) {
       sfxVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("sfxVolume", v);
       if (sfxGain) sfxGain.gain.value = v;
+    };
+    // v3.4.32：音效试听——按钮播放信纸采样；滑杆松手也试听一次，按当下音量判断是否合适
+    const sfxTestBtn = document.getElementById("cfg-sfx-test");
+    if (sfxTestBtn) sfxTestBtn.onclick = () => playSfx("letter");
+    sfxSlider.onchange = () => {
+      if ((Saves.settings.sfxVolume ?? 0.6) > 0) playSfx("letter");
     };
     // v3.3.5：背景音乐音量滑杆（此前设置面板只有音效音量，BGM 音量无 UI）
     const bgmSlider = document.getElementById("cfg-bgmvolume");

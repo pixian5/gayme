@@ -241,6 +241,21 @@ test(`引擎运行时回归（${engineName}）`, { timeout: 120_000 }, async () 
   assert.ok(slotOps.renamed && slotOps.imported, "存档重命名 / 导入失败");
   assert.equal(slotOps.exportedName, "我的存档", "导出未包含槽位名称");
   assert.equal(slotOps.loadedName, "我的存档", "导入后槽位名称丢失");
+  // v3.4.32：设置面板音效试听——按钮存在且点击不报错
+  await page.evaluate(() => {
+    Saves.updateSetting("sfxVolume", 0.6);
+    window.__game.openOverlay("config");
+  });
+  const sfxTestBtn = await page.evaluate(() => {
+    const btn = document.getElementById("cfg-sfx-test");
+    if (!btn) return { found: false };
+    btn.click();
+    return { found: true, label: btn.textContent.trim() };
+  });
+  assert.ok(sfxTestBtn.found, "设置面板缺少音效试听按钮");
+  assert.ok(sfxTestBtn.label.includes("试听"), `试听按钮文案异常：${sfxTestBtn.label}`);
+  await page.waitForTimeout(150);
+  await page.evaluate(() => window.__game.closeOverlay());
   console.log("[e2e] 5/7 浮层面板开关通过");
 
   // 4.5) 选择回响：带 value 的选项落盘，历史「回响」Tab 可见

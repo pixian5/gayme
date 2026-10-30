@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.31**（开发测试版 · Demo）
+- 当前版本：**v3.4.32**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -23,7 +23,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（53 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（54 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
@@ -55,7 +55,7 @@ npm ci                              # 只装 playwright 包（不含浏览器内
 npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
 npx playwright install chromium-headless-shell  # e2e 用 headless shell，部分版本不随 chromium 安装
 npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
-npm test && npm run test:syntax     # 静态门槛（53 项 + 语法）
+npm test && npm run test:syntax     # 静态门槛（54 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
 BROWSER=firefox npm run test:e2e    # Firefox 内核回归（需 npx playwright install firefox）
 npm run test:mobile                 # 移动端触控回归 ~5s
@@ -88,7 +88,7 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 ## 【当前开发进度】
 
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
-53 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+54 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
 **云环境接管（2026-10-30，v3.4.26）**：Remote 沙箱（Linux / Node v24.1.0）实测六套全过——
 `npm test` 47/47、`test:syntax`、`test:e2e` 11.4s、`test:graph` 29.1s、
 `test:play` 五画像 332s（全部到达结局、0 错误）。内部预览＝沙箱静态服务（800 端口 + 内置浏览器），
@@ -119,6 +119,9 @@ itch 封面 630×500（HTML/CSS 合成，中文标题不走 AI 生图避免错�
 回落程序化合成；雨 / 蝉作为短环境音随场景切换（rain / summer / field）播放，切场景时自动打断；
 风铃接入 windchime 玩法；关于页补 Kenney 与 OpenGameArt 作者署名；新增采样清单一致性与回退路径
 契约（51→53）。
+**v3.4.32**：**音效可试听**——设置面板音效音量行新增「▶ 试听」按钮（播放信纸采样），滑杆松手也试听一次
+（音量为 0 时不播），调音量后能立刻判断是否合适；窄屏下该行允许换行并收窄滑杆，避免横向溢出；
+新增试听契约 + e2e 按钮点击断言（53→54）。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
 `test:graph`（441 节点）+ `test:play`（五画像）全过；README 新增「远程仓库与云端测试」
@@ -242,15 +245,15 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.31）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
-  **双内核/移动触控两张回归网** + **自动存档失败提示** + **立绘 ×5 位图上线** + **发行物料** + **真实音效 ×8** 全部完成——
+- **当前状态（v3.4.32）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
+  **双内核/移动触控两张回归网** + **自动存档失败提示** + **立绘 ×5 位图上线** + **发行物料** + **真实音效 ×8 + 音量试听** 全部完成——
   快通 / loopText 177 / 44 处句式清零 / 回响 Tab / UI 拆分 / CG webp / 立绘位图管线（素材已接入）/
   发行打包与封面截图文案 / CF 加速 / 全图走查零错误 / SW 更新提示 / 学姐线通读验收 / 玩家画像试玩验收 /
   学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）
   / Firefox 双内核 + 移动端触控回归（`npm run test:mobile`）/ 自动存档失败提示（契约 47→48）
-  / 立绘位图 ×5（契约 48→50）/ 分享卡片绝对地址 + 发行物料（契约 50→51）/ 真实音效 ×8（契约 51→53）。
+  / 立绘位图 ×5（契约 48→50）/ 分享卡片绝对地址 + 发行物料（契约 50→51）/ 真实音效 ×8（契约 51→53）/ 音效试听按钮（契约 53→54）。
   项目处于开发阶段，后续按候选清单持续迭代。
-- **下一步建议（2026-10-30）**：v3.4.32 候选——音效细节调优（信件展开 / 回忆闪回可再选样）、
+- **下一步建议（2026-10-30）**：v3.4.33 候选——音效细节调优（信件展开 / 回忆闪回可再选样）、
   `docs/` 经验归档与云端回归复跑。
   完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)。
 - **已确认**：~~学姐线入口门槛~~（v3.4.25 方案 B：`playCount >= 1 || loopCount >= 2`）；
@@ -305,13 +308,13 @@ js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ 
 sw.js               Service Worker：预缓存 26 项核心资源（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
-tests/              Node 原生测试（53 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tests/              Node 原生测试（54 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v3.4.31，下一版 v3.4.32）
+- 版本号：每次修改 +0.0.1，满十进一（当前 v3.4.32，下一版 v3.4.33）
 - 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
   `package-lock.json`（v3.3.4 起）/ `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/
   `js/engine.js`（GAME_VERSION 常量）；

@@ -532,9 +532,26 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   font-family: inherit;
 }
 .config-row label { font-size: 16px; color: #f0e8d8; }
+.config-sfx-test {
+  padding: 6px 12px;
+  border: 1px solid rgba(255,200,220,0.35);
+  border-radius: 8px;
+  color: #ffe8f0;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
 .config-row input[type="range"] {
   width: 200px;
   accent-color: #d87090;
+}
+/* 窄屏：音效行多一个试听按钮，允许换行并收窄滑杆，避免横向溢出 */
+@media (max-width: 480px) {
+  .config-row { flex-wrap: wrap; gap: 6px; }
+  .config-row input[type="range"] { width: 140px; }
+  .config-sfx-test { margin-left: auto; }
 }
 .config-row select {
   background: rgba(255,255,255,0.08);

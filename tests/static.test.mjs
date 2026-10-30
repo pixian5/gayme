@@ -156,3 +156,14 @@ test("音效采样优先，解码失败回落程序化并保留署名", () => {
   assert.match(panels, /Kresiek The Furry/, "关于页缺少雨声作者署名");
   assert.match(panels, /syncopika/, "关于页缺少蝉声作者署名");
 });
+
+test("设置面板可试听音效", () => {
+  // v3.4.32：音效音量变化后玩家需要一个即时确认手段——
+  // 试听按钮播放信纸采样，滑杆松手也试听一次（音量为 0 时不播）。
+  const panels = fs.readFileSync(new URL("../js/ui/panels.js", import.meta.url), "utf8");
+  assert.match(panels, /id="cfg-sfx-test"/, "设置面板缺少音效试听按钮");
+  assert.match(panels, /sfxTestBtn\.onclick = \(\) => playSfx\("letter"\)/, "试听按钮未接入 playSfx");
+  assert.match(panels, /sfxSlider\.onchange = \(\) => \{\s+if \(\(Saves\.settings\.sfxVolume[\s\S]*?playSfx\("letter"\)/, "滑杆松手未试听");
+  const css = fs.readFileSync(new URL("../css/style.css", import.meta.url), "utf8");
+  assert.match(css, /\.config-sfx-test\s*\{/, "缺少试听按钮样式");
+});
