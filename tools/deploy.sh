@@ -25,7 +25,7 @@ echo "==> 打包并上传到 ${USER}@${HOST}:${PORT}"
 # tar 管道直传（macOS bsdtar 与服务器 GNU tar 兼容；xattr 告警无害）
 # 生图源 jpg（assets/portraits/*_sample*.jpg）属中间产物，不上传
 tar czf - --exclude='assets/portraits/*_sample*.jpg' \
-  index.html css js fonts favicon.svg .nojekyll manifest.webmanifest sw.js assets icons 2>/dev/null \
+  index.html css js fonts favicon.svg .nojekyll manifest.webmanifest sw.js assets icons audio 2>/dev/null \
   | ssh -i "$KEY" -p "$PORT" -o BatchMode=yes "${USER}@${HOST}" \
     "sudo -n mkdir -p '${TARGET}' && sudo -n tar xzf - -C '${TARGET}/' && echo '==> 上传完成'"
 
