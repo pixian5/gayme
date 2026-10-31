@@ -198,6 +198,11 @@
            风铃接入 windchime 玩法；关于页补 Kenney 与 OpenGameArt 作者署名；新增两条静态契约（契约 51→53）
    v3.4.32：音量可试听——设置面板音效行新增「▶ 试听」按钮（播放信纸采样），滑杆松手也试听一次
            （音量为 0 不播）；窄屏允许换行并收窄滑杆，避免横向溢出；新增试听契约 + e2e 断言（契约 53→54）
+   v3.4.33：回归审计修复——① SW：respondWith 全路径兜底（永不出 undefined / 不 reject），
+           媒体资源改由浏览器原生加载（Firefox 拦截媒体 + 刷新取消请求会报 unexpected error，
+           四组实验 6/6 vs 0/6），离线退化为「无 BGM/CG、立绘回退 SVG」；
+           ② 移动端 3 玩法溢出修复（钢琴键宽自适应 / 倒影偏移按舞台宽度收敛 /
+           糖块格子收敛 + 位置 clamp）；③ 说明栏收起按钮触控热区 26×16 → 40px；④ 文档计数对齐
    v3.4.3：发行闭环——pack-itch 补 audio（分发版含真实 BGM，10MB）+ .DS_Store 排除；CF 加速前置 play.sbbz.tech:2096（proxied → 源站 2096，nginx 同证书双监听）
    v3.4.4：回响扩展——自由回信（answers.content）与选择回响同列入回响 Tab；e2e 双内核（chromium + firefox，过滤 Navigated away 良性噪音），pre-push PREPUSH_E2E 同步
    v3.3.19：SW 三层缓存——核心层（html/css/js/字体/图标）install 预装 ≤1.5MB；BGM 与 CG 位图改运行时缓存（sakura-media 跨版本沿用），首装下载 11MB→1.3MB
@@ -213,10 +218,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.32";
+  const GAME_VERSION = "3.4.33";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.33", note: "离线与窄屏更稳：断网不再报资源错误，手机上钢琴、倒影、糖块不再被切边" },
     { ver: "3.4.32", note: "设置里新增音效试听：调音量时能立刻听到信纸声" },
     { ver: "3.4.31", note: "点击、翻页、信纸、成功失败、风铃与雨蝉都换成真实音效，听感更贴场景" },
     { ver: "3.4.30", note: "分享卡片换上绝对地址与大图预览，转发链接不再丢封面" },

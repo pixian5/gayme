@@ -7394,3 +7394,30 @@ button.confirm-locked { border-style: dashed !important; cursor: not-allowed; op
     padding: 8px 18px; font-size: 13px;
   }
 }
+
+/* ============ v3.4.33 移动端溢出修复（全量回归审计发现） ============ */
+@media (max-width: 768px) {
+  /* 钢琴：8 键 × 48px + gap 在 390px 视口整体超宽约 24px —— 键宽改为自适应分配 */
+  .pi-piano { max-width: 100%; padding: 8px 6px; gap: 3px; }
+  .pi-key { width: auto; flex: 1 1 0; min-width: 0; height: 112px; padding-bottom: 8px; }
+  .pi-key-label { font-size: 11px; }
+  .pi-sequence { gap: 6px; }
+  .pi-note { padding: 5px 10px; font-size: 13px; }
+
+  /* 倒影：窄屏舞台收矮，字号同步收敛（横向偏移另由 JS 按舞台宽度自适应） */
+  .rf-stage { height: 260px; }
+  .rf-upper, .rf-lower { font-size: 20px; letter-spacing: 4px; }
+
+  /* 糖块：舞台收紧（格子尺寸另由 JS 按舞台宽度收敛） */
+  .sg-stage { height: 240px; }
+  .sg-piece { font-size: 18px; }
+
+  /* 玩法说明栏：收起/展开按钮原本只有 26×16px，触控热区远低于 44px 建议值。
+     用 padding 撑热区 + 等量负 margin 抵消，视觉尺寸不变。 */
+  .gh-toggle {
+    padding: 12px 10px; margin: -12px -10px;
+    min-height: 40px; font-size: 12px; line-height: 1;
+    display: inline-flex; align-items: center;
+  }
+  .gh-skip { padding: 10px 0; font-size: 12.5px; }
+}

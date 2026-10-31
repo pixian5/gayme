@@ -1810,7 +1810,7 @@
     const layer = shell.layer;
     const cols = sg.grid?.cols || 4;
     const rows = sg.grid?.rows || 3;
-    const cellPx = sg.grid?.cell || 56;
+    const cellPxRaw = sg.grid?.cell || 56;
     layer.innerHTML = `
       <div class="sg-prompt">${sg.prompt || "把糖块拖到对应位置——拼出图案"}</div>
       <div class="sg-stage" id="sg-stage"></div>
@@ -1824,6 +1824,18 @@
     const info = layer.querySelector("#sg-info");
     const confirmBtn = layer.querySelector("#sg-confirm");
     const resetBtn = layer.querySelector(".sg-reset");
+
+    // v3.4.33：格子尺寸随舞台实际宽度收敛。窄屏（390px 视口）上固定 56px 格子
+    // 会让棋盘整体超出舞台右边界被裁掉。
+    const stageW = stage.clientWidth || 360;
+    const cellPx = Math.max(26, Math.min(cellPxRaw, Math.floor((stageW - 20) / cols)));
+    // 糖块用「百分比 left + 固定 px 宽」定位，多格宽的块在窄屏会被挤出舞台——
+    // 所有写入 left/top 的地方都先 clamp 回可视范围。
+    const stageH = stage.clientHeight || 280;
+    const clampRatio = (ratio, sizePx, total) => {
+      const max = total > 0 ? (total - sizePx) / total : 0;
+      return Math.max(0, Math.min(ratio, Math.max(0, max)));
+    };
 
     let aborted = false;
     const pieces = (sg.pieces || []).map(p => ({
@@ -1858,11 +1870,13 @@
       elDom.dataset.idx = idx;
       const cw = p.shape?.[0]?.length || 1;
       const ch = p.shape?.length || 1;
-      elDom.style.width = (cw * cellPx - 6) + "px";
-      elDom.style.height = (ch * cellPx - 6) + "px";
+      const wPx = cw * cellPx - 6;
+      const hPx = ch * cellPx - 6;
+      elDom.style.width = wPx + "px";
+      elDom.style.height = hPx + "px";
       elDom.style.background = p.color || "#ff8a8a";
-      elDom.style.left = (p.x * 100) + "%";
-      elDom.style.top = (p.y * 100) + "%";
+      elDom.style.left = (clampRatio(p.x, wPx, stageW) * 100) + "%";
+      elDom.style.top = (clampRatio(p.y, hPx, stageH) * 100) + "%";
       elDom.textContent = p.label || "";
       let drag = false, ox = 0, oy = 0;
       function start(e) {
@@ -1883,8 +1897,8 @@
         let ny = (t.clientY - sr.top - oy) / sr.height;
         nx = Math.max(0, Math.min(0.95, nx));
         ny = Math.max(0, Math.min(0.95, ny));
-        elDom.style.left = (nx * 100) + "%";
-        elDom.style.top = (ny * 100) + "%";
+        elDom.style.left = (clampRatio(nx, elDom.offsetWidth, stageW) * 100) + "%";
+        elDom.style.top = (clampRatio(ny, elDom.offsetHeight, stageH) * 100) + "%";
       }
       function end(e) {
         if (!drag || aborted) return;
@@ -1904,8 +1918,8 @@
           if (cell) {
             const cr = cell.getBoundingClientRect();
             const sr = stage.getBoundingClientRect();
-            elDom.style.left = ((cr.left - sr.left) / sr.width * 100 + 0.5) + "%";
-            elDom.style.top = ((cr.top - sr.top) / sr.height * 100 + 0.5) + "%";
+            elDom.style.left = (clampRatio((cr.left - sr.left) / sr.width + 0.005, pr.width, stageW) * 100) + "%";
+            elDom.style.top = (clampRatio((cr.top - sr.top) / sr.height + 0.005, pr.height, stageH) * 100) + "%";
           }
           placedCount++;
           info.textContent = `已就位：${placedCount} / ${total}`;

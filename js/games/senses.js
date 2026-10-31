@@ -527,6 +527,7 @@
         <button class="rf-confirm" id="rf-confirm" type="button">确定对齐</button>
       </div>
     `;
+    const stage = layer.querySelector("#rf-stage");
     const lower = layer.querySelector("#rf-lower");
     const info = layer.querySelector("#rf-info");
     const confirmBtn = layer.querySelector("#rf-confirm");
@@ -535,7 +536,11 @@
     let dragging = false;
     let dragStartX = 0;
     let startOffset = 0;
-    const maxOffset = 120; // 最大偏移像素
+    // v3.4.33：最大偏移按舞台实际宽度自适应。
+    // 窄屏（390px 视口 → 舞台约 351px）上固定 120px 偏移会把倒影文字整体推出舞台，
+    // 被 .rf-stage 的 overflow:hidden 裁掉，玩家看不出该往哪边拖。
+    const stageW = stage.clientWidth || 480;
+    const maxOffset = Math.max(36, Math.min(120, Math.round(stageW * 0.18)));
 
     function updateInfo() {
       const ratio = 1 - Math.min(1, Math.abs(offsetX) / maxOffset);
