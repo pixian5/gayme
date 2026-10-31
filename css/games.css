@@ -655,6 +655,8 @@ button.confirm-locked { border-style: dashed !important; cursor: not-allowed; op
   background: linear-gradient(90deg, #5a9adc 0%, #f0f0f0 50%, #e07050 100%);
   outline: none;
 }
+/* 自定义外观仍需保留键盘焦点提示 */
+.temp-slider:focus-visible { outline: 2px solid #ffd88a; outline-offset: 4px; }
 .temp-slider::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none;
   width: 24px; height: 24px; border-radius: 50%;
@@ -7393,4 +7395,12 @@ button.confirm-locked { border-style: dashed !important; cursor: not-allowed; op
     .proofread-actions button, .proofread-reading-close {
     padding: 8px 18px; font-size: 13px;
   }
+}
+
+/* 无进展兜底：60 秒后高亮「跳过这个玩法」，提示可随时脱身 */
+.game-help-bar.gh-nudge .gh-skip {
+  background: rgba(216,112,144,0.35);
+  border-color: rgba(255,220,235,0.85);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255,216,228,0.22);
 }

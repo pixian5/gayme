@@ -2608,6 +2608,12 @@
     updateTrueEndAccess();
     updateAfterwordAccess();
     updateInboxBadge();
+    // 应用就绪后淡出首屏加载层，避免脚本就绪前的长时间白屏
+    const boot = document.getElementById("boot-screen");
+    if (boot) {
+      boot.classList.add("is-done");
+      setTimeout(() => boot.remove(), 320);
+    }
   }
   init();
 

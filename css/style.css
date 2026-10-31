@@ -400,7 +400,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 #top-bar.show { opacity: 1; }
 #top-bar button {
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
   border-radius: 10px;
   background: rgba(20,18,32,0.7);
   border: 1px solid rgba(255,200,220,0.2);
@@ -662,7 +662,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   bottom: 16px;
   right: 20px;
   font-size: 11px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.62);
   letter-spacing: 2px;
 }
 
@@ -1262,7 +1262,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   #top-bar button[data-menu="cg"],
   #top-bar button[data-menu="flowchart"] { display: none; }
   #top-bar.expanded button[data-menu] { display: flex; align-items: center; justify-content: center; }
-  #top-bar button { width: 40px; height: 40px; font-size: 16px; }
+  #top-bar button { width: 44px; height: 44px; font-size: 16px; }
   /* 选项按钮：小屏占宽 86% + 最小高度 48px，拇指可点 */
   .choice-btn { width: 86%; padding: 14px 18px; font-size: 17px; min-height: 48px; }
   .overlay-panel { width: 94%; max-height: 86vh; }
@@ -1335,4 +1335,16 @@ button:focus-visible,
   display: block; margin: 0 auto; padding: 10px 32px; cursor: pointer; font-family: inherit;
   font-size: 16px; letter-spacing: 3px; color: #2a1830; border: none; border-radius: 10px;
   background: linear-gradient(90deg,#ffd8e4,#ffb8c8);
+}
+
+/* 移动端标题布局：版本号改为流式，压缩菜单间距，避免与「关于」重叠 */
+@media (max-width: 768px) {
+  .title-main { margin-bottom: 22px; }
+  .title-menu { gap: 8px; }
+  .title-menu button { width: min(280px, 78vw); padding: 10px 20px; min-height: 44px; }
+  .title-version {
+    position: static;
+    margin-top: 10px;
+    color: rgba(255,255,255,0.62);
+  }
 }
