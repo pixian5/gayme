@@ -222,7 +222,7 @@
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
-    { ver: "3.4.33", note: "离线与窄屏更稳：断网不再报资源错误，手机上钢琴、倒影、糖块不再被切边" },
+    { ver: "3.4.33", note: "开局有加载画面；手机上钢琴、倒影、糖块不再被切边，断网也不再报资源错误" },
     { ver: "3.4.32", note: "设置里新增音效试听：调音量时能立刻听到信纸声" },
     { ver: "3.4.31", note: "点击、翻页、信纸、成功失败、风铃与雨蝉都换成真实音效，听感更贴场景" },
     { ver: "3.4.30", note: "分享卡片换上绝对地址与大图预览，转发链接不再丢封面" },
@@ -2614,6 +2614,12 @@
     updateTrueEndAccess();
     updateAfterwordAccess();
     updateInboxBadge();
+    // 应用就绪后淡出首屏加载层，避免脚本就绪前的长时间白屏
+    const boot = document.getElementById("boot-screen");
+    if (boot) {
+      boot.classList.add("is-done");
+      setTimeout(() => boot.remove(), 320);
+    }
   }
   init();
 

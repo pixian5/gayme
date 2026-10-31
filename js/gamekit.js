@@ -128,10 +128,29 @@
       bar.addEventListener("click", fastCancel, { once: true });
     }
 
+    /* 无进展兜底：长时间未收尾时先高亮跳过按钮，再自动中性收尾。
+       触摸/手势类玩法（风筝、星图、排序）在未达成条件时确认键不可用，
+       此前只能反复尝试；这里给玩家与自动化一条确定的退出路径。 */
+    const SKIP_NUDGE_MS = 60000;
+    const AUTO_SKIP_MS = 180000;
+    const nudgeTimer = setTimeout(() => {
+      if (cleaned || !layer.isConnected) return;
+      helpBar?.classList.add("gh-nudge");
+      flashHint("这个玩法停留有点久——点「跳过这个玩法」可以继续");
+    }, SKIP_NUDGE_MS);
+    const autoSkipTimer = setTimeout(() => {
+      if (cleaned || !layer.isConnected) return;
+      flashHint("已自动跳过这个玩法，继续剧情");
+      cleanup();
+      jumpNext(nodeId, undefined);
+    }, AUTO_SKIP_MS);
+
     /* 幂等清理：移除浮层 → 执行取消钩子 → 注销生命周期 */
     function cleanup() {
       if (cleaned) return;
       cleaned = true;
+      clearTimeout(nudgeTimer);
+      clearTimeout(autoSkipTimer);
       fastCancel?.();   // v3.4.13：任何清理路径都先撤快通定时器
       helpBar?.remove(); // v3.4.16：说明栏与浮层同生共死
       layer.remove();
