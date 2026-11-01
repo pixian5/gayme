@@ -38,14 +38,20 @@ npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwrigh
 
 | 远程名 | 地址 | 作用 |
 | --- | --- | --- |
-| `origin` | github.com/pixian5/gayme（公开） | **云端克隆 / 云端测试主源**；Trae「关联 GitHub 仓库」只认 `origin` 且域名为 github.com |
-| `gitee` | gitee.com/ibjxk/gayme | 服务器部署主源（cron 每 3 分钟拉取到 oh.sbbz.tech） |
+| `origin` | gitee.com/ibjxk/gayme | **服务器部署主源**（cron 每 3 分钟拉取到 oh.sbbz.tech），也是本地默认 `git pull` / `git push` 目标 |
+| `github` | github.com/pixian5/gayme（公开） | 云端克隆 / 备份源；Trae「关联 GitHub 仓库」要求域名为 github.com（如需 `origin` 指向它，用 `git remote rename` 互换两个名字） |
 | `gitcode` | gitcode.com/laotongtian/gayme | 第三备份（并行开发线） |
 
-GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，旧 Pages 链接 301 到正式源）。
-三远程 `main` 均指向同一提交；本地 `main` 跟踪 `origin/main`（GitHub），
-所以 `git pull` / `git push` 默认走 GitHub，部署时另推 `git push gitee main`。
-（2026-10-29 前 `origin` 曾指向 gitee，为让 Trae 识别 GitHub 已改为上述命名。）
+> 2026-11-01 现状：`origin` = gitee、`github` = GitHub（与 2026-10-29 那次「origin 指向 GitHub」的
+> 命名相反，两者都能工作，改动前先看 `git remote -v`）。三远程 `main` 均已对齐 `c0e35e8`（v3.4.34）。
+> **GitHub 推送踩坑**：`curl https://api.github.com` 能通不代表 `git push` 能过——本沙箱 git 走
+> GnuTLS，上传大包会报 `GnuTLS recv error (-110)`，需
+> `git config http.postBuffer 524288000`（必要时再加 `http.version HTTP/1.1`）。
+
+GitHub 上的分支：`main`（开发主线，2026-11-01 补齐至 `c0e35e8`）+ `gh-pages`（只放跳转页，
+旧 Pages 链接 301 到正式源，本次未改动）。
+当前三远程 `main` 指向同一提交；本地 `main` 跟踪 `origin/main`，而 `origin` 现在指向 **gitee**，
+所以裸 `git push` 走 gitee（即部署链路），GitHub 需显式 `git push github main`。
 
 云端（干净克隆）跑测试，一条链路可复现：
 
@@ -131,6 +137,11 @@ itch 封面 630×500（HTML/CSS 合成，中文标题不走 AI 生图避免错�
 ③ 说明栏收起按钮触控热区 26×16 → 40px；④ 新增 `npm run test:overflow`（390×844 扫全部 95 个玩法节点，
 横向溢出 0）；⑤ 文档计数对齐（loopText 176 节点 / 489 段）。
 详见 [docs/20261101-0152-v3.4.33回归审计问题修复-Auto.md](docs/20261101-0152-v3.4.33回归审计问题修复-Auto.md)。
+**v3.4.34**：**远程收口（无玩法改动）**——GitHub 备份源补齐到 `c0e35e8`（沙箱 git 走 GnuTLS，
+push 大包报 `recv error -110`，`http.postBuffer=524288000` + `HTTP/1.1` 后成功）；
+`origin`(gitee) / `gitcode` / `github` 三远程 `main` 与线上 `/VERSION` 全部对齐，
+gh-pages 分支保留未动；README 远程表按实际命名修正（当前 `origin` = gitee 部署主源）。
+详见 [docs/20261101-0850-GitHub远程补齐与三远程同步-Auto.md](docs/20261101-0850-GitHub远程补齐与三远程同步-Auto.md)。
 **云端测试基线（2026-10-29，不改版本号）**：GitHub 补齐到 v3.4.25（原落后 2 个提交），
 三远程 `main` 对齐；GitHub 干净克隆实测 `npm test` 46/46 + `test:syntax` + `test:e2e` +
 `test:graph`（441 节点）+ `test:play`（五画像）全过；README 新增「远程仓库与云端测试」
@@ -254,7 +265,7 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
 - **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.33）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
+- **当前状态（v3.4.34）**：Phase 3 + 质量盲区 + **重玩体验** + **五画像真人试玩** + **首访去重** +
   **三张回归网（双内核 e2e / 移动触控 / 窄屏溢出扫描）** + **自动存档失败提示** + **立绘 ×5 位图上线** +
   **发行物料** + **真实音效 ×8 + 音量试听** + **回归审计问题全修** 全部完成——
   快通 / loopText 176 节点（489 段）/ 44 处句式清零 / 回响 Tab / UI 拆分 / CG webp / 立绘位图管线（素材已接入）/
@@ -262,9 +273,10 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
   学姐线门槛放宽（方案 B）+ 试玩器入库（`npm run test:play`，契约 45→46）/ SW 版本化预缓存（契约 46→47）
   / Firefox 双内核 + 移动端触控回归（`npm run test:mobile`）/ 自动存档失败提示（契约 47→48）
   / 立绘位图 ×5（契约 48→50）/ 分享卡片绝对地址 + 发行物料（契约 50→51）/ 真实音效 ×8（契约 51→53）/ 音效试听按钮（契约 53→54）
-  / **回归审计修复（v3.4.33）**：Firefox/SW 稳定性 + 移动端三玩法溢出 + 触控热区 + `test:overflow` 回归网。
+  / **回归审计修复（v3.4.33）**：Firefox/SW 稳定性 + 移动端三玩法溢出 + 触控热区 + `test:overflow` 回归网
+  / **远程收口（v3.4.34）**：GitHub 备份源补齐 + 三远程与线上对齐（无玩法改动）。
   项目处于开发阶段，后续按候选清单持续迭代。
-- **下一步建议（2026-11-01）**：v3.4.34 候选——① 音效细节调优（信件展开 / 回忆闪回可再选样）；
+- **下一步建议（2026-11-01）**：v3.4.35 候选——① 音效细节调优（信件展开 / 回忆闪回可再选样）；
   ② 媒体离线缓存可考虑换方案找回（改用页面侧 Cache API + 手动 blob，绕开 SW 拦截以同时保住离线与
   Firefox 稳定，属中等工作量）；③ `docs/` 经验归档与云端回归复跑。
   完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)
@@ -348,10 +360,11 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   生图后统一后处理：裁掉底部白色 letterbox → `scale=1600:960:flags=lanczos`（详见
   [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
-- 提交：中文 commit，完成后推送三远程（`git push origin main`（GitHub）+ `git push gitee main` +
-  `git push gitcode main`）；push 后服务器 cron 每 3 分钟从 gitee 自动拉取部署到
-  oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
-- 云端测试：`origin` = GitHub（Trae 关联仓库依赖该命名与域名），流程见上文「远程仓库与云端测试」；
+- 提交：中文 commit，完成后推送三远程（`git push origin main`（当前 = gitee，部署主源）+
+  `git push gitcode main` + `git push github main`）；push 后服务器 cron 每 3 分钟从 gitee 自动
+  拉取部署到 oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
+- 云端测试：`github` = GitHub（Trae 关联仓库依赖 github.com 域名，必要时用 `git remote rename`
+  把它换成 `origin`），流程见上文「远程仓库与云端测试」；
   云端提交后记得把 `main` 同步到 `gitee`，否则服务器不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
   服务器自动部署脚本 /usr/local/bin/sakura-deploy.sh（gitee 主源→github 备源）
