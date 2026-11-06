@@ -1,4 +1,10 @@
 #!/bin/bash
+# 【已废弃 2026-11-07】本脚本走 SSH 直连固定 IP 的老架构——AWS 实例已回收、
+# InstaBox 盒子无公网入站，SSH 通道不存在。现役通道：
+#   常规发版：push gitee → 盒子 cron 每 3 分钟自动拉取（/root/sakura-deploy.sh）
+#   手动直推：bash tools/deploy_box.sh
+# 本文件保留作历史参考；若未来迁移到有 SSH 入站的主机，改 HOST/DEST 即可复用。
+# ---- 原说明 ----
 # 部署樱时信笺到自有服务器 oh.sbbz.tech（nginx · HTTPS 8080）
 # 用法：bash tools/deploy.sh
 # 前置：本机 ~/.ssh 能用 /Users/x/ed25519 登录 ubuntu@18.225.92.148:2424（别名 oh2424）

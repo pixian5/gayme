@@ -7,9 +7,14 @@
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
-- 在线试玩：https://oh.sbbz.tech:8080/ （push 后服务器每 3 分钟自动拉取部署；`bash tools/deploy.sh` 手动备用）
-- Hugging Face 镜像：https://xbzsb-sakura-letters.static.hf.space/index.html
+- 在线试玩（主）：**Hugging Face** https://xbzsb-sakura-letters.static.hf.space/index.html
   （[Space 页面](https://huggingface.co/spaces/xbzsb/sakura-letters)；`HF_TOKEN=... bash tools/deploy_hf.sh` 手动同步）
+- 在线试玩（自有服务器 · InstaBox 盒子）：https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/
+  （push gitee 后盒子 root cron 每 3 分钟自动拉取部署；`bash tools/deploy_box.sh` 手动直推）
+- 自有域名 oh.sbbz.tech / play.sbbz.tech：已 CNAME → HF Space（橙云），**待在 CF 面板加一条
+  Origin Rule（改写 Host 头为 xbzsb-sakura-letters.static.hf.space）即恢复**——旧 AWS 实例
+  已回收、InstaBox 盒子无公网入站，域名只能借道 HF（详见
+  [docs/20261107-0012-服务器迁移盒子与域名切换-GLM.md](docs/20261107-0012-服务器迁移盒子与域名切换-GLM.md)）
 - 旧 Pages 链接已 301 重定向到唯一正式源（gh-pages 分支只放跳转页，v3.3.18）
 
 ## 运行方式
@@ -39,7 +44,7 @@ npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwrigh
 | 远程名 | 地址 | 作用 |
 | --- | --- | --- |
 | `origin` | github.com/pixian5/gayme（公开） | **固定指向 GitHub**（硬规约）：云端克隆 / 备份源，也是本地默认 `git pull` / `git push` 目标；Trae「关联 GitHub 仓库」只认这个命名与域名 |
-| `gitee` | gitee.com/ibjxk/gayme | **服务器部署主源**（cron 每 3 分钟拉取到 oh.sbbz.tech），发版时必须显式 `git push gitee main` |
+| `gitee` | gitee.com/ibjxk/gayme | **服务器部署主源**（InstaBox 盒子 cron 每 3 分钟拉取），发版时必须显式 `git push gitee main` |
 | `gitcode` | gitcode.com/laotongtian/gayme | 第三备份（并行开发线） |
 
 > **`origin` 永远是 GitHub，这是硬规约**（2026-11-01 已按此互换远程名并重置 upstream）。
@@ -370,12 +375,12 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
 - 提交：中文 commit，完成后推送三远程（`git push origin main`（**固定 = GitHub**）+
-  `git push gitee main`（部署主源，必推）+ `git push gitcode main`）；push 后服务器 cron 每 3 分钟
-  从 gitee 自动拉取部署到 oh.sbbz.tech（`tools/deploy.sh` 仅作手动备用）
+  `git push gitee main`（部署主源，必推）+ `git push gitcode main`）；push 后 InstaBox 盒子
+  cron 每 3 分钟从 gitee 自动拉取部署（`tools/deploy_box.sh` 手动直推备用）
 - 云端测试：`origin` = GitHub（Trae 关联仓库依赖该命名与域名，**不要改成 gitee**），
   流程见上文「远程仓库与云端测试」；云端提交后记得把 `main` 同步到 `gitee`，否则服务器不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
-  服务器自动部署脚本 /usr/local/bin/sakura-deploy.sh（gitee 主源→github 备源）
+  盒子自动部署脚本 /root/sakura-deploy.sh（gitee 主源→github 备源→rsync→健康检查→失败回滚）
 - 部署到 Hugging Face：`HF_TOKEN=hf_xxx bash tools/deploy_hf.sh`（static Space，只同步运行文件，
   二进制走 Git LFS；Space README 源文件是 `tools/hf-space-readme.md`）；发版后手动跑一次即可
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
