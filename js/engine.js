@@ -185,6 +185,7 @@
    v3.4.20：视角切换名副其实——补 12 个高信号视角节点（诗雨 4/夏织 3/苏念 3/学姐 2，合计 13 个，此前全剧本仅序章 1 个）；门槛字段改名 requiresMemoryId/gateTitle（与记忆定义语义分离）；新增「门槛记忆必存在」契约
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
+   v3.4.36：视觉审计修复四连——P1 首屏 FOUC（boot 屏移除后到 style.css 生效前标题页裸奔，index.html 内联标题页关键样式封住间隙）；P2 旁白时说话人名牌空置残留（无 speaker 隐藏名牌，主对话+信件两路径）；P6 手机竖屏顶栏溢出（≤480px 再折叠收件箱/统计进 ⋯ 抽屉、单行不再换行压住心条，⋯ 展开时收起心条）；P7 CG 查看器无加载占位（大图拉取数秒全黑像坏掉，加 spinner onload 移除）。来源：两轮真实浏览器截图审计（docs/20261107-0040）
    v3.4.25：学姐线入口门槛放宽——day2_choice「★ 旧校舍后面（？）★」由 playCount >= 1 改为 playCount >= 1 || loopCount >= 2（playCount 只在真结局 +1，走普通结局的玩家原本永久看不到入口）；新增门槛契约四项断言；新增 tests/browser/playtest.e2e.mjs 五画像点击驱动试玩（npm run test:play）
    v3.4.24：PWA 注册健壮性 + 真人试玩工具——index.html 的 SW 注册补 reg 判空（register 返回 undefined 时原代码 reg.update() 抛 TypeError，连带跳过 controllerchange 监听）；新增 .playtest.mjs 三画像真人模拟器（懒人全跳过/认真操作/探索），发现剧情浮层被误判为玩法、玩法确认按钮定位错误等测试侧问题
    v3.4.23：视角门槛支持互斥记忆数组——苏念三个视角原借用林诗雨记忆作门槛（逻辑错配），改为 [苏念·海报·取景, 苏念·一笔·用力, 苏念·一笔·安静] 任一解锁即可；契约同步支持数组写法
@@ -223,10 +224,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.35";
+  const GAME_VERSION = "3.4.36";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.36", note: "视觉修复：首屏不再闪乱样式、CG 大图加载有提示、手机顶栏不再叠住心条" },
     { ver: "3.4.35", note: "固定 GitHub 为主仓库，三处远程与线上版本保持一致（无玩法改动）" },
     { ver: "3.4.34", note: "同步 GitHub 备份源，三处远程与线上版本全部一致（无玩法改动）" },
     { ver: "3.4.33", note: "开局有加载画面；手机上钢琴、倒影、糖块不再被切边，断网也不再报资源错误" },
@@ -653,6 +655,7 @@
       const speakerMeta = getCharacterMeta(node.speaker);
       const speakerName = node.speaker ? (speakerMeta?.name || node.speaker) : "";
       el.speaker.textContent = speakerName;
+      el.speaker.style.display = speakerName ? "" : "none";   // v3.4.36 P2：同主对话路径
       el.dialogBox.classList.remove("hidden");
       const sessionId = state.sessionId;
       state.pendingInteraction = true;
@@ -794,6 +797,8 @@
     const speakerMeta = getCharacterMeta(node.speaker);
     const speakerName = node.speaker ? (speakerMeta?.name || node.speaker) : "";
     el.speaker.textContent = speakerName;
+    // v3.4.36 P2：旁白（无 speaker）时隐藏名牌——此前残留一个空灰条悬在对话框左上
+    el.speaker.style.display = speakerName ? "" : "none";
     el.speaker.style.background = speakerName
       ? `linear-gradient(135deg, ${speakerMeta?.color || "#d87090"}, ${speakerMeta?.accent || "#b8608a"})`
       : "rgba(40,40,60,0.7)";
@@ -1486,6 +1491,21 @@
     const show = () => {
       const cg = unlocked[idx];
       art.innerHTML = cgArt(cg);
+      // v3.4.36 P7：位图加载占位——大图首次拉取可达数秒，此前全程黑屏像"点开是坏的"；
+      // spinner 挂在 art 上，img onload/onerror 后移除（svg 型 CG 无 img，不受影响）
+      const img = art.querySelector("img");
+      if (img) {
+        const tip = document.createElement("div");
+        tip.className = "cg-viewer-loading";
+        tip.innerHTML = `<div class="cg-viewer-spinner"></div><div>绘制中……</div>`;
+        art.appendChild(tip);
+        const done = () => tip.remove();
+        if (img.complete && img.naturalWidth) done();
+        else {
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        }
+      }
       titleEl.textContent = `${cg.title} · ${cg.heroine}（${idx + 1} / ${unlocked.length}）`;
     };
     const nav = (d) => { idx = (idx + d + unlocked.length) % unlocked.length; show(); };

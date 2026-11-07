@@ -1348,3 +1348,39 @@ button:focus-visible,
     color: rgba(255,255,255,0.62);
   }
 }
+
+/* ============ v3.4.36 视觉修复 ============ */
+
+/* P7：CG 大图查看器加载占位——spinner 悬于 art 之上，img onload 后由引擎移除 */
+.cg-viewer-art { position: relative; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+.cg-viewer-loading {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; gap: 12px;
+  align-items: center; justify-content: center;
+  color: rgba(255,216,228,0.75); font-size: 14px; letter-spacing: 3px;
+  pointer-events: none;
+}
+.cg-viewer-spinner {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid rgba(255,216,228,0.2);
+  border-top-color: #ffb8c8;
+  animation: cg-spin 0.9s linear infinite;
+}
+@keyframes cg-spin { to { transform: rotate(360deg); } }
+
+/* P6：手机竖屏顶栏——≤480px 再折叠收件箱/统计（⋯ 内可达），
+   剩余 7 键单行放得下 390px，不再换行压住心条/日程 */
+@media (max-width: 480px) {
+  #top-bar { flex-wrap: nowrap; }
+  #top-bar button { width: 38px; height: 38px; font-size: 15px; }
+  #top-bar button[data-menu="inbox"],
+  #top-bar button[data-menu="stats"],
+  #top-bar button[data-menu="load"] { display: none; }
+  #top-bar.expanded button[data-menu="inbox"],
+  #top-bar.expanded button[data-menu="stats"],
+  #top-bar.expanded button[data-menu="load"] { display: flex; align-items: center; justify-content: center; }
+  #day-bar { font-size: 11px; letter-spacing: 1px; padding: 4px 10px;
+             max-width: 38vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+/* ⋯ 展开抽屉时收起心条（此时按钮多行铺开，必然与心条重叠） */
+#top-bar.expanded ~ #heart-bar { opacity: 0 !important; }
