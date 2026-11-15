@@ -194,14 +194,17 @@ window.SakuraPanels = function (C) {
       applyUiSettings();
     };
     document.getElementById("cfg-export").onclick = () => {
-      const blob = new Blob([JSON.stringify({ ...Saves.exportData(), currentSession: snapshot() }, null, 2)], { type: "application/json" });
+      const backup = Saves.exportData();
+      const blob = new Blob([JSON.stringify({ ...backup, currentSession: snapshot() }, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `sakura-letters-backup-${new Date().toISOString().slice(0, 10)}.json`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
-      flashHint("备份已导出");
+      flashHint(backup.incompleteKeys && backup.incompleteKeys.length
+        ? "备份不完整：部分本地数据无法读取"
+        : "备份已导出");
     };
     const importFile = document.getElementById("cfg-import-file");
     document.getElementById("cfg-import").onclick = () => importFile.click();

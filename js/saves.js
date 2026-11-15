@@ -294,6 +294,37 @@ function unlockListStore(key, listName, addName, hasName) {
 let sessionSnapshotProvider = null;
 let importHandler = null;
 
+// 导入前的关键结构校验：校验失败整体拒绝，避免非法数据清空有效存档
+function validateImportedRecords(records) {
+  if (STORAGE_KEY in records) {
+    const v = records[STORAGE_KEY];
+    if (!v || typeof v !== "object" || Array.isArray(v) || !Array.isArray(v.slots) || v.slots.length > SAVE_SLOTS) return false;
+    for (const slot of v.slots) {
+      if (slot === null) continue;
+      if (!slot || typeof slot !== "object" || Array.isArray(slot) || typeof slot.nodeId !== "string") return false;
+      if (slot.history !== undefined && !Array.isArray(slot.history)) return false;
+      if (slot.visitedNodes !== undefined && (!slot.visitedNodes || typeof slot.visitedNodes !== "object" || Array.isArray(slot.visitedNodes))) return false;
+    }
+  }
+  if (AUTOSAVE_KEY in records) {
+    const v = records[AUTOSAVE_KEY];
+    if (!v || typeof v !== "object" || Array.isArray(v) || !v.snapshot || typeof v.snapshot !== "object" || typeof v.snapshot.nodeId !== "string") return false;
+  }
+  if (INBOX_KEY in records) {
+    const v = records[INBOX_KEY];
+    if (!Array.isArray(v)) return false;
+    for (const m of v) {
+      if (!m || typeof m !== "object" || Array.isArray(m) || typeof m.id !== "string") return false;
+      if (m.body !== undefined && typeof m.body !== "string") return false;
+    }
+  }
+  if (COMPOSED_KEY in records) {
+    const v = records[COMPOSED_KEY];
+    if (!Array.isArray(v) || v.some((x) => typeof x !== "string")) return false;
+  }
+  return true;
+}
+
 const Saves = {
   data: createDefaultSaveData(),
   endings: createDefaultEndings(),
@@ -363,15 +394,18 @@ const Saves = {
 
   exportData() {
     const records = {};
+    const failed = [];
     for (const key of GAME_STORAGE_KEYS) {
       try {
         const raw = localStorage.getItem(key);
         if (raw !== null) records[key] = JSON.parse(raw);
       } catch (e) {
+        failed.push(key);
         console.warn(`导出本地存储失败 (${key}):`, e);
       }
     }
     const out = { schemaVersion: STORAGE_SCHEMA_VERSION, exportedAt: Date.now(), records };
+    if (failed.length) out.incompleteKeys = failed.slice();
     if (typeof sessionSnapshotProvider === "function") {
       try { out.currentSession = sessionSnapshotProvider(); } catch (e) { /* 快照不可用则省略 */ }
     }
@@ -388,6 +422,7 @@ const Saves = {
     if (!payload || typeof payload !== "object" || Array.isArray(payload)
       || !payload.records || typeof payload.records !== "object" || Array.isArray(payload.records)) return false;
     if (!Number.isInteger(payload.schemaVersion) || payload.schemaVersion < 0 || payload.schemaVersion > STORAGE_SCHEMA_VERSION) return false;
+    if (!validateImportedRecords(payload.records)) return false;
     const before = new Map();
     for (const key of GAME_STORAGE_KEYS) {
       try { before.set(key, localStorage.getItem(key)); }

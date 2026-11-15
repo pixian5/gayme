@@ -22,10 +22,21 @@ command -v instabox >/dev/null || { echo "缺 instabox CLI（https://instabox.sh
 echo "==> 推送 git 跟踪文件到 $BOX:$INCOMING"
 instabox push "$BOX" . "$INCOMING"
 
-echo "==> 盒内 rsync 同步到 $WEB （--delete 清残留）"
-instabox exec "$BOX" -- sudo -n rsync -a --delete --delete-excluded \
-  --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 \
-  "$INCOMING/gayme/" "$WEB/"
+echo "==> 盒内定位暂存内容并 rsync 到 $WEB （--delete 清残留）"
+REMOTE_SCRIPT=$(cat <<'EOS'
+set -e
+INCOMING="$1"
+WEB="$2"
+SRC="$INCOMING"
+if [ ! -f "$SRC/VERSION" ]; then
+  SRC=$(find "$INCOMING" -maxdepth 2 -name VERSION -printf '%h\n' 2>/dev/null | head -1)
+fi
+[ -n "$SRC" ] || SRC="$INCOMING"
+sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 "$SRC/" "$WEB/"
+echo "SYNCED_FROM=$SRC"
+EOS
+)
+instabox exec "$BOX" -- bash -lc "$REMOTE_SCRIPT" _ "$INCOMING" "$WEB"
 
 echo "==> 清理暂存区"
 instabox exec "$BOX" -- sudo -n rm -rf "$INCOMING"
