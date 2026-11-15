@@ -488,6 +488,7 @@ const Saves = {
 
   save(slot, snapshot) {
     if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS || !snapshot || typeof snapshot !== "object") return false;
+    this._loadSaves();   // 跨标签写前重读，避免旧内存快照覆盖其他标签刚写入的槽位
     const data = {
       slot,
       timestamp: Date.now(),
@@ -520,6 +521,7 @@ const Saves = {
 
   deleteSave(slot) {
     if (!Number.isInteger(slot) || slot < 0 || slot >= SAVE_SLOTS) return false;
+    this._loadSaves();
     const previousSlot = this.data.slots[slot];
     const previousLastSlot = this.data.lastSlot;
     this.data.slots[slot] = null;
@@ -535,6 +537,7 @@ const Saves = {
 
   /* v3.3.13：单槽增强——重命名 / 导出 / 导入（备份与跨设备迁移） */
   renameSave(slot, name) {
+    this._loadSaves();
     const data = this.load(slot);
     if (!data) return false;
     const previous = data.name;
@@ -1342,5 +1345,9 @@ if (typeof window !== "undefined" && window.addEventListener) {
   window.addEventListener("storage", (event) => {
     if (event.key) Saves.cache.delete(event.key);
     else Saves.cache.clear();
+    // 跨标签同步：按 key 重载聚合对象，避免旧内存快照覆盖新写入
+    if (!event.key || event.key === STORAGE_KEY) Saves._loadSaves();
+    if (!event.key || event.key === ENDINGS_KEY) Saves._loadEndings();
+    if (!event.key || event.key === SETTINGS_KEY) Saves._loadSettings();
   });
 }

@@ -3,7 +3,7 @@
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）；
    应用代码（js/、css/）条目必须带与 index.html 相同的 ?v=<VERSION>，
    否则 SW 安装会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。 */
-const CACHE_VERSION = "sakura-v3.4.38";   // 核心层缓存（bump 工具自动同步）
+const CACHE_VERSION = "sakura-v3.4.39";   // 核心层缓存（bump 工具自动同步）
 const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
 const PRECACHE = [
   "./",
@@ -13,24 +13,24 @@ const PRECACHE = [
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
-  "css/style.css?v=3.4.38",
-  "css/games.css?v=3.4.38",
-  "js/saves.js?v=3.4.38",
-  "js/script.js?v=3.4.38",
-  "js/lifecycle.js?v=3.4.38",
-  "js/minigames.js?v=3.4.38",
-  "js/game-help.js?v=3.4.38",
-  "js/gamekit.js?v=3.4.38",
-  "js/games/afterword.js?v=3.4.38",
-  "js/games/senses.js?v=3.4.38",
-  "js/games/craft.js?v=3.4.38",
-  "js/games/nature.js?v=3.4.38",
-  "js/games/perception.js?v=3.4.38",
-  "js/games/mechanism.js?v=3.4.38",
-  "js/games/imagery.js?v=3.4.38",
-  "js/games/direct.js?v=3.4.38",
-  "js/ui/panels.js?v=3.4.38",
-  "js/engine.js?v=3.4.38",
+  "css/style.css?v=3.4.39",
+  "css/games.css?v=3.4.39",
+  "js/saves.js?v=3.4.39",
+  "js/script.js?v=3.4.39",
+  "js/lifecycle.js?v=3.4.39",
+  "js/minigames.js?v=3.4.39",
+  "js/game-help.js?v=3.4.39",
+  "js/gamekit.js?v=3.4.39",
+  "js/games/afterword.js?v=3.4.39",
+  "js/games/senses.js?v=3.4.39",
+  "js/games/craft.js?v=3.4.39",
+  "js/games/nature.js?v=3.4.39",
+  "js/games/perception.js?v=3.4.39",
+  "js/games/mechanism.js?v=3.4.39",
+  "js/games/imagery.js?v=3.4.39",
+  "js/games/direct.js?v=3.4.39",
+  "js/ui/panels.js?v=3.4.39",
+  "js/engine.js?v=3.4.39",
   // v3.4.0：立绘位图走媒体层运行时缓存（/assets/portraits/），跨版本沿用
   "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
   "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
@@ -73,17 +73,13 @@ self.addEventListener("fetch", (event) => {
       (async () => {
         try {
           const res = await fetch(req);
-          // 写缓存失败不能影响响应，也不能留未处理的 rejection
-          try {
-            const cache = await caches.open(CACHE_VERSION);
-            const put = cache.put(req, res.clone());
-            if (put && typeof put.catch === "function") put.catch(() => {});
-          } catch { /* 忽略 */ }
+          // 不在导航路径写运行时缓存：HTML 只来自安装成功的预缓存，
+          // 避免出现「新版 HTML + 旧版 JS」的离线组合；也不缓存 4xx/5xx 页面。
           return res;
         } catch {
           // 断网：回退缓存；缓存也拿不到就 504，绝不 resolve 成 undefined
           try {
-            return (await caches.match(req)) || (await caches.match("index.html")) || offlineResponse();
+            return (await caches.match("index.html")) || (await caches.match(req)) || offlineResponse();
           } catch {
             return offlineResponse();
           }
@@ -128,7 +124,9 @@ self.addEventListener("fetch", (event) => {
     // 2) 未命中：走网络，成功后写缓存（写失败同样不影响响应）
     try {
       const res = await fetch(req);
-      if (res && res.ok) {
+      // 运行时只缓存核心静态白名单，避免任意同源 GET 无限增长缓存
+      const CORE_RUNTIME = /^\/(js|css|fonts|icons)\//;
+      if (res && res.ok && CORE_RUNTIME.test(url.pathname)) {
         try {
           const cache = await caches.open(store);
           const put = cache.put(req, res.clone());
