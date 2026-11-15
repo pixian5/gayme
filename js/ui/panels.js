@@ -10,7 +10,7 @@ window.SakuraPanels = function (C) {
   let historyTab = "dialog";   // 历史面板当前 Tab（工厂局部状态）
   const { el, state, Saves, SCRIPT, applyUiSettings, GAME_CHANGELOG, CGS, ENDINGS, KEYWORDS,
     applyAdd, applySet, updateHeartBar, cgArt, openCgViewer, showChoices, showLetter,
-    triggerEcho, importSlotFromFile, fadeBgm, createDefaultVariables, COMPOSE_RECIPES, MOMENTS, escapeHtml, flashHint, playSfx, gotoNode, backToTitle, newGame, closeOverlay, openOverlay, snapshot, quickSave, saveToSlot, loadFromSlot, removeActiveInteractionLayers, startAfterword, hasAllGoodEndings, isTrueEndUnlocked, GAME_VERSION, updateInboxBadge, playBgmForScene, stopBgm, sfxGain, stopParticles, bgmAudioEl, bgmGain, bgmVolume, particles, playTickAt, updateParticles } = C;
+    triggerEcho, importSlotFromFile, fadeBgm, createDefaultVariables, COMPOSE_RECIPES, MOMENTS, escapeHtml, flashHint, playSfx, gotoNode, backToTitle, newGame, closeOverlay, openOverlay, snapshot, quickSave, saveToSlot, loadFromSlot, removeActiveInteractionLayers, startAfterword, hasAllGoodEndings, isTrueEndUnlocked, GAME_VERSION, updateInboxBadge, playBgmForScene, stopBgm, setSfxVolume, setBgmVolume, sfxGain, stopParticles, bgmAudioEl, bgmGain, bgmVolume, particles, playTickAt, updateParticles } = C;
   const get = (k) => C[k];
 
   function renderSaveSlots(mode) {
@@ -161,7 +161,8 @@ window.SakuraPanels = function (C) {
       const v = parseFloat(sfxSlider.value);
       sfxVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("sfxVolume", v);
-      if (sfxGain) sfxGain.gain.value = v;
+      if (typeof setSfxVolume === "function") setSfxVolume(v);
+      else if (sfxGain) sfxGain.gain.value = v;
     };
     // v3.4.32：音效试听——按钮播放信纸采样；滑杆松手也试听一次，按当下音量判断是否合适
     const sfxTestBtn = document.getElementById("cfg-sfx-test");
@@ -176,9 +177,12 @@ window.SakuraPanels = function (C) {
       const v = parseFloat(bgmSlider.value);
       bgmVal.textContent = Math.round(v * 100) + "%";
       Saves.updateSetting("bgmVolume", v);
-      if (bgmGain) bgmGain.gain.value = v;
-      // v3.3.15：真实 BGM 直接改音量（淡入过程中目标值也由 fadeBgm 每帧重读）
-      if (bgmAudioEl) bgmAudioEl.volume = v;
+      if (typeof setBgmVolume === "function") setBgmVolume(v);
+      else {
+        if (bgmGain) bgmGain.gain.value = v;
+        // 真实 BGM 直接改音量（淡入过程中目标值也由 fadeBgm 每帧重读）
+        if (bgmAudioEl) bgmAudioEl.volume = v;
+      }
     };
     // v3.3.12：界面字号缩放滑杆
     const fontSlider = document.getElementById("cfg-fontscale");
@@ -190,7 +194,7 @@ window.SakuraPanels = function (C) {
       applyUiSettings();
     };
     document.getElementById("cfg-export").onclick = () => {
-      const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify({ ...Saves.exportData(), currentSession: snapshot() }, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -211,9 +215,12 @@ window.SakuraPanels = function (C) {
           if (!Saves.importData(payload)) throw new Error("invalid backup");
           state.playCount = Saves.getFlag("playCount", 0);
           state.loopCount = Saves.getFlag("loopCount", 0);
-          updateInboxBadge();
-          flashHint("备份已导入");
-          renderConfig();
+          // 会话切换由引擎注册的导入回调统一处理；这里只兜底
+          if (state.inGame) {
+            closeOverlay();
+            backToTitle();
+            flashHint("备份已导入，请点「继续游戏」恢复");
+          }
         } catch (e) {
           flashHint("导入失败：备份格式无效或存储不可用");
         } finally {
@@ -440,8 +447,8 @@ window.SakuraPanels = function (C) {
         const desc = recipe ? recipe.desc : "未知的概念。";
         html += `<div class="gallery-card unlocked" style="background:linear-gradient(135deg, rgba(255,216,138,0.18), rgba(216,144,90,0.18));border-color:rgba(255,220,150,0.5);">
           <div class="g-type" style="color:#ffd88a;">合成概念</div>
-          <div class="g-title" style="color:#ffe8c0;">${name}</div>
-          <div class="g-desc">${desc}</div>
+          <div class="g-title" style="color:#ffe8c0;">${escapeHtml(name)}</div>
+          <div class="g-desc">${escapeHtml(desc)}</div>
         </div>`;
       });
       html += `</div></div>`;
@@ -598,7 +605,7 @@ window.SakuraPanels = function (C) {
       if (m.expired && m.replied === null) tags = `<span class="inbox-tag expired">超时</span>`;
       else if (m.replied !== null) tags = `<span class="inbox-tag replied">已回复</span>`;
       else if (!m.read) tags = `<span class="inbox-tag unread">未读</span>`;
-      return `<div class="inbox-msg ${!m.read ? 'unread' : ''} ${m.expired && m.replied === null ? 'expired' : ''}" data-id="${m.id}">
+      return `<div class="inbox-msg ${!m.read ? 'unread' : ''} ${m.expired && m.replied === null ? 'expired' : ''}" data-id="${escapeHtml(m.id)}">
         <div class="inbox-avatar" style="background:${ch.color};color:#1a1020;">${escapeHtml(avatar)}</div>
         <div class="inbox-body">
           <div class="inbox-from">${tags}${escapeHtml(ch.name)}</div>

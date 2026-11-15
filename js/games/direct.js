@@ -862,9 +862,11 @@
      温度范围 -100（极冷）到 +100（极暖），按 -30/+30 划分三档
      ============================================================ */  register("temperature", function (temp, nodeId) {
 
-    const shell = createShell({ kind: "temperature", nodeId });
-    const layer = shell.layer;
     const bgOverlay = document.getElementById("bg-overlay");
+    const prevBg = bgOverlay ? bgOverlay.style.background : "";
+    const shell = createShell({ kind: "temperature", nodeId,
+      onCancel: () => { if (bgOverlay) bgOverlay.style.background = prevBg; } });
+    const layer = shell.layer;
     layer.innerHTML = `
       <div class="temp-prompt">${temp.prompt || "调节心境温度——"}</div>
       <div class="temp-display">

@@ -186,6 +186,8 @@
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
    v3.4.36：视觉审计修复四连——P1 首屏 FOUC（boot 屏移除后到 style.css 生效前标题页裸奔，index.html 内联标题页关键样式封住间隙）；P2 旁白时说话人名牌空置残留（无 speaker 隐藏名牌，主对话+信件两路径）；P6 手机竖屏顶栏溢出（≤480px 再折叠收件箱/统计进 ⋯ 抽屉、单行不再换行压住心条，⋯ 展开时收起心条）；P7 CG 查看器无加载占位（大图拉取数秒全黑像坏掉，加 spinner onload 移除）。来源：两轮真实浏览器截图审计（docs/20261107-0040）
+   v3.4.37：深度审查修复——线索热点补挂载、合成词/收件箱导入 XSS 转义、备份导出补当前会话、
+           导入后统一切回标题、音量滑杆即时生效、温度跳过恢复背景、玩法确认幂等与 BGM 全轨清理
    v3.4.25：学姐线入口门槛放宽——day2_choice「★ 旧校舍后面（？）★」由 playCount >= 1 改为 playCount >= 1 || loopCount >= 2（playCount 只在真结局 +1，走普通结局的玩家原本永久看不到入口）；新增门槛契约四项断言；新增 tests/browser/playtest.e2e.mjs 五画像点击驱动试玩（npm run test:play）
    v3.4.24：PWA 注册健壮性 + 真人试玩工具——index.html 的 SW 注册补 reg 判空（register 返回 undefined 时原代码 reg.update() 抛 TypeError，连带跳过 controllerchange 监听）；新增 .playtest.mjs 三画像真人模拟器（懒人全跳过/认真操作/探索），发现剧情浮层被误判为玩法、玩法确认按钮定位错误等测试侧问题
    v3.4.23：视角门槛支持互斥记忆数组——苏念三个视角原借用林诗雨记忆作门槛（逻辑错配），改为 [苏念·海报·取景, 苏念·一笔·用力, 苏念·一笔·安静] 任一解锁即可；契约同步支持数组写法
@@ -224,10 +226,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.36";
+  const GAME_VERSION = "3.4.37";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.37", note: "修复线索点击、备份导出/导入与音量滑杆，手机端与玩法收尾更稳" },
     { ver: "3.4.36", note: "视觉修复：首屏不再闪乱样式、CG 大图加载有提示、手机顶栏不再叠住心条" },
     { ver: "3.4.35", note: "固定 GitHub 为主仓库，三处远程与线上版本保持一致（无玩法改动）" },
     { ver: "3.4.34", note: "同步 GitHub 备份源，三处远程与线上版本全部一致（无玩法改动）" },
@@ -1562,6 +1565,7 @@
         }
         panels.showClueTip(clue, spot);
       };
+      el.clueLayer.appendChild(spot);
     });
   }
 
@@ -2063,6 +2067,9 @@
   let bgmAudioEl = null;          // 当前曲目
   let bgmMood = null;             // 当前 mood
   let bgmFadeRaf = null;          // 交叉淡入淡出动画帧
+  let bgmFadePrev = null;         // 正在淡出的上一条曲目（被打断时必须显式暂停）
+  function setSfxVolume(v) { const n = Number(v); if (!Number.isFinite(n)) return; if (sfxGain) sfxGain.gain.value = n; }
+  function setBgmVolume(v) { const n = Number(v); if (!Number.isFinite(n)) return; if (bgmGain) bgmGain.gain.value = n; if (bgmAudioEl) bgmAudioEl.volume = n; }
   let bgmRealUnavailable = false; // 真实音频整体不可用 → 全部走程序化
   let bgmUnlockBound = false;     // 是否已挂起「等用户手势重试」
   // 程序化兜底
@@ -2255,7 +2262,14 @@
   /* 双曲交叉淡入淡出：新曲 0→目标音量，旧曲目标→0 后暂停
      目标音量每帧从设置读取，滑杆拖动时无需重启动画也能跟上 */
   function fadeBgm(prev, next) {
-    if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
+    if (bgmFadeRaf) {
+      cancelAnimationFrame(bgmFadeRaf);
+      bgmFadeRaf = null;
+      if (bgmFadePrev && bgmFadePrev !== next) {
+        bgmFadePrev.pause(); bgmFadePrev.currentTime = 0; bgmFadePrev.volume = 0;
+      }
+    }
+    bgmFadePrev = prev;
     const startVol = prev ? prev.volume : 0;
     const start = performance.now();
     const tick = (now) => {
@@ -2266,6 +2280,7 @@
       if (prev && prev !== next) prev.volume = startVol * (1 - k);
       if (k < 1) { bgmFadeRaf = requestAnimationFrame(tick); return; }
       bgmFadeRaf = null;
+      bgmFadePrev = null;
       if (prev && prev !== next) { prev.pause(); prev.currentTime = 0; prev.volume = 0; }
     };
     bgmFadeRaf = requestAnimationFrame(tick);
@@ -2286,13 +2301,18 @@
 
   function stopBgm() {
     if (bgmFadeRaf) { cancelAnimationFrame(bgmFadeRaf); bgmFadeRaf = null; }
-    stopAmbient();
-    if (bgmAudioEl) {
-      bgmAudioEl.pause();
-      bgmAudioEl.currentTime = 0;
-      bgmAudioEl.volume = 0;
-      bgmAudioEl = null;
+    if (bgmFadePrev) {
+      bgmFadePrev.pause(); bgmFadePrev.currentTime = 0; bgmFadePrev.volume = 0; bgmFadePrev = null;
     }
+    stopAmbient();
+    // 遍历全部曲目：淡出被打断后不能留下继续循环的旧音轨
+    try {
+      Object.values(ensureBgmTracks()).forEach((t) => {
+        if (!t) return;
+        try { t.pause(); t.currentTime = 0; t.volume = 0; } catch (e) {}
+      });
+    } catch (e) {}
+    bgmAudioEl = null;
     bgmMood = null;
     stopProgramBgm();
   }
@@ -2602,6 +2622,8 @@
     playBgmForScene,
     stopBgm,
     fadeBgm,
+    setSfxVolume,
+    setBgmVolume,
     bgmAudioEl,
     bgmGain,
     bgmVolume,
@@ -2647,6 +2669,14 @@
       boot.classList.add("is-done");
       setTimeout(() => boot.remove(), 320);
     }
+    // 备份导出/导入下沉到存档层：任何调用路径都带当前会话，导入后统一切换会话
+    if (Saves.setSessionSnapshotProvider) Saves.setSessionSnapshotProvider(() => snapshot());
+    if (Saves.setImportHandler) Saves.setImportHandler((payload) => {
+      if (payload && payload.currentSession) Saves.autoSave(payload.currentSession);
+      closeOverlay();
+      backToTitle();
+      flashHint("备份已导入，请点「继续游戏」恢复");
+    });
   }
   init();
 

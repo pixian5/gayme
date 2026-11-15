@@ -290,6 +290,10 @@ function unlockListStore(key, listName, addName, hasName) {
   };
 }
 
+// 引擎可注入的会话快照与导入回调：保证导出/导入不只依赖 UI 路径
+let sessionSnapshotProvider = null;
+let importHandler = null;
+
 const Saves = {
   data: createDefaultSaveData(),
   endings: createDefaultEndings(),
@@ -367,7 +371,17 @@ const Saves = {
         console.warn(`导出本地存储失败 (${key}):`, e);
       }
     }
-    return { schemaVersion: STORAGE_SCHEMA_VERSION, exportedAt: Date.now(), records };
+    const out = { schemaVersion: STORAGE_SCHEMA_VERSION, exportedAt: Date.now(), records };
+    if (typeof sessionSnapshotProvider === "function") {
+      try { out.currentSession = sessionSnapshotProvider(); } catch (e) { /* 快照不可用则省略 */ }
+    }
+    return out;
+  },
+  setSessionSnapshotProvider(fn) {
+    sessionSnapshotProvider = typeof fn === "function" ? fn : null;
+  },
+  setImportHandler(fn) {
+    importHandler = typeof fn === "function" ? fn : null;
   },
 
   importData(payload) {
@@ -408,6 +422,10 @@ const Saves = {
     this._loadSaves();
     this._loadEndings();
     this._loadSettings();
+    // 导入成功后通知引擎切换会话；回调失败不影响导入结果
+    if (typeof importHandler === "function") {
+      try { importHandler(payload); } catch (e) { console.warn("导入会话切换失败:", e); }
+    }
     return true;
   },
 

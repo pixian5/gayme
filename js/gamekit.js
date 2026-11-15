@@ -164,7 +164,10 @@
 
     /* 统一收尾：写入记录 → 应用数值/性格/记忆 → 展示结果面板 → 关闭并跳转
        result: { label, text, add?, personality?, memory?, next?, record? } */
+    let finishing = false;
     function finish(result) {
+      if (cleaned || finishing) return;   // 同一次交互只结算一次
+      finishing = true;
       const matched = result || {};
       if (typeof matched.record === "function") matched.record();
       // 结果音效（v2.9.7）：完美 / 失败两档，其余静默
