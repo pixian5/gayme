@@ -290,6 +290,35 @@ test("缺陷回归（串行）", async () => {
     await ctx.close();
   }
 
+  // 12 媒体离线缓存（v3.4.41）：put 入仓 → cachedUrl 出 blob → data-mc 坏图兜底
+  {
+    const { ctx, page } = await openPage();
+    const r = await page.evaluate(async () => {
+      if (!window.MediaCache || !MediaCache.SUPPORTED) return { supported: false };
+      await MediaCache.put("assets/cg/cg_meet_shiyu.webp");
+      await MediaCache.put("audio/bgm/calm.ogg");
+      const cgUrl = await MediaCache.cachedUrl("assets/cg/cg_meet_shiyu.webp");
+      const bgmUrl = await MediaCache.cachedUrl("audio/bgm/calm.ogg");
+      let blobOk = false, blobSize = 0;
+      if (cgUrl) {
+        const b = await (await fetch(cgUrl)).blob();
+        blobOk = b.size > 1000; blobSize = b.size;
+      }
+      // 坏 src + data-mc → error 委托应把 src 换成 blob:
+      let rescueOk = false;
+      await new Promise((resolve) => {
+        const img = document.createElement("img");
+        img.setAttribute("data-mc", "assets/cg/cg_meet_shiyu.webp");
+        img.src = "assets/cg/__not_exist__.webp?" + Date.now();
+        img.onload = () => { rescueOk = img.src.startsWith("blob:"); resolve(); };
+        setTimeout(() => resolve(), 4000);
+      });
+      return { supported: true, cgCached: !!cgUrl, bgmCached: !!bgmUrl, blobOk, blobSize, rescueOk, size: await MediaCache.size() };
+    });
+    record("媒体离线缓存（put/blob/data-mc 兜底）", !!(r.supported && r.cgCached && r.bgmCached && r.blobOk && r.rescueOk), r);
+    await ctx.close();
+  }
+
   console.log(JSON.stringify(results, null, 1));
   console.log(`缺陷回归：通过 ${results.length - skipped.length} / ${results.length}，跳过 ${skipped.length}${skipped.length ? "（" + skipped.join("；") + "）" : ""}`);
   assert.equal(failures.length, 0, `失败 ${failures.length} 项：${JSON.stringify(failures)}`);

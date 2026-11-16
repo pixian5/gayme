@@ -186,6 +186,7 @@
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
    v3.4.36：视觉审计修复四连——P1 首屏 FOUC（boot 屏移除后到 style.css 生效前标题页裸奔，index.html 内联标题页关键样式封住间隙）；P2 旁白时说话人名牌空置残留（无 speaker 隐藏名牌，主对话+信件两路径）；P6 手机竖屏顶栏溢出（≤480px 再折叠收件箱/统计进 ⋯ 抽屉、单行不再换行压住心条，⋯ 展开时收起心条）；P7 CG 查看器无加载占位（大图拉取数秒全黑像坏掉，加 spinner onload 移除）。来源：两轮真实浏览器截图审计（docs/20261107-0040）
+   v3.4.41：媒体离线缓存——新增 js/media-cache.js（页面侧 Cache API + blob URL，不经过 SW 拦截、不影响 Firefox 稳定性）：在线空闲预热 BGM×5 + CG×11 + 立绘×5（约 15MB，并发 2，省流模式跳过）；BGM 曲目失败先换缓存 blob 再回程序化兜底；立绘失败先试缓存再回 SVG；cgArt 的 img 统一挂 data-mc 由 document 级 error 委托兜底（CG 查看器/图鉴缩略图零改动受益）。此前离线时 BGM 沉默、CG 空白、立绘降级
    v3.4.40：流程与打磨——发版 checklist 固化（docs/发版流程.md + pre-push 提醒，根因：并行线漏发 HF 落后 3 版）；GitHub Actions 纯测试 CI；塔罗逆位 P9（整卡旋转改仅牌名倒转，消除牌名与标签重叠）；CG 卡片加载态（aspect-ratio 占位防跳动）；导出按钮 currentSession 双写去重（provider 已统一注入）；缺陷回归跳过单列计数
    v3.4.37：深度审查修复——线索热点补挂载、合成词/收件箱导入 XSS 转义、备份导出补当前会话、
            导入后统一切回标题、音量滑杆即时生效、温度跳过恢复背景、玩法确认幂等与 BGM 全轨清理
@@ -231,10 +232,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.40";
+  const GAME_VERSION = "3.4.41";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.41", note: "离线也能听音乐、看 CG：媒体走页面侧缓存" },
     { ver: "3.4.40", note: "发版流程固化 + 测试 CI；塔罗逆位牌名不再重叠" },
     { ver: "3.4.39", note: "多标签同时存档不再互相覆盖，离线启动更稳" },
     { ver: "3.4.38", note: "导入备份更安全，断网时角色不空白，后台不再卡顿" },
@@ -432,8 +434,16 @@
       if (PORTRAIT_BITMAPS.has(c.id)) {
         div.innerHTML = `<img src="assets/portraits/${c.id}.webp" alt="" class="portrait-img" draggable="false">`;
         // 离线/素材缺失时回退内联 SVG，避免角色区域空白
+        // v3.4.41：先试页面侧媒体缓存（离线已预热时立绘位图直接可用），缓存也没有才回退 SVG
         const portraitImg = div.querySelector("img");
-        if (portraitImg) portraitImg.addEventListener("error", () => { div.innerHTML = PORTRAITS[c.id] || ""; }, { once: true });
+        if (portraitImg) portraitImg.addEventListener("error", () => {
+          const path = "assets/portraits/" + c.id + ".webp";
+          const tryCache = window.MediaCache ? MediaCache.cachedUrl(path) : Promise.resolve(null);
+          tryCache.then((url) => {
+            if (url) portraitImg.src = url;
+            else div.innerHTML = PORTRAITS[c.id] || "";
+          });
+        }, { once: true });
       } else {
         div.innerHTML = PORTRAITS[c.id];
       }
@@ -1474,7 +1484,7 @@
   // v3.3.16：CG 支持位图（cg.img 优先），未提供时仍用内联 SVG；alt 取标题便于无障碍
   function cgArt(cg) {
     return cg.img
-      ? `<img src="${cg.img}" alt="${escapeHtml(cg.title)}" loading="lazy">`
+      ? `<img src="${cg.img}" data-mc="${cg.img}" alt="${escapeHtml(cg.title)}" loading="lazy">`
       : cg.svg;
   }
 
@@ -2250,13 +2260,27 @@
     track.currentTime = 0;
     track.volume = 0;
     track.onerror = () => {
-      // 音频缺失或解码失败：切换全局兜底
-      bgmRealUnavailable = true;
-      if (bgmMood === mood) {
-        stopBgm();
-        bgmMood = mood;
-        playMelody(mood);
-      }
+      // v3.4.41：先试页面侧媒体缓存（离线已预热时换 blob 直供），缓存也没有才切程序化兜底
+      const path = BGM_TRACKS[mood];
+      const tryCache = window.MediaCache && path ? MediaCache.cachedUrl(path) : Promise.resolve(null);
+      tryCache.then((url) => {
+        if (url && bgmAudioEl === track) {
+          track.onerror = null;            // 换源期间防再触发
+          track.src = url;
+          track.currentTime = 0;
+          track.volume = 0;
+          const p = track.play();
+          if (p && p.catch) p.catch(() => {});
+          return;
+        }
+        // 音频缺失或解码失败：切换全局兜底
+        bgmRealUnavailable = true;
+        if (bgmMood === mood) {
+          stopBgm();
+          bgmMood = mood;
+          playMelody(mood);
+        }
+      });
     };
     const played = track.play();
     if (played && played.catch) {
@@ -2684,6 +2708,23 @@
       boot.classList.add("is-done");
       setTimeout(() => boot.remove(), 320);
     }
+    // v3.4.41：媒体离线缓存预热——BGM×5 + CG×11 + 立绘×5（约 15MB，并发 2 顺序拉）
+    // 仅在线且未开「省流模式」时执行；网络恢复事件补一轮（warm 内部有去重）
+    const warmMedia = () => {
+      if (!navigator.onLine) return;
+      const conn = navigator.connection || {};
+      if (conn.saveData) return;
+      if (!window.MediaCache) return;
+      const list = [
+        ...Object.values(BGM_TRACKS),
+        ...CGS.filter((cg) => cg.img).map((cg) => cg.img),
+        ...[...PORTRAIT_BITMAPS].map((id) => "assets/portraits/" + id + ".webp"),
+      ];
+      MediaCache.warm(list);
+    };
+    setTimeout(warmMedia, 5000);
+    window.addEventListener("online", warmMedia);
+
     // 备份导出/导入下沉到存档层：任何调用路径都带当前会话，导入后统一切换会话
     if (Saves.setSessionSnapshotProvider) Saves.setSessionSnapshotProvider(() => snapshot());
     if (Saves.setImportHandler) Saves.setImportHandler((payload) => {
