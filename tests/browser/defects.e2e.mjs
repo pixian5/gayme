@@ -309,9 +309,11 @@ test("缺陷回归（串行）", async () => {
       await new Promise((resolve) => {
         const img = document.createElement("img");
         img.setAttribute("data-mc", "assets/cg/cg_meet_shiyu.webp");
+        img.style.display = "none";
+        document.body.appendChild(img);   // 必须在 DOM 里：detached 元素的事件路径不含 document，捕获委托收不到
         img.src = "assets/cg/__not_exist__.webp?" + Date.now();
-        img.onload = () => { rescueOk = img.src.startsWith("blob:"); resolve(); };
-        setTimeout(() => resolve(), 4000);
+        img.onload = () => { rescueOk = img.src.startsWith("blob:"); img.remove(); resolve(); };
+        setTimeout(() => { img.remove(); resolve(); }, 4000);
       });
       return { supported: true, cgCached: !!cgUrl, bgmCached: !!bgmUrl, blobOk, blobSize, rescueOk, size: await MediaCache.size() };
     });
