@@ -854,7 +854,9 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .cg-card.locked { filter: grayscale(1) brightness(0.6); }
 .cg-card svg { display: block; width: 100%; height: auto; }
-.cg-card img { display: block; width: 100%; height: auto; }
+.cg-card img { display: block; width: 100%; height: auto; aspect-ratio: 5/3; object-fit: cover; }
+/* v3.4.40：位图慢加载时卡片保持占位高度，渐变底透出，避免「已解锁却像空白」 */
+.cg-card.unlocked img { background: linear-gradient(135deg, rgba(180,80,120,0.25), rgba(140,60,160,0.25)); }
 .cg-card .cg-locked-placeholder {
   width: 100%;
   aspect-ratio: 5/3;

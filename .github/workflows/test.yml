@@ -1,0 +1,23 @@
+# 纯测试 CI：每次 push 跑静态契约与语法，不参与部署（部署仍走盒子 cron + 手动 HF）
+# 目的：并行线合并前就能在 GitHub 上看到契约是否破裂（2026-11-16 用户拍板新增）
+name: test
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: 静态契约（54 项）
+        run: npm test
+      - name: 语法检查
+        run: npm run test:syntax

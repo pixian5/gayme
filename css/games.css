@@ -738,7 +738,10 @@ button.confirm-locked { border-style: dashed !important; cursor: not-allowed; op
   width: 100%; height: 100%; padding: 14px;
   text-align: center; gap: 8px;
 }
-.tarot-card.reversed { transform: rotate(180deg); }
+/* v3.4.40 P9：逆位不再整卡旋转（牌名与正逆位标签视觉重叠）——只倒转牌名作「逆位」暗示，
+   标签保持正立可读，flex 列布局天然不重叠 */
+.tarot-card.reversed { transform: none; }
+.tarot-card.reversed .tarot-card-name { transform: rotate(180deg); display: inline-block; }
 .tarot-card-name {
   font-size: 17px; color: #ffd8e4;
   letter-spacing: 3px;

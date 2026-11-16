@@ -194,8 +194,8 @@ window.SakuraPanels = function (C) {
       applyUiSettings();
     };
     document.getElementById("cfg-export").onclick = () => {
-      const backup = Saves.exportData();
-      const blob = new Blob([JSON.stringify({ ...backup, currentSession: snapshot() }, null, 2)], { type: "application/json" });
+      // v3.4.40：currentSession 由引擎注入的 sessionSnapshotProvider 在 exportData 内统一附带，不再重复展开
+      const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

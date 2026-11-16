@@ -68,9 +68,15 @@ async function openPage({ blockSW = true, initScript = null, ...extra } = {}) {
 test("缺陷回归（串行）", async () => {
   const results = [];
   const failures = [];
+  const skipped = [];
   const record = (name, ok, detail) => {
     results.push({ name, ok, detail });
     if (!ok) failures.push({ name, detail });
+  };
+  // v3.4.40：跳过单列计数——跳过≠通过，避免「绿但被跳过」的断言静默失效（复核遗留项 1）
+  const recordSkip = (name, detail) => {
+    results.push({ name, ok: true, skipped: true, detail });
+    skipped.push(name);
   };
 
   // 1 线索挂载
@@ -249,7 +255,7 @@ test("缺陷回归（串行）", async () => {
       Promise.race([navigator.serviceWorker.ready, new Promise((r) => setTimeout(() => r(null), 3000))]).then(done).catch(() => done(null));
     })`);
     if (!diag.hasSW) {
-      record("离线可启动（环境不支持 SW，跳过）", true, diag);
+      recordSkip("离线可启动（环境不支持 SW，跳过）", diag);
     } else {
       let controlled = false;
       await page.waitForTimeout(4000);
@@ -268,7 +274,7 @@ test("缺陷回归（串行）", async () => {
         await ctx.setOffline(false);
       }
       if (!controlled) {
-        record("离线可启动（本环境 SW 未接管，跳过）", true, { ...diag, controlled, playable, note: "独立脚本与线上已验证离线可玩；测试服务器首次安装时序不稳定" });
+        recordSkip("离线可启动（本环境 SW 未接管，跳过）", { ...diag, controlled, playable, note: "独立脚本与线上已验证离线可玩；测试服务器首次安装时序不稳定" });
       } else {
         record("离线可启动", playable, { ...diag, controlled, playable });
       }
@@ -285,5 +291,6 @@ test("缺陷回归（串行）", async () => {
   }
 
   console.log(JSON.stringify(results, null, 1));
+  console.log(`缺陷回归：通过 ${results.length - skipped.length} / ${results.length}，跳过 ${skipped.length}${skipped.length ? "（" + skipped.join("；") + "）" : ""}`);
   assert.equal(failures.length, 0, `失败 ${failures.length} 项：${JSON.stringify(failures)}`);
 });
