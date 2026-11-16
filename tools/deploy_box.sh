@@ -6,7 +6,7 @@
 #       再盒内 rsync --delete 同步到站点根 /data/home/sakura——与盒子 cron 的
 #       /root/sakura-deploy.sh 同一套清理语义，避免残留旧文件。
 # 站点根被 sakura-web（8090 明文）与 sakura-tls（2096 TLS）两个 nginx:alpine 容器只读挂载。
-# 常规发版 push gitee 后 cron 每 3 分钟自动拉取；本脚本用于不想等 cron 的手动直推。
+# 常规发版 push origin(GitHub) 后 cron 每 3 分钟自动拉取；本脚本用于不想等 cron 的手动直推。
 # 服务器端配置见 docs/20261107-0200-服务器迁移盒子与域名切换-GLM.md
 set -euo pipefail
 cd "$(dirname "$0")/.."

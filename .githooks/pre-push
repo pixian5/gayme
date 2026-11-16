@@ -19,7 +19,7 @@ echo "[pre-push] 全部通过 ✓"
 # v3.4.40：发版提醒（根因：并行线曾漏发 HF，落后 3 版无人发现）
 cat <<'REMIND'
 [pre-push] 提醒：push 完成后——
-  1) 必推三远程：origin(GitHub) + gitee(部署主源) + gitcode
-  2) 部署只走 InstaBox 盒子（gitee cron 自动；赶时间用 bash tools/deploy_box.sh）
+  1) 必推双远程：origin(GitHub，部署主源) + gitcode（gitee 已于 2026-11-16 移除）
+  2) 部署只走 InstaBox 盒子（GitHub cron 自动；赶时间用 bash tools/deploy_box.sh）
   3) HF 不再部署（2026-11-16 规约）；完整步骤见 docs/发版流程.md
 REMIND
