@@ -7,10 +7,11 @@
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
-- 在线试玩（主）：**Hugging Face** https://xbzsb-sakura-letters.static.hf.space/index.html
-  （[Space 页面](https://huggingface.co/spaces/xbzsb/sakura-letters)；`HF_TOKEN=... bash tools/deploy_hf.sh` 手动同步）
-- 在线试玩（自有服务器 · InstaBox 盒子）：https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/
-  （push gitee 后盒子 root cron 每 3 分钟自动拉取部署；`bash tools/deploy_box.sh` 手动直推）
+- 在线试玩（唯一部署目标 · InstaBox 盒子）：https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/
+  （push gitee 后盒子 root cron 每 3 分钟自动拉取部署；`bash tools/deploy_box.sh` 手动直推；
+  2026-11-16 起**只在此部署与测试**）
+- Hugging Face 镜像（**已停更**，停留在 v3.4.43 仅作静态展示）：
+  https://xbzsb-sakura-letters.static.hf.space/index.html
 - 自有域名 oh.sbbz.tech / play.sbbz.tech：已 CNAME → HF Space（橙云），**待在 CF 面板加一条
   Origin Rule（改写 Host 头为 xbzsb-sakura-letters.static.hf.space）即恢复**——旧 AWS 实例
   已回收、InstaBox 盒子无公网入站，域名只能借道 HF（详见
