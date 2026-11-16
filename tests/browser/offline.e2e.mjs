@@ -11,6 +11,7 @@ import assert from "node:assert";
 import test from "node:test";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
+const BASE_URL = process.env.BASE_URL || null;
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css",
   ".json": "application/json", ".svg": "image/svg+xml", ".woff2": "font/woff2",
   ".webp": "image/webp", ".ogg": "audio/ogg" };
@@ -27,7 +28,7 @@ for (let i = 0; i < 6; i++) {
   try { await new Promise((res, rej) => { server.once("error", rej); server.listen(PORT + i, res); }); PORT += i; break; }
   catch (e) { if (e.code !== "EADDRINUSE" || i === 5) throw e; }
 }
-const URL = `http://127.0.0.1:${PORT}`;
+const URL = BASE_URL || `http://127.0.0.1:${PORT}`;
 
 const { chromium } = await import("playwright");
 
@@ -42,7 +43,8 @@ test("离线端到端（SW + 媒体缓存）", async () => {
   page.on("pageerror", (e) => pageErrors.push("pageerror: " + e.message));
   try {
     /* ---------- 阶段一：在线装 SW，直至接管（不放弃） ---------- */
-    await page.goto(URL, { waitUntil: "domcontentloaded" });
+    const t0 = Date.now();
+    await page.goto(URL, { waitUntil: "domcontentloaded", ...(BASE_URL ? { timeout: 90000 } : {}) });
     let controlled = await page.evaluate(() => !!(navigator.serviceWorker && navigator.serviceWorker.controller));
     for (let i = 0; i < 8 && !controlled; i++) {
       await page.waitForTimeout(1500);
@@ -59,6 +61,7 @@ test("离线端到端（SW + 媒体缓存）", async () => {
       await page.waitForTimeout(2000);
       controlled = await page.evaluate(() => !!(navigator.serviceWorker && navigator.serviceWorker.controller));
     }
+    console.log("SW_TAKEOVER_MS", Date.now() - t0);
     assert.ok(controlled, "SW 始终未接管——本用例不允许跳过，需人工排查测试环境");
 
     /* ---------- 阶段二：在线预热媒体缓存（CG + 立绘 + BGM 各一） ---------- */
