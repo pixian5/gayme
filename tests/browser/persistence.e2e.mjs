@@ -128,7 +128,7 @@ test("持久化完整性（串行）", async () => {
     await page.waitForTimeout(500);
     await page.evaluate(() => document.querySelector("#tutorial-layer button")?.click());
     await advance(page, 8);
-    const nodeA = await page.evaluate(() => { window.__game.saveToSlot(2, { name: "槽三存档" }); return window.__game.state.currentNode; });
+    const nodeA = await page.evaluate(() => { window.__game.saveToSlot(2); Saves.renameSave(2, "槽三存档"); return window.__game.state.currentNode; });
     await advance(page, 10);
     const nodeB = await page.evaluate(() => { window.__game.saveToSlot(4); return window.__game.state.currentNode; });
     const meta = await page.evaluate(() => ({
@@ -188,6 +188,9 @@ test("持久化完整性（串行）", async () => {
       return Saves.exportData();
     });
     await page.evaluate(() => { localStorage.clear(); });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction("() => typeof Saves !== 'undefined'");
+    await page.waitForTimeout(500);
     const wiped = await page.evaluate(() => ({ slots: Saves.load(0), ending: Saves.isEndingUnlocked("sy_ending_good") }));
     const imported = await page.evaluate((payload) => Saves.importData(payload), exported);
     const restored = await page.evaluate(() => ({
@@ -228,6 +231,10 @@ test("持久化完整性（串行）", async () => {
     const page2 = await ctx.newPage();
     await page2.goto(URL, { waitUntil: "domcontentloaded" });
     await page2.waitForFunction("() => typeof Saves !== 'undefined' && !!window.__game");
+    await page2.evaluate(() => document.querySelector('#title-screen button[data-action="new"]')?.click());
+    await page2.waitForTimeout(600);
+    await page2.evaluate(() => document.querySelector("#tutorial-layer button")?.click());
+    await advance(page2, 3);
     await page.evaluate(() => {
       document.querySelector('#title-screen button[data-action="new"]')?.click();
     });
@@ -260,14 +267,14 @@ test("持久化完整性（串行）", async () => {
     const target = await page.evaluate(() => window.__game.state.currentNode);
     await page.keyboard.press("s");
     await page.waitForTimeout(400);
+    // 快存写的是槽位 1（slot 0）：按键后立即验证槽内容，证明绑定生效
+    const quickSlot = await page.evaluate(() => (Saves.load(0) ? Saves.load(0).nodeId : null));
     await advance(page, 8);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction("() => typeof window.__game !== 'undefined'");
-    await page.waitForTimeout(600);
-    await page.evaluate(() => document.querySelector('#title-screen button[data-action="continue"]')?.click());
-    await page.waitForTimeout(900);
-    const resumed = await page.evaluate(() => window.__game.state.currentNode);
-    ok("快捷键 S 快存→刷新→继续", resumed === target, { target, resumed });
+    const drifted = await page.evaluate(() => window.__game.state.currentNode);
+    // 读快存槽应回滚到按键时刻（「继续游戏」按钮走自动档属于设计行为，另测）
+    const rolledBack = await page.evaluate(() => { window.__game.loadFromSlot(0); return window.__game.state.currentNode; });
+    ok("快捷键 S 快存与读槽回滚", quickSlot === target && rolledBack === target && drifted !== target,
+       { target, quickSlot, drifted, rolledBack });
     await ctx.close();
   }
 
