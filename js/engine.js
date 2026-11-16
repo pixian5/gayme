@@ -186,6 +186,7 @@
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
    v3.4.36：视觉审计修复四连——P1 首屏 FOUC（boot 屏移除后到 style.css 生效前标题页裸奔，index.html 内联标题页关键样式封住间隙）；P2 旁白时说话人名牌空置残留（无 speaker 隐藏名牌，主对话+信件两路径）；P6 手机竖屏顶栏溢出（≤480px 再折叠收件箱/统计进 ⋯ 抽屉、单行不再换行压住心条，⋯ 展开时收起心条）；P7 CG 查看器无加载占位（大图拉取数秒全黑像坏掉，加 spinner onload 移除）。来源：两轮真实浏览器截图审计（docs/20261107-0040）
+   v3.4.44：商业级测试基建——新增持久化完整性 e2e（npm run test:persistence：自动进度防刷新/存读档往返/多槽位/旗标跨刷新/导出导入 roundtrip/损坏存档防御/跨标签写冲突/快存快捷键，8 项）与离线端到端 e2e（npm run test:offline：SW 接管启动+媒体缓存离线供图，不设跳过分支）；window.__game 补暴露 snapshot/quickSave/saveToSlot/loadFromSlot/openCgViewer（纯暴露供测试与调试）
    v3.4.43：内容与音效——d 链玩法节点 loopText 首批 12 个（拼图/气味/触碰/温度/呼吸/折信/时间胶囊/光绘/茶渍/光影/调色/口风琴，各 2 段既视感变体，177→189）；音效调优：记忆解锁改配风铃采样、关键词解锁改配翻页采样（原先只能听程序化合成，采样缺失仍回落）
    v3.4.42：手势玩法首次演示——涂抹/拖动类玩法（拓印/茶渍/光影）首次进入时在画布上放 2.6s「手指划过」动画示意 + 一句提示，玩家一动手立即消失；每种玩法只演示一次（localStorage 记忆）；GameKit 层统一实现，玩法零改动；减少动效模式下静止显示
    v3.4.41：媒体离线缓存——新增 js/media-cache.js（页面侧 Cache API + blob URL，不经过 SW 拦截、不影响 Firefox 稳定性）：在线空闲预热 BGM×5 + CG×11 + 立绘×5（约 15MB，并发 2，省流模式跳过）；BGM 曲目失败先换缓存 blob 再回程序化兜底；立绘失败先试缓存再回 SVG；cgArt 的 img 统一挂 data-mc 由 document 级 error 委托兜底（CG 查看器/图鉴缩略图零改动受益）。此前离线时 BGM 沉默、CG 空白、立绘降级
@@ -234,10 +235,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.43";
+  const GAME_VERSION = "3.4.44";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.44", note: "为商业化验收补齐存档与离线的自动化测试" },
     { ver: "3.4.43", note: "十二个玩法场景的多周目文本；记忆与关键词解锁换了更贴的音效" },
     { ver: "3.4.42", note: "涂抹类玩法首次进入有动画示意" },
     { ver: "3.4.41", note: "离线也能听音乐、看 CG：媒体走页面侧缓存" },
@@ -2746,7 +2748,10 @@
   init();
 
   // 暴露调试接口
-  window.__game = { state, gotoNode, newGame, backToTitle, openOverlay, closeOverlay };
+  // v3.4.44：补暴露存档与 CG 查看接口——持久化 e2e / 离线 e2e / 控制台调试需要
+  //   （纯暴露，无行为变化；正式环境也无害，均为只读或玩家可触发的操作）
+  window.__game = { state, gotoNode, newGame, backToTitle, openOverlay, closeOverlay,
+    snapshot, quickSave, saveToSlot, loadFromSlot, openCgViewer };
   window.flashHint = flashHint;   // v3.4.10：SW 更新提示等页内调用
   window.__PORTRAIT_BITMAPS = PORTRAIT_BITMAPS;   // v3.4.0 立绘位图清单（games/direct.js touch 立绘用）
 })();
