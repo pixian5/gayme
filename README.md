@@ -71,6 +71,7 @@ npm run test:e2e                    # 运行时回归 ~8s
 BROWSER=firefox npm run test:e2e    # Firefox 内核回归（需 npx playwright install firefox）
 npm run test:mobile                 # 移动端触控回归 ~5s
 npm run test:overflow               # 窄屏玩法溢出扫描 ~150s（390×844 扫全部 95 个玩法节点）
+npm run test:defects                # 缺陷回归 11 项（线索/导入导出/XSS/音量/多标签/离线）~20s
 npm run test:graph                  # 441 节点全图走查 ~28s
 npm run test:play                   # 五画像真人试玩 ~190s（云端实测 ~330s）
 ```
