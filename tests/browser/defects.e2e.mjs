@@ -321,6 +321,29 @@ test("缺陷回归（串行）", async () => {
     await ctx.close();
   }
 
+  // 13 手势玩法首次演示（v3.4.42）：拓印首次进入出「手指划过」，动手即消
+  {
+    const { ctx, page } = await openPage();
+    const r = await page.evaluate(async () => {
+      localStorage.removeItem("sakura_gesture_demo_v1");
+      window.__game.newGame();
+      const tb = document.querySelector('#tutorial-layer .tutorial-ok'); if (tb) tb.click();
+      window.__game.gotoNode("d3_rubbing");
+      await new Promise((res) => setTimeout(res, 900));
+      const appeared = !!document.querySelector(".gesture-demo");
+      const again = !!document.querySelector(".gesture-demo-finger");
+      const remembered = JSON.parse(localStorage.getItem("sakura_gesture_demo_v1") || "[]").includes("rubbing");
+      // 动手即消
+      const cv = document.querySelector(".rubbing-layer canvas");
+      if (cv) cv.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      await new Promise((res) => setTimeout(res, 150));
+      const goneAfterTouch = !document.querySelector(".gesture-demo");
+      return { appeared, again, remembered, goneAfterTouch };
+    });
+    record("手势首次演示（出现/记忆/动手即消）", !!(r.appeared && r.again && r.remembered && r.goneAfterTouch), r);
+    await ctx.close();
+  }
+
   console.log(JSON.stringify(results, null, 1));
   console.log(`缺陷回归：通过 ${results.length - skipped.length} / ${results.length}，跳过 ${skipped.length}${skipped.length ? "（" + skipped.join("；") + "）" : ""}`);
   assert.equal(failures.length, 0, `失败 ${failures.length} 项：${JSON.stringify(failures)}`);

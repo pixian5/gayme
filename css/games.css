@@ -7434,3 +7434,41 @@ button.confirm-locked { border-style: dashed !important; cursor: not-allowed; op
   }
   .gh-skip { padding: 10px 0; font-size: 12.5px; }
 }
+
+/* ============ v3.4.42 手势玩法首次演示 ============ */
+/* 涂抹/拖动类玩法首次进入时的「手指划过」示意；玩家一动手或 2.6s 后消失 */
+.gesture-demo {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 5;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.gesture-demo-finger {
+  position: absolute; left: 0; top: 0;
+  width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,236,244,0.95), rgba(255,184,200,0.55) 60%, rgba(255,184,200,0.12));
+  border: 1px solid rgba(255,220,232,0.7);
+  box-shadow: 0 0 18px rgba(255,184,200,0.55);
+  animation: gd-swipe 1.3s ease-in-out infinite alternate;
+}
+@keyframes gd-swipe {
+  0%   { transform: translate(var(--x0, 20%), var(--y0, 50%)); }
+  100% { transform: translate(var(--x1, 80%), var(--y1, 60%)); }
+}
+.gesture-demo-tip {
+  position: absolute; left: 50%; bottom: 8%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  background: rgba(20,14,28,0.82);
+  border: 1px solid rgba(255,200,220,0.45);
+  border-radius: 14px;
+  color: #ffd8e4; font-size: 13px; letter-spacing: 3px;
+  white-space: nowrap;
+  animation: gd-breathe 1.3s ease-in-out infinite alternate;
+}
+@keyframes gd-breathe { from { opacity: 0.65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .gesture-demo-finger, .gesture-demo-tip { animation-duration: 0.001s; }
+  .gesture-demo-finger { transform: translate(var(--x1), var(--y1)); }
+}

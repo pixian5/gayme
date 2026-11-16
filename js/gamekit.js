@@ -109,6 +109,11 @@
       jumpNext(nodeId, undefined);
     });
 
+    /* v3.4.42 手势玩法首次演示：涂抹/拖动类玩法文字说明不够直观，首次进入时
+       在画布上放一个 2.6 秒的「手指划过」动画示意；玩家一动手立即消失。
+       每种玩法只演示一次（localStorage 记 kind 集合）。 */
+    attachGestureDemo(layer, kind);
+
     /* v3.4.13 已读快通：快进中且已读的玩法，300ms 后自动中性收尾（无加成/不写记录，
        直接走节点 next）。点击提示条可取消、保留这次玩法——想重温的玩家不被剥夺。 */
     let fastCancel = null;
@@ -223,6 +228,51 @@
     }
 
     return { layer, kind, prefix, nodeId, cleanup, finish, signal: lifecycle?.signal };
+  }
+
+  /* v3.4.42 手势演示：需要「按住拖动」的玩法与文案说明的对应关系 */
+  const GESTURE_DEMO = {
+    rubbing: "像这样来回涂抹",
+    tealeaf: "像这样让茶渍流转",
+    shadow: "像这样拖动木块",
+  };
+  function attachGestureDemo(layer, kind) {
+    const label = GESTURE_DEMO[kind];
+    if (!layer || !label) return;
+    try {
+      const seen = new Set(JSON.parse(localStorage.getItem("sakura_gesture_demo_v1") || "[]"));
+      if (seen.has(kind)) return;
+      seen.add(kind);
+      localStorage.setItem("sakura_gesture_demo_v1", JSON.stringify([...seen]));
+    } catch (e) { /* 存不了就每次都演示，无害 */ }
+
+    const start = () => {
+      if (!layer.isConnected) return;
+      const canvas = layer.querySelector("canvas");
+      if (!canvas) return;
+      const r = canvas.getBoundingClientRect();
+      if (r.width < 60 || r.height < 40) return;
+      const finger = document.createElement("div");
+      finger.className = "gesture-demo-finger";
+      finger.style.setProperty("--x0", (r.width * 0.18) + "px");
+      finger.style.setProperty("--x1", (r.width * 0.82) + "px");
+      finger.style.setProperty("--y0", (r.height * 0.5) + "px");
+      finger.style.setProperty("--y1", (r.height * 0.62) + "px");
+      const tip = document.createElement("div");
+      tip.className = "gesture-demo-tip";
+      tip.textContent = label;
+      const wrap = document.createElement("div");
+      wrap.className = "gesture-demo";
+      wrap.appendChild(finger);
+      wrap.appendChild(tip);
+      canvas.parentNode.style.position = canvas.parentNode.style.position || "relative";
+      canvas.parentNode.appendChild(wrap);
+      const stop = () => wrap.remove();
+      const t = setTimeout(stop, 2600);
+      layer.addEventListener("pointerdown", () => { clearTimeout(t); stop(); }, { once: true, capture: true });
+    };
+    // 等玩法把 canvas 画出来（createShell 后 handler 会 innerHTML 重写浮层）
+    setTimeout(start, 450);
   }
 
   /* v3.4.16 统一说明栏（操作 + 目标）+ 跳过按钮
