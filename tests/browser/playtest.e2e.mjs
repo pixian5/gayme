@@ -269,7 +269,9 @@ async function setup(page, persona) {
       Saves.setFlag("loopCount", loops);
     }, persona === "fast" ? 1 : 2);
     if (persona === "fast") {
-      await page.click("#btn-skip", { timeout: 3000 });   // 开快进
+      // force：顶栏按钮带常驻浮动动画，Playwright 的「稳定」检查在无头环境等不到
+      //（真人不受伤，视觉审计 P4 同源）；用 force 跳过可点性检查直接点击
+      await page.click("#btn-skip", { timeout: 3000, force: true });   // 开快进
       await page.waitForFunction(() => window.__game.state.skipMode === true, null, { timeout: 3000 }).catch(() => {});
     }
   }
