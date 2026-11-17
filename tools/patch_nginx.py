@@ -24,6 +24,8 @@ if "try_files $uri =404;" not in s:
     s = s2
 # 站点无客户端路径路由：未知路径应 404，而不是回 index 掩盖缺失
 s = s.replace("try_files $uri $uri/ /index.html;", "try_files $uri $uri/ =404;")
+if "application/xml" not in s:
+    s = s.replace("types {", "types {\n        application/xml                       xml;", 1)
 if "gzip on;" not in s:
     s = s.replace("server {", "server {\n" + GZIP, 1)
 if s == orig:
