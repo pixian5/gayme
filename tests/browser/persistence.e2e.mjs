@@ -55,7 +55,7 @@ async function freshPage(extra = {}) {
   page.on("pageerror", (e) => pageErrors.push("pageerror: " + e.message));
   page.on("console", (m) => { if (m.type() === "error" && !m.text().includes("Navigated away")) pageErrors.push("console: " + m.text); });
   await page.goto(URL, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction("() => typeof SCRIPT !== 'undefined' && typeof Saves !== 'undefined' && !!window.__game");
+  await page.waitForFunction(() => typeof SCRIPT !== 'undefined' && typeof Saves !== 'undefined' && !!window.__game);
   await page.evaluate(() => {
     Saves.updateSetting("bgm", false);
     Saves.updateSetting("sfxVolume", 0);
@@ -90,7 +90,7 @@ test("持久化完整性（串行）", async () => {
       day: window.__game.state.currentDay ?? null,
     }));
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction("() => typeof window.__game !== 'undefined'");
+    await page.waitForFunction(() => typeof window.__game !== 'undefined');
     await page.waitForTimeout(600);
     const canContinue = await page.evaluate(() => !!document.querySelector('#title-screen button[data-action="continue"]'));
     await page.evaluate(() => document.querySelector('#title-screen button[data-action="continue"]')?.click());
@@ -164,7 +164,7 @@ test("持久化完整性（串行）", async () => {
       };
     });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction("() => typeof Saves !== 'undefined'");
+    await page.waitForFunction(() => typeof Saves !== 'undefined');
     await page.waitForTimeout(500);
     const after = await page.evaluate(() => ({
       loopCount: Saves.getFlag("loopCount", 0), playCount: Saves.getFlag("playCount", 0),
@@ -189,7 +189,7 @@ test("持久化完整性（串行）", async () => {
     });
     await page.evaluate(() => { localStorage.clear(); });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction("() => typeof Saves !== 'undefined'");
+    await page.waitForFunction(() => typeof Saves !== 'undefined');
     await page.waitForTimeout(500);
     const wiped = await page.evaluate(() => ({ slots: Saves.load(0), ending: Saves.isEndingUnlocked("sy_ending_good") }));
     const imported = await page.evaluate((payload) => Saves.importData(payload), exported);
@@ -215,7 +215,7 @@ test("持久化完整性（串行）", async () => {
       localStorage.setItem("sakura_letters_settings_v2", "not-json");
     });
     await page.reload({ waitUntil: "domcontentloaded" });
-    await page.waitForFunction("() => typeof window.__game !== 'undefined' && !!document.getElementById('title-screen')");
+    await page.waitForFunction(() => typeof window.__game !== 'undefined' && !!document.getElementById('title-screen'));
     await page.waitForTimeout(700);
     const titleUsable = await page.evaluate(() => !!document.querySelector('#title-screen button[data-action="new"]'));
     await page.evaluate(() => document.querySelector('#title-screen button[data-action="new"]')?.click());
@@ -230,7 +230,7 @@ test("持久化完整性（串行）", async () => {
     const { ctx, page } = await freshPage();
     const page2 = await ctx.newPage();
     await page2.goto(URL, { waitUntil: "domcontentloaded" });
-    await page2.waitForFunction("() => typeof Saves !== 'undefined' && !!window.__game");
+    await page2.waitForFunction(() => typeof Saves !== 'undefined' && !!window.__game);
     await page2.evaluate(() => document.querySelector('#title-screen button[data-action="new"]')?.click());
     await page2.waitForTimeout(600);
     await page2.evaluate(() => document.querySelector("#tutorial-layer button")?.click());

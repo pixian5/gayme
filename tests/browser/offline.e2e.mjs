@@ -65,7 +65,7 @@ test("离线端到端（SW + 媒体缓存）", async () => {
     assert.ok(controlled, "SW 始终未接管——本用例不允许跳过，需人工排查测试环境");
 
     /* ---------- 阶段二：在线预热媒体缓存（CG + 立绘 + BGM 各一） ---------- */
-    await page.waitForFunction("() => typeof Saves !== 'undefined' && !!window.__game && !!window.MediaCache");
+    await page.waitForFunction(() => typeof Saves !== 'undefined' && !!window.__game && !!window.MediaCache);
     const warmed = await page.evaluate(async () => {
       const items = ["assets/cg/cg_meet_shiyu.webp", "assets/portraits/shiyu.webp", "audio/bgm/calm.ogg"];
       const rs = await Promise.all(items.map((p) => MediaCache.put(p)));
@@ -81,7 +81,7 @@ test("离线端到端（SW + 媒体缓存）", async () => {
     /* ---------- 阶段三：断网重启，验证全链路 ---------- */
     await ctx.setOffline(true);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.waitForFunction("() => typeof SCRIPT !== 'undefined' && !!window.__game && !!document.getElementById('title-screen')", null, { timeout: 15000 });
+    await page.waitForFunction(() => typeof SCRIPT !== 'undefined' && !!window.__game && !!document.getElementById('title-screen'), null, { timeout: 15000 });
     const boot = await page.evaluate(() => ({
       controlled: !!navigator.serviceWorker?.controller,
       version: document.querySelector(".title-version")?.textContent,

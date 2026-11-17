@@ -357,7 +357,7 @@ js/gamekit.js       玩法框架基座：统一浮层外壳 / 结果收尾 / 生
 js/games/           全部 89 个玩法模块：afterword 5 / senses 8 / craft 13 / nature 13 /
                     perception 14 / mechanism 14 / imagery 12 / direct 10（直跳型）
 js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ UI 浮层 / 存读档 / 图鉴 / 粒子 / BGM
-sw.js               Service Worker：预缓存 26 项核心资源（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
+sw.js               Service Worker：预缓存 23 项核心资源（字体/图标后台预热）（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
 tests/              Node 原生测试（54 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
@@ -366,7 +366,7 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 
 ## 约定
 
-- 版本号：每次修改 +0.0.1，满十进一（当前 v3.4.32，下一版 v3.4.33）
+- 版本号：每次修改 +0.0.1，满十进一（当前 v3.4.46）
 - 版本同步：`python3 tools/bump_version.py <新版本>` 一键同步 `VERSION` / `package.json` /
   `package-lock.json`（v3.3.4 起）/ `index.html`（`?v=` 与标题页）/ `sw.js`（PWA 缓存版本）/
   `js/engine.js`（GAME_VERSION 常量）；

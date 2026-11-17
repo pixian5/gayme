@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/sitemap.xml

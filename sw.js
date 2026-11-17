@@ -3,38 +3,43 @@
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）；
    应用代码（js/、css/）条目必须带与 index.html 相同的 ?v=<VERSION>，
    否则 SW 安装会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。 */
-const CACHE_VERSION = "sakura-v3.4.45";   // 核心层缓存（bump 工具自动同步）
+const CACHE_VERSION = "sakura-v3.4.46";   // 核心层缓存（bump 工具自动同步）
 const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
+// 首装只预缓存启动必需的 HTML/CSS/JS；字体与图标体积大且不阻塞离线启动，
+// 放到 activate 之后后台预热，避免首访 SW 接管被 700KB+ 资源拖慢。
+const DEFERRED_PRECACHE = [
+  "icons/icon-192.png",
+  "icons/icon-512.png",
+  "icons/icon-maskable-512.png",
+  "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
+  "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
+];
+
 const PRECACHE = [
   "./",
   "index.html",
   "manifest.webmanifest",
   "favicon.svg",
-  "icons/icon-192.png",
-  "icons/icon-512.png",
-  "icons/icon-maskable-512.png",
-  "css/style.css?v=3.4.45",
-  "css/games.css?v=3.4.45",
-  "js/saves.js?v=3.4.45",
-  "js/script.js?v=3.4.45",
-  "js/lifecycle.js?v=3.4.45",
-  "js/minigames.js?v=3.4.45",
-  "js/game-help.js?v=3.4.45",
-  "js/media-cache.js?v=3.4.45",
-  "js/gamekit.js?v=3.4.45",
-  "js/games/afterword.js?v=3.4.45",
-  "js/games/senses.js?v=3.4.45",
-  "js/games/craft.js?v=3.4.45",
-  "js/games/nature.js?v=3.4.45",
-  "js/games/perception.js?v=3.4.45",
-  "js/games/mechanism.js?v=3.4.45",
-  "js/games/imagery.js?v=3.4.45",
-  "js/games/direct.js?v=3.4.45",
-  "js/ui/panels.js?v=3.4.45",
-  "js/engine.js?v=3.4.45",
+  "css/style.css?v=3.4.46",
+  "css/games.css?v=3.4.46",
+  "js/saves.js?v=3.4.46",
+  "js/script.js?v=3.4.46",
+  "js/lifecycle.js?v=3.4.46",
+  "js/minigames.js?v=3.4.46",
+  "js/game-help.js?v=3.4.46",
+  "js/media-cache.js?v=3.4.46",
+  "js/gamekit.js?v=3.4.46",
+  "js/games/afterword.js?v=3.4.46",
+  "js/games/senses.js?v=3.4.46",
+  "js/games/craft.js?v=3.4.46",
+  "js/games/nature.js?v=3.4.46",
+  "js/games/perception.js?v=3.4.46",
+  "js/games/mechanism.js?v=3.4.46",
+  "js/games/imagery.js?v=3.4.46",
+  "js/games/direct.js?v=3.4.46",
+  "js/ui/panels.js?v=3.4.46",
+  "js/engine.js?v=3.4.46",
   // v3.4.0：立绘位图走媒体层运行时缓存（/assets/portraits/），跨版本沿用
-  "fonts/NotoSerifSC-Regular.woff2?v=3.2.4",
-  "fonts/NotoSerifSC-Bold.woff2?v=3.2.4",
 ];
 
 self.addEventListener("install", (event) => {
@@ -48,7 +53,14 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       // 只清核心层旧版本仓；媒体层（sakura-media）跨版本沿用，避免重下 10MB
       Promise.all(keys.filter((k) => k.startsWith("sakura-v") && k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    ).then(() => self.clients.claim()).then(() => {
+      // 后台预热非首屏资源；失败不影响离线启动（字体回退系统宋体）
+      setTimeout(() => {
+        caches.open(CACHE_VERSION)
+          .then((cache) => Promise.all(DEFERRED_PRECACHE.map((u) => cache.add(u).catch(() => {}))))
+          .catch(() => {});
+      }, 2000);
+    })
   );
 });
 

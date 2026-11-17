@@ -60,7 +60,7 @@ async function openPage({ blockSW = true, initScript = null, ...extra } = {}) {
   const page = await ctx.newPage();
   if (initScript) await page.addInitScript(initScript);
   await page.goto(URL, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction("() => typeof SCRIPT !== 'undefined' && typeof Saves !== 'undefined' && !!window.__game");
+  await page.waitForFunction(() => typeof SCRIPT !== 'undefined' && typeof Saves !== 'undefined' && !!window.__game);
   await page.waitForTimeout(250);
   return { ctx, page };
 }

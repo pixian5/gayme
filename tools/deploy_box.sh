@@ -34,6 +34,9 @@ fi
 [ -n "$SRC" ] || SRC="$INCOMING"
 sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 "$SRC/" "$WEB/"
 echo "SYNCED_FROM=$SRC"
+if [ -f "$SRC/tools/patch_nginx.py" ]; then
+  sudo -n python3 "$SRC/tools/patch_nginx.py" || echo "!! nginx 修正失败（站点仍可访问）" >&2
+fi
 EOS
 )
 instabox exec "$BOX" -- bash -lc "$REMOTE_SCRIPT" _ "$INCOMING" "$WEB"
