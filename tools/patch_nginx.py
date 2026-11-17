@@ -22,6 +22,7 @@ GZIP = '''    gzip on;
     gzip_types text/css application/javascript application/json application/manifest+json image/svg+xml;'''
 
 s = open(CONF, encoding="utf-8").read()
+bak = CONF + ".bak"
 orig = s
 if "try_files $uri =404;" not in s:
     s2, n = re.subn(r"location ~\* \\\.\([^)]*\)\s*\{[^}]*\}", NEW_LOC, s, count=1)
@@ -54,6 +55,13 @@ else:
 r = subprocess.run(["docker", "exec", "sakura-web", "nginx", "-t"], capture_output=True, text=True)
 print(r.stdout.strip() or r.stderr.strip())
 if r.returncode != 0:
-    raise SystemExit("nginx -t failed, 未 reload")
+    # 配置无效：恢复备份并保持线上运行配置不变
+    try:
+        shutil.copy(bak, CONF)
+        subprocess.run(["docker", "exec", "sakura-web", "nginx", "-s", "reload"], check=False)
+        print("已恢复备份:", bak)
+    except Exception as e:
+        print("恢复失败:", e)
+    raise SystemExit("nginx -t failed, 已回滚，未 reload")
 subprocess.run(["docker", "exec", "sakura-web", "nginx", "-s", "reload"], check=True)
 print("nginx reloaded")
