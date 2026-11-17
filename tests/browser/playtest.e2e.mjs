@@ -430,6 +430,9 @@ test(`五画像真人试玩（${engineName}：${ONLY.join("/")}）`, { timeout: 
   }
   await browser.close();
 
+  // v3.4.48：控制台错误非空时打印全文（此前只印数量，排障需要原文）
+  if (allErrors.length) console.log("CONSOLE_ERRORS", JSON.stringify(allErrors, null, 1));
+
   for (const r of results) {
     assert.ok(!r.timeout, `${r.persona} 画像超过 ${MAX_STEPS} 步未到结局（疑似死循环）`);
     assert.ok(!r.stuckAt, `${r.persona} 画像卡在节点 ${r.stuckAt}（连续 11 步无进展）`);
