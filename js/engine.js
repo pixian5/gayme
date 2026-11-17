@@ -191,6 +191,7 @@
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
+   v3.4.48：内容安全策略（CSP）基线——index.html 末尾的 inline SW 注册外置为 js/sw-register.js（逻辑一字未改），页面从此零内联脚本；新增 CSP meta：script-src 'self'（严格）、style-src 保留 'unsafe-inline'（首屏关键 CSS 与浮层内联样式）、img/media/connect 含 blob:（页面侧媒体缓存的 blob 直供与导出下载）、object-src 'none'、base-uri/form-action 'self'；frame-ancestors 不能走 meta，由 nginx COOP/CORP 承担；sw-register.js 纳入预缓存（一一对应契约）
    v3.4.45：loopText 第二批 12 节点——第 4 日玩法节点全收（倒影/茶/星图/骰子/纸船/碎字/雨鼓/拨号/诗雨开场/拼诗/苏念配色）+ 调香；189→201 处，d 链玩法节点缺口 25→13
    v3.4.44：商业级测试基建——新增持久化完整性 e2e（npm run test:persistence：自动进度防刷新/存读档往返/多槽位/旗标跨刷新/导出导入 roundtrip/损坏存档防御/跨标签写冲突/快存快捷键，8 项）与离线端到端 e2e（npm run test:offline：SW 接管启动+媒体缓存离线供图，不设跳过分支）；window.__game 补暴露 snapshot/quickSave/saveToSlot/loadFromSlot/openCgViewer（纯暴露供测试与调试）
    v3.4.43：内容与音效——d 链玩法节点 loopText 首批 12 个（拼图/气味/触碰/温度/呼吸/折信/时间胶囊/光绘/茶渍/光影/调色/口风琴，各 2 段既视感变体，177→189）；音效调优：记忆解锁改配风铃采样、关键词解锁改配翻页采样（原先只能听程序化合成，采样缺失仍回落）
@@ -241,10 +242,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.47";
+  const GAME_VERSION = "3.4.48";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.48", note: "安全基线：禁用一切内联脚本，外链资源全部限定本站" },
     { ver: "3.4.47", note: "补齐素材许可与隐私说明，线上启用 HSTS / Permissions-Policy / COOP / CORP" },
     { ver: "3.4.46", note: "手机按钮更好点，首次离线就绪更快，缺失页面返回正确的 404" },
     { ver: "3.4.45", note: "第 4 日全部玩法场景补上多周目文本" },
