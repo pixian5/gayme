@@ -186,6 +186,8 @@
    v3.4.21：确认按钮可读性——灰置时自动补 title「还没完成交互——XX 目前不可用」+ aria-disabled + 虚线边框（MutationObserver 随按钮 disabled 变化同步，cleanup 断开）；玩家不再面对一个不知为何灰的按钮
    v3.4.22：快进不再被视角节点阻断——perspective 从「互动节点」降级为「可选补充内容」：快进中已读节点照常连跳（👁 按钮共存，想看可主动点）；视角节点从 1 增至 13 后此项影响面放大
    v3.4.36：视觉审计修复四连——P1 首屏 FOUC（boot 屏移除后到 style.css 生效前标题页裸奔，index.html 内联标题页关键样式封住间隙）；P2 旁白时说话人名牌空置残留（无 speaker 隐藏名牌，主对话+信件两路径）；P6 手机竖屏顶栏溢出（≤480px 再折叠收件箱/统计进 ⋯ 抽屉、单行不再换行压住心条，⋯ 展开时收起心条）；P7 CG 查看器无加载占位（大图拉取数秒全黑像坏掉，加 spinner onload 移除）。来源：两轮真实浏览器截图审计（docs/20261107-0040）
+   v3.4.47：合规与安全基线——新增 NOTICE（第三方素材许可）、PRIVACY（本地存储/无上传）、
+           字体 OFL 全文；nginx 安全头（HSTS / Permissions-Policy / COOP / CORP）纳入部署补丁
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
@@ -239,10 +241,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.46";
+  const GAME_VERSION = "3.4.47";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.47", note: "补齐素材许可与隐私说明，线上启用 HSTS / Permissions-Policy / COOP / CORP" },
     { ver: "3.4.46", note: "手机按钮更好点，首次离线就绪更快，缺失页面返回正确的 404" },
     { ver: "3.4.45", note: "第 4 日全部玩法场景补上多周目文本" },
     { ver: "3.4.44", note: "为商业化验收补齐存档与离线的自动化测试" },
