@@ -225,24 +225,33 @@ test("缺陷回归（串行）", async () => {
 
   // 9 多标签
   {
+    // v3.4.49 重写：原实现用 iframe.contentWindow.eval() 模拟第二标签——被 CSP
+    // script-src 'self' 正确拦截（eval 需 unsafe-eval，我们不给）。且 Saves 是
+    // const 词法全局、不挂 window，contentWindow.Saves 也取不到。
+    // 正确姿势：iframe 只当"第二标签"壳，写入由 Playwright 的帧上下文函数形
+    // evaluate 驱动（CDP 通道，CSP 干净）——语义与原用例完全一致。
     const { ctx, page } = await openPage();
-    const r = await page.evaluate(`new Promise((resolve) => {
-      const f = document.createElement('iframe');
-      f.style.display = 'none';
-      f.src = '/?second-tab=1';
-      f.onload = () => setTimeout(() => {
-        try {
-          const a = Saves.save(0, { nodeId: 'prologue_1', variables: {}, history: [], visitedNodes: {} });
-          const b = f.contentWindow.eval("Saves.save(1, { nodeId: 'prologue_2', variables: {}, history: [], visitedNodes: {} })");
-          const raw = localStorage.getItem('sakura_letters_saves_v2');
-          let slots = null;
-          try { slots = JSON.parse(raw).slots.map((s) => (s && s.nodeId) || null); } catch (e) {}
-          resolve({ a, b, slots, rawLen: raw ? raw.length : 0 });
-        } catch (e) { resolve({ error: String(e) }); }
-      }, 1500);
+    await page.evaluate(() => {
+      const f = document.createElement("iframe");
+      f.id = "second-tab-frame";
+      f.style.display = "none";
+      f.src = "/?second-tab=1";
       document.body.appendChild(f);
-    })`);
-    record("多标签存档不覆盖", !!r.slots && r.slots[0] === "prologue_1" && r.slots[1] === "prologue_2", r);
+    });
+    await page.waitForFunction(() => {
+      const f = document.getElementById("second-tab-frame");
+      return !!(f && f.contentWindow && f.contentWindow.__game);
+    }, null, { timeout: 10000 });
+    // 主页面写槽 0
+    const a = await page.evaluate(() => Saves.save(0, { nodeId: "prologue_1", variables: {}, history: [], visitedNodes: {} }));
+    // 第二"标签"（iframe）用它的旧内存 Saves 实例写槽 1——v3.4.39 写前重读应保住槽 0
+    const frame = page.frames().find((fr) => fr.url().includes("second-tab=1"));
+    const b = frame ? await frame.evaluate(() => Saves.save(1, { nodeId: "prologue_2", variables: {}, history: [], visitedNodes: {} })) : false;
+    const slots = await page.evaluate(() => {
+      try { return JSON.parse(localStorage.getItem("sakura_letters_saves_v2")).slots.map((s) => (s && s.nodeId) || null); }
+      catch (e) { return null; }
+    });
+    record("多标签存档不覆盖", a === true && b === true && !!slots && slots[0] === "prologue_1" && slots[1] === "prologue_2", { a, b, slots });
     await ctx.close();
   }
 
