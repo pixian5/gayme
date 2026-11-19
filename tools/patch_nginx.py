@@ -29,6 +29,9 @@ if "try_files $uri =404;" not in s:
     if n == 0:
         s2 = s.replace("    location / {", NEW_LOC + "\n    location / {", 1)
     s = s2
+# v3.4.50：测试产物不对外（qa-results 含完整测试报告与缺陷清单）
+if "/qa-results/" not in s:
+    s = s.replace("    location / {", "    location ^~ /qa-results/ { return 404; }\n    location / {", 1)
 # 站点无客户端路径路由：未知路径应 404，而不是回 index 掩盖缺失
 s = s.replace("try_files $uri $uri/ /index.html;", "try_files $uri $uri/ =404;")
 # 安全头：server 与每个 location 都 include，避免 add_header 继承被覆盖

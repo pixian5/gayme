@@ -100,6 +100,9 @@ window.SakuraPanels = function (C) {
       <div class="config-row"><label>减少动效</label>
         <select id="cfg-reducemotion"><option value="true" ${s.reduceMotion ? "selected" : ""}>开启</option><option value="false" ${!s.reduceMotion ? "selected" : ""}>关闭</option></select>
       </div>
+      <div class="config-row"><label>界面模糊</label>
+        <select id="cfg-blur"><option value="true" ${s.blurEffects !== false ? "selected" : ""}>开启</option><option value="false" ${s.blurEffects === false ? "selected" : ""}>关闭（低配更流畅）</option></select>
+      </div>
       <div class="config-row">
         <label>界面字号</label>
         <input type="range" id="cfg-fontscale" min="0.9" max="1.3" step="0.05" value="${escapeHtml(String(s.fontScale ?? 1))}">
@@ -149,6 +152,11 @@ window.SakuraPanels = function (C) {
       Saves.updateSetting("reduceMotion", e.target.value === "true");
       applyUiSettings();
       if (state.currentBg) updateParticles(state.currentBg);
+    };
+    // v3.4.50：界面模糊开关（与「减少动效」互相独立，关模糊只摘 backdrop-filter）
+    document.getElementById("cfg-blur").onchange = (e) => {
+      Saves.updateSetting("blurEffects", e.target.value === "true");
+      applyUiSettings();
     };
     document.getElementById("cfg-bgm").onchange = (e) => {
       Saves.updateSetting("bgm", e.target.value === "true");

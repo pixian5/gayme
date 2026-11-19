@@ -7,6 +7,8 @@ const css = fs.readFileSync(new URL("../css/style.css", import.meta.url), "utf8"
 const engine = fs.readFileSync(new URL("../js/engine.js", import.meta.url), "utf8");
 const script = fs.readFileSync(new URL("../js/script.js", import.meta.url), "utf8");
 const minigames = fs.readFileSync(new URL("../js/minigames.js", import.meta.url), "utf8");
+const saves = fs.readFileSync(new URL("../js/saves.js", import.meta.url), "utf8");
+const panels = fs.readFileSync(new URL("../js/ui/panels.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const version = fs.readFileSync(new URL("../VERSION", import.meta.url), "utf8").trim();
 
@@ -109,17 +111,19 @@ test("立绘走 Service Worker 媒体缓存", () => {
   assert.match(sw, /const MEDIA_CACHE = /);
 });
 
-test("分享卡片使用绝对图片地址与站点地址", () => {
-  // v3.4.30：相对路径的 og:image 会被社媒抓取器按抓取页地址补全，
-  // 换域名 / 镜像站分享时容易丢图；分享卡片必须指向唯一正式源的绝对地址。
-  const origin = "https://oh.sbbz.tech:8080/";
+test("分享卡片：og:url 是唯一真源，og:image / twitter:image 必须同源", () => {
+  // v3.4.50：域名迁移后 meta 曾滞留在失效域名（oh.sbbz.tech:8080 → 301 → HTTPS → 525）。
+  // 改为「以 og:url 为唯一真源」的自洽校验：换域名只改一处，站点地址与图片地址不可能再漂开。
   const pick = (re) => (html.match(re) || [])[1];
   const image = pick(/<meta property="og:image" content="([^"]+)">/);
   const url = pick(/<meta property="og:url" content="([^"]+)">/);
   const twitter = pick(/<meta name="twitter:image" content="([^"]+)">/);
-  assert.ok(image && image.startsWith(origin), `og:image 必须是绝对地址：${image}`);
-  assert.ok(url && url.startsWith(origin), `og:url 必须是绝对地址：${url}`);
+  assert.match(url || "", /^https:\/\/[^/]+\/$/, `og:url 必须是带结尾斜杠的绝对地址：${url}`);
+  const origin = new URL(url).origin + "/";
+  assert.ok(image && image.startsWith(origin), `og:image 必须与 og:url 同源：${image}`);
+  assert.ok(url.startsWith(origin), `og:url 自身必须是绝对地址：${url}`);
   assert.equal(twitter, image, "twitter:image 应与 og:image 一致");
+  assert.equal(/oh\.sbbz\.tech/.test(html), false, "页面不应再引用已失效的旧域名");
   assert.match(html, /<meta property="og:image:width" content="1200">/);
   assert.match(html, /<meta property="og:image:height" content="630">/);
   assert.equal(fs.existsSync(new URL("../assets/og-cover.jpg", import.meta.url)), true, "缺少分享封面 assets/og-cover.jpg");
@@ -166,4 +170,21 @@ test("设置面板可试听音效", () => {
   assert.match(panels, /sfxSlider\.onchange = \(\) => \{\s+if \(\(Saves\.settings\.sfxVolume[\s\S]*?playSfx\("letter"\)/, "滑杆松手未试听");
   const css = fs.readFileSync(new URL("../css/style.css", import.meta.url), "utf8");
   assert.match(css, /\.config-sfx-test\s*\{/, "缺少试听按钮样式");
+});
+
+test("低配模式：界面模糊是已知设置，导入/读档时不被丢弃", () => {
+  // v3.4.50：normalizeSettings 的布尔白名单必须包含新键，否则导入 JSON 会静默丢设置。
+  assert.match(saves, /blurEffects:\s*true/);
+  assert.match(saves, /"reduceMotion",\s*"blurEffects"/);
+  assert.match(engine, /classList\.toggle\("no-blur",\s*s\.blurEffects === false\)/);
+  assert.match(panels, /id="cfg-blur"/);
+});
+
+test("低配模式：CSS 覆盖常驻容器与一次性玩法浮层", () => {
+  const block = css.split("v3.4.50 低配模式")[1] || "";
+  for (const sel of ["#dialog-box", "#choices", "#day-bar", "#heart-bar", '[id$="-layer"]']) {
+    assert.ok(block.includes(sel), `no-blur 规则缺少 ${sel}`);
+  }
+  assert.match(block, /backdrop-filter: none !important/);
+  assert.match(block, /-webkit-backdrop-filter: none !important/);
 });

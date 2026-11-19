@@ -195,6 +195,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   // v3.3.12：界面字号缩放（0.9–1.3）与「减少动效」开关
   fontScale: 1,
   reduceMotion: false,
+  // v3.4.50：界面模糊开关（关闭后取消 backdrop-filter，软件渲染 / 弱 GPU 更流畅）
+  blurEffects: true,
 });
 
 function createDefaultSaveData() {
@@ -227,7 +229,7 @@ function normalizeSettings(value) {
     const bounded = Math.min(range.max, Math.max(range.min, raw));
     normalized[key] = range.integer ? Math.round(bounded) : bounded;
   }
-  for (const key of ["particles", "bgm", "reduceMotion"]) {
+  for (const key of ["particles", "bgm", "reduceMotion", "blurEffects"]) {
     if (typeof value[key] === "boolean") normalized[key] = value[key];
   }
   return normalized;

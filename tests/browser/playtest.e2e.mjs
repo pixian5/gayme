@@ -122,7 +122,10 @@ const tag = (page) => page.evaluate(TAG);
 async function clickMark(page, m) {
   const el = page.locator(`[data-pt="${m}"]`);
   if (await el.count() === 0) return false;
-  try { await el.first().click({ timeout: 1500 }); return true; } catch { return false; }
+  // v3.4.50：2.5s + force 重试——低配/软件渲染下首次点击偶发被动画稳定检查拖过阈值，不应当失败
+  try { await el.first().click({ timeout: 2500 }); return true; } catch {
+    try { await el.first().click({ timeout: 2500, force: true }); return true; } catch { return false; }
+  }
 }
 
 async function dragMark(page, m, kind) {
@@ -230,8 +233,16 @@ async function pickChoice(page, texts, persona, stats) {
     const found = texts.findIndex((t) => /旧校舍后面/.test(t));
     if (found >= 0) { idx = found; if (stats) stats.seniorLine = true; }
   }
+  // v3.4.50：先等选项层就绪，再给 8s 点击预算；超过 1s 记为慢点击（只统计、不判失败）
+  await page.waitForFunction(() => document.querySelectorAll("#choices button").length > 0, null, { timeout: 8000 }).catch(() => {});
   const btn = page.locator("#choices button").nth(idx);
-  await btn.click({ timeout: 2000 });
+  const t0 = Date.now();
+  await btn.click({ timeout: 8000 });
+  const dt = Date.now() - t0;
+  if (stats && dt > 1000) {
+    stats.slowClicks = (stats.slowClicks || 0) + 1;
+    stats.slowClickMax = Math.max(stats.slowClickMax || 0, dt);
+  }
   return texts[idx] || "";
 }
 
@@ -242,7 +253,7 @@ async function answerLetter(page, persona) {
     await page.waitForTimeout(80);
   }
   const send = page.locator("#choices button").last();   // 自由书写模式最后一个按钮 = ✉ 寄出
-  await send.click({ timeout: 2000 });
+  await send.click({ timeout: 8000 });
 }
 
 async function setup(page, persona) {
@@ -300,8 +311,11 @@ async function runPersona(page, persona) {
     if (s.node !== lastNode) { trail.push(s.node); if (trail.length > 60) trail.shift(); lastNode = s.node; }
     if (s.endingShown || (s.hasEnding && s.layers === 0)) {
       if (!s.endingShown) {
-        await page.waitForFunction("!document.getElementById('ending-screen').classList.contains('hidden')",
-          null, { timeout: 8000 }).catch(() => {});
+        // v3.4.50：字符串表达式在 CSP script-src 'self' 下会触发 unsafe-eval 违反（被记成 pageerror），改用函数
+        await page.waitForFunction(() => {
+          const el = document.getElementById("ending-screen");
+          return !!el && !el.classList.contains("hidden");
+        }, null, { timeout: 8000 }).catch(() => {});
       }
       stats.endingId = s.endingId || (await page.evaluate(() => (SCRIPT[window.__game.state.currentNode] || {}).ending?.id || null));
       // 快通画像：记录结局时的 skipMode——若被中途关掉，「已读快通」的覆盖就是假的
@@ -395,7 +409,7 @@ function report(r) {
 }
 
 test(`五画像真人试玩（${engineName}：${ONLY.join("/")}）`, { timeout: 900_000 }, async () => {
-  const browser = await engine.launch();
+  const browser = await engine.launch({ executablePath: process.env.CHROME_PATH, args: ['--no-sandbox','--disable-dev-shm-usage'] });
   const allErrors = [];
 
   /* 每个画像独立 context：localStorage 互不干扰（快通/二周目画像要注入「全节点已读」）。

@@ -191,6 +191,11 @@
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
+   v3.4.50：低配可玩性——新增「设置 → 界面模糊」开关（blurEffects，默认开）：关闭时给 body 加 no-blur，
+           摘掉常驻对白框/选项层/心条/日程条与全部 *-layer 玩法浮层的 backdrop-filter 并压实底色；
+           软件渲染实测 48.1ms/66.7ms(p95) → 16.7ms/16.7ms；分享卡片改为以 og:url 为单一真源
+           （域名迁移后曾指向 525 的旧域名），新增 scripts/check-meta.mjs 部署后校验；
+           playtest 点击预算 2s→8s 并统计慢点击；部署补丁给 /qa-results/ 返回 404
    v3.4.49：loopText 第三批（收官）13 节点——学声/脉搏/雾窗/摆糖/调钟/夏织冲刺/苏念两幕/风铃/回声定位/电报/钟摆/星图；201→214 处，d 链玩法节点 loopText 缺口自 v3.4.11 搁置至今正式清零（37→0）
    v3.4.48：内容安全策略（CSP）基线——index.html 末尾的 inline SW 注册外置为 js/sw-register.js（逻辑一字未改），页面从此零内联脚本；新增 CSP meta：script-src 'self'（严格）、style-src 保留 'unsafe-inline'（首屏关键 CSS 与浮层内联样式）、img/media/connect 含 blob:（页面侧媒体缓存的 blob 直供与导出下载）、object-src 'none'、base-uri/form-action 'self'；frame-ancestors 不能走 meta，由 nginx COOP/CORP 承担；sw-register.js 纳入预缓存（一一对应契约）
    v3.4.45：loopText 第二批 12 节点——第 4 日玩法节点全收（倒影/茶/星图/骰子/纸船/碎字/雨鼓/拨号/诗雨开场/拼诗/苏念配色）+ 调香；189→201 处，d 链玩法节点缺口 25→13
@@ -243,10 +248,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.49";
+  const GAME_VERSION = "3.4.50";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.50", note: "设置里可关闭界面模糊，老机器更流畅；分享卡片恢复出图" },
     { ver: "3.4.49", note: "最后十三个玩法场景补上多周目文本，既定缺口清零" },
     { ver: "3.4.48", note: "安全基线：禁用一切内联脚本，外链资源全部限定本站" },
     { ver: "3.4.47", note: "补齐素材许可与隐私说明，线上启用 HSTS / Permissions-Policy / COOP / CORP" },
@@ -2717,6 +2723,8 @@
     const s = Saves.settings || {};
     document.documentElement.style.setProperty("--ui-scale", String(s.fontScale ?? 1));
     document.body.classList.toggle("reduce-motion", !!s.reduceMotion);
+    // v3.4.50：界面模糊开关——关闭时摘掉所有 backdrop-filter（CSS 走 body.no-blur）
+    document.body.classList.toggle("no-blur", s.blurEffects === false);
   }
 
   function init() {

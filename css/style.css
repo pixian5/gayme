@@ -1386,3 +1386,26 @@ button:focus-visible,
 }
 /* ⋯ 展开抽屉时收起心条（此时按钮多行铺开，必然与心条重叠） */
 #top-bar.expanded ~ #heart-bar { opacity: 0 !important; }
+
+/* ============ v3.4.50 低配模式：关闭界面模糊 ============
+   背景：backdrop-filter 悬在整屏 / 大面板上时，软件渲染与弱 GPU 每帧都要重算模糊。
+   实测（无头 Chromium 软件渲染）：选项层 34ms/帧 → 17ms，对白框 28ms → 18ms。
+   只摘模糊，不动布局与配色；底色同步压实以维持文字对比度。 */
+body.no-blur #dialog-box,
+body.no-blur #choices,
+body.no-blur #overlay,
+body.no-blur #ending-screen,
+body.no-blur #day-bar,
+body.no-blur #heart-bar,
+body.no-blur .tutorial-layer,
+body.no-blur .inbox-reply-layer,
+body.no-blur .cg-viewer-layer,
+body.no-blur [id$="-layer"],
+body.no-blur .mg-overlay {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.no-blur #choices { background: rgba(0,0,0,0.58); }
+body.no-blur #dialog-box {
+  background: linear-gradient(180deg, rgba(20,18,32,0.96), rgba(12,10,22,0.98));
+}

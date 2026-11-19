@@ -102,6 +102,17 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 
 ## 【当前开发进度】
 
+**v3.4.50（2026-11-19）**：**低配可玩性 + 分享卡片修复**——设置面板新增「界面模糊」开关
+（`blurEffects`，默认开启、视觉零变化）：关闭时 `<body class="no-blur">` 摘掉常驻对白框 / 选项层 /
+心条 / 日程条与全部 `*-layer` 玩法浮层的 `backdrop-filter`，并压实底色维持对比度。软件渲染实测
+选项层 48.1ms（p95 66.7ms）→ 16.7ms（p95 16.7ms），3 秒采样帧数 62 → 180；新增
+`tests/browser/settings.e2e.mjs`（4 项：开关生效 / 刷新保持 / 旧档默认 / 导入白名单 / 与减少动效独立）
+与 `tests/browser/perf.e2e.mjs`（computed style 硬断言 + 帧耗时 A/B 记录）。同时修正分享卡片：
+`og:url` 改为唯一真源，`og:image` / `twitter:image` 与其同源（此前三条 meta 仍指向已失效的
+`oh.sbbz.tech:8080`，实测 301→HTTPS→**525**），测试从「硬编码域名」改为同源自洽断言，
+新增 `scripts/check-meta.mjs` 发布后校验；`playtest` 点击预算 2s→8s 并统计慢点击（>1s 只告警不判失败）；
+部署补丁给 `/qa-results/` 返回 404，rsync 同步排除该目录。
+
 **v3.4.49（2026-11-18）**：**loopText 收官**——第三批 13 节点，全剧 214 处，d 链玩法
 节点 43/43 全覆盖（v3.4.11 搁置的既定缺口清零）；**CSP 首个真矩阵全绿**（round6 十套 10/10，
 五画像 0 控制台错误）——过程中抓出并修复测试基建的 iframe.eval 问题（游戏本体零 eval），
