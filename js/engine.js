@@ -191,6 +191,9 @@
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
+   v3.4.51：字体与缓存修正——按当前 1909 字符集重建 Noto Serif SC 子集（1722→1868 字形，
+           丢失的 127 个常用字归零：曲/跨/纳/讲/绝/英…）；字体 URL ?v= 3.2.4→3.4.51 强刷；
+           nginx 为 manifest/robots/sitemap 增加精确 location，不再吃 immutable 一年缓存
    v3.4.50：低配可玩性——新增「设置 → 界面模糊」开关（blurEffects，默认开）：关闭时给 body 加 no-blur，
            摘掉常驻对白框/选项层/心条/日程条与全部 *-layer 玩法浮层的 backdrop-filter 并压实底色；
            软件渲染实测 48.1ms/66.7ms(p95) → 16.7ms/16.7ms；分享卡片改为以 og:url 为单一真源
@@ -248,10 +251,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.50";
+  const GAME_VERSION = "3.4.51";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.51", note: "补齐 127 个常用字的字体，搜索引擎与安装信息不再被长期缓存" },
     { ver: "3.4.50", note: "设置里可关闭界面模糊，老机器更流畅；分享卡片恢复出图" },
     { ver: "3.4.49", note: "最后十三个玩法场景补上多周目文本，既定缺口清零" },
     { ver: "3.4.48", note: "安全基线：禁用一切内联脚本，外链资源全部限定本站" },

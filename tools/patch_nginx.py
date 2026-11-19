@@ -49,6 +49,26 @@ if "application/xml" not in s:
     s = s.replace("types {", "types {\n        application/xml                       xml;", 1)
 if "gzip on;" not in s:
     s = s.replace("server {", "server {\n" + GZIP, 1)
+# v3.4.51：元数据别吃一年 immutable——精确 location 优先级高于正则 location
+CACHE_META = """    location = /manifest.webmanifest {
+        include /etc/nginx/conf.d/security_headers.conf;
+        default_type application/manifest+json;
+        add_header Cache-Control "no-cache";
+    }
+    location = /robots.txt {
+        include /etc/nginx/conf.d/security_headers.conf;
+        default_type text/plain;
+        add_header Cache-Control "public, max-age=300";
+    }
+    location = /sitemap.xml {
+        include /etc/nginx/conf.d/security_headers.conf;
+        default_type application/xml;
+        add_header Cache-Control "public, max-age=300";
+    }
+"""
+if "location = /manifest.webmanifest" not in s:
+    s = s.replace(INC, INC + "\n" + CACHE_META.rstrip("\n"), 1)
+
 if s == orig:
     print("nginx unchanged")
 else:
