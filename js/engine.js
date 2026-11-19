@@ -191,6 +191,9 @@
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
+   v3.4.52：稳定性收尾——gotoNode 入口统一清理残留玩法浮层（此前仅 newGame/读档/后日谈清），
+           程序化跳转与极端时序不再叠加旧层；顶栏补 role="navigation"；部署期注入站点 origin
+           （og/robots/sitemap 随盒子域名自动改写）；nginx 补 text/markdown，NOTICE/PRIVACY 不再被下载
    v3.4.51：字体与缓存修正——按当前 1909 字符集重建 Noto Serif SC 子集（1722→1868 字形，
            丢失的 127 个常用字归零：曲/跨/纳/讲/绝/英…）；字体 URL ?v= 3.2.4→3.4.51 强刷；
            nginx 为 manifest/robots/sitemap 增加精确 location，不再吃 immutable 一年缓存
@@ -251,10 +254,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.51";
+  const GAME_VERSION = "3.4.52";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.52", note: "稳定性小修：切换场景不再残留玩法浮层" },
     { ver: "3.4.51", note: "补齐 127 个常用字的字体，搜索引擎与安装信息不再被长期缓存" },
     { ver: "3.4.50", note: "设置里可关闭界面模糊，老机器更流畅；分享卡片恢复出图" },
     { ver: "3.4.49", note: "最后十三个玩法场景补上多周目文本，既定缺口清零" },
@@ -612,8 +616,17 @@
     if (!node) { console.error("节点不存在:", nodeId); return; }
     // v3.4.17：同节点重复进入防重入——否则每次都会重新创建玩法浮层叠加（试玩发现-3）
     // 条件：已在游戏内、非读档恢复、且是同一个节点（读档 restoring 需要重放同节点）
-    if (!options.restoring && state.inGame && state.currentNode === nodeId) return;
+    if (!options.restoring && state.inGame && state.currentNode === nodeId) {
+      // v3.4.52：同节点但界面已被清理（外部清理 / 递归跳转到自身后的二次进入）时不能直接返回，
+      // 否则会停在空白界面；此处按「恢复渲染」重放一次（不再累计访问与数值）。
+      const blank = el.dialogBox.classList.contains("hidden") && !hasActiveInteractionLayer();
+      if (!blank) return;
+      options = Object.assign({}, options, { restoring: true });
+    }
     const restoring = options.restoring === true;
+    // v3.4.52：节点切换收掉残留的玩法浮层（此前只有 newGame/读档/后日谈会清）。
+    // 仅在有活动浮层时清理：无浮层时跳过，避免给每个普通节点平白增加 DOM 查询与定时器取消
+    if (hasActiveInteractionLayer()) removeActiveInteractionLayers();
     clearTimeout(state.autoTimer);
     state.currentNode = nodeId;
     state.pendingInteraction = false;

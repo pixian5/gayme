@@ -40,7 +40,7 @@ const engine = engineName === "firefox" ? firefox : chromium;
 test.after(() => { server.close(); server.closeAllConnections?.(); });   // 失败路径也要释放端口
 
 test(`全图运行时走查（${engineName}，441 节点）`, { timeout: 300_000 }, async () => {
-  const browser = await engine.launch();
+  const browser = await engine.launch({ executablePath: process.env.CHROME_PATH, args: ['--no-sandbox','--disable-dev-shm-usage'] });
   const vpEnv = process.env.VIEWPORT;   // 例：390x844（移动端）
   const ctxOpts = vpEnv ? { viewport: { width: +vpEnv.split("x")[0], height: +vpEnv.split("x")[1] } } : {};
   const page = await browser.newPage(ctxOpts);
@@ -81,9 +81,17 @@ test(`全图运行时走查（${engineName}，441 节点）`, { timeout: 300_000
     const id = ids[i];
     const errs0 = errors.length;
     await page.evaluate(`${CLEANUP}; window.__game.gotoNode(${JSON.stringify(id)});`);
-    await page.waitForTimeout(60);
-    const visual = await page.evaluate(`(() => {
+    // v3.4.52：浮层挂载可能晚于 60ms（负载高时 rAF/定时器排队），改为等「出现视觉反馈」而不是死等固定时长
+    await page.waitForFunction(`(() => {
       // id 或 class 以 -layer 结尾（dream/部分早期玩法只有 class）+ 基础迷你游戏 .mg-overlay
+      const hasLayer = [...document.querySelectorAll("#game [id$='-layer'], #game [class$='-layer'], #game .mg-overlay")]
+        .some((e) => !["bg-layer", "char-layer", "clue-layer"].includes(e.id || e.className));
+      const dialog = !document.getElementById("dialog-box").classList.contains("hidden");
+      const choices = !document.getElementById("choices").classList.contains("hidden");
+      const ending = !document.getElementById("ending-screen").classList.contains("hidden");
+      return hasLayer || dialog || choices || ending;
+    })()`, null, { timeout: 1200 }).catch(() => {});
+    const visual = await page.evaluate(`(() => {
       const hasLayer = [...document.querySelectorAll("#game [id$='-layer'], #game [class$='-layer'], #game .mg-overlay")]
         .some((e) => !["bg-layer", "char-layer", "clue-layer"].includes(e.id || e.className));
       const dialog = !document.getElementById("dialog-box").classList.contains("hidden");

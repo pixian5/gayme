@@ -47,6 +47,9 @@ if "security_headers.conf" not in s:
     s = re.sub(r"(location[^\n{]*\{)", r"\1\n" + INC, s)
 if "application/xml" not in s:
     s = s.replace("types {", "types {\n        application/xml                       xml;", 1)
+# v3.4.52：Markdown 以 text/markdown 返回，避免 NOTICE/PRIVACY 被当二进制下载
+if "text/markdown" not in s:
+    s = s.replace("types {", "types {\n        text/markdown                         md;", 1)
 if "gzip on;" not in s:
     s = s.replace("server {", "server {\n" + GZIP, 1)
 # v3.4.51：元数据别吃一年 immutable——精确 location 优先级高于正则 location
