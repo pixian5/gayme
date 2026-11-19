@@ -45,11 +45,13 @@ npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwrigh
 | 远程名 | 地址 | 作用 |
 | --- | --- | --- |
 | `origin` | github.com/pixian5/gayme（公开） | **部署主源**：盒子 cron 每 3 分钟从此拉取（2026-11-16 起，gitee 远端已彻底移除） |
-| `gitcode` | gitcode.com/laotongtian/gayme | 备份（并行开发线） |
+| `gitcode` | gitcode.com/laotongtian/gayme | 备份/并行开发线。**AtomGit（atomgit.com）与本仓库是同一份代码的两个域名，不是第三个远程——不要重复配置/核对** |
 
 > **`origin` 永远是 GitHub，这是硬规约**（2026-11-01 定，2026-11-16 起它也是部署主源）。
 > gitcode 不得占用 `origin` 这个名字。
 > 双远程 `main` 应指向同一提交，发版后用 `git ls-remote --heads origin gitcode` 核对。
+> **atomgit.com/laotongtian/gayme 与 gitcode.com/laotongtian/gayme 是同一个仓库**（两个域名指向同一托管），
+> 无需单独添加远程、也不要在同步核对里重复计数。
 > **GitHub 推送踩坑**：`curl https://api.github.com` 能通不代表 `git push` 能过——本沙箱 git 走
 > GnuTLS，上传大包会报 `GnuTLS recv error (-110)`，需
 > `git config http.postBuffer 524288000`（必要时再加 `http.version HTTP/1.1`）。
