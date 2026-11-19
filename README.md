@@ -3,7 +3,7 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.32**（开发测试版 · Demo）
+- 当前版本：**v3.4.51**（开发测试版 · Demo）
 - 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
@@ -29,7 +29,7 @@ python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（54 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（56 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
@@ -56,7 +56,7 @@ npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwrigh
 
 GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，旧 Pages 链接 301 到正式源）。
 本地 `main` 跟踪 `origin/main`（= GitHub），所以裸 `git push` 推 GitHub；
-让线上生效还需要 `git push gitee main`（部署链路只认 gitee）。
+**GitHub 即部署主源**——push 后盒子 cron 每 3 分钟自动拉取并部署，无需再推其它远程。
 
 云端（干净克隆）跑测试，一条链路可复现：
 
@@ -66,7 +66,7 @@ npm ci                              # 只装 playwright 包（不含浏览器内
 npx playwright install chromium     # 首次约 150MB；只跑 npm test 可跳过这步
 npx playwright install chromium-headless-shell  # e2e 用 headless shell，部分版本不随 chromium 安装
 npx playwright install-deps chromium           # 精简镜像缺 libatk 等系统库时补装
-npm test && npm run test:syntax     # 静态门槛（54 项 + 语法）
+npm test && npm run test:syntax     # 静态门槛（56 项 + 语法）
 npm run test:e2e                    # 运行时回归 ~8s
 BROWSER=firefox npm run test:e2e    # Firefox 内核回归（需 npx playwright install firefox）
 npm run test:mobile                 # 移动端触控回归 ~5s
@@ -97,8 +97,6 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 - 直连域名是 `<user>-<space>.static.hf.space`（注意多一层 `.static`，
   `author-name.hf.space` 会 404）
 - 详细记录 → [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)
-
-## 【当前开发进度】
 
 ## 【当前开发进度】
 
@@ -140,7 +138,7 @@ v3.4.43 loopText 首批 12 玩法节点（177→189）+ 记忆/关键词音效�
 **v3.4.36**：视觉审计修复四连（首屏 FOUC 内联关键样式 / 旁白名牌残留 / 手机顶栏溢出 /
 CG 查看器加载占位）——源自三轮真实浏览器截图审计。
 剧情主线、后日谈、92 种互动实现与存档/图鉴系统全部完成（441 节点），
-54 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
+56 项静态测试 + 双内核 e2e（采样 8 项 + **全图走查 441 节点零错误**）全过。
 **HF 线上试玩验收（2026-11-06）**：三画像（认真/懒人/探索）在 HF Space 上全部通关、
 0 错误 0 卡点 0 缺文件；首进站约 2.83MB，回访 46/46 全 SW 缓存直供（出网≈0）。
 注意 Space 版本停在 v3.4.25，建议尽快 `HF_TOKEN=... bash tools/deploy_hf.sh` 同步到 v3.4.35
@@ -313,50 +311,25 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
 
 ## 【下一步待实现】
 
-- **已完成**：学姐线形态 A（v3.3.0）；图鉴收集率（v3.3.1）；CG 解锁缺口（v3.3.3）；
-  记忆/图鉴数据契约（v3.3.4）；交互/无障碍/设置面板（v3.3.5）；限时持久化+焦点陷阱+引擎瘦身（v3.3.6）；
-  图鉴记忆标题+多周目文本（v3.3.7）；女主线多周目文本（v3.3.8）；共通线/后日谈多周目文本（v3.3.9）；
-  **P1-1 键盘无障碍 + P1-5 数据统计（v3.3.10）**；**P1-2 图鉴大图（v3.3.11）**；**P1-3 设置扩展（v3.3.12）**；**P1-4 存档增强 + P1-7 新手引导（v3.3.13）**；**P2-1a 学姐线 loopText（v3.3.14）**；**真实 BGM（v3.3.15）**；**CG 位图样张（v3.3.16）**；**CG 位图全量 11 张（v3.3.17）**。
-- **完整计划**（分阶段任务清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言，含文件、验收、成本、版本号）
-  → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
-- **当前状态（v3.4.39）**：三轮真人视觉审计（P1~P9 全处理：四修一撤三观察一待修）+
-  并行线安全修复（XSS/跨标签存档/备份校验）+ 六套 e2e 回归网全绿（契约 54 + 引擎双内核 +
-  全图走查 443 + 移动触控 + 五画像试玩 + 窄屏溢出 + 缺陷回归）+ 双线上入口同版本。
-- **下一步建议（2026-11-17，当前以此为准）**：Tunnel 已取消（现阶段只测试、不需公网，
-  盒子 8090 供访问即可，材料留盒备用）；① loopText 剩余 25 个 d 链玩法节点（每批 12）；
-  ② 上移动渠道前真机 Safari 过一遍（WebKit 差异）。测试报告见
-  [docs/20261117-0003-商业级全量测试报告-GLM.md](docs/20261117-0003-商业级全量测试报告-GLM.md)
-完整分析见 [docs/20261116-2331-整体分析与下一步建议-GLM.md](docs/20261116-2331-整体分析与下一步建议-GLM.md)
-  本日四连版详情见 [docs/20261116-2250-四连版本开发记录-v3.4.40-43-GLM.md](docs/20261116-2250-四连版本开发记录-v3.4.40-43-GLM.md)
-  发版步骤见 [docs/发版流程.md](docs/发版流程.md)（两线共用）；
-完整分析见 [docs/20261116-2150-整体分析与下一步建议-GLM.md](docs/20261116-2150-整体分析与下一步建议-GLM.md)
-  完整分析见 [docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md](docs/20261030-0213-整体分析与下一步建议-DeepSeek-V4.1-Flash.md)
-  与本轮修复 [docs/20261101-0152-v3.4.33回归审计问题修复-Auto.md](docs/20261101-0152-v3.4.33回归审计问题修复-Auto.md)。
-- **已确认**：~~学姐线入口门槛~~（v3.4.25 方案 B：`playCount >= 1 || loopCount >= 2`）；
-  ~~Firefox 内核双跑~~（v3.4.27 全过）；~~立绘风格~~（v3.4.29 已按诗雨样张风格自主接入）；
-  ~~真实 SFX 素材授权~~（v3.4.31 八个采样全部 CC0）。
-  下一批候选：GitHub Actions 测试 workflow（只跑测试、不参与部署；需你确认是否要这条通道）。
-- **已完成（运行基线）**：GitHub 补齐至 v3.4.25 + 干净克隆五套测试实测全过
-  （详见 [docs/20261029-1318-GitHub云端测试基线-Doubao.md](docs/20261029-1318-GitHub云端测试基线-Doubao.md)）。
-- **云端测试提示**：GitHub 为公开克隆源；首次跑浏览器回归前需
-  `npx playwright install chromium`（约 150MB）+ `npx playwright install chromium-headless-shell`
-  + `npx playwright install-deps chromium`（精简镜像缺 libatk 等系统库）；云端提交后要把 `main` 同步到 gitee，服务器才会部署。
-- **已完成（分发）**：Hugging Face static Space 上线（v3.4.25 镜像，11/11 CG + BGM + SW 实测通过）；
-  **2026-10-30 起暂停使用**（按你的要求不再往 HF 推，站点未删）
-  → https://xbzsb-sakura-letters.static.hf.space/index.html ；更新用 `HF_TOKEN=... bash tools/deploy_hf.sh`
-  （详见 [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)）。
-- **剩余（全部为外部依赖）**：① 位图立绘 ×5（生图后 webp 入 `assets/portraits/` + `PORTRAIT_BITMAPS` 登记）；
-  ② 真实音效 SFX（CC0 素材）；③ i18n / 云存档 / 玩法同质化调整（需拍板 / 试玩反馈）
-  → [docs/20261025-0444-下一步开发方向Phase3-GLM.md](docs/20261025-0444-下一步开发方向Phase3-GLM.md)
-- 上一版详细计划（Phase 2，P2-1a / BGM / CG 位图已完成）
-  → [docs/20261024-1314-下一步开发详细计划-DeepSeek.md](docs/20261024-1314-下一步开发详细计划-DeepSeek.md)
-- **Phase 1 基本完成**（仅剩 P1-6 性能预取，评估后改为 B1/B2 两项低成本增强）；下一步进入 **Phase 2 内容纵深**。
-- **建议执行顺序**：P2-1a loopText 学姐线 → P2-1b 真结局线 → P2-2 回响落地（先定 UI）→ P2-3/P2-4 → B1/B2。
-- 需素材/拍板：AI 位图立绘（5 张，需透明背景）、itch.io 分发、英文 i18n、真实音效素材、玩法同质化调整。
-  CG 位图（11 张）与真实 BGM（5 首）均已落地（v3.3.17 / v3.3.15，署名见「关于」页）。
-  历史路线另见 → [docs/20261022-2247-下一步开发方案-Doubao.md](docs/20261022-2247-下一步开发方案-Doubao.md)
+**当前状态（v3.4.51，2026-11-20）**：内容闭环（441 节点 / 13 结局 / 214 loopText）、商业验收
+（12 套矩阵 + 双内核全图走查）与安全基线（CSP / 安全头 / 合规声明）均已成立；唯一线上入口
+InstaBox 盒子与 GitHub 同版本。**已知无产品缺陷。**
 
-详细内容见 → [docs/20261024-1314-下一步开发详细计划-DeepSeek.md](docs/20261024-1314-下一步开发详细计划-DeepSeek.md)
+| 优先级 | 事项 | 说明 | 前置 |
+|---|---|---|---|
+| P0 | 真机 Safari 验收 | WebKit 未进自动化矩阵，上移动渠道前用 iPhone Safari 实测标题/存档/离线/触控 | 真机 |
+| P1 | itch.io 上架 | 素材已齐（`dist/itch/` 封面+截图+文案+11MB 包），此前搁置 | 用户拍板 |
+| P2 | 性能长会话观察 | 数小时游玩内存/发热曲线，先手动记录再决定是否自动化 | 可选 |
+| P2 | 域名复活（oh/play） | 旧 AWS 实例回收；Cloudflare Tunnel 接盒子（cloudflared 已装、材料留盒） | 面板令牌 |
+| P3 | 新内容方向 | 剧情/结局/玩法已闭环，新增需拍板（支线 / 后日谈扩展等） | 用户定方向 |
+
+- **完整计划**（分阶段清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言）
+  → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
+- **本轮进度分析（以此为准）** → [docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md](docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md)
+- **当前进度与待实现（分篇）** → [当前开发进度](docs/20261120-0256-当前开发进度-Doubao.md) ·
+  [下一步待实现](docs/20261120-0256-下一步待实现-Doubao.md)
+- **v3.4.44~51 补档** → [docs/20261120-0256-v3.4.44-51开发记录补档-Doubao.md](docs/20261120-0256-v3.4.44-51开发记录补档-Doubao.md)
+- **发版步骤（两线共用）** → [docs/发版流程.md](docs/发版流程.md)
 
 ## 文档索引与经验
 
@@ -391,7 +364,7 @@ js/engine.js        纯引擎：节点分发（GameKit.types() 通用循环）/ 
 sw.js               Service Worker：预缓存 23 项核心资源（字体/图标后台预热）（BGM / CG 走 sakura-media 运行时缓存），缓存版本 sakura-vX.Y.Z 随发版同步
 tools/              工程工具：玩法迁移转换器 / 等价性校验器 / 版本号同步 / 字体子集三件套 /
                     deploy_hf.sh（抱脸 static Space 同步）+ hf-space-readme.md（Space 首页文案）
-tests/              Node 原生测试（54 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
+tests/              Node 原生测试（56 项）+ tests/browser/ 浏览器 e2e 回归（engine.e2e.mjs）
 docs/               版本记录与规划文档（多模型分析文档在 docs/analysis/）
 ```
 
@@ -424,7 +397,7 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
 - 云端测试：`origin` = GitHub（Trae 关联仓库依赖该命名与域名，**不要改成 gitee**），
   流程见上文「远程仓库与云端测试」；云端提交后记得把 `main` 同步推到 `origin`，否则盒子不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；
-  盒子自动部署脚本 /root/sakura-deploy.sh（gitee 主源→github 备源→rsync→健康检查→失败回滚）
+  盒子自动部署脚本 /root/sakura-deploy.sh（GitHub 单源→rsync→健康检查→失败回滚）
 - 部署到 Hugging Face：`HF_TOKEN=hf_xxx bash tools/deploy_hf.sh`（static Space，只同步运行文件，
   二进制走 Git LFS；Space README 源文件是 `tools/hf-space-readme.md`）；发版后手动跑一次即可
 - 开发测试版：允许重构，无需兼容旧数据，但重构前先备份
