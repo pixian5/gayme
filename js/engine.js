@@ -191,6 +191,12 @@
    v3.4.46：商业级验收修复——移动端顶栏触控恢复 44px；SW 首装只预缓存 23 项核心资源，
            字体/图标 activate 后后台预热；robots.txt/sitemap.xml 上线；nginx 静态资源与未知路径
            404 语义、gzip 与长缓存写入部署脚本，避免发版回退
+   v3.4.54：梦境碎片提示修复——提示条移到屏幕上方，不再遮住场景正文；碎片提示改显
+           玩家可读的碎片文本（不再暴露 dream_shard_* 内部 ID），停留时间延长到 2.6 秒；
+           同一时间只保留一张梦境场景卡，连点不再叠卡
+   v3.4.53：可选账号与云存档——新增同源 Node/SQLite 账号服务（注册/登录/一次性找回码/
+           设备管理/云存档 revision 冲突检测），设置页接入账号 UI；游戏本体仍可纯静态离线运行，
+           服务不可用时本地存档不受影响；新增账号 API 24 项集成测试与浏览器 e2e
    v3.4.52：稳定性收尾——gotoNode 入口统一清理残留玩法浮层（此前仅 newGame/读档/后日谈清），
            程序化跳转与极端时序不再叠加旧层；顶栏补 role="navigation"；部署期注入站点 origin
            （og/robots/sitemap 随盒子域名自动改写）；nginx 补 text/markdown，NOTICE/PRIVACY 不再被下载
@@ -254,10 +260,12 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.52";
+  const GAME_VERSION = "3.4.54";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.54", note: "梦境碎片提示不再遮住正文，改显碎片内容，连点场景不再叠卡" },
+    { ver: "3.4.53", note: "可选账号与云存档：同源 Node/SQLite 服务，本地存档与离线游玩不受影响" },
     { ver: "3.4.52", note: "稳定性小修：切换场景不再残留玩法浮层" },
     { ver: "3.4.51", note: "补齐 127 个常用字的字体，搜索引擎与安装信息不再被长期缓存" },
     { ver: "3.4.50", note: "设置里可关闭界面模糊，老机器更流畅；分享卡片恢复出图" },
@@ -1424,20 +1432,22 @@
 
   /* ============ 顶部提示 ============ */
   let hintTimer = null;
-  function flashHint(text) {
+  // v3.4.54：提示条从屏幕正中移到上方，避免遮住梦境/对话正文
+  // 第二个参数用于需要阅读时间的较长提示（如梦境碎片文本）
+  function flashHint(text, duration = 1200) {
     let hint = document.getElementById("flash-hint");
     if (!hint) {
       hint = document.createElement("div");
       hint.id = "flash-hint";
       hint.setAttribute("role", "status");
       hint.setAttribute("aria-live", "polite");
-      hint.style.cssText = "position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:14px 28px;background:rgba(20,18,32,0.9);border:1px solid rgba(255,200,220,0.4);border-radius:12px;color:#ffd8e4;font-size:16px;letter-spacing:2px;z-index:9999;pointer-events:none;transition:opacity 0.3s;";
+      hint.style.cssText = "position:fixed;top:88px;left:50%;transform:translateX(-50%);max-width:min(760px,calc(100vw - 48px));padding:14px 28px;background:rgba(20,18,32,0.9);border:1px solid rgba(255,200,220,0.4);border-radius:12px;color:#ffd8e4;font-size:16px;line-height:1.7;letter-spacing:2px;text-align:center;z-index:9999;pointer-events:none;transition:opacity 0.3s;";
       document.body.appendChild(hint);
     }
     hint.textContent = text;
     hint.style.opacity = "1";
     clearTimeout(hintTimer);
-    hintTimer = setTimeout(() => { hint.style.opacity = "0"; }, 1200);
+    hintTimer = setTimeout(() => { hint.style.opacity = "0"; }, duration);
   }
 
   /* ============ 浮层 ============ */
@@ -1664,6 +1674,7 @@
     document.getElementById("game").appendChild(layer);
 
     const scenes = dream.scenes || [];
+    let activeSceneCard = null;   // v3.4.54：同一时间只保留一张场景卡，避免连点多张卡重叠
     const positions = [
       { left: "12%", top: "30%" }, { right: "12%", top: "30%" },
       { left: "30%", top: "62%" }, { right: "30%", top: "62%" },
@@ -1679,20 +1690,24 @@
       btn.onclick = () => {
         if (btn.classList.contains("visited")) return;
         btn.classList.add("visited");
+        // v3.4.54：打开新场景前先关掉上一张卡，避免多张卡片在同一中心叠住
+        if (activeSceneCard) activeSceneCard.remove();
         // 显示场景对话
         const txt = document.createElement("div");
+        activeSceneCard = txt;
         txt.style.cssText = "position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:520px;padding:24px 32px;background:rgba(20,16,28,0.92);border:1px solid rgba(200,168,224,0.5);border-radius:14px;color:#ffd8e4;font-size:15px;line-height:2;letter-spacing:1px;box-shadow:0 8px 30px rgba(0,0,0,0.7);z-index:37;";
         txt.innerHTML = `<div style="color:#c8a8e0;font-size:13px;letter-spacing:3px;margin-bottom:10px;">${escapeHtml(sc.label || "场景")}</div>${escapeHtml(sc.text || "")}`;
         const closeBtn = document.createElement("button");
         closeBtn.textContent = "合上";
         closeBtn.style.cssText = "margin-top:18px;display:block;margin-left:auto;padding:8px 20px;background:rgba(180,80,120,0.4);border:1px solid rgba(255,200,220,0.5);border-radius:8px;color:#ffd8e4;font-family:inherit;font-size:13px;letter-spacing:3px;cursor:pointer;";
-        closeBtn.onclick = (e) => { e.stopPropagation(); txt.remove(); };
+        closeBtn.onclick = (e) => { e.stopPropagation(); txt.remove(); if (activeSceneCard === txt) activeSceneCard = null; };
         txt.appendChild(closeBtn);
         layer.appendChild(txt);
         // 收集碎片
         if (sc.shard) {
           if (Saves.addDreamShard(sc.shard.id, sc.shard.text)) {
-            flashHint(`✦ 梦境碎片：${sc.shard.id}`);
+            // v3.4.54：提示玩家读得懂的碎片内容，不再暴露 dream_shard_* 内部 ID
+            flashHint(`✦ 梦境碎片：${sc.shard.text || "已收集"}`, 2600);
           }
         }
         // 累积性格

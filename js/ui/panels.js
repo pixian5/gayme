@@ -135,6 +135,7 @@ window.SakuraPanels = function (C) {
         </div>
       </div>
       <div class="config-row"><label style="color:rgba(255,200,220,0.6);">已通关周目数</label><span style="color:#ffb8c8;">${state.playCount}</span></div>
+      <div class="config-account-section" id="cfg-account"></div>
     `;
     const ts = document.getElementById("cfg-textspeed");
     const tsVal = document.getElementById("cfg-textspeed-val");
@@ -203,7 +204,8 @@ window.SakuraPanels = function (C) {
     };
     document.getElementById("cfg-export").onclick = () => {
       // v3.4.40：currentSession 由引擎注入的 sessionSnapshotProvider 在 exportData 内统一附带，不再重复展开
-      const blob = new Blob([JSON.stringify(Saves.exportData(), null, 2)], { type: "application/json" });
+      const backup = Saves.exportData();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -254,6 +256,10 @@ window.SakuraPanels = function (C) {
         closeOverlay();
       }
     };
+    // 账号与云存档：可选增强；未部署账号服务时只显示离线提示，不影响本地存档。
+    if (window.AccountUI && typeof window.AccountUI.mount === "function") {
+      window.AccountUI.mount(document.getElementById("cfg-account"));
+    }
   }
 
   function renderHistory() {
@@ -387,7 +393,7 @@ window.SakuraPanels = function (C) {
         </p>
         ${state.loopCount > 0 ? `<p style="color:#c8a8e0;margin-top:20px;">⟲ 当前处于第 ${state.loopCount} 次循环</p>` : ""}
         ${state.playCount >= 1 ? `<p style="color:#ffd88a;margin-top:6px;">已打破循环 ${state.playCount} 次。彩蛋已开启 ♪</p>` : ""}
-        <p style="color:rgba(255,200,220,0.55);margin-top:16px;font-size:12px;">反馈与问题：<a href="https://gitee.com/ibjxk/gayme/issues" target="_blank" rel="noopener" style="color:#f0a8b8;">gitee issues</a>（附标题页右下角的版本号）</p><p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
+        <p style="color:rgba(255,200,220,0.55);margin-top:16px;font-size:12px;">反馈与问题：请使用上方邮件入口（附标题页右下角的版本号）</p><p style="color:rgba(255,255,255,0.35);margin-top:22px;font-size:12px;line-height:1.9;">
           BGM：Patrick de Arteaga ·
           <a href="https://patrickdearteaga.com" target="_blank" rel="noopener" style="color:#ffb8c8;">patrickdearteaga.com</a>
           （CC BY 4.0）<br>

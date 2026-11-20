@@ -185,6 +185,9 @@ const GAME_STORAGE_KEYS = [STORAGE_KEY, AUTOSAVE_KEY, ENDINGS_KEY, KEYWORDS_KEY,
   MOSAIC_KEY, STELE_KEY, CELESTIAL_KEY, DRUM_KEY, VANE_KEY, CLEPSYDRA_KEY, JIGSAW_KEY,
   CHESS_KEY, FLAG_KEY, TIMELINE_KEY, TRIAGE_KEY, WALL_KEY, PROOFREAD_KEY];
 
+// 账号云同步只关心「存档变化」：整包存档与自动进度。设置滑杆等频繁写入不触发上传。
+const SAVE_EVENT_KEYS = new Set([STORAGE_KEY, AUTOSAVE_KEY]);
+
 const DEFAULT_SETTINGS = Object.freeze({
   textSpeed: 30,
   autoDelay: 1200,
@@ -333,6 +336,7 @@ const Saves = {
   settings: createDefaultSettings(),
   lastStorageError: null,
   cache: new Map(),
+  _importing: false,
 
   _write(key, value) {
     try {
@@ -340,6 +344,11 @@ const Saves = {
       try { this.cache.set(key, cloneValue(JSON.parse(value))); }
       catch (parseError) { this.cache.delete(key); }
       this.lastStorageError = null;
+      // 存档写入后广播，账号模块据此做防抖云同步；导入回滚期间不广播。
+      if (!this._importing && SAVE_EVENT_KEYS.has(key) && typeof window !== "undefined"
+        && typeof window.dispatchEvent === "function") {
+        try { window.dispatchEvent(new CustomEvent("sakura:saved", { detail: { key } })); } catch (_) {}
+      }
       return true;
     } catch (e) {
       this.lastStorageError = e;
@@ -430,6 +439,15 @@ const Saves = {
       try { before.set(key, localStorage.getItem(key)); }
       catch (e) { return false; }
     }
+    // 导入期间禁止触发云同步广播：否则可能把半成品状态上传到云端。
+    this._importing = true;
+    const rollback = () => {
+      for (const [rollbackKey, raw] of before) {
+        if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
+      }
+      this._importing = false;
+      return false;
+    };
     for (const [key, value] of Object.entries(payload.records)) {
       let serialized;
       try {
@@ -440,20 +458,15 @@ const Saves = {
         serialized = null;
       }
       if (!GAME_STORAGE_KEYS.includes(key) || serialized === null || !this._write(key, serialized)) {
-        for (const [rollbackKey, raw] of before) {
-          if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
-        }
-        return false;
+        return rollback();
       }
     }
     for (const key of GAME_STORAGE_KEYS) {
       if (!(key in payload.records) && !this._remove(key)) {
-        for (const [rollbackKey, raw] of before) {
-          if (raw === null) this._remove(rollbackKey); else this._write(rollbackKey, raw);
-        }
-        return false;
+        return rollback();
       }
     }
+    this._importing = false;
     this.cache.clear();
     this._migrate();
     this._loadSaves();

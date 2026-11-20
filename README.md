@@ -3,9 +3,9 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.52**（开发测试版 · Demo）
-- 技术形态：纯前端，零构建，浏览器直接运行（devDependency 仅 playwright，供 e2e 测试）
-- 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）
+- 当前版本：**v3.4.54**（开发测试版 · Demo）
+- 技术形态：游戏本体纯前端、零构建，浏览器直接运行；账号与云存档为**可选**的同源 Node/SQLite 服务，不启动也能离线玩
+- 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）；可选整包云同步
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
 - 在线试玩（唯一部署目标 · InstaBox 盒子）：https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/
   （push origin(GitHub) 后盒子 root cron 每 3 分钟自动拉取部署；`bash tools/deploy_box.sh` 手动直推；
@@ -26,6 +26,32 @@
 python3 -m http.server 4173   # 然后访问 http://127.0.0.1:4173
 ```
 
+## 可选账号与云存档
+
+账号系统是独立可选组件：不登录时游戏仍是纯本地、离线可玩；账号服务未启动或不可达时，设置页只显示「账号服务未连接」，本地存档、剧情、图鉴、离线缓存全部照常。
+
+**能力**：注册 / 登录 / 一次性找回码重置密码 / 修改昵称与密码 / 登录设备列表与单设备退出 / 导出账号数据 / 注销账号；云存档按整包同步（9 个槽位 + 图鉴 + 关键词 + 收件箱 + 设置），用 `revision` 检测多设备冲突，冲突时必须手动选择「云端覆盖本机」或「本机覆盖云端」，不会静默覆盖。
+
+**本地启动**：
+
+```bash
+# 首次：可选复制环境变量
+cp server/.env.example server/.env
+
+bash server/ctl.sh start      # 默认 127.0.0.1:8096，SQLite 落在 server/data/game.db
+bash server/ctl.sh status     # 进程 + /api/health
+bash server/ctl.sh backup     # 在线备份 SQLite（保留最近 30 份）
+bash server/ctl.sh stop
+```
+
+启动后访问 `http://127.0.0.1:8096/`（同一进程同时提供游戏静态页和 `/api`，Cookie 同源）。也可以只把 `index.html` 的
+`<meta name="gayme-account-api" content="">` 留空，让页面按同源访问；若单独用静态服务器打开游戏，则账号 API 不可用，
+但本地游玩不受影响。
+
+**生产部署**：建议 nginx/Cloudflare 终止 TLS 后反代到本进程，且让游戏与 `/api/` 同源；设置
+`GAYME_TRUST_PROXY=1` 与 `GAYME_COOKIE_SECURE=auto`（HTTPS 自动加 Secure Cookie）。账号服务只需要 Node ≥ 22
+（使用内置 `node:sqlite`），不依赖 npm 包；数据库与日志都在 `server/data/`，迁移时整目录复制即可。
+
 ## 测试
 
 ```bash
@@ -34,6 +60,8 @@ npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
 npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwright install firefox + install-deps firefox）
+npm run test:account        # 账号 API 集成测试（24 项，临时 SQLite）
+npm run test:account:e2e    # 账号 UI 浏览器 e2e（注册/上传/换设备恢复）
 ```
 
 改动完成门槛：`npm test` 全过 + `npm run test:syntax` + `npm run test:e2e` +
@@ -101,6 +129,21 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 - 详细记录 → [docs/20261029-1644-抱脸部署-Doubao.md](docs/20261029-1644-抱脸部署-Doubao.md)
 
 ## 【当前开发进度】
+
+**v3.4.54（2026-11-20）**：**梦境碎片提示修复**——提示条从屏幕正中移到上方 88px，不再遮住梦境
+场景正文；碎片提示改显玩家可读的碎片文本（删除 `dream_shard_*` 内部 ID 暴露），停留 2.6 秒；
+同一时间只保留一张场景卡，连续点击不同场景不再叠卡。浏览器实测提示与正文矩形零重叠，
+连点后场景卡数量为 1，控制台零错误；L0 56/56、语法 1/1、账号 API 24/24。详见
+[梦境提示修复](docs/20261120-1354-v3.4.54-梦境提示修复-Doubao.md)。
+
+**v3.4.53（2026-11-20）**：**可选账号与云存档**——新增同源 Node/SQLite 账号服务（`server/`）：
+注册/登录/一次性找回码/改密/昵称/设备列表与单设备退出/导出/注销，云存档整包同步 + `revision`
+冲突检测（409 后必须手动选择云端覆盖本机或本机覆盖云端）。设置页接入账号面板；不登录仍纯本地、
+离线可玩，账号服务不可达只显示未连接。新增 `server/test_api.mjs`（24 项）、
+`tests/browser/account.e2e.mjs`、`server/ctl.sh`、在线备份与 `tools/patch_nginx_account.py`。
+线上 InstaBox 盒子已部署账号容器与 `/api/` 反代，`/api/health` = 3.4.53，
+公网注册/上传/刷新保持登录实测通过。详见
+[账号专题](docs/20261120-1321-v3.4.53-账号与云存档-Doubao.md)。
 
 **v3.4.52（2026-11-20）**：**同节点空白兜底 + 部署期域名注入**——`gotoNode` 防重入分支补「界面已被清理则
 重放渲染」兜底（气味闪回递归跳 `d4_silence` 二次进入会留空白，graph 走查实测 no-visual），并在节点切换时
@@ -336,8 +379,8 @@ InstaBox 盒子与 GitHub 同版本。**已知无产品缺陷。**
 - **完整计划**（分阶段清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
 - **本轮进度分析（以此为准）** → [docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md](docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md)
-- **当前进度与待实现（分篇）** → [当前开发进度](docs/20261120-0256-当前开发进度-Doubao.md) ·
-  [下一步待实现](docs/20261120-0256-下一步待实现-Doubao.md)
+- **当前进度与待实现（分篇）** → [当前开发进度](docs/20261120-1354-当前开发进度-Doubao.md) ·
+  [下一步待实现](docs/20261120-1354-下一步待实现-Doubao.md)
 - **v3.4.44~51 补档** → [docs/20261120-0256-v3.4.44-51开发记录补档-Doubao.md](docs/20261120-0256-v3.4.44-51开发记录补档-Doubao.md)
 - **发版步骤（两线共用）** → [docs/发版流程.md](docs/发版流程.md)
 

@@ -32,13 +32,25 @@ if [ ! -f "$SRC/VERSION" ]; then
   SRC=$(find "$INCOMING" -maxdepth 2 -name VERSION -printf '%h\n' 2>/dev/null | head -1)
 fi
 [ -n "$SRC" ] || SRC="$INCOMING"
-sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 --exclude qa-results "$SRC/" "$WEB/"
+sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 --exclude qa-results --exclude server "$SRC/" "$WEB/"
 echo "SYNCED_FROM=$SRC"
+# 账号服务代码同步到非公开目录，并重启容器；站点根不能出现 server/ 源码
+ACCOUNT_APP=/data/home/gayme-account/app
+sudo -n install -d -m 755 "$ACCOUNT_APP"
+sudo -n rsync -a --delete "$SRC/server/" "$ACCOUNT_APP/server/"
+sudo -n cp "$SRC/VERSION" "$ACCOUNT_APP/VERSION"
+sudo -n chmod -R a+rX "$ACCOUNT_APP"
+if sudo -n docker inspect sakura-account >/dev/null 2>&1; then
+  sudo -n docker restart sakura-account >/dev/null
+fi
 if [ -f "$SRC/tools/patch_site_origin.py" ]; then
   ( cd "$WEB" && sudo -n python3 "$SRC/tools/patch_site_origin.py" "$URL" ) || echo "!! origin 注入失败" >&2
 fi
 if [ -f "$SRC/tools/patch_nginx.py" ]; then
   sudo -n python3 "$SRC/tools/patch_nginx.py" || echo "!! nginx 修正失败（站点仍可访问）" >&2
+fi
+if [ -f "$SRC/tools/patch_nginx_account.py" ]; then
+  sudo -n python3 "$SRC/tools/patch_nginx_account.py" || echo "!! 账号代理修正失败" >&2
 fi
 EOS
 )
