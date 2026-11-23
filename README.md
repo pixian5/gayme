@@ -3,13 +3,13 @@
 > 一款以「写信 / 回信」为核心交互的 HTML5 视觉小说：校园群像 + 时间循环 + 多结局。
 > 在樱海学园的樱花季里，帮助三位女主角走出各自的困境，并最终写下自己。
 
-- 当前版本：**v3.4.54**（开发测试版 · Demo）
+- 当前版本：**v3.4.55**（开发测试版 · Demo）
 - 技术形态：游戏本体纯前端、零构建，浏览器直接运行；账号与云存档为**可选**的同源 Node/SQLite 服务，不启动也能离线玩
 - 存档方式：localStorage（schema v3，9 个槽位，槽位 1 为快存槽；快捷键 S 快存）；可选整包云同步
 - 自动进度：推进剧情即自动记录最后位置（防刷新 / 关页丢失），标题页「继续游戏」一键恢复
 - 在线试玩（唯一部署目标 · InstaBox 盒子）：https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech/
-  （push origin(GitHub) 后盒子 root cron 每 3 分钟自动拉取部署；`bash tools/deploy_box.sh` 手动直推；
-  2026-11-16 起**只在此部署与测试**）
+  （推 GitCode 后盒子的 root 计划任务每 3 分钟自动部署；`bash tools/deploy_box.sh` 可手动直推；
+  **只在此部署与测试**）
 - Hugging Face 镜像（**已停更**，停留在 v3.4.43 仅作静态展示）：
   https://xbzsb-sakura-letters.static.hf.space/index.html
 - 自有域名 oh.sbbz.tech / play.sbbz.tech：已 CNAME → HF Space（橙云），**待在 CF 面板加一条
@@ -44,9 +44,19 @@ bash server/ctl.sh backup     # 在线备份 SQLite（保留最近 30 份）
 bash server/ctl.sh stop
 ```
 
-启动后访问 `http://127.0.0.1:8096/`（同一进程同时提供游戏静态页和 `/api`，Cookie 同源）。也可以只把 `index.html` 的
-`<meta name="gayme-account-api" content="">` 留空，让页面按同源访问；若单独用静态服务器打开游戏，则账号 API 不可用，
-但本地游玩不受影响。
+启动后访问 `http://127.0.0.1:8096/`（同一进程同时提供游戏静态页和 `/api`，Cookie 同源）。
+
+**账号功能由部署决定（v3.4.55 起）**：仓库里 `index.html` 的 `<meta name="gayme-account-api" content="off">`
+默认是**关闭**——纯静态部署（安装包、静态镜像、测试环境）不向 `/api/` 发任何请求，设置页也不显示账号区块。
+带账号服务的部署在部署期把它改成空串（同源打开）：
+
+| 部署方式 | 怎么打开 |
+| --- | --- |
+| `server/index.mjs` 自带接口 | 不用管：提供首页时在内存里自动改写，磁盘文件不动 |
+| InstaBox 盒子（nginx 静态 + `/api/` 反代） | 不用管：`tools/box_cron_deploy.sh` 同步站点后执行 `tools/patch_account_flag.py on`，开关没打开算部署失败 |
+| 其它静态服务器 + 账号服务 | 部署时手动执行 `python3 tools/patch_account_flag.py on <站点根目录>` |
+
+开关关闭时本地游玩完全不受影响。
 
 **生产部署**：建议 nginx/Cloudflare 终止 TLS 后反代到本进程，且让游戏与 `/api/` 同源；设置
 `GAYME_TRUST_PROXY=1` 与 `GAYME_COOKIE_SECURE=auto`（HTTPS 自动加 Secure Cookie）。账号服务只需要 Node ≥ 22
@@ -55,29 +65,34 @@ bash server/ctl.sh stop
 ## 测试
 
 ```bash
-npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（56 项）
+npm test                    # Node 原生测试：剧情图可达性 / 时间线一致性 / 存档边界 / 静态契约 / 生命周期（59 项）
 npm run test:syntax         # 全部 JS 语法检查
 npm run test:e2e            # 真实浏览器运行时回归（chromium；首次需 npx playwright install chromium）
 npm run test:mobile         # 移动端触控回归（390×844 / hasTouch / isMobile，~5s）
 npm run test:e2e:firefox    # 同上换 Firefox 内核（首次需 npx playwright install firefox + install-deps firefox）
-npm run test:account        # 账号 API 集成测试（24 项，临时 SQLite）
+npm run test:account        # 账号 API 集成测试（31 项，临时 SQLite；含老库迁移、覆盖保护、历史版本）
 npm run test:account:e2e    # 账号 UI 浏览器 e2e（注册/上传/换设备恢复）
+npm run test:cloud          # 云存档数据安全浏览器 e2e（7 项：空存档不覆盖云端、换账号不串号、历史版本、自动同步…）
+bash tools/test_box_cron_deploy.sh   # 盒子部署脚本的离线流程测试（11 类情形；不碰线上文件；需要 git / rsync / python3）
 ```
 
-改动完成门槛：`npm test` 全过 + `npm run test:syntax` + `npm run test:e2e` +
-`git diff --check` + 浏览器回归。本地测试是**唯一门槛**——push 三远程后
-盒子每 3 分钟自动从 GitHub 拉取部署（gitcode 备份），不再依赖任何 CI。
+其余浏览器套件：`npm run test:settings`（界面设置与账号开关）、`test:perf`、`test:graph`、`test:defects`、
+`test:persistence`、`test:overflow`、`test:offline`、`test:play`。**发版前 16 套全跑**（见 [发版流程](docs/发版流程.md)）。
+
+改动完成门槛：`npm test` 全过 + `npm run test:syntax` + `npm run test:e2e` + 涉及账号时 `test:account`、
+`test:account:e2e`、`test:cloud` + `git diff --check`。测试只在 InstaBox 盒子的测试目录跑（本机只改代码）。
 
 ## 远程仓库与云端测试
 
 | 远程名 | 地址 | 作用 |
 | --- | --- | --- |
-| `origin` | github.com/pixian5/gayme（公开） | **部署主源**：盒子 cron 每 3 分钟从此拉取（2026-11-16 起，gitee 远端已彻底移除） |
-| `gitcode` | gitcode.com/laotongtian/gayme | 备份/并行开发线。**AtomGit（atomgit.com）与本仓库是同一份代码的两个域名，不是第三个远程——不要重复配置/核对** |
+| `gitcode` | gitcode.com/laotongtian/gayme | **部署主源**：盒子的 root 计划任务每 3 分钟从这里拉取并自动部署（2026-11-24 在盒子上实测确认）。**AtomGit（atomgit.com）与本仓库是同一份代码的两个域名，不是第三个远程——不要重复配置/核对** |
+| `origin` | github.com/pixian5/gayme（公开） | 镜像；持续集成（GitHub Actions）在这里跑。gitee 远程已彻底移除 |
 
-> **`origin` 永远是 GitHub，这是硬规约**（2026-11-01 定，2026-11-16 起它也是部署主源）。
-> gitcode 不得占用 `origin` 这个名字。
-> 双远程 `main` 应指向同一提交，发版后用 `git ls-remote --heads origin gitcode` 核对。
+> **`origin` 永远是 GitHub，这是硬规约**（2026-11-01 定）。gitcode 不得占用 `origin` 这个名字。
+> **部署主源是 `gitcode`**：盒子上的部署克隆 `/data/home/gayme-deploy` 只配了 GitCode 一个远端。
+> 此前文档写的「GitHub 是部署主源」已过时——只推 GitHub 不会触发部署。
+> 双远程 `main` 应指向同一提交，发版后用 `git ls-remote gitcode main` 与 `git ls-remote origin main` 核对。
 > **atomgit.com/laotongtian/gayme 与 gitcode.com/laotongtian/gayme 是同一个仓库**（两个域名指向同一托管），
 > 无需单独添加远程、也不要在同步核对里重复计数。
 > **GitHub 推送踩坑**：`curl https://api.github.com` 能通不代表 `git push` 能过——本沙箱 git 走
@@ -85,8 +100,8 @@ npm run test:account:e2e    # 账号 UI 浏览器 e2e（注册/上传/换设备�
 > `git config http.postBuffer 524288000`（必要时再加 `http.version HTTP/1.1`）。
 
 GitHub 上的分支：`main`（开发主线）+ `gh-pages`（只放跳转页，旧 Pages 链接 301 到正式源）。
-本地 `main` 跟踪 `origin/main`（= GitHub），所以裸 `git push` 推 GitHub；
-**GitHub 即部署主源**——push 后盒子 cron 每 3 分钟自动拉取并部署，无需再推其它远程。
+本地 `main` 跟踪 `origin/main`（= GitHub），所以裸 `git push` 只推 GitHub、**不会触发部署**。
+发版必须显式推部署主源：`git push gitcode main`（推完盒子计划任务 3 分钟内自动部署），再 `git push origin main` 同步镜像。
 
 云端（干净克隆）跑测试，一条链路可复现：
 
@@ -130,13 +145,24 @@ npm run test:play                   # 五画像真人试玩 ~190s（云端实测
 
 ## 【当前开发进度】
 
-**v3.4.54 审查（2026-11-24）**：拉取最新代码后对账号与云存档（v3.4.53 新增的后端）做了整
+**v3.4.55（2026-11-24）**：**云存档数据安全与部署加固**——审查坐实的四条缺陷全部修复，每条都有回归用例：
+①新设备勾选自动同步、②清空本地后重新开局，都不再能覆盖云端（服务端两道保护：空存档、收集进度变少；
+前端当场提示并暂停自动同步）；③共用设备换账号不串号（本机存档记归属）；④自动同步失败一律可见，
+且只在存档真的变化时才上传、两次至少间隔 60 秒、页面转后台立即补传、限流按账号计数。新增云端历史版本
+（每账号 10 版，可恢复到本机）与 v3.4.54 老库自动迁移。**账号功能改由部署决定**（仓库默认关闭），
+引擎端到端回归自 v3.4.53 起首次转绿。盒子部署脚本入库并加固：部署前备份、站点逐文件完整性核对、
+站点根只放运行文件、自愈、自更新。测试 **16 套全过**（静态契约 59、账号接口 31、云存档保护 7、
+部署脚本流程 104 条断言等）。详见 [v3.4.55 版本记录](docs/20261124-0534-v3.4.55-云存档数据安全与部署加固-GLM-5.4.md)、
+[当前开发进度](docs/20261124-0534-当前开发进度-GLM-5.4.md)、[下一步待实现](docs/20261124-0534-下一步待实现-GLM-5.4.md)。
+
+**v3.4.54 审查（2026-11-24，历史记录）**：拉取最新代码后对账号与云存档（v3.4.53 新增的后端）做了整
 体审查。测试 14 套里 13 套通过，引擎端到端回归失败（v3.4.53 起引入的一条 404）。**复现了 4 条
 产品缺陷**，全部集中在云存档：新设备勾选自动同步会把云端存档清空；清空本地后重新开局会覆盖
 云端；共用设备换账号会把上一个人的存档传进新账号的云端；自动同步撞到限流后界面没有任何
-提示。另有线上数据库零备份、许可证与 CG/立绘授权未决两项上线前必须解决的事项。复现与验收
-脚本已入库（`tests/manual/repro-cloud-save.mjs`，当前输出「复现 4 / 4」）。本轮未改游戏源码。
-详见 [当前开发进度](docs/20261124-0309-当前开发进度-GLM-5.4.md) 与
+提示。另有线上数据库零备份、许可证与 CG/立绘授权未决两项上线前必须解决的事项。审查当天未改游戏源码；
+四条缺陷与零备份已在 v3.4.55 解决，审查用的复现脚本也已改写为正式回归用例
+`tests/browser/cloud-guards.e2e.mjs`（`npm run test:cloud`）。审查原文见
+[当前开发进度](docs/20261124-0309-当前开发进度-GLM-5.4.md) 与
 [下一步待实现](docs/20261124-0309-下一步待实现-GLM-5.4.md)。下文「已知无产品缺陷」的旧结论已作废。
 
 **v3.4.54（2026-11-20）**：**梦境碎片提示修复**——提示条从屏幕正中移到上方 88px，不再遮住梦境
@@ -373,31 +399,28 @@ loopText 完结 → [docs/20261025-1240-loopText终批完结-GLM.md](docs/202610
 
 ## 【下一步待实现】
 
-**当前状态（v3.4.54，2026-11-24）**：内容闭环（441 节点 / 13 结局 / 214 处多周目文本）与
-安全基线成立；账号与云存档已上线但**尚不适合接待真实用户**——4 条可复现的存档丢失或串号
-缺陷、线上数据库零备份、服务跑在会自动暂停的免费沙箱上。此前“已知无产品缺陷”的结论作废。
+**当前状态（v3.4.55，2026-11-24）**：内容闭环（441 节点 / 13 结局 / 214 处多周目文本）与安全基线成立；
+云存档的四条数据缺陷已修复并有回归用例，16 套测试全过，线上数据库有了每日备份与部署前备份。
+**仍不适合接待真实用户**的两件事：备份只在盒子本机（没有异地副本）、服务跑在会自动暂停的免费沙箱上。
 
 | 优先级 | 事项 | 说明 | 前置 |
 |---|---|---|---|
-| P0 | 立即启用数据库每日备份 | `server/backup_db.mjs` 已写好但从未被调度 | — |
-| P0 | 空/近空存档覆盖保护 | 前端上传前比较内容量 + 服务端拒绝空覆盖 | — |
-| P0 | 云端保留历史版本 | 每账号保留最近 10 版，可恢复 | — |
-| P0 | 共用设备换账号不串号 | 退出时重置自动同步；本地存档记归属 | 默认行为拍板 |
-| P0 | 自动同步节奏与失败提示 | 最小间隔 60 秒、后台离开即传、限流按账号计 | 限流数值拍板 |
-| P0 | 异地备份 + 恢复演练 | 同机备份挡不住盒子被删 | 存放位置拍板 |
-| P0 | 生产环境选址 | 迁到常驻主机，盒子留作预发布 | **用户拍板** |
-| P1 | 修引擎端到端回归 | 账号功能加显式开关，纯静态部署不探测 `/api/health` | — |
-| P1 | 持续集成加入端到端回归 | 现在只跑静态契约与语法，回归红了没人发现 | — |
-| P1 | 账号服务加固包 | 异步哈希、真实地址取法、HEAD、异常退出等 11 项 | — |
+| P0 | 异地备份 | 本机备份、校验、演练、告警都有了；盒子丢了就全丢 | 存放位置拍板 |
+| P0 | 生产环境选址与迁移 | 迁到常驻主机；迁移步骤已写成可照做的清单 | **用户拍板** |
+| P1 | 持续集成加入浏览器回归 | 流水线仍只跑静态契约与语法；30 分钟，建议最先做 | — |
+| P1 | 账号服务加固包（剩余 8 项） | 异步哈希、真实地址取法、异常退出、数据库文件权限、隐私说明等 | 注销冷静期拍板 |
+| P1 | 站点根改白名单同步 | 现在是排除法；新增的仓库根文件仍可能进公开目录 | — |
 | P1 | 邮箱找回 | 现在只有一次性找回码 | 用户拍板 |
 | P1 | 许可证与素材授权 | 无 LICENSE；CG 11 张与立绘 5 张授权待确认 | **用户拍板** |
-| P1 | 真机 Safari 验收 | 苹果内核不在自动化矩阵里 | 真机 |
+| P1 | 真机矩阵 | 苹果、安卓真机不在自动化矩阵里 | 真机 |
 | P2 | 其余加固与内容项 | 冲突界面用例、限流持久化、可访问性、手势演示扩面等 | — |
 
 - **完整计划**（分阶段清单：工程体验 / 内容纵深 / 素材管线 / 分发多语言）
   → [docs/20261024-0934-下一步开发完整计划-DeepSeek.md](docs/20261024-0934-下一步开发完整计划-DeepSeek.md)
 - **本轮进度分析（以此为准）** → [docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md](docs/20261120-0256-项目进度分析-v3.4.51-Doubao.md)
-- **当前进度与待实现（分篇，以此为准）** → [当前开发进度](docs/20261124-0309-当前开发进度-GLM-5.4.md) ·
+- **当前进度与待实现（分篇，以此为准）** → [当前开发进度](docs/20261124-0534-当前开发进度-GLM-5.4.md) ·
+  [下一步待实现](docs/20261124-0534-下一步待实现-GLM-5.4.md)
+- 上一版分篇（v3.4.54 整体审查当天，历史快照） → [当前开发进度](docs/20261124-0309-当前开发进度-GLM-5.4.md) ·
   [下一步待实现](docs/20261124-0309-下一步待实现-GLM-5.4.md)
 - 上一版分篇（v3.4.54 发布当天，历史快照） → [当前开发进度](docs/20261120-1354-当前开发进度-Doubao.md) ·
   [下一步待实现](docs/20261120-1354-下一步待实现-Doubao.md)
@@ -464,9 +487,8 @@ docs/               版本记录与规划文档（多模型分析文档在 docs/
   生图后统一后处理：裁掉底部白色 letterbox → `scale=1600:960:flags=lanczos`（详见
   [docs/20261024-1614-CG位图批量-Doubao.md](docs/20261024-1614-CG位图批量-Doubao.md)）
 - 字符集改动等价性：跨文件迁移/重构后跑 `tools/equivalence_check.py`（旧引擎快照 vs 新文件）
-- 提交：中文 commit，完成后推送双远程（`git push origin main`（GitHub，部署主源）+
-  `git push gitcode main`）；push 后 InstaBox 盒子 cron 每 3 分钟从 GitHub 自动拉取部署
-  （`tools/deploy_box.sh` 手动直推备用）
+- 提交：中文 commit，完成后推送双远程（先 `git push gitcode main`（部署主源），再 `git push origin main`
+  （GitHub 镜像））；推完 InstaBox 盒子的计划任务 3 分钟内自动部署（`tools/deploy_box.sh` 手动直推备用）
 - 云端测试：`origin` = GitHub（Trae 关联仓库依赖该命名与域名，**不要改成 gitee**），
   流程见上文「远程仓库与云端测试」；云端提交后记得把 `main` 同步推到 `origin`，否则盒子不会部署到最新
 - 部署链路：本地测试（npm test + test:syntax + test:e2e）是唯一门槛，不依赖任何 CI；

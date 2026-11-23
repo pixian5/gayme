@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -187,4 +190,116 @@ test("低配模式：CSS 覆盖常驻容器与一次性玩法浮层", () => {
   }
   assert.match(block, /backdrop-filter: none !important/);
   assert.match(block, /-webkit-backdrop-filter: none !important/);
+});
+
+test("云存档「进度量」用的存档键名与 js/saves.js 的常量一致（v3.4.55 契约）", () => {
+  // 服务端（server/progress.mjs）与前端（js/account.js）各有一份同口径的进度量计算，
+  // 用来判断「空存档覆盖」「收集进度变少」。键名任何一处与 saves.js 的常量对不上，
+  // 那一侧就会算出 0——保护要么永远误报、要么永远不触发。改存档键名时这里必须一起改。
+  const constantOf = (name) => {
+    const m = saves.match(new RegExp(`const\\s+${name}\\s*=\\s*"([^"]+)"`));
+    assert.ok(m, `js/saves.js 里找不到常量 ${name}`);
+    return m[1];
+  };
+  const savesKey = constantOf("STORAGE_KEY");
+  const autosaveKey = constantOf("AUTOSAVE_KEY");
+  const collectKeys = ["ENDINGS_KEY", "KEYWORDS_KEY", "CG_KEY", "CLUES_KEY", "MEMORIES_KEY", "COMPOSED_KEY"].map(constantOf).sort();
+
+  for (const [file, label] of [["../server/progress.mjs", "服务端"], ["../js/account.js", "前端"]]) {
+    const src = fs.readFileSync(new URL(file, import.meta.url), "utf8");
+    const str = (name) => {
+      const m = src.match(new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*"([^"]+)"`));
+      assert.ok(m, `${label}里找不到 ${name}`);
+      return m[1];
+    };
+    assert.equal(str("SAVES_KEY"), savesKey, `${label} SAVES_KEY 与 saves.js 不一致`);
+    assert.equal(str("AUTOSAVE_KEY"), autosaveKey, `${label} AUTOSAVE_KEY 与 saves.js 不一致`);
+    // 匹配到 "];" 为止——元素后面的注释里有 "]"，非贪婪匹配到第一个 "]" 会提前结束
+    const block = src.match(/COLLECT_KEYS\s*=\s*\[([\s\S]*?)\];/);
+    assert.ok(block, `${label}里找不到 COLLECT_KEYS`);
+    const found = [...block[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]).sort();
+    assert.deepEqual(found, collectKeys, `${label} COLLECT_KEYS 与 saves.js 不一致`);
+  }
+});
+
+test("账号功能开关：仓库默认关闭，带账号服务的部署才打开（v3.4.55 契约）", () => {
+  // 仓库里的 index.html 默认 off：纯静态部署（安装包、静态镜像、测试环境）不探测 /api/，
+  // 设置页也不显示账号区块。带账号服务的部署在部署期把它改成空串（同源打开）。
+  // 任何一处写法变了，部署期的改写就会静默失效——玩家要么看不到账号，要么每次打开设置页多一个 404。
+  const metas = [...html.matchAll(/<meta\s+name="gayme-account-api"\s+content="([^"]*)"\s*\/?>/g)];
+  assert.equal(metas.length, 1, "index.html 里账号开关 meta 应恰好一处");
+  assert.equal(metas[0][1], "off", "仓库默认值必须是 off");
+
+  // 前端：off 即关闭（不发请求、不显示账号区块）
+  const account = fs.readFileSync(new URL("../js/account.js", import.meta.url), "utf8");
+  assert.match(account, /const ACCOUNT_ENABLED = metaValue !== "off" && location\.protocol !== "file:"/);
+
+  // 盒子部署脚本在同步站点后执行这个工具；它的匹配规则必须认得 index.html 里的写法
+  const tool = fs.readFileSync(new URL("../tools/patch_account_flag.py", import.meta.url), "utf8");
+  assert.ok(tool.includes(`re.subn(r'name="gayme-account-api"\\s+content="[^"]*"', target, text)`),
+    "补丁工具的匹配规则变了：要确认它仍认得 index.html 里开关的写法");
+  assert.match(tool, /if count != 1:/, "开关 meta 不是恰好一处时必须拒绝修改");
+  const cron = fs.readFileSync(new URL("../tools/box_cron_deploy.sh", import.meta.url), "utf8");
+  assert.match(cron, /patch_account_flag\.py" on "\$WEB"/);
+  assert.match(cron, /if ! account_flag_on; then echo "账号功能开关未打开"; return 1; fi/);
+
+  // 自带账号接口的服务进程提供首页时在内存里改写（磁盘文件不动）
+  const server = fs.readFileSync(new URL("../server/index.mjs", import.meta.url), "utf8");
+  assert.match(server, /const ACCOUNT_FLAG_OFF = 'name="gayme-account-api" content="off"';/);
+  assert.match(server, /const ACCOUNT_FLAG_ON = 'name="gayme-account-api" content=""';/);
+  assert.match(server, /if \(rel === "index.html"\) \{\s*const body = Buffer\.from\(readIndexHtml\(\)\);/);
+});
+
+test("账号开关补丁工具：打开 / 关闭 / 幂等 / 写法异常时拒绝修改", (t) => {
+  // 真实执行 tools/patch_account_flag.py（在临时目录里操作 index.html 的副本）
+  const python = spawnSync("python3", ["--version"], { encoding: "utf8" });
+  if (python.error) { t.skip("本机没有 python3，跳过"); return; }
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "gayme-flag-"));
+  const run = (...args) => spawnSync("python3", [
+    new URL("../tools/patch_account_flag.py", import.meta.url).pathname, ...args, dir,
+  ], { encoding: "utf8" });
+  const read = () => fs.readFileSync(path.join(dir, "index.html"), "utf8");
+  const write = (text) => fs.writeFileSync(path.join(dir, "index.html"), text);
+  const OFF = '<meta name="gayme-account-api" content="off">';
+  const ON = '<meta name="gayme-account-api" content="">';
+  try {
+    write(`<!doctype html>\n<head>\n${OFF}\n</head>\n`);
+    let r = run("on");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(read(), `<!doctype html>\n<head>\n${ON}\n</head>\n`, "打开：只改开关，别的一个字符都不动");
+    // 幂等：已是目标状态时不写文件（修改时间不变）、不输出
+    const before = fs.statSync(path.join(dir, "index.html")).mtimeMs;
+    fs.utimesSync(path.join(dir, "index.html"), 1, 1);
+    r = run("on");
+    assert.equal(r.status, 0, r.stderr);
+    assert.equal(r.stdout, "", "已是目标状态时不应输出（部署日志里会刷屏）");
+    assert.equal(fs.statSync(path.join(dir, "index.html")).mtimeMs, 1000, "已是目标状态时不应重写文件");
+    r = run("off");
+    assert.equal(r.status, 0, r.stderr);
+    assert.ok(read().includes(OFF), "关闭");
+
+    // 写法异常：一处都没有、或有两处——都不许动文件，退出码非零（部署健康检查据此判失败）
+    for (const broken of ["<!doctype html><head></head>", `${OFF}\n${OFF}`]) {
+      write(broken);
+      const mtime = 2000;
+      fs.utimesSync(path.join(dir, "index.html"), 2, 2);
+      r = run("on");
+      assert.notEqual(r.status, 0, `写法异常时必须失败：${broken}`);
+      assert.equal(read(), broken, "失败时不许改动文件");
+      assert.equal(fs.statSync(path.join(dir, "index.html")).mtimeMs, mtime, "失败时不许重写文件");
+    }
+    // 开关值是别的（例如带接口前缀）：规范成目标值，而不是拒绝
+    write('<meta name="gayme-account-api" content="/acct">');
+    assert.equal(run("on").status, 0);
+    assert.ok(read().includes(ON), "其它取值应被规范成目标值");
+    // 参数错误
+    assert.notEqual(run("nope").status, 0);
+    assert.notEqual(spawnSync("python3", [new URL("../tools/patch_account_flag.py", import.meta.url).pathname], { encoding: "utf8" }).status, 0);
+    // 目录里没有 index.html
+    fs.rmSync(path.join(dir, "index.html"));
+    assert.notEqual(run("on").status, 0);
+    void before;
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
 });

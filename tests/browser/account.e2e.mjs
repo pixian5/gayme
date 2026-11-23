@@ -110,7 +110,10 @@ test("账号注册、云存档上传、换设备恢复与退出", { timeout: 120
     const revision1 = await page.evaluate(() => window.AccountUI?.state?.cloud?.revision ?? null);
     assert.ok(revision1 === null || revision1 >= 1, "上传后应有云端修订号");
 
+    // v3.4.55：退出登录先让玩家选「是否一并清除本机存档」（公用电脑用）；这里选仅退出
     await page.click('[data-acct-action="logout"]');
+    await page.waitForSelector('[data-acct-action="logout-keep"]', { timeout: 8000 });
+    await page.click('[data-acct-action="logout-keep"]');
     await page.waitForSelector('form[data-acct-form="login"]', { timeout: 8000 });
 
     // 新浏览器上下文 = 换设备：本地无存档，登录后从云端恢复。

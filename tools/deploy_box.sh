@@ -37,7 +37,8 @@ fi
 if [ -f "$SRC/tools/box_backup.sh" ]; then
   sudo -n bash "$SRC/tools/box_backup.sh" --backup-only --quiet
 fi
-sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 --exclude qa-results --exclude server "$SRC/" "$WEB/"
+# 站点根只放运行文件（与 tools/box_cron_deploy.sh 的 EX 保持一致；--delete-excluded 会清掉线上已有的非运行文件）
+sudo -n rsync -a --checksum --delete --delete-excluded --exclude .git --exclude .DS_Store --exclude .github --exclude .githooks --exclude .gitignore --exclude .nojekyll --exclude docs --exclude tests --exclude tools --exclude 经验 --exclude .workbuddy --exclude qa-results --exclude server --exclude scripts --exclude dist --exclude package.json --exclude package-lock.json --exclude README.md --exclude 文档索引.md "$SRC/" "$WEB/"
 echo "SYNCED_FROM=$SRC"
 # 账号服务代码同步到非公开目录，并重启容器；站点根不能出现 server/ 源码
 ACCOUNT_APP=/data/home/gayme-account/app
@@ -56,6 +57,10 @@ if [ -f "$SRC/tools/patch_nginx.py" ]; then
 fi
 if [ -f "$SRC/tools/patch_nginx_account.py" ]; then
   sudo -n python3 "$SRC/tools/patch_nginx_account.py" || echo "!! 账号代理修正失败" >&2
+fi
+# v3.4.55：仓库默认关闭账号功能；盒子带账号服务，打开它（打不开则中止——否则账号面板会消失）
+if [ -f "$SRC/tools/patch_account_flag.py" ]; then
+  sudo -n python3 "$SRC/tools/patch_account_flag.py" on "$WEB"
 fi
 # 刷新每日备份计划任务（幂等）
 if [ -f "$SRC/tools/box_backup.sh" ]; then

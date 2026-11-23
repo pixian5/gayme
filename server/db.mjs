@@ -1,10 +1,17 @@
 /* 樱时信笺 · SQLite 数据层
- * 表：users / sessions / saves / audit_log
+ * 表：users / sessions / saves / save_versions / audit_log
  * 使用 Node 内置 node:sqlite（Node 22.5+，启动时可能打印实验特性警告）。
+ *
+ * v3.4.55：
+ * - saves 表新增 progress 列（进度量：存档槽数 / 有无自动进度 / 收集进度数），
+ *   用于「空存档不得覆盖有内容的云端存档」「收集进度变少不得静默覆盖」两道保护；
+ *   老库启动时自动补列并按已有内容回填。
+ * - 新增 save_versions 表：云端存档每次被替换，旧版本挪到这里，每账号保留最近若干版。
  */
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { progressOf } from "./progress.mjs";
 
 export function openDatabase(dbPath) {
   fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -47,7 +54,20 @@ export function openDatabase(dbPath) {
       sha256 TEXT NOT NULL,
       schema_version INTEGER NOT NULL,
       exported_at INTEGER,
-      updated_at INTEGER NOT NULL
+      updated_at INTEGER NOT NULL,
+      progress TEXT NOT NULL DEFAULT '{}'
+    );
+
+    -- v3.4.55 历史版本：云端存档被新版本替换时，旧版本挪到这里（每账号保留最近 N 版）
+    CREATE TABLE IF NOT EXISTS save_versions (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      revision INTEGER NOT NULL,
+      data TEXT NOT NULL,
+      bytes INTEGER NOT NULL,
+      sha256 TEXT NOT NULL,
+      progress TEXT NOT NULL DEFAULT '{}',
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (user_id, revision)
     );
 
     CREATE TABLE IF NOT EXISTS audit_log (
@@ -60,7 +80,26 @@ export function openDatabase(dbPath) {
     );
     CREATE INDEX IF NOT EXISTS idx_audit_user_time ON audit_log(user_id, created_at DESC);
   `);
+  migrateSavesProgress(db);
   return createStore(db);
+}
+
+/* v3.4.55：saves 表的 progress 列。v3.4.54 及更早的库里没有这一列——补列，并按已有存档内容回填 */
+function migrateSavesProgress(db) {
+  const columns = db.prepare("PRAGMA table_info(saves)").all().map((column) => column.name);
+  if (columns.includes("progress")) return;
+  db.exec("ALTER TABLE saves ADD COLUMN progress TEXT NOT NULL DEFAULT '{}'");
+  const rows = db.prepare("SELECT user_id, data FROM saves").all();
+  const update = db.prepare("UPDATE saves SET progress = ? WHERE user_id = ?");
+  for (const row of rows) {
+    let progress = "{}";
+    try {
+      // data 存的是整个存档包 { schemaVersion, exportedAt, records }，进度量只看其中的 records
+      const payload = JSON.parse(row.data);
+      progress = JSON.stringify(progressOf(payload && payload.records));
+    } catch (_) { /* 损坏的存档按「未知」处理 */ }
+    update.run(progress, row.user_id);
+  }
 }
 
 function createStore(db) {
@@ -93,12 +132,19 @@ function createStore(db) {
 
     saveByUser: db.prepare("SELECT * FROM saves WHERE user_id = ?"),
     putSave: db.prepare(`INSERT INTO saves
-      (user_id, revision, data, bytes, sha256, schema_version, exported_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (user_id, revision, data, bytes, sha256, schema_version, exported_at, updated_at, progress)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         revision = excluded.revision, data = excluded.data, bytes = excluded.bytes,
         sha256 = excluded.sha256, schema_version = excluded.schema_version,
-        exported_at = excluded.exported_at, updated_at = excluded.updated_at`),
+        exported_at = excluded.exported_at, updated_at = excluded.updated_at, progress = excluded.progress`),
+    archiveSave: db.prepare(`INSERT OR REPLACE INTO save_versions
+      (user_id, revision, data, bytes, sha256, progress, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)`),
+    pruneVersions: db.prepare(`DELETE FROM save_versions WHERE user_id = ? AND revision NOT IN
+      (SELECT revision FROM save_versions WHERE user_id = ? ORDER BY revision DESC LIMIT ?)`),
+    versionByUserRev: db.prepare("SELECT * FROM save_versions WHERE user_id = ? AND revision = ?"),
+    versionsByUser: db.prepare(`SELECT revision, bytes, progress, created_at FROM save_versions
+      WHERE user_id = ? ORDER BY revision DESC`),
 
     audit: db.prepare("INSERT INTO audit_log (user_id, action, detail, ip, created_at) VALUES (?, ?, ?, ?, ?)"),
     recentAudit: db.prepare(`SELECT action, detail, ip, created_at FROM audit_log
@@ -140,8 +186,29 @@ function createStore(db) {
     saveByUser(userId) { return stmt.saveByUser.get(userId); },
     putSave(save) {
       stmt.putSave.run(save.userId, save.revision, save.data, save.bytes, save.sha256,
-        save.schemaVersion, save.exportedAt || null, save.updatedAt);
+        save.schemaVersion, save.exportedAt || null, save.updatedAt, JSON.stringify(save.progress || {}));
     },
+
+    /* v3.4.55：替换云端存档。被替换的那一份先进历史，再写入新版本，最后裁掉太旧的历史——
+       三步放在同一个事务里，中途出错时云端存档保持原样。 */
+    replaceSave({ userId, outgoing, incoming, keepVersions }) {
+      db.exec("BEGIN IMMEDIATE");
+      try {
+        if (outgoing) {
+          stmt.archiveSave.run(userId, outgoing.revision, outgoing.data, outgoing.bytes, outgoing.sha256,
+            outgoing.progress || "{}", outgoing.updated_at);
+        }
+        stmt.putSave.run(userId, incoming.revision, incoming.data, incoming.bytes, incoming.sha256,
+          incoming.schemaVersion, incoming.exportedAt || null, incoming.updatedAt, JSON.stringify(incoming.progress || {}));
+        stmt.pruneVersions.run(userId, userId, keepVersions);
+        db.exec("COMMIT");
+      } catch (err) {
+        try { db.exec("ROLLBACK"); } catch (_) { /* 事务未开启时忽略 */ }
+        throw err;
+      }
+    },
+    versionByUserRev(userId, revision) { return stmt.versionByUserRev.get(userId, revision); },
+    versionsByUser(userId) { return stmt.versionsByUser.all(userId); },
 
     audit(userId, action, detail, ip, at = Date.now()) {
       stmt.audit.run(userId || null, String(action), detail === null || detail === undefined ? null : String(detail), ip || null, at);

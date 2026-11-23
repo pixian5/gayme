@@ -243,7 +243,13 @@ window.SakuraPanels = function (C) {
       reader.readAsText(file);
     };
     document.getElementById("cfg-clear").onclick = () => {
-      if (confirm("确定清空所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。")) {
+      // v3.4.55：已登录且云端有存档时，说清楚云端那一份的去向
+      const acct = typeof window.AccountUI === "object" ? window.AccountUI.state : null;
+      const hasCloud = Boolean(acct && acct.me && acct.cloud);
+      const tip = hasCloud
+        ? "确定清空本机所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。\n\n云端存档不会被删除。自动同步会随之暂停，避免新开局的空存档把它覆盖掉。"
+        : "确定清空所有存档、图鉴、CG、关键词、合成、记忆和设置吗？此操作不可撤销。";
+      if (confirm(tip)) {
         if (!Saves.clearAll()) {
           flashHint("清空失败：浏览器存储不可用");
           return;
@@ -252,7 +258,11 @@ window.SakuraPanels = function (C) {
         state.visitedNodes = {};
         state.loopCount = 0;
         state.variables = createDefaultVariables();
-        flashHint("已清空");
+        // v3.4.55：通知账号模块暂停自动同步——此前清空后自动同步照常工作，
+        // 重新开局的第一次自动存档就把空状态推上了云端，原云端存档被覆盖
+        const paused = typeof window.AccountUI?.onLocalCleared === "function";
+        if (paused) window.AccountUI.onLocalCleared();
+        flashHint(hasCloud ? "已清空本机存档；自动同步已暂停，云端存档未动" : "已清空");
         closeOverlay();
       }
     };

@@ -49,6 +49,15 @@ const PUBLIC_FILES = new Set([
 ]);
 const DENY_PREFIXES = ["server/", "docs/", "tests/", "tools/", "经验/", ".git/", ".github/", "node_modules/"];
 
+/* v3.4.55：仓库里的 index.html 默认把账号功能标成「关闭」（纯静态部署不去探测 /api/）。
+   本进程自带账号接口，提供首页时把它打开；磁盘上的文件不动。 */
+const ACCOUNT_FLAG_OFF = 'name="gayme-account-api" content="off"';
+const ACCOUNT_FLAG_ON = 'name="gayme-account-api" content=""';
+function readIndexHtml() {
+  const html = fs.readFileSync(path.join(SITE_ROOT, "index.html"), "utf8");
+  return html.includes(ACCOUNT_FLAG_OFF) ? html.replace(ACCOUNT_FLAG_OFF, ACCOUNT_FLAG_ON) : html;
+}
+
 function isPublicPath(rel) {
   const clean = rel.replaceAll("\\", "/").replace(/^\/+/, "");
   if (!clean || clean.includes("\0") || clean.split("/").includes("..")) return false;
@@ -96,6 +105,16 @@ function serveStatic(req, res, rawPath) {
   }
   if (!stat.isFile()) {
     send(req, res, 404, "Not Found", { "Content-Type": "text/plain; charset=utf-8" });
+    return;
+  }
+  // 首页要先改写账号开关再发：整份读入内存（只有几十 KB），不走下面的流式直发
+  if (rel === "index.html") {
+    const body = Buffer.from(readIndexHtml());
+    send(req, res, 200, body, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Content-Length": body.length,
+      "Cache-Control": "no-cache",
+    });
     return;
   }
   const ext = path.extname(abs).toLowerCase();

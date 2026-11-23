@@ -2,6 +2,14 @@
  * 路由：/api/health、/api/auth/*、/api/account/*、/api/saves*
  * 认证：HttpOnly Cookie + 非 GET 必须带 X-Requested-With: gayme-account
  * 云存档：整包存储 Saves.exportData() 的 JSON，revision + baseRevision 做冲突检测
+ *
+ * v3.4.55 数据安全：
+ * - 两道覆盖保护（force 只豁免修订号冲突，不豁免这两道；放行必须显式带标记）：
+ *     empty_overwrite  本机没有存档，却要覆盖云端有内容的存档
+ *     progress_shrink  本机的收集进度比云端少（典型：本机被清空后重新开局）
+ * - 历史版本：GET /api/saves/versions 列出、GET /api/saves/data?revision=N 取回，
+ *   被替换的旧版本保留最近 N 版（config.SAVE_VERSIONS_KEEP）。
+ * - 限流改为「已登录的操作按账号计数」，网络地址维度只做防滥用上限。
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -11,8 +19,10 @@ import {
   parseCookies, randomId, randomToken, scryptHash, scryptVerify, sessionCookie,
   sha256Hex, validNickname, validPassword, validUsername,
 } from "./auth.mjs";
+import { progressOf, parseProgress } from "./progress.mjs";
 import {
   ALLOWED_ORIGIN, AUDIT_RETENTION_DAYS, MAX_JSON_BYTES, MAX_SAVE_BYTES,
+  RATE_LIMITS, SAVE_VERSIONS_KEEP,
   SESSION_DAYS, SESSION_MAX_PER_USER, SITE_ROOT, TRUST_PROXY, isSecureRequest,
 } from "./config.mjs";
 
@@ -32,10 +42,14 @@ class ApiError extends Error {
   }
 }
 
-const registerLimiter = new RateLimiter(5, 60 * 60 * 1000, "register");
-const loginLimiter = new RateLimiter(20, 5 * 60 * 1000, "login");
-const recoverLimiter = new RateLimiter(10, 15 * 60 * 1000, "recover");
-const accountLimiter = new RateLimiter(30, 15 * 60 * 1000, "account");
+// v3.4.55：阈值见 config.RATE_LIMITS。account / save-user 两个桶按「账号」计数（key = 用户编号），
+// save-ip 只做同一出口地址的防滥用上限
+const registerLimiter = new RateLimiter(RATE_LIMITS.registerPerHourPerIp, 60 * 60 * 1000, "register");
+const loginLimiter = new RateLimiter(RATE_LIMITS.loginPerWindowPerIp, RATE_LIMITS.loginWindowMs, "login");
+const recoverLimiter = new RateLimiter(RATE_LIMITS.recoverPerWindowPerIp, RATE_LIMITS.recoverWindowMs, "recover");
+const accountLimiter = new RateLimiter(RATE_LIMITS.accountPerWindowPerUser, RATE_LIMITS.saveWindowMs, "account");
+const saveUserLimiter = new RateLimiter(RATE_LIMITS.savePerWindowPerUser, RATE_LIMITS.saveWindowMs, "save-user");
+const saveIpLimiter = new RateLimiter(RATE_LIMITS.savePerWindowPerIp, RATE_LIMITS.saveWindowMs, "save-ip");
 const loginGuard = new LoginGuard();
 
 function iso(ms) {
@@ -67,7 +81,22 @@ function saveMeta(row) {
     schemaVersion: Number(row.schema_version) || 0,
     exportedAt: iso(row.exported_at),
     updatedAt: iso(row.updated_at),
+    // v3.4.55：进度量（存档槽数 / 有无自动进度 / 收集进度数），前端据此提前给出提示
+    progress: parseProgress(row.progress),
   };
+}
+
+/* v3.4.55：用本机存档覆盖云端存档前的原因检查。
+ * 返回 null 表示可以覆盖；否则返回 { code, message }。
+ * allowEmpty / allowShrink 必须由客户端在玩家明确确认后才带，force 不豁免这两道。 */
+function checkOverwrite(cloudProgress, localProgress, body) {
+  if (cloudProgress.hasProgress && !localProgress.hasProgress && body.allowEmpty !== true) {
+    return { code: "empty_overwrite", message: "本机没有存档，不能覆盖云端已有的存档" };
+  }
+  if (localProgress.collect < cloudProgress.collect && body.allowShrink !== true) {
+    return { code: "progress_shrink", message: "本机的收集进度比云端少，不能直接覆盖云端存档" };
+  }
+  return null;
 }
 
 function corsHeaders(req) {
@@ -281,11 +310,14 @@ function validateSavePayload(data) {
     sha256: sha256Hex(serialized),
     schemaVersion: data.schemaVersion,
     exportedAt: Number.isInteger(data.exportedAt) ? data.exportedAt : Date.now(),
+    progress: progressOf(data.records),
   };
 }
 
-function rateLimit(limiter, req, suffix = "") {
-  const key = `${clientIp(req, TRUST_PROXY)}${suffix ? "|" + suffix : ""}`;
+/* subject 传入时按它计数（已登录的操作用用户编号），否则按网络地址计数 */
+function rateLimit(limiter, req, suffix = "", subject = null) {
+  const who = subject || clientIp(req, TRUST_PROXY);
+  const key = `${who}${suffix ? "|" + suffix : ""}`;
   const result = limiter.hit(key);
   if (!result.ok) {
     throw new ApiError(429, "rate_limited", "操作太频繁，请稍后再试", { retryAfter: result.retryAfter });
@@ -301,6 +333,7 @@ function parseSaveData(row) {
 async function route(req, res, store, url) {
   const method = req.method;
   const pathname = url.pathname;
+  const searchParams = url.searchParams;
   const ip = clientIp(req, TRUST_PROXY);
 
   if (method === "OPTIONS") {
@@ -311,7 +344,7 @@ async function route(req, res, store, url) {
 
   assertCsrf(req, method);
 
-  if (method === "GET" && pathname === "/api/health") {
+  if ((method === "GET" || method === "HEAD") && pathname === "/api/health") {
     let database = "ok";
     try { store.userById("__health__"); } catch (_) { database = "error"; }
     json(req, res, 200, { ok: true, service: "gayme-account", version: VERSION, time: new Date().toISOString(), database });
@@ -439,8 +472,8 @@ async function route(req, res, store, url) {
   }
 
   if (method === "POST" && pathname === "/api/account/profile") {
-    rateLimit(accountLimiter, req, "profile");
     const ctx = requireAuth(req, store);
+    rateLimit(accountLimiter, req, "profile", ctx.user.id);
     const body = await readJson(req);
     const nickname = String(body.nickname || "").trim();
     if (!validNickname(nickname)) throw new ApiError(400, "invalid_nickname", "昵称需为 1-24 个字符");
@@ -452,8 +485,8 @@ async function route(req, res, store, url) {
   }
 
   if (method === "POST" && pathname === "/api/account/password") {
-    rateLimit(accountLimiter, req, "password");
     const ctx = requireAuth(req, store);
+    rateLimit(accountLimiter, req, "password", ctx.user.id);
     const body = await readJson(req);
     const currentPassword = String(body.currentPassword || "");
     const newPassword = String(body.newPassword || "");
@@ -471,8 +504,8 @@ async function route(req, res, store, url) {
   }
 
   if (method === "POST" && pathname === "/api/account/recovery-code") {
-    rateLimit(accountLimiter, req, "recovery");
     const ctx = requireAuth(req, store);
+    rateLimit(accountLimiter, req, "recovery", ctx.user.id);
     const body = await readJson(req);
     if (!scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
       throw new ApiError(401, "invalid_credentials", "密码不正确");
@@ -539,6 +572,8 @@ async function route(req, res, store, url) {
 
   if (method === "DELETE" && pathname === "/api/account") {
     const ctx = requireAuth(req, store);
+    // v3.4.55：这里的密码校验原先没有限流，补上（与改密、重置找回码同一个桶）
+    rateLimit(accountLimiter, req, "delete", ctx.user.id);
     const body = await readJson(req);
     if (body.ack !== true) throw new ApiError(400, "ack_required", "请确认注销账号");
     if (!scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
@@ -558,17 +593,40 @@ async function route(req, res, store, url) {
     return;
   }
 
+  // v3.4.55：历史版本列表（新到旧）。currentRevision 是云端当前修订号，列表里不含它
+  if (method === "GET" && pathname === "/api/saves/versions") {
+    const ctx = requireAuth(req, store);
+    const current = store.saveByUser(ctx.user.id);
+    const versions = store.versionsByUser(ctx.user.id).map((version) => ({
+      revision: Number(version.revision),
+      bytes: Number(version.bytes) || 0,
+      progress: parseProgress(version.progress),
+      createdAt: iso(version.created_at),
+    }));
+    json(req, res, 200, { currentRevision: current ? Number(current.revision) : 0, kept: SAVE_VERSIONS_KEEP, versions });
+    return;
+  }
+
   if (method === "GET" && pathname === "/api/saves/data") {
     const ctx = requireAuth(req, store);
-    const row = store.saveByUser(ctx.user.id);
+    let row = store.saveByUser(ctx.user.id);
+    const wanted = Number(searchParams.get("revision"));
+    // 指定了历史修订号（且不是当前版本）→ 从历史版本表取
+    if (Number.isInteger(wanted) && wanted > 0 && (!row || wanted !== Number(row.revision))) {
+      row = store.versionByUserRev(ctx.user.id, wanted);
+      if (!row) throw new ApiError(404, "no_version", "没有这个历史版本");
+    }
     if (!row) throw new ApiError(404, "no_save", "云端还没有存档");
     json(req, res, 200, { save: saveMeta(row), data: parseSaveData(row) });
     return;
   }
 
   if (method === "PUT" && pathname === "/api/saves") {
-    rateLimit(accountLimiter, req, "save");
+    // v3.4.55：先认证再限流——上传额度按账号计，网络地址维度只做防滥用上限
+    // （原先先按网络地址限流再认证：校园网 / 公司网络下所有玩家分摊 30 次 / 15 分钟）
     const ctx = requireAuth(req, store);
+    rateLimit(saveIpLimiter, req);
+    rateLimit(saveUserLimiter, req, "", ctx.user.id);
     const body = await readJson(req);
     const data = body.data;
     const baseRevision = requireBaseRevision(body.baseRevision);
@@ -584,17 +642,39 @@ async function route(req, res, store, url) {
         serverBytes: current ? Number(current.bytes || 0) : 0,
       });
     }
+    // v3.4.55：两道覆盖保护。修订号对得上也可能是在毁数据——新设备勾了自动同步、
+    // 本机被清空后重新开局，都会带着「正确」的修订号把空存档推上来。
+    const cloudProgress = parseProgress(current && current.progress);
+    const blocked = checkOverwrite(cloudProgress, validated.progress, body);
+    if (blocked) {
+      store.audit(ctx.user.id, blocked.code,
+        `local_slots=${validated.progress.slots} local_collect=${validated.progress.collect} cloud_slots=${cloudProgress.slots} cloud_collect=${cloudProgress.collect}`, ip);
+      throw new ApiError(409, blocked.code, blocked.message, {
+        serverRevision: currentRevision,
+        serverUpdatedAt: current ? iso(current.updated_at) : null,
+        serverBytes: current ? Number(current.bytes || 0) : 0,
+        serverProgress: cloudProgress,
+        localProgress: validated.progress,
+      });
+    }
     const revision = currentRevision + 1;
     const updatedAt = Date.now();
-    store.putSave({
-      userId: ctx.user.id, revision, data: validated.serialized, bytes: validated.bytes,
-      sha256: validated.sha256, schemaVersion: validated.schemaVersion,
-      exportedAt: validated.exportedAt, updatedAt,
+    // 被替换的旧版本进历史（保留最近 N 版），中途出错则云端保持原样
+    store.replaceSave({
+      userId: ctx.user.id,
+      outgoing: current,
+      incoming: {
+        revision, data: validated.serialized, bytes: validated.bytes, sha256: validated.sha256,
+        schemaVersion: validated.schemaVersion, exportedAt: validated.exportedAt, updatedAt,
+        progress: validated.progress,
+      },
+      keepVersions: SAVE_VERSIONS_KEEP,
     });
     store.audit(ctx.user.id, "save_upload", `rev=${revision} bytes=${validated.bytes}`, ip);
     json(req, res, 200, {
       save: saveMeta({ revision, bytes: validated.bytes, sha256: validated.sha256,
-        schema_version: validated.schemaVersion, exported_at: validated.exportedAt, updated_at: updatedAt }),
+        schema_version: validated.schemaVersion, exported_at: validated.exportedAt, updated_at: updatedAt,
+        progress: JSON.stringify(validated.progress) }),
     });
     return;
   }
@@ -610,7 +690,7 @@ export async function handleApi(req, res, store) {
     json(req, res, 400, { error: { code: "invalid_url", message: "请求路径不合法" } });
     return;
   }
-  const cleanUrl = { pathname };
+  const cleanUrl = { pathname, searchParams: url.searchParams };
   try {
     await route(req, res, store, cleanUrl);
   } catch (err) {

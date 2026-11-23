@@ -1,7 +1,7 @@
 {
   "name": "sakura-letters",
   "private": true,
-  "version": "3.4.54",
+  "version": "3.4.55",
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
@@ -19,7 +19,8 @@
     "test:settings": "node tests/browser/settings.e2e.mjs",
     "test:perf": "node tests/browser/perf.e2e.mjs",
     "test:account": "node server/test_api.mjs",
-    "test:account:e2e": "node tests/browser/account.e2e.mjs"
+    "test:account:e2e": "node tests/browser/account.e2e.mjs",
+    "test:cloud": "node tests/browser/cloud-guards.e2e.mjs"
   },
   "devDependencies": {
     "playwright": "^1.64.1"
