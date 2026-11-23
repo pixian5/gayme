@@ -35,7 +35,7 @@ fi
 [ -n "$SRC" ] || SRC="$INCOMING"
 # v3.4.55：动线上文件之前先备份数据库（新版本可能带表结构迁移）；备份失败则中止本次部署
 if [ -f "$SRC/tools/box_backup.sh" ]; then
-  sudo -n bash "$SRC/tools/box_backup.sh" --backup-only
+  sudo -n bash "$SRC/tools/box_backup.sh" --backup-only --quiet
 fi
 sudo -n rsync -a --delete --delete-excluded --exclude .git --exclude docs --exclude tests --exclude tools --exclude 经验 --exclude qa-results --exclude server "$SRC/" "$WEB/"
 echo "SYNCED_FROM=$SRC"
@@ -59,7 +59,7 @@ if [ -f "$SRC/tools/patch_nginx_account.py" ]; then
 fi
 # 刷新每日备份计划任务（幂等）
 if [ -f "$SRC/tools/box_backup.sh" ]; then
-  sudo -n bash "$SRC/tools/box_backup.sh" --install-only || echo "!! 备份计划任务刷新失败" >&2
+  sudo -n bash "$SRC/tools/box_backup.sh" --install-only --quiet || echo "!! 备份计划任务刷新失败" >&2
 fi
 EOS
 )

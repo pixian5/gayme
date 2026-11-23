@@ -36,7 +36,8 @@ sync_all() {
 
 restart_account() {
   if account_container_exists; then
-    docker restart sakura-account >>"$LOG" 2>&1 || log "账号服务重启失败"
+    # docker restart 会把容器名打印到标准输出，只把错误写进日志
+    docker restart sakura-account >/dev/null 2>>"$LOG" || log "账号服务重启失败"
   else
     log "账号服务容器不存在，跳过重启（按部署文档重建）"
   fi
@@ -79,7 +80,7 @@ git reset -q --hard "$CUR"
 if [ -f "$REPO/tools/box_backup.sh" ]; then
   if [ -f "$STATE_DIR/skip-backup" ]; then
     log "已设置跳过部署前备份（$STATE_DIR/skip-backup），继续部署"
-  elif ! bash "$REPO/tools/box_backup.sh" --backup-only >>"$LOG" 2>&1; then
+  elif ! bash "$REPO/tools/box_backup.sh" --backup-only --quiet >>"$LOG" 2>&1; then
     log "部署前数据库备份失败，本次不部署（下次重试）"
     git reset -q --hard "$PREV"
     exit 1
@@ -108,5 +109,5 @@ fi
 
 # 刷新每日备份的计划任务（幂等；重装或换盒子后靠这一步恢复）
 if [ -f "$REPO/tools/box_backup.sh" ]; then
-  bash "$REPO/tools/box_backup.sh" --install-only >>"$LOG" 2>&1 || log "备份计划任务刷新失败"
+  bash "$REPO/tools/box_backup.sh" --install-only --quiet >>"$LOG" 2>&1 || log "备份计划任务刷新失败"
 fi

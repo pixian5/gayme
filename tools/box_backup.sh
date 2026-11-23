@@ -8,6 +8,7 @@
 #   sudo bash tools/box_backup.sh --backup-only   # 只备份（部署前调用；失败返回非零）
 #   sudo bash tools/box_backup.sh --install-only  # 只安装/刷新计划任务
 #   sudo bash tools/box_backup.sh --verify        # 备份 + 恢复演练（把最新备份恢复到临时实例并校验）
+#   任意模式后加 --quiet：不回显日志尾巴（被部署脚本调用时用）
 #
 # 可用环境变量调整：SAKURA_ACCOUNT_CONTAINER（默认 sakura-account）
 #                   SAKURA_ACCOUNT_DATA（默认 /data/home/gayme-account/data）
@@ -38,20 +39,22 @@ notify() {
 # 安装/刷新计划任务：每天 03:30 备份一次。带标记的旧条目先摘掉再追加，重复执行结果一致
 install_cron() {
   local entry="30 3 * * * docker exec -e NODE_NO_WARNINGS=1 ${CONTAINER} node /app/server/backup_db.mjs >> ${LOG} 2>&1 # ${MARK}"
-  local tmp before after rc
+  local tmp current before after rc
   tmp=$(mktemp) || return 1
-  crontab -l 2>/dev/null | grep -v "# ${MARK}\$" > "$tmp" || true
+  current=$(mktemp) || { rm -f "$tmp"; return 1; }
+  crontab -l > "$current" 2>/dev/null || true
+  grep -v "# ${MARK}\$" "$current" > "$tmp" || true   # 摘掉旧的同类条目（一个都没有时 grep 返回 1，无妨）
   echo "$entry" >> "$tmp"
   # 保护：除本任务外的条目数必须不变，防止管道意外清空整个计划任务表
-  before=$(crontab -l 2>/dev/null | grep -v "# ${MARK}\$" | grep -c '[^[:space:]]' || true)
-  after=$(grep -c '[^[:space:]]' "$tmp" || true)
+  before=$(grep -v "# ${MARK}\$" "$current" | grep -c '[^[:space:]]' || true)
+  after=$(grep -v "# ${MARK}\$" "$tmp" | grep -c '[^[:space:]]' || true)
   if [ "${before:-0}" != "${after:-0}" ]; then
-    rm -f "$tmp"
+    rm -f "$tmp" "$current"
     log "!! 计划任务条目数不一致（${before:-0} → ${after:-0}），放弃修改"
     return 1
   fi
   crontab "$tmp"; rc=$?
-  rm -f "$tmp"
+  rm -f "$tmp" "$current"
   if [ $rc -eq 0 ]; then log "每日备份计划任务已就位（03:30，标记 ${MARK}）"; fi
   return $rc
 }
@@ -137,14 +140,25 @@ verify_latest() {
 
 touch "$LOG"
 rc=0
-case "${1:-}" in
+QUIET=0
+MODE=""
+for arg in "$@"; do
+  case "$arg" in
+    --quiet) QUIET=1 ;;
+    --backup-only|--install-only|--verify) MODE="$arg" ;;
+    "")
+      echo "用法：sudo bash tools/box_backup.sh [--backup-only|--install-only|--verify] [--quiet]" >&2
+      exit 2 ;;
+    *)
+      echo "未知参数：$arg" >&2
+      exit 2 ;;
+  esac
+done
+case "$MODE" in
   --backup-only)  run_backup || rc=1; check_disk ;;
   --install-only) install_cron || rc=1 ;;
   --verify)       run_backup || rc=1; verify_latest || rc=1; check_disk ;;
   "")             install_cron || rc=1; run_backup || rc=1; check_disk ;;
-  *)
-    echo "用法：sudo bash tools/box_backup.sh [--backup-only|--install-only|--verify]" >&2
-    exit 2 ;;
 esac
-tail -n 3 "$LOG"
+[ "$QUIET" = "1" ] || tail -n 3 "$LOG"
 exit $rc
