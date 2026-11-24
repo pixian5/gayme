@@ -1,15 +1,61 @@
-# 纯测试 CI：每次 push 跑静态契约与语法，不参与部署（部署仍走盒子 cron + 手动 HF）
-# 目的：并行线合并前就能在 GitHub 上看到契约是否破裂（2026-11-16 用户拍板新增）
+# 测试流水线（纯测试，不参与部署——部署走盒子的计划任务，从 GitCode 拉取）
+# 2026-11-24（v3.4.56）：从「只跑静态契约与语法」扩成全量。
+# 起因：引擎端到端回归从 11 月 20 日红到 11 月 24 日没人发现，因为流水线根本不跑它。
+# 现在这里跑的与发版前在盒子上跑的是同一份清单（见 docs/发版流程.md 第二节）。
+# 触发：推 main；推名字以 ci- 开头的分支（用来验证流水线本身）；针对 main 的合并请求；手动。
 name: test
+
 on:
   push:
-    branches: [main]
+    branches: [main, "ci-*"]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+# 同一分支的新推送到来时，取消还没跑完的旧运行
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Node 24 对内置 SQLite 会打印实验性警告；与盒子上跑测试时保持一致，静音以免刷日志
+  NODE_NO_WARNINGS: "1"
 
 jobs:
-  contracts:
+  server:
+    name: 契约 / 语法 / 账号接口 / 部署脚本 / 账号与云存档浏览器用例（Node ${{ matrix.node-version }}）
     runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 = 盒子测试环境；24 = 线上账号容器所用的版本
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: 静态契约
+        run: npm test
+      - name: 语法检查
+        run: npm run test:syntax
+      - name: 账号接口（临时 SQLite）
+        run: npm run test:account
+      - name: 盒子部署脚本离线流程测试
+        run: bash tools/test_box_cron_deploy.sh
+      - name: 账号界面浏览器用例
+        run: npm run test:account:e2e
+      - name: 云存档数据安全浏览器用例
+        run: npm run test:cloud
+
+  engine:
+    name: 游戏本体浏览器回归（Chromium 内核）
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +63,54 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci --no-audit --no-fund
-      - name: 静态契约（54 项）
-        run: npm test
-      - name: 语法检查
-        run: npm run test:syntax
+      - run: npx playwright install --with-deps chromium
+      - name: 引擎运行时回归
+        run: npm run test:e2e
+      - name: 设置页与账号开关
+        run: npm run test:settings
+      - name: 缺陷回归
+        run: npm run test:defects
+      - name: 持久化完整性
+        run: npm run test:persistence
+      - name: 移动端触控与布局
+        run: npm run test:mobile
+      - name: 移动端玩法溢出扫描
+        run: npm run test:overflow
+      - name: 全图运行时走查
+        run: npm run test:graph
+      - name: 离线可玩
+        run: npm run test:offline
+      - name: 低配模式性能
+        run: npm run test:perf
+
+  play:
+    name: 五画像完整试玩
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: 五画像完整试玩
+        run: npm run test:play
+
+  firefox:
+    name: 引擎回归（Firefox 内核）
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npx playwright install --with-deps firefox
+      - name: 引擎运行时回归
+        run: npm run test:e2e:firefox
+      - name: 全图运行时走查
+        run: npm run test:graph:firefox
