@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { DatabaseSync } from "node:sqlite";
 import { DB_PATH } from "./config.mjs";
+import { tightenDirectoryTree } from "./permissions.mjs";
 
 const KEEP_ALL_HOURS = 48;
 const TABLES = ["users", "sessions", "saves", "audit_log"];
@@ -87,8 +88,20 @@ export function pruneBackups(backupDir, { keepDays = 30, now = Date.now() } = {}
 /* 备份一次：一致性快照 → 校验 → 清理。成功返回备份文件路径 */
 export function backupDatabase(dbPath = DB_PATH, { keepDays } = {}) {
   if (!fs.existsSync(dbPath)) throw new Error(`数据库不存在：${dbPath}`);
+  // v3.4.56：备份文件里是全部用户数据，只允许属主读写（新建的 600）
+  const previousUmask = process.umask(0o077);
+  try {
+    return backupLocked(dbPath, { keepDays });
+  } finally {
+    process.umask(previousUmask);
+  }
+}
+
+function backupLocked(dbPath, { keepDays }) {
   const backupDir = path.join(path.dirname(dbPath), "backups");
   fs.mkdirSync(backupDir, { recursive: true });
+  // v3.4.56 之前生成的备份可能是 644：顺手收紧
+  tightenDirectoryTree(backupDir, { namePattern: BACKUP_NAME });
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
   const target = path.join(backupDir, `game-${stamp}.db`);
   // VACUUM INTO 要求目标文件不存在；同一分钟内重复备份时先清掉上一份

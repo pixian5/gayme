@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const css = fs.readFileSync(new URL("../css/style.css", import.meta.url), "utf8");
@@ -301,5 +302,91 @@ test("账号开关补丁工具：打开 / 关闭 / 幂等 / 写法异常时拒�
     void before;
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("账号服务加固契约：哈希异步、地址取最后一项、文件掩码、致命错误后退出（v3.4.56）", () => {
+  // 这些都是「改回去也不会有任何功能用例变红」的写法，所以用契约钉住
+  const read = (file) => fs.readFileSync(new URL(file, import.meta.url), "utf8");
+  const auth = read("../server/auth.mjs");
+  assert.match(auth, /crypto\.scrypt\(/, "密码哈希应使用异步 scrypt");
+  for (const [file, label] of [["../server/auth.mjs", "auth.mjs"], ["../server/api.mjs", "api.mjs"]]) {
+    assert.doesNotMatch(read(file), /scryptSync/, `${label} 不应再使用同步哈希（会占住整个服务）`);
+  }
+  assert.match(auth, /normalizeIp\(parts\[parts\.length - 1\]\)/, "客户端地址应取转发头的最后一项");
+  assert.doesNotMatch(auth, /split\("、"\)\[0\]/, "不应再取第一项");
+
+  const entry = read("../server/index.mjs");
+  const umaskAt = entry.indexOf("process.umask(0o077);");
+  assert.ok(umaskAt > 0, "入口应设置文件掩码 077（新建文件仅属主可读写）");
+  assert.ok(entry.indexOf("ensureDataDir();") > umaskAt, "文件掩码必须在创建数据目录之前设置");
+  assert.match(entry, /for \(const file of \[DB_PATH, `\$\{DB_PATH\}-wal`, `\$\{DB_PATH\}-shm`\]\) tightenFileMode\(file\);/,
+    "启动时应把已有的数据库文件收紧为 600");
+  assert.match(entry, /installFatalHandlers\(\{/, "入口应安装致命错误处理器");
+  assert.doesNotMatch(entry, /process\.on\("uncaughtException"|process\.on\("unhandledRejection"/,
+    "入口不应再自行注册「只记日志、继续运行」的处理器");
+
+  const backup = read("../server/backup_db.mjs");
+  assert.match(backup, /process\.umask\(0o077\)/, "备份进程应设置文件掩码");
+  assert.match(backup, /tightenDirectoryTree\(backupDir/, "备份时应顺手收紧旧备份的权限");
+
+  const db = read("../server/db.mjs");
+  assert.match(db, /cleanupOrphanAudit: db\.prepare\([\s\S]*?NOT IN \(SELECT id FROM users\)/, "定期清理应包含孤儿审计记录");
+  assert.match(db, /stmt\.cleanupOrphanAudit\.run\(\);/);
+
+  const nginx = read("../tools/patch_nginx_account.py");
+  assert.match(nginx, /XFF_PASSTHROUGH = "proxy_set_header X-Forwarded-For \$http_x_forwarded_for;"/,
+    "nginx 应原样透传转发地址头——服务端取最后一项，nginx 再往后追加就会把所有玩家当成代理的地址");
+  assert.ok(nginx.includes("server_tokens off;"), "nginx 应关闭版本号回显");
+  assert.ok(nginx.includes("scripts|dist"), "nginx 的不对外目录名单应包含 scripts 与 dist");
+});
+
+test("持续集成跑的是全部测试套件（v3.4.56 契约）", () => {
+  // 起因：引擎回归红了四天没人发现，因为流水线根本不跑它。
+  // package.json 里每新增一个 test:* 脚本，都必须同时加进流水线，否则这里会红
+  const workflow = fs.readFileSync(new URL("../.github/workflows/test.yml", import.meta.url), "utf8");
+  const scripts = Object.keys(packageJson.scripts).filter((key) => key === "test" || key.startsWith("test:"));
+  assert.ok(scripts.length >= 16, `测试脚本数量异常：${scripts.length}`);
+  for (const key of scripts) {
+    const command = key === "test" ? "npm test" : `npm run ${key}`;
+    // 后面不能再紧跟冒号或字母数字，避免「npm run test:e2e」被「npm run test:e2e:firefox」蒙混过去
+    const pattern = new RegExp(command.replaceAll(".", "\\.") + "(?![:\\w])");
+    assert.match(workflow, pattern, `持续集成缺少「${command}」`);
+  }
+  for (const tool of ["tools/test_box_cron_deploy.sh", "tools/test_nginx_patch.sh"]) {
+    assert.ok(workflow.includes(tool), `持续集成缺少 ${tool}`);
+  }
+});
+
+test("仓库根目录的每个条目都已归类：站点运行文件，或明确不进公开目录（v3.4.56 契约）", () => {
+  // 部署脚本用「排除法」决定哪些东西不进站点根。仓库根目录新增一个条目时，
+  // 如果这里和排除名单都没登记，它就会被悄悄发布到公网——v3.4.55 就是这样发现
+  // dist/ 与 scripts/ 可被下载的。所以新条目必须二选一。
+  const cron = fs.readFileSync(new URL("../tools/box_cron_deploy.sh", import.meta.url), "utf8");
+  const direct = fs.readFileSync(new URL("../tools/deploy_box.sh", import.meta.url), "utf8");
+  // 定时部署脚本把名单写在引号里，最后一项会带着引号，去掉再比
+  const excludesOf = (src) => new Set([...src.matchAll(/--exclude (\S+)/g)].map((match) => match[1].replace(/["']+$/, "")));
+  const excluded = excludesOf(cron);
+  assert.deepEqual([...excludesOf(direct)].sort(), [...excluded].sort(), "两个部署脚本的排除名单必须一致");
+
+  // 站点运行需要的根目录条目（页面、离线缓存脚本、账号服务静态白名单引用到的公开路径）
+  const runtime = [
+    "VERSION", "NOTICE.md", "PRIVACY.md", "favicon.svg", "index.html", "manifest.webmanifest",
+    "robots.txt", "sitemap.xml", "sw.js", "assets", "audio", "css", "fonts", "icons", "js",
+  ];
+  for (const name of runtime) {
+    assert.ok(!excluded.has(name), `运行文件 ${name} 不该出现在排除名单里`);
+    assert.ok(fs.existsSync(new URL(`../${name}`, import.meta.url)), `运行文件清单里的 ${name} 已不存在，请从清单移除`);
+  }
+
+  const root = fileURLToPath(new URL("..", import.meta.url));
+  const listed = spawnSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" });
+  assert.equal(listed.status, 0, "git ls-files 执行失败");
+  const top = [...new Set(listed.stdout.split("\0").filter(Boolean).map((file) => file.split("/")[0]))].sort();
+  assert.ok(top.length >= 10, `仓库根目录条目数量异常：${top.length}`);
+  for (const name of top) {
+    assert.ok(runtime.includes(name) || excluded.has(name),
+      `仓库根目录的「${name}」没有归类：它是站点运行文件，就加进本测试的 runtime 清单；`
+      + `不该公开，就加进 tools/box_cron_deploy.sh 与 tools/deploy_box.sh 的排除名单`);
   }
 });

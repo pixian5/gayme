@@ -47,6 +47,8 @@ export const RATE_LIMITS = Object.freeze({
 // 允许跨域的前端地址。留空表示账号服务与游戏静态页同源（推荐）。
 export const ALLOWED_ORIGIN = process.env.GAYME_ALLOWED_ORIGIN || "";
 // 反向代理场景可显式信任 X-Forwarded-For；默认只信任本机回环代理。
+// v3.4.56 起只取这个头的最后一项（最近一跳可信代理写入的值），见 auth.clientIp；
+// 反向代理必须原样透传该头，不要往后追加自己的地址
 export const TRUST_PROXY = process.env.GAYME_TRUST_PROXY === "1";
 // Cookie Secure：auto 按请求协议判断；1 强制；0 关闭（仅本机 HTTP 开发）。
 export const COOKIE_SECURE_MODE = String(process.env.GAYME_COOKIE_SECURE || "auto").toLowerCase();

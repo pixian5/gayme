@@ -11,9 +11,16 @@ import { fileURLToPath } from "node:url";
 import { DB_PATH, HOST, PORT, SITE_ROOT, ensureDataDir } from "./config.mjs";
 import { openDatabase } from "./db.mjs";
 import { cleanup, handleApi } from "./api.mjs";
+import { installFatalHandlers } from "./fatal.mjs";
+import { tightenFileMode } from "./permissions.mjs";
 
+// v3.4.56：数据库与预写日志只允许属主读写。掩码必须在创建任何文件之前设置
+// （新建文件 600、新建目录 700）
+process.umask(0o077);
 ensureDataDir();
 const store = openDatabase(DB_PATH);
+// 老文件的权限可能是 644（同机任何用户可读）：每次启动时收紧为 600
+for (const file of [DB_PATH, `${DB_PATH}-wal`, `${DB_PATH}-shm`]) tightenFileMode(file);
 cleanup(store);
 const cleanupTimer = setInterval(() => {
   try { cleanup(store); } catch (err) { console.error("[gayme-account] 定期清理失败:", err); }
@@ -169,11 +176,15 @@ server.on("error", (err) => {
   process.exitCode = 1;
 });
 
-process.on("uncaughtException", (err) => {
-  console.error("[gayme-account] uncaughtException:", err && err.stack || err);
-});
-process.on("unhandledRejection", (err) => {
-  console.error("[gayme-account] unhandledRejection:", err && err.stack || err);
+// v3.4.56：未捕获的异常 / 未处理的 Promise 拒绝之后进程退出（由容器重启），
+// 不再带着未知状态继续处理请求。请求处理里的异常都已在 handleApi 内捕获并返回 500，
+// 走到这里的是预料之外的错误
+installFatalHandlers({
+  onClose() {
+    clearInterval(cleanupTimer);
+    try { server.close(); } catch (_) {}
+    try { store.close(); } catch (_) {}
+  },
 });
 
 function shutdown(signal) {

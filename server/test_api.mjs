@@ -2,6 +2,8 @@
  * 启动临时端口 + 临时数据库，覆盖注册/登录/会话/云存档/找回码/注销/异常请求。
  * v3.4.55 新增：空存档覆盖保护、收集进度变少保护、历史版本与保留上限、
  *              上传限流按账号计数、HEAD 健康检查、老库自动迁移、首页自动打开账号开关。
+ * v3.4.56 新增：密码哈希不阻塞服务、客户端地址取转发头的最后一项、
+ *              数据库文件权限 600（含老库收紧）、定期清理清掉孤儿审计记录。
  * 运行：node server/test_api.mjs
  */
 import assert from "node:assert/strict";
@@ -536,6 +538,10 @@ async function run() {
         if (!up) await new Promise((resolve) => setTimeout(resolve, 100));
       }
       assert.ok(up, "迁移后服务应能启动");
+      if (process.platform !== "win32") {
+        // v3.4.56：这份老库是测试进程按默认掩码创建的（644），服务启动后应收紧为仅属主可读写
+        assert.equal(fs.statSync(oldPath).mode & 0o777, 0o600, "已有的 644 数据库文件在服务启动后应收紧为 600");
+      }
 
       const login = await fetch(`${base2}/api/auth/login`, {
         method: "POST", headers: { "Content-Type": "application/json", "X-Requested-With": "gayme-account" },
@@ -593,6 +599,111 @@ async function run() {
     // 只在内存里改写：仓库里的 index.html 必须还是默认关闭（纯静态部署不探测 /api/）
     const onDisk = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
     assert.ok(onDisk.includes(flagOff), "仓库里的 index.html 必须保持默认关闭");
+  });
+
+  /* ================= v3.4.56：账号服务加固 ================= */
+  await test("密码哈希不阻塞服务：一次登录校验进行期间，健康检查照常先返回", async () => {
+    // 同步哈希会占住事件循环（一次约 190 毫秒），期间到达的健康检查只能排在登录之后返回。
+    // 这里不断言耗时，只断言先后顺序，不受机器快慢影响
+    const order = [];
+    const login = request("/api/auth/login", {
+      method: "POST", body: { username: "no_such_user_hash", password: "Passw0rd!" },
+    }).then((r) => { order.push("login"); return r; });
+    const health = (async () => {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      const res = await fetch(`${BASE}/api/health`);
+      order.push("health");
+      return res.status;
+    })();
+    const [loginResult, healthStatus] = await Promise.all([login, health]);
+    assert.equal(loginResult.status, 401, "不存在的用户应返回 401");
+    assert.equal(healthStatus, 200);
+    assert.equal(order[0], "health", `健康检查应先于登录校验返回（实际顺序：${order.join(" → ")}）`);
+  });
+
+  await test("客户端地址取转发头的最后一项：客户端伪造的前几项不生效", async () => {
+    const { DatabaseSync } = await import("node:sqlite");
+    const username = "xff_probe_user";
+    const res = await fetch(`${BASE}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", "X-Requested-With": "gayme-account",
+        // 前一项是客户端伪造的；后一项才是「最近一跳可信代理」写入的真实对端
+        "X-Forwarded-For": "203.0.113.9, 198.51.100.7",
+      },
+      body: JSON.stringify({ username, password: "Passw0rd!" }),
+    });
+    assert.equal(res.status, 401);
+    const db = new DatabaseSync(DB_PATH, { readOnly: true });
+    try {
+      const row = db.prepare("SELECT ip FROM audit_log WHERE action = 'login_failed' AND detail = ? ORDER BY id DESC LIMIT 1")
+        .get(username);
+      assert.ok(row, "应记录一条登录失败审计");
+      assert.equal(row.ip, "198.51.100.7", "应取最近一跳代理写入的最后一项，而不是客户端伪造的第一项");
+    } finally {
+      db.close();
+    }
+  });
+
+  await test("数据库与预写日志文件仅属主可读写（600）", async () => {
+    if (process.platform === "win32") { console.log("  （Windows 不检查文件权限位）"); return; }
+    for (const file of [DB_PATH, `${DB_PATH}-wal`, `${DB_PATH}-shm`]) {
+      assert.ok(fs.existsSync(file), `${path.basename(file)} 应已创建`);
+      assert.equal(fs.statSync(file).mode & 0o777, 0o600, `${path.basename(file)} 应为 600`);
+    }
+  });
+
+  await test("定期清理会清掉指向已不存在账号的审计记录，其余保留", async () => {
+    const { DatabaseSync } = await import("node:sqlite");
+    const { openDatabase } = await import("./db.mjs");
+    const { cleanup } = await import("./api.mjs");
+    const someUser = (() => {
+      const db = new DatabaseSync(DB_PATH, { readOnly: true });
+      try { return db.prepare("SELECT id FROM users LIMIT 1").get(); } finally { db.close(); }
+    })();
+    // 直接往测试库里写三种审计记录：孤儿的、匿名（没有账号）的、正常账号的
+    const writer = new DatabaseSync(DB_PATH);
+    try {
+      const insert = writer.prepare("INSERT INTO audit_log (user_id, action, detail, ip, created_at) VALUES (?, ?, ?, ?, ?)");
+      insert.run("ghost_user_that_no_longer_exists", "login", "孤儿审计探针", "127.0.0.1", Date.now());
+      insert.run(null, "login_failed", "匿名审计探针", "127.0.0.1", Date.now());
+      if (someUser) insert.run(someUser.id, "login", "正常账号审计探针", "127.0.0.1", Date.now());
+    } finally {
+      writer.close();
+    }
+    const count = (detail) => {
+      const db = new DatabaseSync(DB_PATH, { readOnly: true });
+      try { return db.prepare("SELECT COUNT(*) AS n FROM audit_log WHERE detail = ?").get(detail).n; } finally { db.close(); }
+    };
+    assert.equal(count("孤儿审计探针"), 1, "探针应已写入");
+    assert.equal(count("匿名审计探针"), 1, "探针应已写入");
+    const store = openDatabase(DB_PATH);
+    try { cleanup(store); } finally { store.close(); }
+    assert.equal(count("孤儿审计探针"), 0, "指向已不存在账号的审计记录应被清掉");
+    assert.equal(count("匿名审计探针"), 1, "没有账号的审计记录（例如用户名不存在时的登录失败）必须保留");
+    if (someUser) assert.equal(count("正常账号审计探针"), 1, "正常账号的审计记录必须保留");
+  });
+
+  await test("备份文件仅属主可读写，v3.4.56 之前生成的宽松权限会被收紧", async () => {
+    if (process.platform === "win32") { console.log("  （Windows 不检查文件权限位）"); return; }
+    const { openDatabase } = await import("./db.mjs");
+    const { backupDatabase, verifyBackup } = await import("./backup_db.mjs");
+    const dir = fs.mkdtempSync(path.join(TMP_DIR, "perm-"));
+    const dbPath = path.join(dir, "game.db");
+    const source = openDatabase(dbPath);
+    source.close();
+    const backupDir = path.join(dir, "backups");
+    fs.mkdirSync(backupDir);
+    // 模拟一份 v3.4.56 之前的备份（644）。时间取一小时前：保留策略会删掉 30 天以前的旧备份，
+    // 文件名里的日期不能太早，否则这份「旧备份」在校验之前就被清理掉了
+    const stamp = (ms) => new Date(ms).toISOString().replace(/[-:]/g, "").replace("T", "-").slice(0, 15);
+    const legacy = path.join(backupDir, `game-${stamp(Date.now() - 3600 * 1000)}.db`);
+    fs.copyFileSync(dbPath, legacy);
+    fs.chmodSync(legacy, 0o644);
+    const result = backupDatabase(dbPath);
+    assert.equal(fs.statSync(result.target).mode & 0o777, 0o600, "新备份应为 600");
+    assert.equal(fs.statSync(legacy).mode & 0o777, 0o600, "旧备份应收紧为 600");
+    assert.ok(verifyBackup(result.target), "收紧权限后备份仍应校验通过");
   });
 
   console.log(`\n${passed} passed, ${failed} failed`);

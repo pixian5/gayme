@@ -152,6 +152,10 @@ function createStore(db) {
     clearAudit: db.prepare("DELETE FROM audit_log WHERE user_id = ?"),
     cleanupSessions: db.prepare("DELETE FROM sessions WHERE expires_at <= ?"),
     cleanupAudit: db.prepare("DELETE FROM audit_log WHERE created_at < ?"),
+    // v3.4.56：指向已不存在的账号的审计记录。正常流程不会产生（注销账号时先清审计再删账号），
+    // 但直接在库里删账号就会留下；这类记录没有保留价值，清掉
+    cleanupOrphanAudit: db.prepare(`DELETE FROM audit_log
+      WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)`),
   };
 
   return {
@@ -218,6 +222,7 @@ function createStore(db) {
     cleanup(now, auditCutoff) {
       stmt.cleanupSessions.run(now);
       stmt.cleanupAudit.run(auditCutoff);
+      stmt.cleanupOrphanAudit.run();
     },
     close() { db.close(); },
   };

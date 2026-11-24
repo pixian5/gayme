@@ -3,7 +3,7 @@
    缓存版本由 tools/bump_version.py 随版本号自动同步（SW_CACHE_VERSION）；
    应用代码（js/、css/）条目必须带与 index.html 相同的 ?v=<VERSION>，
    否则 SW 安装会按裸路径再抓一遍，首访把同批 JS/CSS 下载两次。 */
-const CACHE_VERSION = "sakura-v3.4.55";   // 核心层缓存（bump 工具自动同步）
+const CACHE_VERSION = "sakura-v3.4.56";   // 核心层缓存（bump 工具自动同步）
 const MEDIA_CACHE = "sakura-media";        // 媒体层缓存：跨版本沿用，不随发版清空
 // 首装只预缓存启动必需的 HTML/CSS/JS；字体与图标体积大且不阻塞离线启动，
 // 放到 activate 之后后台预热，避免首访 SW 接管被 700KB+ 资源拖慢。
@@ -20,27 +20,27 @@ const PRECACHE = [
   "index.html",
   "manifest.webmanifest",
   "favicon.svg",
-  "css/style.css?v=3.4.55",
-  "css/games.css?v=3.4.55",
-  "js/saves.js?v=3.4.55",
-  "js/script.js?v=3.4.55",
-  "js/lifecycle.js?v=3.4.55",
-  "js/minigames.js?v=3.4.55",
-  "js/game-help.js?v=3.4.55",
-  "js/media-cache.js?v=3.4.55",
-  "js/gamekit.js?v=3.4.55",
-  "js/games/afterword.js?v=3.4.55",
-  "js/games/senses.js?v=3.4.55",
-  "js/games/craft.js?v=3.4.55",
-  "js/games/nature.js?v=3.4.55",
-  "js/games/perception.js?v=3.4.55",
-  "js/games/mechanism.js?v=3.4.55",
-  "js/games/imagery.js?v=3.4.55",
-  "js/games/direct.js?v=3.4.55",
-  "js/ui/panels.js?v=3.4.55",
-  "js/account.js?v=3.4.55",
-  "js/engine.js?v=3.4.55",
-  "js/sw-register.js?v=3.4.55",
+  "css/style.css?v=3.4.56",
+  "css/games.css?v=3.4.56",
+  "js/saves.js?v=3.4.56",
+  "js/script.js?v=3.4.56",
+  "js/lifecycle.js?v=3.4.56",
+  "js/minigames.js?v=3.4.56",
+  "js/game-help.js?v=3.4.56",
+  "js/media-cache.js?v=3.4.56",
+  "js/gamekit.js?v=3.4.56",
+  "js/games/afterword.js?v=3.4.56",
+  "js/games/senses.js?v=3.4.56",
+  "js/games/craft.js?v=3.4.56",
+  "js/games/nature.js?v=3.4.56",
+  "js/games/perception.js?v=3.4.56",
+  "js/games/mechanism.js?v=3.4.56",
+  "js/games/imagery.js?v=3.4.56",
+  "js/games/direct.js?v=3.4.56",
+  "js/ui/panels.js?v=3.4.56",
+  "js/account.js?v=3.4.56",
+  "js/engine.js?v=3.4.56",
+  "js/sw-register.js?v=3.4.56",
   // v3.4.0：立绘位图走媒体层运行时缓存（/assets/portraits/），跨版本沿用
 ];
 

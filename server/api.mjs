@@ -10,6 +10,11 @@
  * - 历史版本：GET /api/saves/versions 列出、GET /api/saves/data?revision=N 取回，
  *   被替换的旧版本保留最近 N 版（config.SAVE_VERSIONS_KEEP）。
  * - 限流改为「已登录的操作按账号计数」，网络地址维度只做防滥用上限。
+ *
+ * v3.4.56 加固：
+ * - 密码 / 找回码哈希改用异步 scrypt，校验期间不再阻塞整个服务；
+ * - 客户端地址取 X-Forwarded-For 的最后一项（最近一跳可信代理写入的值），见 auth.clientIp；
+ * - 定期清理顺带清掉「指向已不存在的账号」的审计记录。
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -31,7 +36,14 @@ const VERSION = (() => {
   catch (_) { return "dev"; }
 })();
 
-const DUMMY_PASSWORD_HASH = scryptHash("dummy-password-for-timing-1", "0123456789abcdef0123456789abcdef");
+// 用户不存在时也做一次同样代价的密码哈希，避免用响应时间判断用户名是否存在。
+// v3.4.56：哈希是异步的，所以不能在模块加载时算，第一次用到时再算并记住结果
+const DUMMY_PASSWORD_SALT = "0123456789abcdef0123456789abcdef";
+let dummyPasswordHash = null;
+async function verifyDummyPassword(password) {
+  if (!dummyPasswordHash) dummyPasswordHash = await scryptHash("dummy-password-for-timing-1", DUMMY_PASSWORD_SALT);
+  return scryptVerify(password, DUMMY_PASSWORD_SALT, dummyPasswordHash.hash);
+}
 
 class ApiError extends Error {
   constructor(status, code, message, data) {
@@ -362,9 +374,9 @@ async function route(req, res, store, url) {
     if (!validNickname(nickname)) throw new ApiError(400, "invalid_nickname", "昵称需为 1-24 个字符");
     if (store.userByUsername(username)) throw new ApiError(409, "username_taken", "用户名已被占用");
     const now = Date.now();
-    const pwd = scryptHash(password);
+    const pwd = await scryptHash(password);
     const recoveryCode = generateRecoveryCode();
-    const rec = scryptHash(normalizeRecoveryCode(recoveryCode));
+    const rec = await scryptHash(normalizeRecoveryCode(recoveryCode));
     const user = {
       id: randomId(), username, nickname,
       pwdHash: pwd.hash, pwdSalt: pwd.salt,
@@ -401,8 +413,8 @@ async function route(req, res, store, url) {
     if (locked > 0) throw new ApiError(429, "locked_out", "失败次数过多，请稍后再试", { retryAfter: locked });
     const user = store.userByUsername(username);
     const ok = user
-      ? scryptVerify(password, user.pwd_salt, user.pwd_hash)
-      : scryptVerify(password, DUMMY_PASSWORD_HASH.salt, DUMMY_PASSWORD_HASH.hash);
+      ? await scryptVerify(password, user.pwd_salt, user.pwd_hash)
+      : await verifyDummyPassword(password);
     if (!user || !ok) {
       loginGuard.fail(guardKey);
       store.audit(user ? user.id : null, "login_failed", username, ip);
@@ -439,16 +451,16 @@ async function route(req, res, store, url) {
     const newPassword = String(body.newPassword || "");
     if (!validPassword(newPassword)) throw new ApiError(400, "weak_password", "密码需 8-72 位，且同时包含字母和数字");
     const user = validUsername(username) ? store.userByUsername(username) : null;
-    const valid = user && isValidRecoveryCode(recoveryCode)
-      && scryptVerify(recoveryCode, user.recovery_salt, user.recovery_hash);
+    const valid = Boolean(user && isValidRecoveryCode(recoveryCode)
+      && await scryptVerify(recoveryCode, user.recovery_salt, user.recovery_hash));
     if (!valid) {
       store.audit(user ? user.id : null, "recover_failed", username, ip);
       throw new ApiError(401, "invalid_recovery", "用户名或找回码不正确");
     }
     const now = Date.now();
-    const pwd = scryptHash(newPassword);
+    const pwd = await scryptHash(newPassword);
     const newRecovery = generateRecoveryCode();
-    const rec = scryptHash(normalizeRecoveryCode(newRecovery));
+    const rec = await scryptHash(normalizeRecoveryCode(newRecovery));
     store.updatePassword(user.id, pwd.hash, pwd.salt, rec.hash, rec.salt, now);
     // 找回密码后所有旧会话失效，避免被盗令牌继续使用。
     store.deleteAllSessions(user.id);
@@ -490,12 +502,12 @@ async function route(req, res, store, url) {
     const body = await readJson(req);
     const currentPassword = String(body.currentPassword || "");
     const newPassword = String(body.newPassword || "");
-    if (!scryptVerify(currentPassword, ctx.user.pwd_salt, ctx.user.pwd_hash)) {
+    if (!await scryptVerify(currentPassword, ctx.user.pwd_salt, ctx.user.pwd_hash)) {
       throw new ApiError(401, "invalid_credentials", "当前密码不正确");
     }
     if (!validPassword(newPassword)) throw new ApiError(400, "weak_password", "密码需 8-72 位，且同时包含字母和数字");
     if (currentPassword === newPassword) throw new ApiError(400, "same_password", "新密码不能与旧密码相同");
-    const pwd = scryptHash(newPassword);
+    const pwd = await scryptHash(newPassword);
     store.updatePassword(ctx.user.id, pwd.hash, pwd.salt, ctx.user.recovery_hash, ctx.user.recovery_salt, Date.now());
     store.deleteOtherSessions(ctx.user.id, ctx.session.id);
     audit(store, ctx, "password_change", null, req);
@@ -507,11 +519,11 @@ async function route(req, res, store, url) {
     const ctx = requireAuth(req, store);
     rateLimit(accountLimiter, req, "recovery", ctx.user.id);
     const body = await readJson(req);
-    if (!scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
+    if (!await scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
       throw new ApiError(401, "invalid_credentials", "密码不正确");
     }
     const code = generateRecoveryCode();
-    const rec = scryptHash(normalizeRecoveryCode(code));
+    const rec = await scryptHash(normalizeRecoveryCode(code));
     store.updateRecovery(ctx.user.id, rec.hash, rec.salt, Date.now());
     audit(store, ctx, "recovery_rotate", null, req);
     json(req, res, 200, { recoveryCode: code });
@@ -576,7 +588,7 @@ async function route(req, res, store, url) {
     rateLimit(accountLimiter, req, "delete", ctx.user.id);
     const body = await readJson(req);
     if (body.ack !== true) throw new ApiError(400, "ack_required", "请确认注销账号");
-    if (!scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
+    if (!await scryptVerify(String(body.password || ""), ctx.user.pwd_salt, ctx.user.pwd_hash)) {
       throw new ApiError(401, "invalid_credentials", "密码不正确");
     }
     // 先清审计，再删账号；用户删除后不保留可关联记录。
