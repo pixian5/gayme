@@ -159,11 +159,15 @@ health_check() {
 # 告警：与备份脚本共用 /root/.sakura-bark；推送失败不影响部署
 notify() {
   [ -s "$BARK_FILE" ] || return 0
-  local url
+  local url payload
   url=$(head -n 1 "$BARK_FILE" | tr -d '[:space:]')
   [ -n "$url" ] || return 0
+  # 用 python 生成 JSON：失败原因里常带英文双引号（例如 name="gayme-account-api"），
+  # 手工拼 JSON 会变成非法载荷（2026-11-28 演练实测 Bark 返回 400）。
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"title":"樱时信笺·发版自检","body":sys.argv[1]}, ensure_ascii=False))' "$1" 2>/dev/null) || return 0
+  [ -n "$payload" ] || return 0
   curl -s --max-time 10 -X POST "$url" -H "Content-Type: application/json; charset=utf-8" \
-    -d "{\"title\":\"樱时信笺·发版自检\",\"body\":\"$1\"}" >/dev/null 2>&1 || true
+    -d "$payload" >/dev/null 2>&1 || true
 }
 
 # 部署成功后的线上自检（v3.4.60）：核对公网版本、账号健康检查、响应头、缓存仓与目录泄露。
@@ -185,7 +189,8 @@ public_verify() {
   printf '%s\n' "$out" >> "$LOG"
   if [ "$rc" -ne 0 ]; then
     # 用 awk 拼多条失败原因：BSD 的 tr 处理多字节分隔符会截断，macOS 上曾写出乱码
-    fails=$(printf '%s\n' "$out" | awk '/^  失败/{sub(/^  /,""); printf "%s%s", (n++?"；":""), $0}')
+    # 只取前 3 条：全量失败原因会撑爆通知，也会让日志难读
+    fails=$(printf '%s\n' "$out" | awk '/^  失败/{sub(/^  /,""); printf "%s%s", (n++?"；":""), $0; if (n>=3) exit}')
     log "!! 发版自检未通过（${fails:-未知原因}）"
     notify "v$VER 发版自检未通过：${fails:-未知原因}"
     return 1

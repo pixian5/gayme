@@ -34,7 +34,15 @@ cat > "$W/bin/curl" << 'SH'
 #!/bin/bash
 echo "curl $*" >> "$FAKE/calls"
 case "$*" in
-  *"-X POST"*) echo "bark $*" >> "$FAKE/calls" ;;
+  *"-X POST"*)
+    echo "bark $*" >> "$FAKE/calls"
+    # 记下 -d 的载荷，后面断言它是合法 JSON
+    prev=""
+    for arg in "$@"; do
+      [ "$prev" = "-d" ] && printf '%s' "$arg" > "$FAKE/bark_payload"
+      prev="$arg"
+    done
+    ;;
   *"127.0.0.1:8090/api/health"*)
     [ -f "$FAKE/api_ok" ] && echo '{"status":"ok","database":"ok"}' || exit 22 ;;
   *"127.0.0.1:8090/"*)
@@ -91,7 +99,13 @@ echo "说明" > README.md
 cat > tools/verify_release.sh << 'SH'
 #!/bin/bash
 echo "verify $GAYME_SITE_URL $GAYME_EXPECTED_VERSION" >> "$FAKE/calls"
-if [ -f "$FAKE/verify_fail" ]; then echo "  失败: 假自检失败"; exit 1; fi
+if [ -f "$FAKE/verify_fail" ]; then
+  echo '  失败: 假"引号"失败'
+  echo '  失败: 第二条'
+  echo '  失败: 第三条'
+  echo '  失败: 第四条（应被截掉）'
+  exit 1
+fi
 echo "  通过: 假检查"
 echo "通过 20 项，失败 0 项"
 SH
@@ -268,7 +282,9 @@ echo "  —— 重试成功，但公网自检失败：只告警，不回滚、�
 touch "$FAKE/verify_fail"
 run; check "退出码（自检失败不影响部署）" "$(cat "$W/exit")" "0"
 check "站点版本" "$(webver)" "3.4.59"
-has "日志：发版自检未通过" "发版自检未通过（失败: 假自检失败）" "$LOG"
+has "日志：发版自检未通过（最多 3 条）" '发版自检未通过（失败: 假"引号"失败；失败: 第二条；失败: 第三条）' "$LOG"
+check "Bark 载荷是合法 JSON" "$(python3 -c 'import json,sys; json.load(open(sys.argv[1], encoding="utf-8")); print(0)' "$FAKE/bark_payload" 2>/dev/null || echo 1)" "0"
+check "Bark 载荷正文正确（引号保留、只 3 条）" "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["body"])' "$FAKE/bark_payload" 2>/dev/null)" 'v3.4.59 发版自检未通过：失败: 假"引号"失败；失败: 第二条；失败: 第三条'
 has "Bark 收到告警" "bark -s --max-time 10 -X POST http://bark.test/push" "$FAKE/calls"
 check "失败提交记录没有被写" "$(yesno '[ -f "$W/state/failed.sha" ]')" "无"
 rm -f "$FAKE/verify_fail"
