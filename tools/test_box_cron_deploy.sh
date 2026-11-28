@@ -20,6 +20,8 @@ check() { if [ "$2" = "$3" ]; then echo "  通过: $1"; else echo "  失败: $1�
 has() { if grep -q -- "$2" "$3" 2>/dev/null; then echo "  通过: $1"; else echo "  失败: $1（$3 里找不到：$2）"; fail=1; fi; }
 hasnot() { if grep -q -- "$2" "$3" 2>/dev/null; then echo "  失败: $1（$3 里不应出现：$2）"; fail=1; else echo "  通过: $1"; fi; }
 yesno() { if eval "$1"; then echo 有; else echo 无; fi; }
+# 读取最近一次 Bark 载荷里的字段（title / body），用于断言告警内容
+bark_field() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))[sys.argv[2]])' "$FAKE/bark_payload" "$1" 2>/dev/null; }
 
 # ---------- 假的 docker / curl ----------
 cat > "$W/bin/docker" << 'SH'
@@ -220,6 +222,8 @@ check "部署克隆回到上一提交" "$($R rev-parse HEAD)" "$C2"
 check "记住的失败提交" "$(cat "$W/state/failed.sha")" "$C3"
 has "日志：回滚" "健康检查失败（账号服务未就绪），回滚到 ${C2:0:7}" "$LOG"
 has "回滚后开关仍是打开的" "$FLAG_ON" "$W/web/index.html"
+check "Bark 标题：部署告警" "$(bark_field title)" "樱时信笺·部署告警"
+check "Bark 正文：回滚原因" "$(bark_field body)" "v3.4.56（${C3:0:7}）健康检查失败：账号服务未就绪；已回滚到 ${C2:0:7}，该提交不再自动重试"
 echo "  —— 再跑一次：失败提交不再重试"
 : > "$FAKE/calls"
 run; check "退出码" "$(cat "$W/exit")" "0"
@@ -276,7 +280,13 @@ run; check "退出码" "$(cat "$W/exit")" "1"
 check "站点版本未变" "$(webver)" "3.4.58"
 has "日志：不部署" "部署前数据库备份失败，本次不部署（下次重试）" "$LOG"
 hasnot "没有同步站点" "rsync" "$LOG"
+check "Bark 标题：部署告警" "$(bark_field title)" "樱时信笺·部署告警"
+check "Bark 正文：备份失败" "$(bark_field body)" "提交 ${C6:0:7} 部署前数据库备份失败，本次未部署；修好后下次运行会重试"
+check "Bark 推送 1 次" "$(grep -c '^bark ' "$FAKE/calls")" "1"
 check "部署克隆回到部署前的提交" "$($R rev-parse HEAD)" "$C5"
+echo "  —— 备份仍失败：同一个提交不重复推送"
+run; check "退出码" "$(cat "$W/exit")" "1"
+check "Bark 仍只推送 1 次" "$(grep -c '^bark ' "$FAKE/calls")" "1"
 rm -f "$FAKE/backup_fail"
 echo "  —— 重试成功，但公网自检失败：只告警，不回滚、不记失败提交"
 touch "$FAKE/verify_fail"

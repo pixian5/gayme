@@ -11,7 +11,8 @@
 #
 # 流程：GitCode 拉取 → 部署前备份数据库 → 同步站点（并打开账号功能开关）→ 同步账号服务（代码有变才重启）
 #       → 网页 / 账号服务 / 账号开关 / 站点文件完整性 健康检查
-#       → 失败则整体回滚并记住该提交（不再反复重试）
+#       → 失败则整体回滚并记住该提交（不再反复重试）；拉取/备份/回滚/自更新失败都会推送 Bark
+#          （同一故障只推一次，见 alert_once）
 #       → 刷新备份计划任务 → 部署脚本自更新（仓库里的版本与本文件不同时，下次运行起用新版）
 # 自愈（有没有新提交都会做，按这个顺序）：
 #       ① 站点版本与已部署提交对不上（换盒子、站点目录被重建）→ 重新同步（同步时顺带打开账号开关）
@@ -156,7 +157,8 @@ health_check() {
   echo "ok"
 }
 
-# 告警：与备份脚本共用 /root/.sakura-bark；推送失败不影响部署
+# 告警：与备份脚本共用 /root/.sakura-bark；推送失败不影响部署。
+# $1 标题，$2 正文
 notify() {
   [ -s "$BARK_FILE" ] || return 0
   local url payload
@@ -164,10 +166,23 @@ notify() {
   [ -n "$url" ] || return 0
   # 用 python 生成 JSON：失败原因里常带英文双引号（例如 name="gayme-account-api"），
   # 手工拼 JSON 会变成非法载荷（2026-11-28 演练实测 Bark 返回 400）。
-  payload=$(python3 -c 'import json,sys; print(json.dumps({"title":"樱时信笺·发版自检","body":sys.argv[1]}, ensure_ascii=False))' "$1" 2>/dev/null) || return 0
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"title":sys.argv[1],"body":sys.argv[2]}, ensure_ascii=False))' "$1" "$2" 2>/dev/null) || return 0
   [ -n "$payload" ] || return 0
   curl -s --max-time 10 -X POST "$url" -H "Content-Type: application/json; charset=utf-8" \
     -d "$payload" >/dev/null 2>&1 || true
+}
+
+# 同一种故障只推一次：$1 去重键（只用字母数字与短横线），$2 标题，$3 正文。
+# 失败提交本身只会部署一次（失败后写 failed.sha 等新提交），这里主要防「拉取失败 / 备份失败」
+# 每 3 分钟重试时反复推送。
+alert_once() {
+  [ -s "$BARK_FILE" ] || return 0
+  local key="$1" stamp
+  stamp="$STATE_DIR/alert-$key"
+  [ -f "$stamp" ] && return 0
+  mkdir -p "$STATE_DIR" 2>/dev/null
+  date '+%F %T' > "$stamp" 2>/dev/null || true
+  notify "$2" "$3"
 }
 
 # 部署成功后的线上自检（v3.4.60）：核对公网版本、账号健康检查、响应头、缓存仓与目录泄露。
@@ -192,7 +207,7 @@ public_verify() {
     # 只取前 3 条：全量失败原因会撑爆通知，也会让日志难读
     fails=$(printf '%s\n' "$out" | awk '/^  失败/{sub(/^  /,""); printf "%s%s", (n++?"；":""), $0; if (n>=3) exit}')
     log "!! 发版自检未通过（${fails:-未知原因}）"
-    notify "v$VER 发版自检未通过：${fails:-未知原因}"
+    notify "樱时信笺·发版自检" "v$VER 发版自检未通过：${fails:-未知原因}"
     return 1
   fi
   log "发版自检通过：$(printf '%s\n' "$out" | grep '通过 [0-9]* 项' | tail -1)"
@@ -204,8 +219,11 @@ cd "$REPO" 2>/dev/null || { log "仓库目录缺失：$REPO"; exit 1; }
 
 if ! git fetch -q origin main 2>>"$LOG"; then
   log "GitCode 拉取失败，保持现状（下次重试）"
+  alert_once "fetch" "樱时信笺·部署告警" "GitCode 拉取失败，部署暂停（恢复后自动继续）"
   exit 1
 fi
+# 拉取恢复：清掉「拉取失败」的告警去重标记，下次再断才能再推一次
+rm -f "$STATE_DIR/alert-fetch"
 
 PREV=$(git rev-parse HEAD)
 CUR=$(git rev-parse origin/main)
@@ -230,6 +248,8 @@ if [ -f "$REPO/tools/box_backup.sh" ]; then
     log "已设置跳过部署前备份（$STATE_DIR/skip-backup），继续部署"
   elif ! bash "$REPO/tools/box_backup.sh" --backup-only --quiet >>"$LOG" 2>&1; then
     log "部署前数据库备份失败，本次不部署（下次重试）"
+    alert_once "backup-${CUR:0:7}" "樱时信笺·部署告警" \
+      "提交 ${CUR:0:7} 部署前数据库备份失败，本次未部署；修好后下次运行会重试"
     git reset -q --hard "$PREV"
     exit 1
   fi
@@ -249,6 +269,8 @@ if RESULT=$(health_check) && [ -n "$VER" ]; then
   public_verify || true
 else
   log "健康检查失败（${RESULT:-未知}），回滚到 ${PREV:0:7}"
+  alert_once "rollback-${CUR:0:7}" "樱时信笺·部署告警" \
+    "v$VER（${CUR:0:7}）健康检查失败：${RESULT:-未知}；已回滚到 ${PREV:0:7}，该提交不再自动重试"
   git reset -q --hard "$PREV"
   sync_all
   restart_account
@@ -277,5 +299,7 @@ if [ -f "$REPO/tools/box_cron_deploy.sh" ] && ! cmp -s "$REPO/tools/box_cron_dep
     log "部署脚本已自更新为仓库版本（下次运行生效）"
   else
     log "!! 部署脚本自更新失败（不影响本次部署）"
+    alert_once "selfupdate-${CUR:0:7}" "樱时信笺·部署告警" \
+      "提交 ${CUR:0:7} 部署脚本自更新失败，盒子仍在用旧脚本；下次运行会再试"
   fi
 fi
