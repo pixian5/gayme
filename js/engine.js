@@ -200,6 +200,8 @@
            与 Content-Security-Policy: frame-ancestors 'self'，页面不能再被别的站点用 iframe 套住；
            每个站点各建一份 security_headers.conf，server 级与每个 location 都引入
            （location 自己写了 add_header 就不继承 server 级）；补丁脚本离线测试扩到 9 个情形
+   v3.4.58：账号版本号实时读取——/api/health 不再缓存启动时的 VERSION。部署脚本只在 server/
+           有变化时重启容器，纯版本号发版会让健康检查一直报旧版本；改为每次请求读一次小文件
    v3.4.55：云存档数据安全——修复四条实测可复现的存档丢失 / 串号路径：空存档与收集进度变少
            不得覆盖云端（服务端 + 前端两道保护）；本机存档记归属，换账号不串号；清空本机后
            自动同步暂停；自动同步失败一律可见。新增云端历史版本（每账号保留 10 版）；
@@ -274,10 +276,11 @@
   "use strict";
 
   /* 运行时版本号（renderAbout 等展示用；由 tools/bump_version.py 同步） */
-  const GAME_VERSION = "3.4.57";
+  const GAME_VERSION = "3.4.58";
   /* v3.4.10 更新日志（关于页展示）：首条必须为当前版本（tests/consistency 契约），
      bump 版本后在此追加一行 */
   const GAME_CHANGELOG = [
+    { ver: "3.4.58", note: "账号健康检查的版本号改为实时读取，纯版本号发版不再报旧版本（无玩法改动）" },
     { ver: "3.4.57", note: "防嵌入加固：游戏页面不能再被别的站点用 iframe 套住（无玩法改动）" },
     { ver: "3.4.56", note: "账号服务安全加固：密码校验不再让其他玩家排队；隐私说明补充了自动同步与历史版本" },
     { ver: "3.4.55", note: "云存档更安全：空存档不会覆盖云端，换账号不串号，可恢复历史版本；设置页不再多发无用请求" },

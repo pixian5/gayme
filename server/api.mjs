@@ -31,10 +31,13 @@ import {
   SESSION_DAYS, SESSION_MAX_PER_USER, SITE_ROOT, TRUST_PROXY, isSecureRequest,
 } from "./config.mjs";
 
-const VERSION = (() => {
+// v3.4.58：版本号改为每次请求时读取。部署脚本只会在 server/ 有变化时重启容器，
+// 而 VERSION 文件在账号服务目录根部——若在模块加载时缓存，纯版本号发版（没改 server/）
+// 之后 /api/health 会一直报旧版本。健康检查只读一个小文件，代价可忽略。
+function gameVersion() {
   try { return fs.readFileSync(path.join(SITE_ROOT, "VERSION"), "utf8").trim(); }
   catch (_) { return "dev"; }
-})();
+}
 
 // 用户不存在时也做一次同样代价的密码哈希，避免用响应时间判断用户名是否存在。
 // v3.4.56：哈希是异步的，所以不能在模块加载时算，第一次用到时再算并记住结果
@@ -359,7 +362,7 @@ async function route(req, res, store, url) {
   if ((method === "GET" || method === "HEAD") && pathname === "/api/health") {
     let database = "ok";
     try { store.userById("__health__"); } catch (_) { database = "error"; }
-    json(req, res, 200, { ok: true, service: "gayme-account", version: VERSION, time: new Date().toISOString(), database });
+    json(req, res, 200, { ok: true, service: "gayme-account", version: gameVersion(), time: new Date().toISOString(), database });
     return;
   }
 
