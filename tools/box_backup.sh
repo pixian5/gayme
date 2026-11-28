@@ -8,6 +8,7 @@
 #   sudo bash tools/box_backup.sh --backup-only   # 只备份（部署前调用；失败返回非零）
 #   sudo bash tools/box_backup.sh --install-only  # 只安装/刷新计划任务
 #   sudo bash tools/box_backup.sh --verify        # 备份 + 恢复演练（把最新备份恢复到临时实例并校验）
+#   sudo bash tools/box_backup.sh --verify-only   # 只对最新备份做恢复演练（每周计划任务用，不产生新备份）
 #   任意模式后加 --quiet：不回显日志尾巴（被部署脚本调用时用）
 #
 # 可用环境变量调整：SAKURA_ACCOUNT_CONTAINER（默认 sakura-account）
@@ -29,25 +30,34 @@ log() { echo "$(date '+%F %T') $*" >> "$LOG"; }
 
 notify() {
   [ -s "$BARK_FILE" ] || return 0
-  local url
+  local url payload
   url=$(head -n 1 "$BARK_FILE" | tr -d '[:space:]')
   [ -n "$url" ] || return 0
+  # 与部署脚本一致：JSON 走序列化，正文带引号时不会把载荷截断
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"title":"樱时信笺·盒子","body":sys.argv[1]}, ensure_ascii=False))' "$1" 2>/dev/null) || return 0
+  [ -n "$payload" ] || return 0
   curl -s --max-time 10 -X POST "$url" -H "Content-Type: application/json; charset=utf-8" \
-    -d "{\"title\":\"樱时信笺·盒子\",\"body\":\"$1\"}" >/dev/null 2>&1 || true
+    -d "$payload" >/dev/null 2>&1 || true
 }
 
 # 安装/刷新计划任务：每天 03:30 备份一次。带标记的旧条目先摘掉再追加，重复执行结果一致
 install_cron() {
-  local entry="30 3 * * * docker exec -e NODE_NO_WARNINGS=1 ${CONTAINER} node /app/server/backup_db.mjs >> ${LOG} 2>&1 # ${MARK}"
+  local self backup_entry verify_entry
+  self=$(readlink -f "$0" 2>/dev/null || printf '%s' "$0")
+  backup_entry="30 3 * * * docker exec -e NODE_NO_WARNINGS=1 ${CONTAINER} node /app/server/backup_db.mjs >> ${LOG} 2>&1 # ${MARK}"
+  # 每周日 04:10 对最新备份做恢复演练：没演练过的备份不算备份
+  verify_entry="10 4 * * 0 bash ${self} --verify-only --quiet >> ${LOG} 2>&1 # ${MARK}-verify"
   local tmp current before after rc
   tmp=$(mktemp) || return 1
   current=$(mktemp) || { rm -f "$tmp"; return 1; }
   crontab -l > "$current" 2>/dev/null || true
-  grep -v "# ${MARK}\$" "$current" > "$tmp" || true   # 摘掉旧的同类条目（一个都没有时 grep 返回 1，无妨）
-  echo "$entry" >> "$tmp"
+  # 摘掉旧的同类条目（一个都没有时 grep 返回 1，无妨）
+  grep -v -e "# ${MARK}\$" -e "# ${MARK}-verify\$" "$current" > "$tmp" || true
+  echo "$backup_entry" >> "$tmp"
+  echo "$verify_entry" >> "$tmp"
   # 保护：除本任务外的条目数必须不变，防止管道意外清空整个计划任务表
-  before=$(grep -v "# ${MARK}\$" "$current" | grep -c '[^[:space:]]' || true)
-  after=$(grep -v "# ${MARK}\$" "$tmp" | grep -c '[^[:space:]]' || true)
+  before=$(grep -v -e "# ${MARK}\$" -e "# ${MARK}-verify\$" "$current" | grep -c '[^[:space:]]' || true)
+  after=$(grep -v -e "# ${MARK}\$" -e "# ${MARK}-verify\$" "$tmp" | grep -c '[^[:space:]]' || true)
   if [ "${before:-0}" != "${after:-0}" ]; then
     rm -f "$tmp" "$current"
     log "!! 计划任务条目数不一致（${before:-0} → ${after:-0}），放弃修改"
@@ -145,7 +155,7 @@ MODE=""
 for arg in "$@"; do
   case "$arg" in
     --quiet) QUIET=1 ;;
-    --backup-only|--install-only|--verify) MODE="$arg" ;;
+    --backup-only|--install-only|--verify|--verify-only) MODE="$arg" ;;
     "")
       echo "用法：sudo bash tools/box_backup.sh [--backup-only|--install-only|--verify] [--quiet]" >&2
       exit 2 ;;
@@ -158,6 +168,7 @@ case "$MODE" in
   --backup-only)  run_backup || rc=1; check_disk ;;
   --install-only) install_cron || rc=1 ;;
   --verify)       run_backup || rc=1; verify_latest || rc=1; check_disk ;;
+  --verify-only)  verify_latest || rc=1; check_disk ;;
   "")             install_cron || rc=1; run_backup || rc=1; check_disk ;;
 esac
 [ "$QUIET" = "1" ] || tail -n 3 "$LOG"
