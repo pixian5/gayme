@@ -34,6 +34,7 @@ cat > "$W/bin/curl" << 'SH'
 #!/bin/bash
 echo "curl $*" >> "$FAKE/calls"
 case "$*" in
+  *"-X POST"*) echo "bark $*" >> "$FAKE/calls" ;;
   *"127.0.0.1:8090/api/health"*)
     [ -f "$FAKE/api_ok" ] && echo '{"status":"ok","database":"ok"}' || exit 22 ;;
   *"127.0.0.1:8090/"*)
@@ -51,6 +52,10 @@ SH
 chmod +x "$W/bin/docker" "$W/bin/curl" "$W/bin/rsync"
 export PATH="$W/bin:$PATH"
 touch "$FAKE/container" "$FAKE/api_ok" "$FAKE/web_ok"
+# v3.4.60：发版自检的站点地址与 Bark 文件都可改写，离线测试不碰公网、不真推送
+export SAKURA_PUBLIC_URL="http://site.test"
+export SAKURA_BARK_FILE="$W/bark"
+echo "http://bark.test/push" > "$SAKURA_BARK_FILE"
 
 # ---------- 模拟仓库：origin.git 扮演 GitCode；work 是开发者目录；repo 是盒子上的部署克隆 ----------
 git init -q --bare "$W/origin.git"
@@ -83,6 +88,14 @@ echo "name: test" > .github/workflows/test.yml
 echo "node_modules" > .gitignore
 echo "{ \"name\": \"x\" }" > package.json
 echo "说明" > README.md
+cat > tools/verify_release.sh << 'SH'
+#!/bin/bash
+echo "verify $GAYME_SITE_URL $GAYME_EXPECTED_VERSION" >> "$FAKE/calls"
+if [ -f "$FAKE/verify_fail" ]; then echo "  失败: 假自检失败"; exit 1; fi
+echo "  通过: 假检查"
+echo "通过 20 项，失败 0 项"
+SH
+chmod +x tools/verify_release.sh
 cat > tools/box_backup.sh << 'SH'
 #!/bin/bash
 echo "backup $*" >> "$FAKE/calls"
@@ -143,6 +156,7 @@ check "历史遗留的 README.md 已被清掉" "$(yesno '[ -e "$W/web/README.md"
 hasnot "没有写「部署成功」（这不是一次新部署）" "部署成功" "$LOG"
 hasnot "没有做部署前备份（没有要部署的新提交）" "backup" "$FAKE/calls"
 hasnot "首次运行不报开关自愈失败" "自愈失败" "$LOG"
+hasnot "没有新提交就不跑发版自检" "verify " "$FAKE/calls"
 echo "  —— 再跑一次：无新提交且一切正常——什么都不做"
 : > "$FAKE/calls"
 before=$(md5 -q "$LOG" 2>/dev/null || md5sum < "$LOG" | cut -d' ' -f1)
@@ -168,6 +182,9 @@ has "部署前做过备份" "^backup --backup-only" "$FAKE/calls"
 has "server/ 有变化所以重启账号容器" "^docker restart sakura-account" "$FAKE/calls"
 check "重启标记" "$(yesno '[ -f "$FAKE/restarted" ]')" "有"
 has "日志：部署成功" "部署成功 ${C1:0:7}→${C2:0:7} v3.4.55" "$LOG"
+has "部署后调用了发版自检（带站点地址）" "verify http://site.test" "$FAKE/calls"
+has "日志：发版自检通过" "发版自检通过：通过 20 项，失败 0 项" "$LOG"
+check "自检通过不发 Bark 告警" "$(yesno 'grep -q bark "$FAKE/calls"')" "无"
 check "失败记录已清除" "$(yesno '[ -f "$W/state/failed.sha" ]')" "无"
 check "站点根文件清单（不出现 tools / server / tests）" "$(ls "$W/web" | tr '\n' ' ')" "VERSION index.html js "
 check "账号服务目录清单（不出现站点文件）" "$(ls "$W/app" | tr '\n' ' ')" "VERSION server "
@@ -247,8 +264,14 @@ has "日志：不部署" "部署前数据库备份失败，本次不部署（下
 hasnot "没有同步站点" "rsync" "$LOG"
 check "部署克隆回到部署前的提交" "$($R rev-parse HEAD)" "$C5"
 rm -f "$FAKE/backup_fail"
-run; check "退出码（重试成功）" "$(cat "$W/exit")" "0"
+echo "  —— 重试成功，但公网自检失败：只告警，不回滚、不记失败提交"
+touch "$FAKE/verify_fail"
+run; check "退出码（自检失败不影响部署）" "$(cat "$W/exit")" "0"
 check "站点版本" "$(webver)" "3.4.59"
+has "日志：发版自检未通过" "发版自检未通过（失败: 假自检失败）" "$LOG"
+has "Bark 收到告警" "bark -s --max-time 10 -X POST http://bark.test/push" "$FAKE/calls"
+check "失败提交记录没有被写" "$(yesno '[ -f "$W/state/failed.sha" ]')" "无"
+rm -f "$FAKE/verify_fail"
 
 echo "情形 6：只有前端变化（server/ 没变）——不重启账号容器"
 rm -f "$FAKE/restarted" "$FAKE/calls"

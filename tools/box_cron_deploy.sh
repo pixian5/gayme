@@ -28,6 +28,8 @@ STATE_DIR=/var/lib/sakura-deploy
 FAILED_SHA="$STATE_DIR/failed.sha"
 INCOMPLETE="$STATE_DIR/incomplete"    # 存在 = 上一次同步被确认不完整：每次运行先补同步，核对成功才清除
 SELF=/root/sakura-deploy.sh          # 本脚本在盒子上的安装位置（自更新的目标）
+PUBLIC_URL="${SAKURA_PUBLIC_URL:-https://8090-agqxoy6u363jxgfufg2onqxbm4.instabox.tech}"
+BARK_FILE="${SAKURA_BARK_FILE:-/root/.sakura-bark}"   # 一行推送地址（Bark）；没有就只写日志
 # 站点根只放运行文件：server/ 源码、开发资料、构建产物、仓库配置一律不进公开目录。
 # 配合 --delete-excluded：线上站点根里已有的这些文件会在下次部署时被清掉。
 # v3.4.55 实测补充：此前 dist/（itch 上架截图）与 scripts/check-meta.mjs 虽无敏感内容，但公网可直接下载
@@ -154,6 +156,44 @@ health_check() {
   echo "ok"
 }
 
+# 告警：与备份脚本共用 /root/.sakura-bark；推送失败不影响部署
+notify() {
+  [ -s "$BARK_FILE" ] || return 0
+  local url
+  url=$(head -n 1 "$BARK_FILE" | tr -d '[:space:]')
+  [ -n "$url" ] || return 0
+  curl -s --max-time 10 -X POST "$url" -H "Content-Type: application/json; charset=utf-8" \
+    -d "{\"title\":\"樱时信笺·发版自检\",\"body\":\"$1\"}" >/dev/null 2>&1 || true
+}
+
+# 部署成功后的线上自检（v3.4.60）：核对公网版本、账号健康检查、响应头、缓存仓与目录泄露。
+# 只告警、不回滚：这些项目大多不在仓库里（nginx 头、DNS、缓存），回滚代码解决不了；
+# 每次新提交只跑一次，不会每 3 分钟重复推送。
+public_verify() {
+  local out rc fails
+  if [ "${SAKURA_SKIP_PUBLIC_VERIFY:-0}" = "1" ]; then
+    log "已设置跳过发版自检（SAKURA_SKIP_PUBLIC_VERIFY=1）"
+    return 0
+  fi
+  if [ ! -f "$REPO/tools/verify_release.sh" ]; then
+    log "仓库里没有发版自检脚本，跳过"
+    return 0
+  fi
+  out=$(GAYME_SITE_URL="$PUBLIC_URL" GAYME_EXPECTED_VERSION="$VER" \
+        bash "$REPO/tools/verify_release.sh" 2>&1)
+  rc=$?
+  printf '%s\n' "$out" >> "$LOG"
+  if [ "$rc" -ne 0 ]; then
+    # 用 awk 拼多条失败原因：BSD 的 tr 处理多字节分隔符会截断，macOS 上曾写出乱码
+    fails=$(printf '%s\n' "$out" | awk '/^  失败/{sub(/^  /,""); printf "%s%s", (n++?"；":""), $0}')
+    log "!! 发版自检未通过（${fails:-未知原因}）"
+    notify "v$VER 发版自检未通过：${fails:-未知原因}"
+    return 1
+  fi
+  log "发版自检通过：$(printf '%s\n' "$out" | grep '通过 [0-9]* 项' | tail -1)"
+  return 0
+}
+
 mkdir -p "$STATE_DIR"
 cd "$REPO" 2>/dev/null || { log "仓库目录缺失：$REPO"; exit 1; }
 
@@ -200,6 +240,8 @@ VER=$(cat "$WEB/VERSION" 2>/dev/null)
 if RESULT=$(health_check) && [ -n "$VER" ]; then
   rm -f "$FAILED_SHA" "$INCOMPLETE"
   log "部署成功 ${PREV:0:7}→${CUR:0:7} v$VER"
+  # 站点与账号已经可用；公网自检再核一遍（失败只告警，不影响本次部署结果）
+  public_verify || true
 else
   log "健康检查失败（${RESULT:-未知}），回滚到 ${PREV:0:7}"
   git reset -q --hard "$PREV"
