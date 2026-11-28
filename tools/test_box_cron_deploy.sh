@@ -177,7 +177,7 @@ echo "  —— 再跑一次：无新提交且一切正常——什么都不做"
 : > "$FAKE/calls"
 before=$(md5 -q "$LOG" 2>/dev/null || md5sum < "$LOG" | cut -d' ' -f1)
 run; check "退出码" "$(cat "$W/exit")" "0"
-hasnot "没有备份 / 同步 / 重启 / 健康检查" "restart\|backup\|curl" "$FAKE/calls"
+hasnot "没有备份 / 同步 / 重启（巡检只读）" "restart\|backup" "$FAKE/calls"
 after=$(md5 -q "$LOG" 2>/dev/null || md5sum < "$LOG" | cut -d' ' -f1)
 check "日志没有新增" "$after" "$before"
 
@@ -227,7 +227,7 @@ check "Bark 正文：回滚原因" "$(bark_field body)" "v3.4.56（${C3:0:7}）�
 echo "  —— 再跑一次：失败提交不再重试"
 : > "$FAKE/calls"
 run; check "退出码" "$(cat "$W/exit")" "0"
-hasnot "没有再备份 / 同步 / 重启" "restart\|backup\|curl" "$FAKE/calls"
+hasnot "没有再备份 / 同步 / 重启（巡检只读）" "restart\|backup" "$FAKE/calls"
 check "部署克隆仍停在上一提交" "$($R rev-parse HEAD)" "$C2"
 
 echo "情形 3：开关打不开（新提交把 meta 删了）——健康检查必须判失败并回滚"
@@ -268,7 +268,7 @@ before=$(md5 -q "$LOG" 2>/dev/null || md5sum < "$LOG" | cut -d' ' -f1)
 run; check "退出码" "$(cat "$W/exit")" "0"
 after=$(md5 -q "$LOG" 2>/dev/null || md5sum < "$LOG" | cut -d' ' -f1)
 check "日志没有新增" "$after" "$before"
-hasnot "只有容器存在性检查，没有任何写操作" "restart\|backup\|curl" "$FAKE/calls"
+hasnot "只有容器存在性检查，没有任何写操作" "restart\|backup" "$FAKE/calls"
 
 echo "情形 5：部署前备份失败——本次不部署，下次重试"
 touch "$FAKE/backup_fail"
@@ -387,6 +387,23 @@ run; check "退出码" "$(cat "$W/exit")" "0"
 hasnot "手工改动已被仓库内容覆盖" "手工热修" "$W/web/js/a.js"
 has "日志：部署成功" "部署成功 ${C9:0:7}→${C11:0:7}" "$LOG"
 check "失败记录已清除" "$(yesno '[ -f "$W/state/failed.sha" ]')" "无"
+
+echo "情形 11：空闲运行巡检——站点挂掉告警一次，恢复后清标记并推恢复"
+rm -f "$FAKE/web_ok"; : > "$FAKE/calls"
+run; check "退出码" "$(cat "$W/exit")" "0"
+has "日志：运行巡检发现站点 500" "!! 运行巡检：站点 8090 无法访问（HTTP 500）" "$LOG"
+check "Bark 标题：运行告警" "$(bark_field title)" "樱时信笺·运行告警"
+check "Bark 推送 1 次" "$(grep -c '^bark ' "$FAKE/calls")" "1"
+echo "  —— 站点仍挂：同一种故障不重复推送"
+run; check "退出码" "$(cat "$W/exit")" "0"
+check "Bark 仍只推送 1 次" "$(grep -c '^bark ' "$FAKE/calls")" "1"
+echo "  —— 站点恢复：清标记，推一条运行恢复"
+touch "$FAKE/web_ok"; : > "$FAKE/calls"
+run; check "退出码" "$(cat "$W/exit")" "0"
+has "日志：运行巡检恢复" "运行巡检恢复正常" "$LOG"
+check "Bark 标题：运行恢复" "$(bark_field title)" "樱时信笺·运行恢复"
+check "Bark 推送 1 次" "$(grep -c '^bark ' "$FAKE/calls")" "1"
+check "运行告警标记已清除" "$(yesno '[ -f "$W/state/alert-status-web" ]')" "无"
 
 echo
 echo "===== 部署日志全文 ====="

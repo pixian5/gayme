@@ -14,6 +14,7 @@
 #       → 失败则整体回滚并记住该提交（不再反复重试）；拉取/备份/回滚/自更新失败都会推送 Bark
 #          （同一故障只推一次，见 alert_once）
 #       → 刷新备份计划任务 → 部署脚本自更新（仓库里的版本与本文件不同时，下次运行起用新版）
+# 运行巡检：没有新提交时检查首页、账号健康与 2096 证书，状态变化才推 Bark（v3.4.63）
 # 自愈（有没有新提交都会做，按这个顺序）：
 #       ① 站点版本与已部署提交对不上（换盒子、站点目录被重建）→ 重新同步（同步时顺带打开账号开关）
 #       ② 上一次同步被确认不完整（/var/lib/sakura-deploy/incomplete 还在）→ 重新同步并核对
@@ -179,10 +180,61 @@ alert_once() {
   [ -s "$BARK_FILE" ] || return 0
   local key="$1" stamp
   stamp="$STATE_DIR/alert-$key"
-  [ -f "$stamp" ] && return 0
+  [ -f "$stamp" ] && return 1
   mkdir -p "$STATE_DIR" 2>/dev/null
   date '+%F %T' > "$stamp" 2>/dev/null || true
   notify "$2" "$3"
+  return 0
+}
+
+# 运行巡检（v3.4.63）：没有新提交时也给线上做一次体检。只在状态变化时推送，避免每 3 分钟刷屏。
+# 检查：8090 首页 200、账号 /api/health 的 database=ok、2096 证书剩余天数 >= 14。
+# 2096 连不上就跳过证书项（可能没开 TLS）；恢复后清掉三个标记并推一条「运行恢复」。
+runtime_check() {
+  local code out end left bad=0 had=0 k
+  code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:8090/ 2>/dev/null)
+  if [ "$code" != "200" ]; then
+    bad=1
+    if alert_once "status-web" "樱时信笺·运行告警" "站点 8090 无法访问（HTTP ${code:-000}）"; then
+      log "!! 运行巡检：站点 8090 无法访问（HTTP ${code:-000}）"
+    fi
+  fi
+  if account_container_exists; then
+    out=$(curl -fsS --max-time 5 http://127.0.0.1:8090/api/health 2>/dev/null)
+    if ! printf '%s' "$out" | grep -q '"database":"ok"'; then
+      bad=1
+      if alert_once "status-account" "樱时信笺·运行告警" "账号服务异常：/api/health 不可用或 database 不为 ok"; then
+        log "!! 运行巡检：账号服务异常"
+      fi
+    fi
+  fi
+  # 证书到期检查：只在本机能完成 TLS 握手时做，避免没开 2096 的部署误报
+  if command -v openssl >/dev/null 2>&1; then
+    if command -v timeout >/dev/null 2>&1; then
+      end=$(echo | timeout 5 openssl s_client -connect 127.0.0.1:2096 -servername localhost 2>/dev/null \
+            | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+    else
+      end=$(echo | openssl s_client -connect 127.0.0.1:2096 -servername localhost 2>/dev/null \
+            | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2)
+    fi
+    if [ -n "$end" ] && date -d "$end" +%s >/dev/null 2>&1; then
+      left=$(( ( $(date -d "$end" +%s) - $(date +%s) ) / 86400 ))
+      if [ "$left" -lt 14 ]; then
+        bad=1
+        if alert_once "status-cert" "樱时信笺·运行告警" "TLS 证书只剩 ${left} 天（2096）"; then
+          log "!! 运行巡检：TLS 证书只剩 ${left} 天"
+        fi
+      fi
+    fi
+  fi
+  for k in status-web status-account status-cert; do
+    [ -f "$STATE_DIR/alert-$k" ] && had=1
+  done
+  if [ "$bad" = 0 ] && [ "$had" = 1 ]; then
+    rm -f "$STATE_DIR"/alert-status-* 2>/dev/null
+    log "运行巡检恢复正常"
+    notify "樱时信笺·运行恢复" "站点与账号服务已恢复正常"
+  fi
 }
 
 # 部署成功后的线上自检（v3.4.60）：核对公网版本、账号健康检查、响应头、缓存仓与目录泄露。
@@ -235,7 +287,10 @@ ensure_deployed
 ensure_complete
 ensure_account_flag
 
-[ "$PREV" = "$CUR" ] && exit 0   # 无新提交
+if [ "$PREV" = "$CUR" ]; then      # 无新提交：做一次运行巡检再退出
+  runtime_check
+  exit 0
+fi
 
 # 这个提交上次部署失败过：等新提交到来，不再每 3 分钟重试一次
 [ "$(cat "$FAILED_SHA" 2>/dev/null)" = "$CUR" ] && exit 0
