@@ -49,6 +49,8 @@ jobs:
         run: bash tools/test_box_cron_deploy.sh
       - name: nginx 配置补丁工具离线测试
         run: bash tools/test_nginx_patch.sh
+      - name: 发版自检脚本离线测试
+        run: bash tools/test_verify_release.sh
       - name: 账号界面浏览器用例
         run: npm run test:account:e2e
       - name: 云存档数据安全浏览器用例
